@@ -1,0 +1,1152 @@
+<!doctype html public "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+   <meta name="GENERATOR" content="Mozilla/4.79 [en] (Windows NT 5.0; U) [Netscape]">
+   <title>... in Java by Richard G Baldwin</title>
+</head>
+<body link="#DD0000" vlink="#0000FF" alink="#FF0000" lang="EN-US">
+
+<h2>
+Understanding the Buffer class in Java</h2>
+<i>Baldwin explains the Buffer class, which is fundamental to many of the
+new features in Java version 1.4.0.</i>
+<p><b>Published:</b>&nbsp; June 15, 2002
+<br><b>By <a href="#About the author">Richard G. Baldwin</a></b>
+<p>Java Programming Notes # 1780
+<ul >
+<li>
+<a href="#Preface">Preface</a></li>
+
+<li>
+<a href="#Discussion and Sample Programs">Discussion and Sample Code</a></li>
+
+<li>
+<a href="#Run the program">Run the Program</a></li>
+
+<li>
+<a href="#Complete Program Listings">Complete Program Listing</a></li>
+</ul>
+
+<hr size=3 width="100%" align=center>
+<center>
+<h2>
+<a NAME="Preface"></a>Preface</h2></center>
+<b><font color="#FF0000">New features in SDK Version 1.4.0</font></b>
+<p>The recently released Java<sup>TM</sup> 2 SDK, Standard Edition Version
+1.4.0 contains a number of new features.&nbsp; I plan to publish articles
+explaining how to use some of those new features from time to time, and
+this is the first such article.
+<p>Among the new features is a new I/O API.&nbsp; Here is how Sun describes
+that API and the new features that it provides:
+<blockquote><i>"The new I/O (NIO) APIs introduced in v 1.4 provide new
+features and improved performance in the areas of buffer management, scalable
+network and file I/O, character-set support, and regular-expression matching.
+The NIO APIs supplement the I/O facilities in the java.io package."</i></blockquote>
+<b><font color="#FF0000">Basic classes</font></b>
+<p>The <i>abstract</i> <b>Buffer</b> class, and its subclasses, are basic
+to many of the new features in the NIO.&nbsp; One of those subclasses is
+named <b>ByteBuffer</b>.&nbsp; Since <b>Buffer</b> is abstract, you can
+only work with it in terms of its subclasses.&nbsp; In this article, I
+will use the <b>ByteBuffer</b> class to explore the features of the <b>Buffer</b>
+class.
+<p>You must understand how to use the <b>Buffer</b> class and its subclasses
+before you can understand how to use many of the other classes in the API.&nbsp;
+Therefore, the main purpose of this lesson is to help you understand how
+to use the features of the <b>Buffer</b> class.&nbsp; I will describe many
+of those features, and will illustrate the use of those features by explaining
+the code in a sample program.
+<p><b><font color="#FF0000">Viewing tip</font></b>
+<p>You may find it useful to open another copy of this lesson in a separate
+browser window.&nbsp; That will make it easier for you to scroll back and
+forth among the different listings and figures while you are reading about
+them.
+<p><b><font color="#FF0000">Supplementary material</font></b>
+<p>I recommend that you also study the other lessons in my extensive collection
+of online Java tutorials.&nbsp; You will find those lessons published at
+<a href="http://softwaredev.earthweb.com/java">Gamelan.com</a>.&nbsp;
+However, as of the date of this writing, Gamelan doesn't maintain a consolidated
+index of my Java tutorial lessons, and sometimes they are difficult to
+locate there.&nbsp; You will find a consolidated index at
+<a href="http://www.geocities.com/Athens/7077/scoop/onjava.html">Baldwin's
+Java Programming Tutorials</a><font color="#000000">.</font>
+<center>
+<h2>
+<a NAME="Discussion and Sample Programs"></a><font color="#000000">Discussion
+and Sample Code</font></h2></center>
+<b><font color="#FF0000">The inheritance model</font></b>
+<p>The class named <b>ByteBuffer</b> extends the abstract class named <b>Buffer</b>.&nbsp;
+Because <b>Buffer</b> is abstract, it is not possible to create an instance
+of <b>Buffer</b>.&nbsp; Rather, the capabilities of <b>Buffer</b> become
+available
+when you create an instance of one of the subclasses of <b>Buffer</b>.&nbsp;
+The Sun documentation lists the following known subclasses of <b>Buffer</b>:
+<ul>
+<li>
+ByteBuffer</li>
+
+<li>
+CharBuffer</li>
+
+<li>
+DoubleBuffer</li>
+
+<li>
+FloatBuffer</li>
+
+<li>
+IntBuffer</li>
+
+<li>
+LongBuffer</li>
+
+<li>
+ShortBuffer</li>
+</ul>
+As you can see from the names of the subclasses, there is one subclass
+of the <b>Buffer</b> class for each non-boolean primitive type.&nbsp; I
+will use the <b>ByteBuffer</b> subclass in this lesson to illustrate the
+features inherited from the <b>Buffer</b> class.
+<p><b><font color="#FF0000">A container for primitive data</font></b>
+<p>You may already be aware that none of the container classes in the <i>Java
+Collections Framework</i> are designed to contain primitive data.&nbsp;
+Rather, those containers are all designed to contain references to objects.&nbsp;
+If you want to store primitive data in one of those containers, you must
+first wrap the primitive value in an object.
+<p>Sun describes <b>Buffer</b> as <i>"A container for data of a specific
+primitive type."</i>&nbsp; However, as you will see in a subsequent lesson,
+an object of the <b>ByteBuffer</b> class can also be used as a container
+for storing a mixture of data of many different primitive types.
+<p><b><font color="#FF0000">Three important properties</font></b>
+<p>Sun tells us <i>" ...the essential properties of a buffer are its capacity,
+limit, and position."</i>
+<p>I will illustrate these three properties in the sample program later
+in this lesson.&nbsp; For now, here is a brief description of each of the
+three properties of a buffer:
+<ul>
+<li>
+<b>capacity</b>:&nbsp; The number of elements the buffer contains; never
+negative and never changes.</li>
+
+<li>
+<b>limit</b>:&nbsp; The index of the first element that should not be read
+or written; never negative and never greater than the capacity.</li>
+
+<li>
+<b>position</b>:&nbsp; The next element to be read or written; never negative
+and never greater than the limit.</li>
+</ul>
+<b><font color="#FF0000">put and get operations</font></b>
+<p>Subclasses of <b>Buffer</b> <i>(such as <b>ByteBuffer</b>)</i> use <b>put</b>
+and <b>get</b> operations to store data into a buffer and to retrieve data
+from the buffer <i>(to transfer data into and out of the buffer).</i>&nbsp;
+Each subclass defines two categories of <b>put</b> and <b>get</b> operations:
+<i>relative</i>
+and <i>absolute.</i>
+<p><b><font color="#FF0000">Relative put and get operations</font></b>
+<p><i>Relative</i> data transfer operations store or retrieve one or more
+elements starting at the current <i>position.</i>&nbsp; The <i>position</i>
+is automatically incremented based on the number of items transferred and
+the type of data transferred.&nbsp; Transfer requests that exceed the <i>limit</i>
+cause exceptions to be thrown with no data being transferred.
+<p><b><font color="#FF0000">Absolute put and get operations</font></b>
+<p><i>Absolute</i> data transfer operations take an element index as a
+parameter and use that index to store or retrieve data.&nbsp; These operations
+do not affect the value of the <i>position</i> property.&nbsp; Absolute
+<b>put</b>
+and <b>get</b> operations throw an exception if the index exceeds the <i>limit</i>.
+<p><b><font color="#FF0000">The channel concept</font></b>
+<p>Here is another important quotation from Sun.&nbsp; I show it here simply
+to introduce the concept of a <i>channel,</i> which will be the topic of
+a future lesson.
+<blockquote><i>"Data may ... be transferred into or out of a buffer by
+the I/O operations of an appropriate channel, ..."</i></blockquote>
+One of the main reasons for discussing <b>Buffer</b> in this lesson is
+to prepare you to understand <i>I/O channels,</i> which I plan to discuss
+in a subsequent lesson
+<p><b><font color="#FF0000">Mark and reset</font></b>
+<p>The <b>Buffer</b> class also supports the concept of <i>mark</i> and
+<i>reset.</i>&nbsp;
+It is just about impossible to discuss one without the other.&nbsp; For
+example, according to Sun, here is a description of the behavior of the
+<b>reset</b>
+method:
+<blockquote><i>"Resets this buffer's position to the previously-marked
+position."</i></blockquote>
+Similarly, here is Sun's description of a buffer's <i>mark.</i>
+<blockquote><i>"A buffer's mark is the index to which its position will
+be reset when the reset method is invoked."</i></blockquote>
+<b><font color="#FF0000">Interaction rules</font></b>
+<p>Here are some rules that apply to the interaction of <i>mark, position,
+limit,</i> and <i>capacity:</i>
+<ul>
+<li>
+The <i>mark</i> is not always defined</li>
+
+<li>
+When the <i>mark</i> is defined,</li>
+
+<ul>
+<li>
+The value of the <i>mark</i> is never negative</li>
+
+<li>
+The value of the <i>mark</i> is never greater than the <i>position</i></li>
+
+<li>
+The <i>mark</i> is discarded when the <i>position</i> or the <i>limit</i>
+is adjusted to a value smaller than the <i>mark</i></li>
+
+<li>
+0 &lt;= mark &lt;= position &lt;= limit &lt;= capacity</li>
+</ul>
+
+<li>
+Invoking the method named <b>mark</b> sets the buffer's <i>mark</i> to
+its current <i>position</i></li>
+
+<li>
+When the <i>mark</i> is not defined, invoking the <b>reset</b> method causes
+an exception to be thrown</li>
+</ul>
+A new buffer always has a <i>position</i> of zero and a <i>mark</i> that
+is undefined. The initial <i>limit</i> and <i>capacity</i> of a new buffer
+depend on the type of the buffer and its construction.
+<p><b><font color="#FF0000">Setter and getter methods</font></b>
+<p>The <b>Buffer</b> class provides methods for <i>setting</i> and <i>getting</i>
+the values of the <i>position</i>, and <i>limit</i> properties, and for
+<i>getting</i>
+the value of the <i>capacity</i> property.&nbsp; However, these methods
+do not conform to JavaBeans design patterns for properties.&nbsp; For example,
+here are descriptions of the methods for getting and setting the <i>limit</i>
+property of a buffer:
+<ul>
+<li>
+<b>limit()</b> - Returns this buffer's limit as type <b>int</b>.</li>
+
+<li>
+<b>limit(int newLimit)</b> - Sets this buffer's limit and returns type
+<b>Buffer</b>.</li>
+</ul>
+As you can see, unlike JavaBeans design patterns, the difference between
+<i>setting</i>
+and <i>getting</i> in this case is based on overloading the method name.&nbsp;
+This is typical of the <i>setter</i> and <i>getter</i> methods for each
+of the three properties listed earlier.
+<p><b><font color="#FF0000">Method chaining</font></b>
+<p>Note that the second method described above returns a reference to the
+buffer.&nbsp; Other methods of the <b>Buffer</b> class also return a reference
+to the buffer.&nbsp; This makes it possible to use <i>method invocation
+chaining</i> syntax such as that shown in Figure 1.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre><tt>buf.rewind().position(2).mark();
+
+</tt><b>Figure 1</b></pre>
+</td>
+</tr>
+</table>
+
+<p>I will have more to say about this later.
+<p><b><font color="#FF0000">Other useful methods</font></b>
+<p>The <b>Buffer</b> class defines several other methods that can be used
+to operate on a buffer, including the following.&nbsp; The behaviors of
+these methods, <i>(with respect to changing the values of position and
+limit),</i> are very important.
+<ul>
+<li>
+<b>reset</b> - Resets this buffer's <i>position</i> to the previously-marked
+<i>position</i>.</li>
+
+<li>
+<b>clear</b> - Clears the buffer. The <i>position</i> is set to zero, the
+<i>limit</i>
+is set to the <i>capacity</i>, and the <i>mark</i> is discarded.</li>
+
+<li>
+<b>flip</b> - The <i>limit</i> is set to the current <i>position</i> and
+the <i>position</i> is set to zero. The <i>mark</i> is discarded.</li>
+
+<li>
+<b>rewind</b> - Rewinds the buffer. The <i>position</i> is set to zero,
+the <i>mark</i> is discarded, and the <i>limit</i> is unchanged.</li>
+
+<li>
+<b>hasRemaining</b> - Returns <b>boolean</b> to tell whether there are
+any elements between the current <i>position</i> and the <i>limit</i>.</li>
+
+<li>
+<b>remaining</b> - Returns the number of elements between the current <i>position</i>
+and the <i>limit</i>.</li>
+</ul>
+I will illustrate most of these methods in the sample program later in
+this lesson.
+<p><b><font color="#FF0000">Read-only buffers</font></b>
+<p>It is possible to create buffers that are readable but not writable.
+<blockquote><i>(For example, see the documentation for the <b>asReadOnlyBuffer</b>
+method of the <b>ByteBuffer</b> class.)</i></blockquote>
+Methods that normally change the contents of a buffer will throw a <b>ReadOnlyBufferException</b>
+when invoked on a read-only buffer.
+<p>While a read-only buffer does not allow its content to be changed, its
+<i>mark,
+position, </i>and <i>limit</i> values may be changed. You can determine
+if a buffer is read-only by invoking its <b>isReadOnly</b> method.
+<p><b><font color="#FF0000">The ByteBuffer class</font></b>
+<p>As mentioned earlier, the <b>ByteBuffer</b> class extends the <b>Buffer</b>
+class, and as such, inherits the capabilities discussed above.&nbsp; In
+addition, the <b>ByteBuffer</b> class provides new capabilities that are
+not defined in the <b>Buffer</b> class.
+<p>I will use the <b>ByteBuffer</b> class in a sample program to illustrate
+the features inherited from the <b>Buffer</b> class.&nbsp; I encourage
+you to compile and execute this sample program, and to experiment with
+it by making changes while observing the results of your changes.
+<p><b><font color="#FF0000">Reading and writing single bytes</font></b>
+<p>The <b>ByteBuffer</b> class inherits numerous features from the <b>Buffer</b>
+class, and adds new features of its own.&nbsp; I will discuss the new features
+added by the <b>ByteBuffer</b> class in a future lesson.&nbsp; In this
+lesson, I will concentrate on the features inherited from the <b>Buffer</b>
+class, and will limit the use of <b>ByteBuffer</b> features to those required
+to illustrate the inherited features.
+<p><b><font color="#FF0000">The put and get methods</font></b>
+<p>The abstract <b>Buffer</b> class does not provide methods for storing
+or retrieving data from a buffer.&nbsp; Rather, that capability is provided
+by <b>ByteBuffer</b> and other subclasses of <b>Buffer</b>.
+<p>The <b>ByteBuffer</b> class provides <b>get</b> and <b>put</b> methods
+for reading and writing single bytes in both an <i>absolute</i> and a <i>relative</i>
+sense.&nbsp; These features, along with others, are illustrated in the
+program named <b>Buffer01</b>, which I will discuss in fragments.&nbsp;
+A complete listing of the program is provided in Listing 17 near the end
+of the lesson.
+<p><b><font color="#FF0000">The sample program named Buffer01</font></b>
+<p>The sample program named <b>Buffer01</b> illustrates most of the methods
+of the <b>Buffer</b> class and some of the methods of the <b>ByteBuffer</b>
+class.
+<p>Listing 1 shows the beginning of the controlling class named <b>Buffer01</b>.&nbsp;
+Listing 1 also shows the import directive used by this program, to remind
+you that this is a new API for input/output.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>import java.nio.*;
+
+class Buffer01{
+
+<b><font face="Courier New,Courier">Listing 1</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>The <i>java.nio</i> package did not exist prior to the release of version
+1.4.0.&nbsp; Therefore, in order to compile and execute this sample program,
+you will need to have version 1.4.0 or later installed on your system.
+<p><b><font color="#FF0000">Displaying buffer properties</font></b>
+<p>Listing 2 shows the first of three convenience methods designed to make
+the code in the main body of the program simpler and easier to understand.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp; static void <b>showBufferProperties</b>(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Buffer buf){
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Buffer Properties: "
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; +"\n&nbsp; capacity="&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + buf.<b>capacity()
+</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + " limit="&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + buf.<b>limit()
+</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + " position="&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + buf.<b>position()</b>);
+&nbsp; }//end showBufferProperties
+
+<b><font face="Courier New,Courier">Listing 2</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>The purpose of the method named <b>showBufferProperties</b> is to get
+and display the
+<i>capacity, limit, </i>and<i> position</i> properties
+of a <b>Buffer</b> object whose reference is received as an incoming parameter.
+<blockquote><i>(The actual type of the objects passed to this method in
+this program is <b>ByteBuffer</b>.&nbsp; However, because <b>ByteBuffer</b>
+extends <b>Buffer</b>, and all the methods invoked by the code in this
+method are defined in <b>Buffer</b>, the type of the incoming object can
+be <b>Buffer</b> or any subclass of <b>Buffer</b>.)</i></blockquote>
+The boldface code in Listing 2 identifies the <i>getter</i> methods used
+to get the values of the three properties listed above.&nbsp; The remaining
+code in Listing 2 is a large print statement that causes the values returned
+by the <i>getter</i> methods to be displayed on the standard output device.&nbsp;
+A sample of the screen output produced by this method is shown in Figure
+2.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td><tt>Buffer Properties:</tt>
+<br><tt>&nbsp; capacity=8 limit=8 position=0</tt>
+<p><b><tt>Figure 2</tt></b></td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">Display buffer data</font></b>
+<p>The method shown in Listing 3 gets and displays the data stored in the
+buffer beginning with the element at the current value of the <i>position</i>
+property and extending to the value of the <i>limit</i> property.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp; static void <b>showBufferData</b>(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ByteBuffer buf){
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Show buffer data");
+&nbsp;&nbsp;&nbsp; while(buf.<b>hasRemaining()</b>)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.print(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; buf.<b>get()</b> + " ");
+&nbsp;&nbsp;&nbsp; System.out.println();//blank line
+&nbsp; }//end showBufferData
+
+<b><font face="Courier New,Courier">Listing 3</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>This is accomplished using the relative <b>get</b> method defined in
+the <b>ByteBuffer</b> class.
+<p><b><font color="#FF0000">Parameter is not type Buffer</font></b>
+<p>Note that the incoming parameter to this method is type <b>ByteBuffer</b>
+and is not type <b>Buffer</b>, as was the case in Listing 2.&nbsp; This
+is because the <b>get</b> method invoked by the code in this method is
+not defined in the <b>Buffer</b> class.&nbsp; Rather, it is defined in
+the <b>ByteBuffer</b> class, and therefore can only be invoked on a reference
+of type <b>ByteBuffer</b>, or a subclass of the <b>ByteBuffer</b> class.
+<p><b><font color="#FF0000">The hasRemaining method</font></b>
+<p>The code in Listing 3 invokes two interesting methods.&nbsp; The first
+is the <b>hasRemaining</b> method.&nbsp; This method is much like the methods
+of the <b>Iterator</b> and <b>Enumeration</b> interfaces, used to iterate
+on objects instantiated from the concrete classes of the <i>Java Collections
+Framework.</i>
+<p>The <b>hasRemaining</b> method is defined in the <b>Buffer</b> class,
+and tells whether there are any elements remaining between the current
+<i>position</i>
+and the <i>limit</i>.&nbsp; This method returns a <b>boolean</b>, which
+is <i>true </i>only if there is at least one element remaining in the buffer.&nbsp;
+Thus, it works very nicely in the conditional clause of a <b>while</b>
+loop for the purpose of iterating on a buffer.
+<p><b><font color="#FF0000">The relative get method</font></b>
+<p>The second method of interest in Listing 3 is the relative
+<b>get</b>
+method of the <b>ByteBuffer</b> class.&nbsp; This method reads and returns
+the byte at the buffer's current <i>position</i>, and then increments the
+position.&nbsp; Thus, it also works quite well in an iterator loop for
+a buffer <i>(provided you have exercised proper control over the values
+of the position and limit properties beforehand).</i>
+<p><b><font color="#FF0000">Display array data</font></b>
+<p>The third convenience method, shown in Listing 4, is a method designed
+simply to display the data in an array object of type <b>byte</b>.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp; static void <b>showArrayData</b>(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; byte[] array){
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Show array data");
+&nbsp;&nbsp;&nbsp; for(int cnt = 0;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cnt &lt; array.length; cnt++){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.print(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; array[cnt] + " ");
+&nbsp;&nbsp;&nbsp; }//end for loop
+&nbsp;&nbsp;&nbsp; System.out.println();//blank line
+&nbsp; }//end showArrayData
+
+<b><font face="Courier New,Courier">Listing 4</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>I am assuming that you are already familiar with the use of array objects
+in Java, and therefore, I won't discuss this code in detail.&nbsp; If that
+is not the case, you can learn about array objects at <a href="http://www.geocities.com/Athens/7077/scoop/onjava.html">Baldwin's
+Java Programming Tutorials</a>.
+<p><b><font color="#FF0000">The main method creates an array object</font></b>
+<p>There are several ways to create and populate a buffer in Java.&nbsp;
+One of those ways is to wrap an existing array object in a buffer.&nbsp;
+To do that, you need an existing array object.&nbsp; <i>(I will discuss
+the other ways to create a buffer in a future lesson.)</i>
+<p>Listing 5 shows the beginning of the <b>main</b> method.&nbsp; The code
+in Listing 5 creates, populates, and displays an eight-element array object
+containing data of type <b>byte</b>.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp; public static void <b>main</b>(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; String[] args){
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Create, populate, and display "
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + "\nan 8-element byte array");
+&nbsp;&nbsp;&nbsp; byte[] array = {0,1,2,3,4,5,6,7};
+&nbsp;&nbsp;&nbsp; showArrayData(array);
+
+<b><font face="Courier New,Courier">Listing 5</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>Again, I am assuming that you are already familiar with the use of array
+objects in Java, and therefore, I won't discuss this code in detail.&nbsp;
+The code in Listing 5 produces the output shown in Figure 3.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td><tt>Create, populate, and display</tt>
+<br><tt>an 8-element byte array</tt>
+<br><tt>Show array data</tt>
+<br><tt>0 1 2 3 4 5 6 7</tt>
+<p><b><tt>Figure 3</tt></b></td>
+</tr>
+</table>
+
+<p>I show this here because we will want to compare it with the data stored
+in our buffer object later.
+<p><b><font color="#FF0000">Create the buffer</font></b>
+<p>As mentioned above, there are several ways to create a buffer, and one
+of them is shown in Listing 6.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Wrap the byte array "
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + "in a buffer");
+&nbsp;&nbsp;&nbsp; ByteBuffer buf =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>ByteBuffer.wrap(array);
+
+<font face="Courier New,Courier">Listing 6</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>Listing 6 invokes the <i>static</i> <b>wrap</b> method of the <b>ByteBuffer</b>
+class to create a buffer that <i>wraps</i> an existing array object.
+<p><b><font color="#FF0000">What is the significance of wrapping an array
+object?</font></b>
+<p>There are two overloaded versions of the <b>wrap</b> method, one that
+requires incoming <i>offset</i> and <i>length</i> parameters, and one that
+does not.&nbsp;<i> (Both versions require an incoming reference to an array
+object.)</i>&nbsp; I used the simpler of the two versions, which does not
+require
+<i>offset</i> and <i>length.</i>
+<p>For both versions, the new buffer is backed up by, or connected to,
+the byte array, which it wraps.&nbsp; Modifications to the buffer cause
+the array contents to be modified.&nbsp; Modifications to the array cause
+the buffer contents to be modified.&nbsp; <i>(It appears as though they
+are really the same set of data.)</i>
+<p>For the version of the <b>wrap</b> method that I used, the <i>capacity</i>
+and <i>limit</i> of the new buffer is the same as <i>array.length.</i>&nbsp;
+The initial value of the <i>position</i> property of the new buffer is
+zero, and its <i>mark</i> is undefined.
+<p>For the more complex version, the initial values of the buffer properties
+are determined by the values of the <i>offset</i> and <i>length</i> parameters
+passed to the <b>wrap</b> method.
+<p><b><font color="#FF0000">Show buffer properties and data</font></b>
+<p>The code in Listing 7 displays the properties of the new buffer.&nbsp;
+Then it uses the relative <b>get</b> method to display the contents of
+the buffer.&nbsp; After that, it displays the properties again.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp; showBufferProperties(buf);
+&nbsp;&nbsp;&nbsp; showBufferData(buf);
+&nbsp;&nbsp;&nbsp; showBufferProperties(buf);
+
+<b><font face="Courier New,Courier">Listing 7</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>The output produced by the code in Listing 7 is shown in Figure 4.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td><tt>Buffer Properties:</tt>
+<br><tt>&nbsp;capacity=8 limit=8 position=0</tt>
+<br><tt>Show buffer data</tt>
+<br><tt>0 1 2 3 4 5 6 7</tt>
+<br><tt>Buffer Properties:</tt>
+<br><tt>&nbsp;capacity=8 limit=8 position=8</tt>
+<p><b><tt>Figure 4</tt></b></td>
+</tr>
+</table>
+
+<p>There are several important things to note about this output:
+<ul>
+<li>
+The initial values of the buffer properties match that described above
+for the simpler version of the <b>Wrap</b> method.</li>
+
+<li>
+The contents of the buffer match the contents of the array object displayed
+in Figure 3.</li>
+
+<li>
+The value of the <i>position</i> property changes from 0 to 8 when the
+relative <b>get</b> method is used in an iterative loop to display each
+element in the buffer.</li>
+</ul>
+<b><font color="#FF0000">Modifications to the buffer ...</font></b>
+<p>I stated earlier, <i>"Modifications to the buffer cause the array contents
+to be modified, and modifications to the array cause the buffer contents
+to be modified."</i>
+<p>This is illustrated in the next several fragments.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Modify first array element");
+&nbsp;&nbsp;&nbsp; array[0] = 10;
+&nbsp;&nbsp;&nbsp; showArrayData(array);
+
+<b><font face="Courier New,Courier">Listing 8</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>The code in Listing 8 changes the value in the first array element from
+0 to 10, and then displays the modified contents of the array object.&nbsp;
+We will see that this causes the value of the first element in the buffer
+to change accordingly.
+<p><b><font color="#FF0000">Flip the buffer</font></b>
+<p>Before we can use the <b>showBufferData</b> method to display the contents
+of the buffer, we must do something about the <i>position</i> property
+whose value is currently 8.&nbsp; There are several ways to do this, but
+I took this opportunity to illustrate the use of the <b>flip</b> method
+of the <b>Buffer</b> class.&nbsp; The use of the <b>flip</b> method is
+shown in Listing 9.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Flip the buffer");
+&nbsp;&nbsp;&nbsp; buf.<b>flip()</b>;
+
+<b><font face="Courier New,Courier">Listing 9</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>According to Sun, the <b>flip</b> method <i>"makes a buffer ready for
+a new sequence of ... relative get operations.&nbsp; It sets the limit
+to the current position and then sets the position to zero."</i>
+<p>That is exactly what I needed to do in this case, so the <b>flip</b>
+method worked quite nicely.
+<p><b><font color="#FF0000">Display buffer properties and data</font></b>
+<p>Listing 10 displays the new property values for the buffer, and then
+displays the contents of the buffer.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp; showBufferProperties(buf);
+&nbsp;&nbsp;&nbsp; showBufferData(buf);
+
+<b><font face="Courier New,Courier">Listing 10</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>The output produced by Listings 8, 9, and 10 is shown in Figure 5.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td><tt>Modify first array element</tt>
+<br><tt>Show array data</tt>
+<br><tt>10 1 2 3 4 5 6 7</tt>
+<br><tt>Flip the buffer</tt>
+<br><tt>Buffer Properties:</tt>
+<br><tt>&nbsp;capacity=8 limit=8 position=0</tt>
+<br><tt>Show buffer data</tt>
+<br><tt>10 1 2 3 4 5 6 7</tt>
+<p><b><tt>Figure 5</tt></b></td>
+</tr>
+</table>
+
+<p>The important things to note in Figure 5 are:
+<ul>
+<li>
+Invocation of the <b>flip</b> method caused the <i>position</i> property
+value to be set to zero.</li>
+
+<li>
+The value in the first element of the buffer was changed when the value
+in the first element of the wrapped array was changed.</li>
+</ul>
+<b><font color="#FF0000">Rewind the buffer</font></b>
+<p>A little later, I will illustrate that changing the contents of the
+buffer causes the corresponding contents of the wrapped array to change
+accordingly.&nbsp; First, however, I need to illustrate the <b>rewind</b>
+operation on the buffer.&nbsp; This is accomplished in Listing 11.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Rewind the buffer");
+&nbsp;&nbsp;&nbsp; buf.<b>rewind()</b>;
+&nbsp;&nbsp;&nbsp; showBufferProperties(buf);
+&nbsp;&nbsp;&nbsp; showBufferData(buf);
+
+<b><font face="Courier New,Courier">Listing 11</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>The code in Listing 11 invokes the <b>rewind</b> method on the buffer
+and then displays the properties and contents of the buffer.
+<p>The <b>rewind</b> method is a method of the <b>Buffer</b> class.&nbsp;
+According to Sun, the <b>rewind</b> method <i>"makes a buffer ready for
+re-reading the data that it already contains: It leaves the limit unchanged
+and sets the position to zero."</i>&nbsp; You might equate this to rewinding
+a VCR tape in order to play it again.
+<p><b><font color="#FF0000">And the output is ...</font></b>
+<p>The code in Listing 11 produces the output shown in Figure 6.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td><tt>Rewind the buffer</tt>
+<br><tt>Buffer Properties:</tt>
+<br><tt>&nbsp;capacity=8 limit=8 position=0</tt>
+<br><tt>Show buffer data</tt>
+<br><tt>10 1 2 3 4 5 6 7</tt>
+<p><b><tt>Figure 6</tt></b></td>
+</tr>
+</table>
+
+<p>There are no surprises here.&nbsp; By now, you probably knew what to
+expect as output from this operation.
+<p><b><font color="#FF0000">The absolute put method</font></b>
+<p>As I explained earlier, the <b>ByteBuffer</b> class provides both <i>absolute</i>
+and <i>relative</i> versions of the <b>put</b> and <b>get</b> methods.&nbsp;
+So far, we have seen the use of the relative version of the <i>get</i>
+method only.&nbsp; The boldface code in Listing 12 uses the <i>absolute</i>
+version of the <b>put</b> method to modify the contents of the buffer at
+index 3.&nbsp; In particular, the value stored at index 3 in the buffer
+is overwritten by the value 20.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Modify the buffer using");
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "absolute put method");
+&nbsp;&nbsp;&nbsp; buf.<b>put(3,(byte)20)</b>;
+&nbsp;&nbsp;&nbsp; buf.rewind();
+&nbsp;&nbsp;&nbsp; showBufferData(buf);
+&nbsp;&nbsp;&nbsp; showArrayData(array);
+
+<b><font face="Courier New,Courier">Listing 12</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>After the value is modified, the buffer is rewound.&nbsp; Then the data
+in the buffer and the data in the array are displayed for comparison.&nbsp;
+The output produced by Listing 12 is shown in Figure 7.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td><tt>Modify the buffer using</tt>
+<br><tt>absolute put method</tt>
+<br><tt>Show buffer data</tt>
+<br><tt>10 1 2 20 4 5 6 7</tt>
+<br><tt>Show array data</tt>
+<br><tt>10 1 2 20 4 5 6 7</tt>
+<p><b><tt>Figure 7</tt></b></td>
+</tr>
+</table>
+
+<p>Perhaps the most important things to observe in this output are:
+<ul>
+<li>
+The value of the element at index 3 in the buffer is changed to 20.</li>
+
+<li>
+The value of the element at index 3 in the array is also changed to 20.</li>
+</ul>
+<b><font color="#FF0000">Chaining and marking</font></b>
+<p>As explained earlier, several of the methods of the <b>Buffer</b> class
+return a reference to the buffer.&nbsp; This makes it possible to chain
+method invocations as shown by the boldface code in Listing 13.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp; "Mark at index 2 using chaining");
+
+&nbsp;&nbsp;&nbsp; <b>buf.rewind().position(2).mark();
+
+<font face="Courier New,Courier">Listing 13</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>The boldface statement in Listing 13 is executed from left to right.&nbsp;
+The behavior of the statement accomplishes the following operations in
+order:
+<ul>
+<li>
+Rewind the buffer</li>
+
+<li>
+Set the value of the <i>position</i> property to 2.</li>
+
+<li>
+Set the <i>mark</i> to the current value of the <i>position</i> property
+<i>(2).</i></li>
+</ul>
+<b><font color="#FF0000">Now change the position property value</font></b>
+<p>The code in Listing 14 changes the value of the <i>position</i> property
+from 2 to 4.&nbsp; <i>(It is important to note that this does not change
+the mark.)</i>
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Set position to 4");
+&nbsp;&nbsp;&nbsp; <b>buf.position(4);
+</b>&nbsp;&nbsp;&nbsp; showBufferData(buf);
+
+<b><font face="Courier New,Courier">Listing 14</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>Having changed the value of the <i>position</i> property, Listing 14
+invokes the <b>showBufferData</b> method to display the contents of the
+buffer.&nbsp; The screen output is shown in Figure 8.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td><tt>Mark at index 2 using chaining</tt>
+<br><tt>Set position to 4</tt>
+<br><tt>Show buffer data</tt>
+<br><tt>4 5 6 7</tt>
+<p><b><tt>Figure 8</tt></b></td>
+</tr>
+</table>
+
+<p>Recall that the <b>showBufferData</b> method displays the data from
+the current
+<i>position</i> to the <i>limit.</i>&nbsp; Therefore, in this
+case, the display does not begin with the element at index zero.&nbsp;
+Rather, it begins with the element at index 4, which is the current value
+of the <i>position</i> property.
+<p><b><font color="#FF0000">Reset to a previous mark</font></b>
+<p>Listing 15 invokes the <b>reset</b> method on the buffer, and then displays
+its contents again.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Reset to previous mark");
+&nbsp;&nbsp;&nbsp; <b>buf.reset();
+</b>&nbsp;&nbsp;&nbsp; showBufferData(buf);
+
+<b><font face="Courier New,Courier">Listing 15</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>The <b>reset</b> method is a method of the <b>buffer</b> class.&nbsp;
+According to Sun, invocation of the <b>reset</b> method <i>"Resets this
+buffer's position to the previously-marked position."</i>
+<p>Recall that the previously marked position was the element at index
+value 2.&nbsp; Thus, when the <b>showBufferData</b> method is used to display
+the contents of the buffer, the screen output is as shown in Figure 9.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td><tt>Reset to previous mark</tt>
+<br><tt>Show buffer data</tt>
+<br><tt>2 20 4 5 6 7</tt>
+<p><b><tt>Figure 9</tt></b></td>
+</tr>
+</table>
+
+<p>The output shows that the value of the <i>position</i> property is set
+to element index 2 when the <b>reset</b> method is invoked.&nbsp; Then
+the <b>showBufferData</b> method displays the contents of the buffer from
+index 2 to the <i>limit.</i>
+<p>Thus, the ability to <i>mark</i> and <b>reset</b> makes it possible
+for your program to remember a <i>position</i> and return to that position
+later.&nbsp; You need to exercise caution, however, because several of
+the operations that you can perform on a buffer cause the <i>mark</i> to
+be discarded.&nbsp; If you invoke <b>reset</b> on a buffer for which the
+<i>mark</i>
+has been discarded, an exception will be thrown.
+<p><b><font color="#FF0000">Is this a read-only buffer?</font></b>
+<p>Although it is possible to create read-only buffers, the output produced
+by the code in Listing 16 shows that this is not a read-only buffer.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Buffer is read only: "
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + <b>buf.isReadOnly()</b>);
+<b><font face="Courier New,Courier">Listing 16</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>Listing 16 produces the output shown in Figure 10.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre><tt>Buffer is read only: false
+
+</tt><b>Figure 10</b></pre>
+</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">So there you have it</font></b>
+<p>By now you should understand a lot about the new <b>Buffer</b> class
+in the new <b>java.nio</b> package.
+<p>Future articles will discuss <b>ByteBuffer</b>, <b>Channels</b>, and
+other new I/O features introduced in Java version 1.4.0.
+<center>
+<h2>
+<a NAME="Run the program"></a>Run the Program</h2></center>
+If you haven't already done so, I encourage you to copy the code from Listing
+17 into your text editor, compile it, and execute it.&nbsp; Experiment
+with it, making changes, and observing the results of your changes.
+<p>Remember, however, that you must be running version 1.4.0 or later to
+compile and execute this program.
+<center>
+<h2>
+<a NAME="Complete Program Listings"></a>Complete Program Listing</h2></center>
+A complete listing of the program is shown in Listing 17 below.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>/* File Buffer01.java
+Copyright 2002, R.G.Baldwin
+
+Illustrates most methods of Buffer&nbsp;
+class and some methods of ByteBuffer
+class.
+
+Tested using JDK 1.4.0 under Win2000
+
+Output is:
+
+Create, populate, and display
+an 8-element byte array
+Show array data
+0 1 2 3 4 5 6 7
+
+Wrap the byte array in a buffer
+Buffer Properties:
+&nbsp; capacity=8 limit=8 position=0
+Show buffer data
+0 1 2 3 4 5 6 7
+Buffer Properties:
+&nbsp; capacity=8 limit=8 position=8
+
+Modify first array element
+Show array data
+10 1 2 3 4 5 6 7
+Flip the buffer
+Buffer Properties:
+&nbsp; capacity=8 limit=8 position=0
+Show buffer data
+10 1 2 3 4 5 6 7
+
+Rewind the buffer
+Buffer Properties:
+&nbsp; capacity=8 limit=8 position=0
+Show buffer data
+10 1 2 3 4 5 6 7
+
+Modify the buffer using
+absolute put method
+Show buffer data
+10 1 2 20 4 5 6 7
+Show array data
+10 1 2 20 4 5 6 7
+
+Mark at index 2 using chaining
+Set position to 4
+Show buffer data
+4 5 6 7
+Reset to previous mark
+Show buffer data
+2 20 4 5 6 7
+
+Buffer is read only: false
+**************************************/
+
+import java.nio.*;
+
+class Buffer01{
+&nbsp; static void showBufferProperties(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Buffer buf){
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Buffer Properties: "
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; +"\n&nbsp; capacity="&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + buf.capacity()
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + " limit="&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + buf.limit()
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + " position="&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + buf.position());
+&nbsp; }//end showBufferProperties
+&nbsp; //---------------------------------//
+&nbsp;&nbsp;
+&nbsp; static void showBufferData(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ByteBuffer buf){
+&nbsp;&nbsp;&nbsp; //Displays buffer contents from&nbsp;
+&nbsp;&nbsp;&nbsp; // current position to limit using
+&nbsp;&nbsp;&nbsp; // relative get method.
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Show buffer data");
+&nbsp;&nbsp;&nbsp; while(buf.hasRemaining())
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.print(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; buf.get() + " ");
+&nbsp;&nbsp;&nbsp; System.out.println();//blank line
+&nbsp; }//end showBufferData
+&nbsp; //---------------------------------//
+
+&nbsp; static void showArrayData(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; byte[] array){
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Show array data");
+&nbsp;&nbsp;&nbsp; for(int cnt = 0;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cnt &lt; array.length; cnt++){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.print(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; array[cnt] + " ");
+&nbsp;&nbsp;&nbsp; }//end for loop
+&nbsp;&nbsp;&nbsp; System.out.println();//blank line
+&nbsp; }//end showArrayData
+&nbsp; //---------------------------------//
+&nbsp;&nbsp;
+&nbsp; public static void main(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; String[] args){
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Wrap a byte array into a buffer
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Create, populate, and display "
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + "\nan 8-element byte array");
+&nbsp;&nbsp;&nbsp; byte[] array = {0,1,2,3,4,5,6,7};
+&nbsp;&nbsp;&nbsp; showArrayData(array);
+&nbsp;&nbsp;&nbsp; System.out.println();//blank line
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Wrap the byte array "
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + "in a buffer");
+&nbsp;&nbsp;&nbsp; ByteBuffer buf =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ByteBuffer.wrap(array);
+&nbsp;&nbsp;&nbsp; showBufferProperties(buf);
+&nbsp;&nbsp;&nbsp; showBufferData(buf);
+&nbsp;&nbsp;&nbsp; showBufferProperties(buf);
+&nbsp;&nbsp;&nbsp; System.out.println();//blank line
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Mods to the buffer will cause the
+&nbsp;&nbsp;&nbsp; // array to be modified and vice&nbsp;
+&nbsp;&nbsp;&nbsp; // versa.
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Modify first array element");
+&nbsp;&nbsp;&nbsp; array[0] = 10;
+&nbsp;&nbsp;&nbsp; showArrayData(array);
+
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Flip the buffer");
+&nbsp;&nbsp;&nbsp; buf.flip();
+&nbsp;&nbsp;&nbsp; showBufferProperties(buf);
+&nbsp;&nbsp;&nbsp; showBufferData(buf);
+&nbsp;&nbsp;&nbsp; System.out.println();//blank line
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Rewind the buffer");
+&nbsp;&nbsp;&nbsp; buf.rewind();
+&nbsp;&nbsp;&nbsp; showBufferProperties(buf);
+&nbsp;&nbsp;&nbsp; showBufferData(buf);
+&nbsp;&nbsp;&nbsp; System.out.println();//blank line
+
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Modify the buffer using");
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "absolute put method");
+&nbsp;&nbsp;&nbsp; buf.put(3,(byte)20);
+&nbsp;&nbsp;&nbsp; buf.rewind();
+&nbsp;&nbsp;&nbsp; showBufferData(buf);
+&nbsp;&nbsp;&nbsp; showArrayData(array);
+&nbsp;&nbsp;&nbsp; System.out.println();//blank line
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Illustrate chaining, marking,&nbsp;
+&nbsp;&nbsp;&nbsp; // and reset
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp; "Mark at index 2 using chaining");
+&nbsp;&nbsp;&nbsp; buf.rewind().position(2).mark();
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Set position to 4");
+&nbsp;&nbsp;&nbsp; buf.position(4);
+&nbsp;&nbsp;&nbsp; showBufferData(buf);
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Reset to previous mark");
+&nbsp;&nbsp;&nbsp; buf.reset();
+&nbsp;&nbsp;&nbsp; showBufferData(buf);
+&nbsp;&nbsp;&nbsp; System.out.println();//blank line
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Buffer is read only: "
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + buf.isReadOnly());
+&nbsp; }// end main
+
+}//end class Buffer01 definition
+
+<b><font face="Courier New,Courier">Listing 17</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>
+<hr size=3 width="100%" align=center>
+<p>Copyright 2002, Richard G. Baldwin.&nbsp; Reproduction in whole or in
+part in any form or medium without express written permission from Richard
+Baldwin is prohibited.
+<h4>
+<a NAME="About the author"></a>About the author</h4>
+<b><a href="mailto:baldwin.richard@iname.com">Richard Baldwin</a></b><i>
+is a college professor (at Austin Community College in Austin, TX) and
+private consultant whose primary focus is a combination of Java, C#, and
+XML. In addition to the many platform and/or language independent benefits
+of Java and C# applications, he believes that a combination of Java, C#,
+and XML will become the primary driving force in the delivery of structured
+information on the Web.</i>
+<p><i>Richard has participated in numerous consulting projects, and he
+frequently provides onsite training at the high-tech companies located
+in and around Austin, Texas.&nbsp; He is the author of Baldwin's Programming
+<a href="http://www.geocities.com/Athens/7077/scoop/onjava.html">Tutorials</a>,
+which has gained a worldwide following among experienced and aspiring programmers.
+He has also published articles in JavaPro magazine.</i>
+<p><i>Richard holds an MSEE degree from Southern Methodist University and
+has many years of experience in the application of computer technology
+to real-world problems.</i>
+<p><i><a href="mailto:baldwin.richard@iname.com">baldwin.richard@iname.com</a></i>
+<p>-end-
+<br>&nbsp;
+</body>
+</html>

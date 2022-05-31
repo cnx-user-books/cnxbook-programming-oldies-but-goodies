@@ -1,0 +1,1187 @@
+<!DOCTYPE html PUBLIC "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+  <meta http-equiv="Content-Type"
+ content="text/html; charset=iso-8859-1">
+  <meta name="GENERATOR" content="Microsoft FrontPage 5.0">
+  <title>... in Java by Richard G Baldwin</title>
+</head>
+<body link="#dd0000" vlink="#0000ff" alink="#ff0000" lang="EN-US">
+<h2>
+Java Sound, Compressing Audio with mu-Law Encoding</h2>
+<i>Baldwin shows you how to use mu-law encoding and decoding to
+compress and restore 16-bit linear PCM samples.</i>
+<p><b>Published:</b>&nbsp; December 2, 2003<br>
+<b>By <a href="mailto:Baldwin@DickBaldwin.com">Richard G. Baldwin</a></b>
+</p>
+<p>Java Programming Notes # 2026</p>
+<ul>
+  <li>
+    <a href="#Preface">Preface</a></li>
+  <li>
+    <a href="#General%20Discussion%20of%20Encoding%20and%20Compression">General
+Discussion of Encoding and Compression</a></li>
+  <li>
+    <a href="#Preview">Preview</a></li>
+  <li>
+    <a href="#Discussion%20and%20Sample%20Programs">Discussion and
+Sample Code</a></li>
+  <li>
+    <a href="#Run%20the%20program">Run the Program</a></li>
+  <li>
+    <a href="#Summary">Summary</a></li>
+  <li>
+    <a href="#Whats%20Next">What's Next?</a></li>
+  <li>
+    <a href="#Complete%20Program%20Listings">Complete Program Listing</a></li>
+</ul>
+<hr size="3" width="100%" align="center">
+<center>
+<h2><a name="Preface"></a>Preface</h2>
+</center>
+<p>
+This series of lessons is designed to teach you how to use the Java
+Sound API.&nbsp; The first lesson in the series was entitled <a
+ href="http://www.developer.com/java/other/article.php/1565671">Java
+Sound, An Introduction</a>.&nbsp; The previous lesson was entitled <a
+ href="http://www.developer.com/java/other/article.php/3071021">Java
+Sound, Audio File Conversion</a>.</p>
+<p><font color="#ff0000"><b>Two types of audio data</b></font></p>
+<p>Two different types of audio data are supported by the Java Sound
+API:</p>
+<ul>
+  <li>Sampled audio data</li>
+  <li>Musical Instrument Digital Interface (MIDI) data</li>
+</ul>
+<p>The two types of audio data are very different.&nbsp; I am
+concentrating on sampled audio data at this point in time.&nbsp; I will
+defer my discussion of MIDI until later.</p>
+<p>
+<b><font color="#ff0000">Viewing tip</font></b>
+</p>
+<p>You may find it useful to open another copy of this lesson in a
+separate
+browser window.&nbsp; That will make it easier for you to scroll back
+and
+forth among the different listings and figures while you are reading
+about
+them.
+</p>
+<p><b><font color="#ff0000">Supplementary material</font></b>
+</p>
+<p>I recommend that you also study the other lessons in my extensive
+collection
+of online Java tutorials.&nbsp; You will find those lessons published
+at
+<a href="http://softwaredev.earthweb.com/java">Gamelan. COM</a>.&nbsp;
+However, as of the date of this writing, Gamelan doesn't maintain a
+consolidated
+index of my Java tutorial lessons, and sometimes they are difficult to
+locate there.&nbsp; You will find a consolidated index at <font
+ color="#000000">
+<a href="http://www.DickBaldwin.com">www.DickBaldwin.com</a>.</font> </p>
+<p><font color="#ff0000"><b>Material in earlier lessons</b></font></p>
+<p>Earlier lessons in this series showed you how to:</p>
+<ul>
+  <li>Perform file conversions among different audio file types.</li>
+  <li>Create, play, and save synthetic sounds, making use of the
+features of the java.nio package to help with the byte manipulations.</li>
+  <li>Use methods of the <b>AudioSystem</b> class to write more robust
+audio programs.</li>
+  <li>Play back audio files, including those that you create using a
+Java program, and those that you acquire from other sources.</li>
+  <li>Capture microphone data into audio files types of your own
+choosing.</li>
+  <li>Capture microphone data into a <b>ByteArrayOutputStream</b>
+object.</li>
+  <li>Use the Sound API to play back previously captured audio data.</li>
+  <li>Identify the mixers available on your system.</li>
+  <li>Specify a particular mixer for use in the acquisition of audio
+data from a microphone.</li>
+  <li>Understand the use of lines and mixers in the Java Sound API.</li>
+</ul>
+<p>This lesson will show you how to use mu-law encoding and decoding to
+compress and restore 16-bit linear PCM samples.</p>
+<h2 align="center">
+<a name="General Discussion of Encoding and Compression"><font
+ color="#000000">General Discussion of Encoding and Compression</font></a></h2>
+<p>
+<font color="#ff0000"><b>Why compress?</b></font></p>
+<p>With the advent of the Internet and the desire to share pictures,
+music, movies, and other items involving voluminous amounts of data,
+the need for data compression has become evident to the general public.</p>
+<p>You will find some very interesting information about sampled sound
+published by Marc Boots-Ebenfield at
+<a
+ href="http://lang.swarthmore.edu/mellon/soundnvideo/soundformats-mbe.htm">Sound
+Formats</a>. Included on this web site is the following factoid
+regarding CD quality music.</p>
+<blockquote>
+  <p><i>"On a Music CD the music is sampled at 44.1 KHz using 16 bit
+words or 705,600 bits for each second of sound. At 8 bits to the byte
+that would mean that 1 second of CD quality music would occupy 88,200
+bytes or 88 Kb of your floppy disc which holds 1.2 Mb of data. That
+means that you could hold 13 seconds of CD quality music on a floppy-
+(uncompressed)!"</i></p>
+</blockquote>
+<p>Thus, if the above estimate is correct, about fifteen floppy disks
+would be required to contain a typical three-minute song in
+uncompressed CD quality format.&nbsp; However, long before the Internet
+existed, there was the need to perform data compression in order to
+reduce the bandwidth requirements for transmitting data.</p>
+<p><font color="#ff0000"><b>What is mu-law encoding?</b></font></p>
+<p>There are many data compression schemes used to provide bandwidth
+reduction for the storage or transmission of sound.&nbsp; One of the
+schemes supported by the Java Sound API is a data encoding scheme
+commonly known as <i>mu-law, u-law, ulaw,</i> <i>ULAW, </i>or
+something similar.</p>
+<p>My preparation effort for writing this article has proven to be an
+interesting exercise in gleaning information from the Internet.&nbsp;
+My objective was to provide you with an understanding of mu-law
+encoding and decoding.</p>
+<p><font color="#ff0000"><b>Needed to fill in some technical gaps</b></font></p>
+<p>While I had a pretty good idea of what mu-law encoding was all about
+at the outset, there were some technical gaps in my knowledge that
+needed to be filled.&nbsp; A <a href="http://www.google.com">Google</a>
+search on the words in the above list produced thousands of hits.&nbsp;
+However, it was surprisingly difficult to gather enough definitive
+information to fully understand how mu-law encoding actually works, and
+to be able to write understandable programs to perform mu-law encoding
+and decoding using the Java programming language.</p>
+<p><font color="#ff0000"><b>Many sources, little definitive information</b></font></p>
+<p>I consulted many different Internet sources to gain a good
+understanding of mu-law encoding before tackling this lesson.&nbsp;
+With respect to actual programming, two of the best sources that I
+found are accessible at
+<a href="http://www.speech.cs.cmu.edu/comp.speech/Section2/Q2.7.html">link1</a>
+and
+<a href="http://web.umr.edu/%7Edcallier/school/311_final_report.doc">link2</a>.</p>
+<blockquote>
+  <p><i>(I will refer back to these links at several points in this
+document, so you might want to bookmark them at this point.&nbsp; Note
+that the second link is a Word document.&nbsp; If, like myself, you are
+not comfortable downloading and opening a Word document, do a Google
+search for the keywords <b>David Callier mu-law</b>. That should lead
+you to an HTML version of his semester project report entitled <b>mu-Law
+Speech Compression</b>, which should be safe to download.)</i></p>
+</blockquote>
+<p>
+<font color="#ff0000"><b>C-language programs</b></font></p>
+<p>The first link listed above provides mu-law encoding and decoding
+programs written in what appears to be the C language.&nbsp;
+</p>
+<blockquote>
+  <p><i>(These programs make very heavy use of table lookups with no
+explanation as to the source of the values in the tables.&nbsp;
+Therefore, the programs aren't very useful from an understanding
+viewpoint.&nbsp; However, they are useful from an algorithm validation
+viewpoint, since it is relatively easy to convert the programs to the
+Java programming language and run them without understanding exactly
+why they do what they do.)</i></p>
+</blockquote>
+<p>
+<font color="#ff0000"><b>Encoding and decoding formulas</b></font></p>
+<p>The second link presents the encoding and decoding algorithms in
+formulas, and provides a reasonable explanation of those
+formulas.&nbsp; Although it appears to provide some programming as
+well, I didn't recognize the programming language being used.</p>
+<blockquote>
+  <p><i>
+(Again, the explanations in this resource involve the manipulation of
+data using constants with no explanation of the meaning of the
+constants.)</i></p>
+</blockquote>
+<p>
+<b><font color="#ff0000">Combine and conquer</font></b></p>
+<p>I was able to combine the information from these two sites, along
+with information from many other sites, to write Java code that
+successfully performs mu-law encoding and decoding.</p>
+<p><font color="#ff0000"><b>Why are there so many names for the same
+thing?</b></font></p>
+<p>Now let's backtrack to the list of names that I gave you
+earlier.&nbsp;
+Apparently, the original name given to this encoding scheme consisted
+of the Greek letter <b>mu</b> <i>(which looks a lot like a lower-case
+<b>u</b> in the English alphabet)</i> and the word <b>law</b>.&nbsp;
+Because of the visual similarity between <b>mu</b> and <b>u</b>, and
+because many people including myself don't know how to cause the Greek
+letter <b>mu</b> to be properly rendered in an HTML page, numerous
+variations on the name have evolved, as shown in the above list.</p>
+<p><b><font color="#ff0000">A description of mu-law encoding</font></b></p>
+<p>Here is how one Internet <a
+ href="http://www.hr/josip/DSP/FAQ/27.html">author</a> describes mu-law
+encoding:</p>
+<blockquote>
+  <p><i>"Mu-law (also "u-law") encoding is a form of logarithmic
+quantization or companding. It's based on the observation that many
+signals are statistically more likely to be near a low signal level
+than a high signal level. Therefore, it makes more sense to have more
+quantization points near a low level than a high level. In a typical
+mu-law system, linear samples of 14 to 16 bits are companded to 8 bits.
+Most telephone quality codecs (including the Sparcstation's audio
+codec) use mu-law encoded samples. "</i></p>
+</blockquote>
+<p><font color="#ff0000"><b>What is companding?</b></font></p>
+<p>Here is a paraphrase of how another
+<a
+ href="http://ccrma-www.stanford.edu/%7Ejos/mdft/Mu_Law_Companding.html">author</a>
+describes <i>companding.&nbsp; </i>He also<i> </i>provides a
+mathematical definition of mu-law format as well:</p>
+<blockquote>
+  <p><i>"</i>A <i>companding</i><a name="19824"></a> operation <i>compresses</i>
+  <a href="http://www-ccrma.stanford.edu/%7Ejos/mdft/Dynamic_Range.html">dynamic
+range</a> on encode and
+  <i>expands</i> dynamic range on decode. In digital telephone networks
+and
+voice modems (currently in use everywhere), standard
+  <i>CODEC</i><a name="19826"></a><a name="tex2html150"
+ href="http://www-ccrma.stanford.edu/%7Ejos/mdft/footnode.html#foot19659"><sup>C.9</sup></a>chips
+are used in which audio is digitized in a simple 8-bit
+  <i><img width="13" height="29" align="middle" border="0"
+ src="http://www-ccrma.stanford.edu/%7Ejos/mdft/img455.png" alt="$ \mu$">-law
+format</i> (or simply ``mu-law'').
+  </p>
+  <p></p>
+  <p></p>
+  <p>Given an input sample <img width="34" height="32" align="middle"
+ border="0" src="http://www-ccrma.stanford.edu/%7Ejos/mdft/img65.png"
+ alt="$ x(n)$"> represented in some internal format, such as a
+  <tt>short</tt>, it is converted to 8-bit mu-law format by the formula
+[<a
+ href="http://www-ccrma.stanford.edu/%7Ejos/mdft/Bibliography.html#RabinerAndSchafer78">48</a>]
+<!-- MATH
+ \begin{displaymath}
+{\hat x}_\mu \isdef Q_\mu\left[\log_2\left(1 + \mu\left|x(n)\right|\right)\right]
+\end{displaymath}
+ -->
+  </p>
+  <div align="center">
+  <img width="218" height="49" align="middle" border="0"
+ src="http://www-ccrma.stanford.edu/%7Ejos/mdft/img1491.png"
+ alt="$\displaystyle {\hat x}_\mu \isdef Q_\mu\left[\log_2\left(1 + \mu\left\vert x(n)\right\vert\right)\right]
+$"></div>
+where <img width="33" height="32" align="middle" border="0"
+ src="http://www-ccrma.stanford.edu/%7Ejos/mdft/img1492.png"
+ alt="$ Q_\mu[]$"> is a <i>quantizer</i> which produces a kind of <a
+ href="http://www-ccrma.stanford.edu/%7Ejos/mdft/Logarithmic_Fixed_Point_Numbers.html">logarithmic
+fixed-point</a> number with a 3-bit characteristic and a 4-bit
+mantissa, using
+a small table lookup for the mantissa.
+As we all know from talking on the telephone, mu-law sounds really
+quite
+good for voice, at least as far as <i>intelligibility</i> is concerned<i>.
+..."</i>
+</blockquote>
+<p>As you can see, the above quotation also contains numerous
+hyperlinks that will take you to other pages that contain related
+information.&nbsp; If some of those links become broken over time, just
+refer to the link for the original <a
+ href="http://ccrma-www.stanford.edu/%7Ejos/mdft/Mu_Law_Companding.html">author</a>.<br>
+</p>
+<p><font color="#ff0000"><b>Data compression in general</b></font></p>
+<p>We compress audio data because we want to reduce the amount of
+storage space required to store the data, or reduce the bandwidth
+required to move the data across a network.</p>
+<p>In theory, if we acquire perfectly quantized samples of an analog
+signal at a uniform rate which is at least twice has high as the
+highest frequency component in the analog signal being sampled, we can
+use a perfect digital-to-analog converter to perfectly reconstruct the
+analog signal from the samples.&nbsp; In that case, a comparison of the
+reconstructed signal with the original analog signal would produce zero
+error.</p>
+<p><font color="#ff0000"><b>The world is not perfect</b></font></p>
+<p>You may have noticed the use of the word <i>
+perfect</i> several times in the above paragraph.&nbsp; Unfortunately,
+there are no perfect systems.&nbsp; However, it is often possible to
+achieve results that, while not perfect, are adequate for the intended
+purpose.</p>
+<p>In order to reduce the bandwidth or storage requirements associated
+with a given sampled analog signal, we must reduce the amount of
+digital data required to describe that analog signal.&nbsp; Generally,
+this is accomplished in either or both of two ways:</p>
+<ul>
+  <li>Reduce the number of samples used to describe the analog signal.</li>
+  <li>Reduce the number of bits used to describe each sample.</li>
+</ul>
+<p><font color="#ff0000"><b>What is a <i>bit</i> of information?</b></font></p>
+<p> Despite the fact that the widespread use of computers is a
+relatively new phenomenon, significant work has been going on in
+information theory since well before the Second World War.&nbsp; I
+believe that it was a scientist named Shannon who first described one <i>bit</i>
+of information.&nbsp; His description was something like the following:</p>
+<blockquote>
+  <p><i>One bit of information is the amount of information required to
+determine the outcome for a process in which there are two equally
+probable outcomes.</i></p>
+</blockquote>
+<p>Since then, we have corrupted the use of the term <i>bit, </i>using
+it as the term that describes the smallest unit of information in a
+digital system, without regard to probabilities.&nbsp; However, it is
+useful to think in terms of probabilities when thinking about how to
+reduce data storage and transmission bandwidth requirements.</p>
+<p><font color="#ff0000"><b>Systems with redundancies</b></font></p>
+<p> Many systems that describe analog signals using digital data
+contain redundant data bits.&nbsp; In other words, each data bit used
+to describe the analog signal is not charged with deciding between two
+equally probable outcomes <i> (as Shannon described the purpose of one
+bit of information).</i>&nbsp; This fact can often be used to advantage
+in order to implement <i>lossless</i> data acquisition and encoding
+schemes that reduce storage and bandwidth requirements.</p>
+<p> <font color="#ff0000"><b>Common zip files</b></font></p>
+<p> One form of lossless data compression familiar to most of us is the
+common zip file.&nbsp; The process of encapsulating data into a zip
+file uses a mathematical algorithm to reduce or eliminate redundancies
+in order to represent the same data in a smaller file.&nbsp; Some
+files, such as text files, contain significant redundancies, resulting
+in compression factors as great as fifty to sixty percent.&nbsp; Other
+files contain less redundancy, and hence result in less compression
+when encapsulated in a zip file.&nbsp; <i> (To demonstrate this latter
+situation, encapsulate a zip file into a zip file.&nbsp; You will see
+very little, if any further compression.)</i></p>
+<p> Assuming that the zip file is not corrupted, the mathematical
+algorithm used to compress the data is completely reversible.&nbsp;
+Therefore, you can extract a file from a zip file with no loss of
+information.&nbsp; Therefore, this is a completely lossless compression
+process.</p>
+<p> <font color="#ff0000"><b>Reduction of sampling rate</b></font></p>
+<p>Some other processes may not be mathematically lossless, but may be
+lossless from a practical viewpoint.&nbsp; For example, if a very low
+bandwidth analog signal is being sampled at a very high sampling rate,
+this produces redundant data.&nbsp; The amount of data required to
+describe such a low-bandwidth signal can often be reduced by reducing
+the sampling rate.&nbsp; As long as this is done with care, the samples
+taken at the lower sampling rate can be used just as effectively as the
+samples taken at the higher sampling rate for the purpose of
+reproducing the analog signal.&nbsp; No information is lost by virtue
+of taking samples at a lower rate, and hence this is a lossless system
+from a practical viewpoint <i>(as opposed to lossy system that I will
+describe later).</i></p>
+<p><font color="#ff0000"><b>Reduction of bits per sample</b></font></p>
+<p>As another example of a lossless system, if a black and white
+photograph is scanned using a scanning algorithm that is designed to
+properly scan color photographs and to maintain information about
+millions of colors, the resulting file may contain redundant data bits.</p>
+<p>It may be that a different scanning algorithm designed specifically
+for black and white photographs could do the job equally well while
+creating much smaller data files.&nbsp; The black and white algorithm
+might use fewer data bits to describe each sample than would be the
+case with the color algorithm, because there would be significantly
+fewer possibilities that would need to be described at each sample
+point for the black and white photograph.</p>
+<p><font color="#ff0000"><b>Redundant data in a remote plotting system</b></font></p>
+<p>As still another example of redundant data, many years ago, in the
+days of <i>remote batch </i>data processing using mainframe
+computers, I developed a lossless compression scheme for transmitting
+plotting data from mainframe computers to remote terminals that were
+driving digital pen plotters.&nbsp; This scheme was also based on
+reducing the number of bits in each data sample, and was used
+profitably by my company for many years.</p>
+<p><font color="#ff0000"><b>Absolute coordinates versus change in
+coordinates</b></font></p>
+<p>Typical computer systems that drove digital pen plotters in those
+days transferred a new pair of coordinate values to the plotting system
+each time it was necessary to move the pen.&nbsp; The coordinate values
+were typically quite large, and each coordinate value required several
+bytes of information to be transmitted.&nbsp; </p>
+<p>However, the distance that the pen moved during each movement was
+typically quite small, and the coordinate values contained lots of
+redundant data bits.&nbsp; It was much more efficient to transmit the
+changes in coordinate values associated with each movement than to
+transmit the new coordinate values for each movement, so that is what
+we did.&nbsp; <i>(Actually the algorithm was designed to switch
+between the two modes, depending on which was most efficient at a
+particular point in the plotting process.)</i></p>
+<p> <font color="#ff0000"><b>Lossy compression systems</b></font></p>
+<p> A lossless compression system is possible only when there is
+redundancy in the data, which can be eliminated to advantage.&nbsp;
+Frequently, it is also advantageous to use <i>lossy</i> compression
+systems even when it is known that some signal degradation or
+information loss may occur <i>(obviously, you wouldn't want to use a
+lossy compression scheme with financial data, but it may be alright
+with audio data).</i></p>
+<p> <font face="Times New Roman">Many</font><font size="3"
+ face="Times New Roman"> data encoding and compression systems,
+including systems based on mu-law encoding, are lossy.&nbsp; This means
+that a compressed signal cannot be uncompressed without some loss of
+information.&nbsp; In situations such as this, the user must decide
+whether the benefits achieved through lossy encoding and compression
+outweigh the penalties associated with the loss of information.</font></p>
+<p> <font color="#ff0000"><b>MP3 encoding and compression</b></font></p>
+<p> <font face="Times New Roman">A good example of this is the use of
+MP3 encoding and compression for the recording and transmission of
+music files.&nbsp; I have no expertise in this area, but it is my
+understanding based on the reading that I have done that MP3 is a lossy
+encoding scheme.&nbsp; The quality of the uncompressed music signals
+following MP3 encoding and compression is somewhat degraded relative to
+the original CD-quality music.&nbsp; However, the quality is apparently
+good enough to satisfy millions of music fans who make heavy use of MP3.</font></p>
+<p><font color="#ff0000"><b>Why use mu-law encoding for audio
+compression?</b></font></p>
+<p>Although somewhat lossy, mu-law encoding and compression is
+apparently adequate for the storage and transmission of spoken voice
+signals in many cases.&nbsp; Thus, it is heavily used for digital
+telephone networks where it achieves a data compression factor of
+approximately two-to-one relative to 16-bit PCM data.</p>
+<p>Mu-law encoding has a number of important characteristics, not the
+least of which is the ability to spread the information loss across a
+wide range of signal levels.&nbsp; In other words, on a percentage
+basis, the level of information loss experienced by low-level signals
+is approximately the same as the level of information loss experienced
+by high level signals.</p>
+<p>Thus, mu-law encoding is capable of maintaining a relatively wide
+dynamic range and to spread the information loss across that entire
+range.&nbsp; This will be illustrated by the program that I will
+discuss later in this lesson.</p>
+<h2 align="center"><font color="#000000"><a name="Preview">Preview</a></font></h2>
+<p>In this lesson, I will teach you how to write Java programs to
+encode 16-bit linear PCM audio samples into 8-bit mu-law bytes, and how
+to decode 8-bit mu-law bytes back into 16-bit PCM samples.</p>
+<p>I will perform an experiment to determine the distribution of the
+information loss across a dynamic range of approximately 96 decibels,
+and will compare that distribution of information loss with the
+information loss produced by simply truncating 16-bit PCM data into
+8-bit data for transmission and storage purposes.</p>
+<center>
+<h2><a name="Discussion and Sample Programs"></a><font color="#000000">Discussion
+and Sample Code</font></h2>
+</center>
+<p><font color="#ff0000"><b>The AudioUlawEncodeDecode02 program</b></font></p>
+<p>This program is designed to illustrate 8-bit ULAW encoding and
+decoding, and to compare that process with simple truncation from
+sixteen to eight bits.</p>
+<blockquote>
+  <p><i>(Because the documentation for Sun's Java Sound API refers to
+mu-law as ULAW, I will frequently follow that lead and use the term
+ULAW in the discussion that follows.)</i></p>
+</blockquote>
+<p><font color="#ff0000"><b>Verification of the program&nbsp; </b></font></p>
+<p>I have verified this program against results produced by Sun's API,
+and results produced by other non-Java programs available on the
+Internet.&nbsp; The 8-bit ULAW values produced by the program match the
+values produced by Sun's ULAW encoding algorithm.&nbsp; The 16-bit
+values produced by decoding the ULAW values also match the values
+produced by Sun's ULAW decoding algorithm.&nbsp; The decoding results
+also match the values produced by two different decoding algorithm
+implementations that I found on the web and used to verify this program.</p>
+<p><font color="#ff0000"><b>Two sets of output data</b></font></p>
+<p>The program produces two sets of output data. The first set shows
+the numeric results of simply truncating a series of sample values from
+sixteen bits to eight bits, preserving the eight most significant bits,
+and then restoring those truncated values back into a 16-bit format.</p>
+<p>The second set of output data shows the numeric results of encoding
+the same set of 16-bit sample values into 8-bit ULAW values, and then
+decoding those ULAW values back into 16-bit values.</p>
+<p>I will discuss the experimental results first, and then discuss the
+program used to produce those results.</p>
+<p><font color="#ff0000"><b>The simple truncation results</b></font></p>
+<p>The results of the truncation experiment are shown in Figure
+1.&nbsp; Results were computed over a wide range of 16-bit linear PCM
+sample values, between zero and 24,577.</p>
+<p>Each line of data in Figure 1 shows the original sample value, the
+16-bit representation of the truncated value
+<i>(eight data bits in the eight most significant bits of a 16-bit
+value of type
+<b>short</b>),</i> the difference between the original sample value and
+the truncated value, and that difference
+<i>(error) </i>expressed as a percent of the original sample value.</p>
+<blockquote>
+  <p> <i>(Because of the difficulties encountered when dividing by
+zero, a percent error was not computed for a sample value of zero.)</i></p>
+</blockquote>
+<table border="1" cols="1" width="400" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><b><font face="Courier New">Process and display truncation<br>0 0 0<br>1 0 1 100.0%<br>2 0 2 100.0%<br>3 0 3 100.0%<br>4 0 4 100.0%<br>5 0 5 100.0%<br>7 0 7 100.0%<br>9 0 9 100.0%<br>13 0 13 100.0%<br>17 0 17 100.0%<br>25 0 25 100.0%<br>33 0 33 100.0%<br>49 0 49 100.0%<br>65 0 65 100.0%<br>97 0 97 100.0%<br>129 0 129 100.0%<br>193 0 193 100.0%<br>257 256 1 0.38910505%<br>385 256 129 33.506493%<br>513 512 1 0.19493178%<br>769 768 1 0.130039%<br>1025 1024 1 0.09756097%<br>1537 1536 1 0.06506181%<br>2049 2048 1 0.048804294%<br>3073 3072 1 0.03254149%<br>4097 4096 1 0.024408104%<br>6145 6144 1 0.016273392%<br>8193 8192 1 0.012205541%<br>12289 12288 1 0.008137358%<br>16385 16384 1 0.006103143%<br>24577 24576 1 0.004068845%</font></b></pre>
+      <pre><b>Figure 1</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<p><font color="#ff0000"><b>Framing the experiment</b></font></p>
+<p>The allowable values of the original 16-bit samples range from
+negative 32,768 to positive 32,767 <i>(approximately 96 db at six db
+per bit).</i></p>
+<p>When truncating data by eliminating some of the data bits, it is
+always necessary to decide which bits can be thrown away with minimum
+damage to the data.&nbsp; For the case where meaningful data is
+contained in the largest values that can be written, the choice is
+usually to throw away bits at the least significant end.&nbsp; That is
+what was done here.&nbsp; The data was converted from sixteen bits to
+eight bits by discarding the eight least significant bits.&nbsp; The
+remaining eight bits were retained in the most significant eight bits
+of the 16-bit sample.</p>
+<p><font color="#ff0000"><b>Analysis of results</b></font></p>
+<p>For those who are familiar with this sort of thing, it will come as
+no surprise that the error was one-hundred percent for all values less
+than 256.&nbsp; In other words, all values less than 256 were discarded
+when the eight least significant bits were discarded.&nbsp; For the
+most part, the errors for values larger than 256 were relatively small.</p>
+<p><font color="#ff0000"><b>Resulting useful dynamic range</b></font></p>
+<p>As a result, the dynamic range of the data was reduced from
+approximately 96 db to 48 db <i>(again estimated at six db per bit). </i>&nbsp;The
+range of sound intensities that can be represented in the data was
+reduced from approximately one part in 32,768 to one part in 128.&nbsp;
+Whether or not this is acceptable depends entirely on your application.</p>
+<p><font color="#ff0000"><b>Familiar to many readers</b></font></p>
+<p>These results will be yesterday's news to many of you.&nbsp; I
+present them here simply to serve as a baseline for similar
+experimental results that I will present for ULAW encoding and
+compression in the following sections.</p>
+<p>The code used to produce these results is so straightforward that
+I'm not going to bore you by discussing it here.&nbsp; You can view
+that code in Listing 13 near the end of the lesson.</p>
+<p><font color="#ff0000"><b>The mu-law encoding and compression results</b></font></p>
+<p>The results of the ULAW experiment are shown in Figure 2.&nbsp;
+Results were computed over a same wide range of 16-bit linear PCM
+sample values as in the truncation experiment.</p>
+<p>Note that this data includes an additional column of data that is
+not included in the truncation data shown in Figure 1.&nbsp; In
+particular, this data also includes the ULAW byte value in hex notation.</p>
+<p>Each line of data in Figure 2 shows</p>
+<ul>
+  <li>The original sample value <i>(which is the same as for the
+truncation experiment)</i></li>
+  <li>The encoded ULAW byte value in hex notation</li>
+  <li>The 16-bit value produced by decoding the ULAW byte</li>
+  <li>The difference between the original sample value and the decoded
+value</li>
+  <li>That difference
+    <i>(error)</i> expressed as a percent of the original sample value</li>
+</ul>
+<blockquote>
+  <p> <i>(Again, because of the difficulties encountered when dividing
+by zero, a percent error was not computed for a sample value of zero.)</i></p>
+</blockquote>
+<table border="1" cols="1" width="400" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><b><font face="Courier New">Process and display ULAW<br>0 0xff 0 0<br>1 0xff 0 1 100.0%<br>2 0xff 0 2 100.0%<br>3 0xff 0 3 100.0%<br>4 0xfe 8 -4 -100.0%<br>5 0xfe 8 -3 -60.0%<br>7 0xfe 8 -1 -14.285714%<br>9 0xfe 8 1 11.111111%<br>13 0xfd 16 -3 -23.076923%<br>17 0xfd 16 1 5.882353%<br>25 0xfc 24 1 4.0%<br>33 0xfb 32 1 3.030303%<br>49 0xf9 48 1 2.0408163%<br>65 0xf7 64 1 1.5384616%<br>97 0xf3 96 1 1.0309278%<br>129 0xef 132 -3 -2.3255813%<br>193 0xeb 196 -3 -1.5544041%<br>257 0xe7 260 -3 -1.1673151%<br>385 0xdf 396 -11 -2.857143%<br>513 0xdb 524 -11 -2.1442494%<br>769 0xd3 780 -11 -1.4304291%<br>1025 0xcd 1052 -27 -2.6341465%<br>1537 0xc5 1564 -27 -1.7566688%<br>2049 0xbe 2108 -59 -2.8794534%<br>3073 0xb6 3132 -59 -1.919948%<br>4097 0xaf 4092 5 0.12204052%<br>6145 0xa7 6140 5 0.08136696%<br>8193 0x9f 8316 -123 -1.5012816%<br>12289 0x97 12412 -123 -1.0008951%<br>16385 0x8f 16764 -379 -2.3130913%<br>24577 0x87 24956 -379 -1.5420922%</font></b></pre>
+      <pre><b>Figure 2</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<p><font color="#ff0000"><b>Analysis of results</b></font></p>
+<p>In this case, the percent error, which begins at one-hundred percent
+for a sample value of 1, decreases very rapidly as the sample values
+increase.</p>
+<p>Sample values of 1 through 5 are rendered essentially useless by the
+mu-law encode/decode process.&nbsp; I will explain a little later why
+this is true.</p>
+<blockquote>
+  <p> <i>(Contrast this with simple truncation where the lowest 256
+values were rendered useless.)</i></p>
+</blockquote>
+<p><font color="#ff0000"><b>Values above 17 are very useful</b></font></p>
+<p>For all sample values above 17, the resulting values are very useful
+with the percent error being less than six percent.</p>
+<p>Note that even though the percent error never gets as low as in the
+high-valued cases in Figure 1, the errors that do exist are spread more
+uniformly across a wider dynamic range than is the case in Figure
+1.&nbsp; That is one of the main attractions of the ULAW encoding
+scheme.&nbsp; It provides tolerable errors across a wide dynamic range
+as contrasted to very low errors across a narrow dynamic range for the
+truncation process.</p>
+<p><font color="#ff0000"><b>What is the useful dynamic range?</b></font></p>
+<p>If we choose the value 7 as the low end of the useful dynamic range
+in Figure 2, this results in a dynamic range of approximately 78 db for
+ULAW encoding as compared to 48 db for simple truncation.&nbsp; Even if
+we push the low end up to the value 17 with less than six-percent
+error, this still results in a useful dynamic range of approximately 72
+db for ULAW encoding.</p>
+<p><font color="#ff0000"><b>Having discussed why, now discuss how</b></font></p>
+<p>The Java Sound API provides classes that make it possible for you to
+easily create and use ULAW encoded streams.&nbsp; <i>(I will show you
+how to do that in a subsequent lesson.)</i></p>
+<p><font color="#ff0000"><b>The real scoop on OOP</b></font></p>
+<p>One of the great things about OOP is that if you have confidence in
+the author of an available class, and you are satisfied that an object
+of the class will satisfy your needs, there is no need for you to
+reinvent the wheel and to rewrite code that has already been written,
+tested, and released.</p>
+<p>In the following sections, I will show you how to write code to
+perform ULAW encoding and decoding.&nbsp; My purpose is not to
+encourage you to reinvent the wheel.&nbsp; By all means, use Sun's
+classes for this purpose if they will meet your needs.</p>
+<p>My purpose in showing you this code is to help you to better
+understand the algorithms that are used for ULAW encoding and
+decoding.&nbsp; It is my belief that you will better understand the
+subtle aspects of those algorithms when you see them implemented in
+code than would be the case if I were to present them in some other
+format.</p>
+<p><font color="#ff0000"><b>Now for the program</b></font></p>
+<p>The program named <b>AudioUlawEncodeDecode02</b> begins in Listing
+1.&nbsp; As usual, I will discuss this program in fragments.&nbsp; You
+can view a complete listing of the program in Listing 13 near the end
+of the lesson.</p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>public class <b>AudioUlawEncodeDecode02</b>{<br>  static int value = 0;<br>  static int increment = 1;<br>  static int limit = 4;<br>  static short shortValue = (short)value;<br><br>  public static void <b>main</b>(<br>                        String args[]){<br><br>    System.out.println(<br>               "Process and display truncation");<br>    <b>processAndDisplayTruncation();</b>
+
+    System.out.println();
+    System.out.println(
+                     "Process and display ULAW");
+    //Reinitialize values in the processing loop.
+    value = 0;
+    increment = 1;
+    limit = 4;
+    shortValue = (short)value;
+    <b>processAndDisplayUlaw();</b>
+
+  }//end main
+
+<b><font face="Courier New,Courier">Listing 1</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<p>
+<font color="#ff0000"><b>The main method</b></font></p>
+<p>Figure 1 shows the <b>main</b> method, whose purpose is to control
+the generation and display of the output data shown in Figures 1 and 2.</p>
+<p>The most significant code in Listing 1 is the pair of calls to the
+methods named
+<b>processAndDisplayTruncation</b> and <b>processAndDisplayUlaw</b>.&nbsp;
+These two methods execute the loops, invoke the <b>encode</b> and <b>decode</b>
+methods, and format the output data for Figures 1 and 2.</p>
+<p><font color="#ff0000"><b>The processAndDisplayUlaw method</b></font></p>
+<p>Listing 2 shows an abbreviated listing for the <b>processAndDisplayUlaw</b>
+method.&nbsp; This method is very straightforward, so I have deleted
+much of the code in Listing 2 for brevity.&nbsp; <i>(You can view the
+entire method in Listing 13 near the end of the lesson.)<br>
+&nbsp;</i>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  static void <b>processAndDisplayUlaw</b>(){<br>    <b>while</b>((shortValue &gt;= 0) &amp;<br>                           (shortValue &lt; 32000)){<br><br>      <b>byte ulawByte = encode(shortValue);</b>
+      <b>short result = decode(ulawByte);<br></b>
+      //print code deleted for brevity
+
+      //loop control code deleted for brevity
+
+    }//end while loop
+  }//end processAndDisplayTruncation
+
+<b><font face="Courier New,Courier">Listing 2</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#ff0000"><b>Three parts</b></font></p>
+<p>The method consists of three main parts:</p>
+<ul>
+  <li>A part to encode and decode the data</li>
+  <li>A part to print the results</li>
+  <li>A part to control the loop and to create the <b>short</b> values
+to be encoded and decoded</li>
+</ul>
+<p>
+While somewhat tedious, the last two parts are totally
+straightforward.&nbsp; Therefore, I have deleted those parts from
+Listing 2.</p>
+<p><font color="#ff0000"><b>The encode and decode method calls</b></font></p>
+<p>The most important part in Listing 2 is the pair of statements that
+invoke the methods named <b>encode</b> and <b>decode</b> to:</p>
+<ul>
+  <li>Encode a 16-bit <b>short</b> sample value into an 8-bit ULAW
+encoded byte</li>
+  <li>Decode the 8-bit ULAW encoded byte into a 16-bit <b>short </b>sample
+value.</li>
+</ul>
+<p>
+The code in Listing 2 produces the output shown previously in Figure 2.</p>
+<p>Very similar code is used to control and display the results of the
+truncation operation shown in Figure 1, so I won't discuss it here.</p>
+<p><font color="#ff0000"><b>The encoding algorithm</b></font></p>
+<p>The encoding algorithm is relatively straightforward, consisting of
+the following steps:</p>
+<ul>
+  <li>Convert the 16-bit <b>short</b> sample from two's complement
+format to sign-magnitude format, saving the value of the algebraic sign
+in the process.</li>
+  <li>Clip the magnitude to a value of 32635 to prevent integer
+arithmetic overflow when the BIAS value is added.</li>
+  <li>Add a BIAS value of 132 to the magnitude.&nbsp; This guarantees
+that a 1-bit will appear somewhere in the exponent region of the 15-bit
+magnitude.</li>
+  <li>The exponent region is the set of eight bits appearing
+immediately to the right of the sign bit.&nbsp; The next step is to
+find the position of the leftmost 1-bit in the exponent region, and to
+record the position of that bit by counting bits from right to left in
+the exponent region.&nbsp; This position value can range from 0 to 7,
+with a position of 0 indicating that the bit appears in the rightmost
+bit position in the exponent region.</li>
+  <li>Extract and save a four-bit mantissa consisting of the four bits
+immediately to the right of the leftmost 1-bit in the exponent region
+identified above.</li>
+  <li>Construct an 8-bit byte in which the leftmost bit is the sign
+bit, the four rightmost bits are the mantissa, and the three bits in
+between contain the position of the exponent bit.</li>
+  <li>Get the one's complement of the 8-bit byte, which becomes the
+ULAW encoded byte that represents the 16-bit sample.</li>
+</ul>
+<p>
+<font color="#ff0000"><b><span
+ style="background-color: rgb(255, 255, 255);">An illustration of the
+bit patterns in general</span></b></font></p>
+<p>Figure 3 illustrates the bit patterns described above.&nbsp; The
+leftmost character in each row in Figure 3 is the row number.&nbsp; The
+characters to the right of each row number depict binary bits.</p>
+<p>The first two rows of characters each depict sixteen data bits with
+the sign bit on the left and the least significant data bit on the
+right.&nbsp; The third row of characters depicts eight data bits.<br>
+&nbsp;
+<table border="1" cols="1" width="400" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><b><font face="Courier New">1   S E E E E E E E E - - - - - - -<br>2   S 0 0 0 0 0 1 M M M M - - - - -<br>3   S E E E M M M M<br><br></font>Figure 3</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#ff0000"><b>The exponent region</b></font></p>
+<p>The first row in Figure 3 shows the 8-bit exponent region
+immediately to the right of the sign bit.&nbsp; The exponent region is
+indicated by the upper-case E characters in Figure 3.&nbsp; The dash
+characters in Figure 3 indicate that the bits have no particular
+designation in general.</p>
+<p><font color="#ff0000"><b>The mantissa region</b></font></p>
+<p>The second row of characters in Figure 3 shows the 4-bit mantissa
+region, assuming that the most significant non-zero data bit is in the
+position indicated by the 1.&nbsp; The mantissa region is indicated by
+the upper-case M characters in Figure 3.</p>
+<p><font color="#ff0000"><b>The mu-law encoded byte before complementing</b></font></p>
+<p>The third row of characters in Figure 3 shows the 8-bit byte
+constructed as a result of mu-law encoding.&nbsp; The sign bit is shown
+on the left.&nbsp; The 4-bit mantissa is shown on the right.&nbsp; The
+three bits in the middle contain a value that specifies the position of
+the leftmost non-zero bit in the exponent region of the original data
+sample.</p>
+<blockquote>
+  <p><i>(Note that the encoding process must actually deliver the one's
+complement of the 8-bit byte as the last step in the encoding
+process.&nbsp; The decoding process reverses the one's complement
+operation as the first step in the decoding process.)</i></p>
+</blockquote>
+<p>
+<font color="#ff0000"><b>Bit patterns for a specific case</b></font></p>
+<p>Figure 4 shows a more specific representation of the general
+information shown in Figure 3.&nbsp; The first two rows in Figure 4
+show the general bit designations for the exponent region and the
+mantissa region with the leftmost non-zero data bit being in the
+position of the 1-bit in the second row.<br>
+&nbsp;
+<table border="1" cols="1" width="400" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><b><font face="Courier New">1   S E E E E E E E E - - - - - - -<br>2   S 0 0 0 0 0 1 M M M M - - - - -<br>3   0 0 0 0 0 0 1 0 0 1 1 0 0 0 0 1<br>4   0 0 0 0 0 0 1 0 1 1 1 0 0 1 0 1<br>5   S E E E M M M M<br>6   0 0 1 0 0 1 1 1<br>7   1 1 0 1 1 0 0 0<br><br></font>Figure 4</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#ff0000"><b>The decimal value 609</b></font></p>
+<p>The third row in Figure 4 shows the decimal value 609 in 16-bit
+binary sign-magnitude notation.</p>
+<blockquote>
+  <p><i>(Note that for consistency, the leftmost non-zero data bit is
+in the same position in the second and third rows.)</i></p>
+</blockquote>
+<p>
+<font color="#ff0000"><b>After adding the bias value of 132</b></font></p>
+<p>The fourth row shows the result of adding the bias value of 132,
+resulting in a binary-encoded vale of 741.</p>
+<p><font color="#ff0000"><b>General form of a mu-law byte</b></font></p>
+<p>The fifth row shows the general form of the 8-bit mu-law byte <i>(before
+performing a one's complement operation on the byte).</i></p>
+<p><font color="#ff0000"><b>The specific mu-law byte before
+complementing</b></font></p>
+<p>The sixth row shows the result of encoding the data from the fourth
+row into a mu-law byte.&nbsp; </p>
+<p><font color="#ff0000"><b>The complemented mu-law byte</b></font></p>
+<p>However, the one's complement of this byte must be returned from the
+encoding process.&nbsp; The byte shown in the seventh row is the actual
+byte that would be returned from the encoding process after taking the
+one's complement.&nbsp; This value would be represented as <b>0xd8</b>
+in hexadecimal notation.</p>
+<p><font color="#ff0000"><b>The decoded value</b></font></p>
+<p>Although we haven't discussed the decoding algorithm yet, when this
+byte is decoded, it will return a 16-bit short value of 620 for an
+encoding/decoding error of about 1.8 percent.</p>
+<p><font color="#ff0000"><b>What does all this mean?</b></font></p>
+<p>The encoding process converts the 16-bit integer sample data to a
+kind of 8-bit floating-point data, consisting of a sign bit, a 3-bit
+exponent, and a 4-bit mantissa.&nbsp; That is why the encoding process
+maintains good dynamic range with tolerable error levels throughout the
+dynamic range.</p>
+<p>The value of the data in the 16-bit format is represented by the
+4-bit mantissa along with the exponent bit.&nbsp; The position of the
+exponent bit represents the most significant bit in the data contained
+in the 16-bit integer format.&nbsp; The mantissa represents the value
+of the four data bits immediately to the right of the most significant
+bit.&nbsp; In effect, the five most significant data bits from the
+16-bit data are extracted and saved in the ULAW byte.</p>
+<p><font color="#ff0000"><b>Represent the five most significant data
+bits</b></font></p>
+<p>The important point is that these five bits represent the five most
+significant data bits <i>(exclusive of leading zeros)</i> for both
+large values and small values of the sample.&nbsp; The encoding process
+doesn't favor large values over small values, as is the case with
+simple truncation from 16 bits to 8 bits.</p>
+<p><font color="#ff0000"><b>Three least significant bits are ignored</b></font></p>
+<p>If you draw a picture similar to Figure 4 for a data value less than
+eight, you will see that the two least significant bits in the 16-bit
+sample data are totally ignored, and the third bit from the right is
+partially ignored by this encoding process.</p>
+<blockquote>
+  <p><i>(The bias bit that is added into the third bit from the right
+may cause a carry bit to propagate into the mantissa region for values
+of four or greater, so the third bit from the right isn't totally
+ignored.)</i></p>
+</blockquote>
+<p>
+The fact that these three bits are either totally or partially ignored
+explains why the values from 1 through 7 in Figure 2 had high percent
+error values.&nbsp; As a practical matter, the encoding process
+discards the two least significant bits, and partially throws away the
+third least significant bit.</p>
+<p><font color="#ff0000"><b>The method named encode</b></font></p>
+<p>The source code for the <b>encode</b> method begins in Listing
+3.&nbsp; The implementation of this method is loosely based on
+discussions and code at <b>link1</b> and
+<b>link2</b> identified earlier.<br>
+&nbsp;
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  static byte <b>encode</b>(short sample){<br>    final short BIAS = 132;//0x84<br>    final short CLIP = 32635;//32767-BIAS<br><br><b><font
+ face="Courier New,Courier">Listing 3</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>As you should expect by now, this method receives an incoming
+parameter of type
+<b>short</b> and returns a value of type <b>byte</b>.</p>
+<p>The code in Listing 3 defines two constants.&nbsp; As you will see
+later, the <b>
+BIAS</b> value is added to the sample after it is converted to
+sign-magnitude format.&nbsp; I haven't found an explanation for the
+need to add this bias, and the only explanation that I can give is that
+it guarantees that a 1-bit will occur somewhere in the exponent region.</p>
+<p>The need for the <b>CLIP</b> is fairly obvious.&nbsp; Without it,
+the adding of the <b>BIAS</b> value could cause integer
+overflow.&nbsp; Thus, as you will see later, prior to adding the <b>BIAS</b>,
+the sample magnitude is clipped to the value shown in Listing 3.</p>
+<p><font color="#ff0000"><b>Convert sample to sign-magnitude format</b></font></p>
+<p>The code in Listing 4 converts the <b>short</b> sample to
+sign-magnitude format.&nbsp; It also gets and saves the algebraic sign
+in the process.<br>
+&nbsp;
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    int sign = sample &amp; 0x8000;<br>    if(sign != 0){<br>      sample = (short)-sample;<br>      sign = 0x80;<br>    }//end if<br><br><b><font
+ face="Courier New,Courier">Listing 4</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The code in Listing 4 is straightforward, and shouldn't require
+further discussion.</p>
+<p><font color="#ff0000"><b>Clip the sample and add the BIAS</b></font></p>
+<p>The code in Listing 5 clips the sample value to a maximum value of
+32,635 as discussed earlier.<br>
+&nbsp;
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    if(sample &gt; CLIP) sample = CLIP;<br>    sample += BIAS;<br><br><b><font
+ face="Courier New,Courier">Listing 5</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Then the code in Listing 5 adds the <b>BIAS</b> value of 132 to the
+sample.&nbsp; As mentioned earlier, adding the <b>BIAS</b> guarantees
+that a 1-bit will occur in the exponent region of the data, even for
+small sample values.</p>
+<p>The sample is now ready for conversion to an 8-bit byte.</p>
+<p><font color="#ff0000"><b>Get the exponent value</b></font></p>
+<p>The exponent value is the position of the first 1-bit to the right
+of the sign bit in the exponent region of the data.&nbsp; The code in
+Listing 6 finds the position of the first 1-bit to the right of the
+sign bit, counting from right to left in the exponent region.<br>
+&nbsp;
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    int exp;<br>    //Shift sign bit off to the left<br>    short temp = (short)(sample &lt;&lt; 1);<br>    <b>for</b>(exp = 7; exp &gt; 0; exp--){<br>      if((temp &amp; 0x8000) != 0) break;//found it<br>      temp = (short)(temp &lt;&lt; 1);//shift and loop<br>    }//end for loop<br><br><b><font
+ face="Courier New,Courier">Listing 6</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The exponent position <i>(value) </i>can range from 0 to 7.&nbsp;
+I could have used a table lookup to get the value <i>(as is the case
+in <b>link1</b>)</i> but I elected to use a<b> for </b>loop<b> </b>and
+to compute the value on the fly instead.&nbsp;
+<i>(That way, I didn't have to explain a bunch of mystery values in a
+table.)</i> </p>
+<p>The code in Listing 6 is straightforward and shouldn't require a
+discussion.</p>
+<p><font color="#ff0000"><b>Get the mantissa</b></font></p>
+<p>The mantissa is the set of four bits immediately to the
+right&nbsp;of the leftmost 1-bit in the exponent region.&nbsp; The code
+in Listing 7 shifts those four bits to the four least significant bits
+of the 16-bit value.<br>
+&nbsp;
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    temp = (short)(sample &gt;&gt; (exp + 3));<br>    //Mask and save those four bits<br>    int mantis = temp &amp; 0x000f;<br><br><b><font
+ face="Courier New,Courier">Listing 7</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Then the code in Listing 7 masks those four bits, causing the
+remaining 12 bits to be converted to zero.</p>
+<p><font color="#ff0000"><b>The one's complement is required</b></font></p>
+<p>For reasons that I am unable to explain on any logical basis, the <b>ULAW</b>
+byte delivered by the encoder must be the one's complement of the bit
+structure that I described earlier.</p>
+<blockquote>
+  <p><i>(The first thing that is done in a <b>ULAW </b>decoder is to
+complement it, thus reversing the process.&nbsp; I haven't read
+anything that explains why this is done. )</i></p>
+</blockquote>
+<p>
+<font color="#ff0000"><b>Construct the ULAW byte</b></font></p>
+<p>The code in Listing 8 constructs and complements the <b>ULAW</b>
+byte by performing the following steps:</p>
+<ul>
+  <li>Set the sign bit in the most significant bit of the 8-bit
+byte.&nbsp; <i>(The current value of the variable named <b>sign</b>
+is either 0x00 or 0x80, with the latter representing a negative sign.)</i></li>
+  <li>Position the exponent value in the three bits to the immediate
+right of the sign bit.&nbsp; <i>(Recall that this value ranges from 0
+to 7 and specifies the position of the most significant data bit in the
+sample data relative to the least significant end of the exponent
+region.)</i></li>
+  <li>Set the 4-bit mantissa in the four least significant bits of the
+byte.</li>
+  <li>Complement and return the byte constructed according to the above
+steps.<br>
+&nbsp;</li>
+</ul>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    byte ulawByte = (byte)(sign | (exp &lt;&lt; 4) |<br>                                         mantis);<br>    return (byte)~ulawByte;<br>  }//end encode<br><br><b><font
+ face="Courier New,Courier">Listing 8</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<p>
+That completes the discussion of the method named <b>encode</b>.</p>
+<p><font color="#ff0000"><b>The method named decode</b></font></p>
+<p>The method named <b>decode</b> begins in Listing 9.&nbsp; This Java
+implementation is based loosely on the code and discussion at <b>link1</b>
+and
+<b>link2</b>.&nbsp; Note however, that this implementation is
+significantly different from the material at either of those web sites.<br>
+&nbsp;
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  static short <b>decode</b>(byte ulawByte){<br><br>    ulawByte = (byte)(~ulawByte);<br><br><b><font
+ face="Courier New,Courier">Listing 9</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>This method receives an incoming <b>ULAW</b> byte and returns a <b>short</b>
+value that is an estimate of the sample value that was used to produce
+the <b>
+ULAW</b> byte.</p>
+<p>The code in Listing 9 begins by performing a one's complement
+operation on the incoming byte to reverse the complement operation
+performed as the final step in the encoding of that byte.</p>
+<p><font color="#ff0000"><b>Get the sign, exponent, and mantissa</b></font></p>
+<p>The code in Listing 10 performs the following operations:</p>
+<ul>
+  <li>Get the sign bit by masking off the most significant bit of the
+byte and saving it in a variable named <b>sign</b>.</li>
+  <li>Get the exponent value by masking off the three exponent bits and
+sifting them right to the least significant bit position in the
+variable named <b>exp</b>.</li>
+  <li>Get the mantissa by masking the four least significant bits of
+the byte and saving them in the variable named <b>mantis</b>.<br>
+&nbsp;</li>
+</ul>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    int <b>sign</b> = ulawByte &amp; 0x80;<br>    int <b>exp</b> = (ulawByte &amp; 0x70) &gt;&gt; 4;<br>    int <b>mantis</b> = ulawByte &amp; 0xf;<br><br><b><font
+ face="Courier New,Courier">Listing 10</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<p>
+<font color="#ff0000"><b>Construct the output</b></font></p>
+<p>The code in Listing 11 constructs the 16-bit output value based on
+the values of the sign, the exponent, and the mantissa.&nbsp; This
+value is constructed as type <b>int</b> for convenience and then cast
+to type <b>short</b> when it is returned.<br>
+&nbsp;
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    int rawValue =<br>               (mantis &lt;&lt; (12 - 8 + (exp - 1))) +<br>                              (132 &lt;&lt; exp) - 132;<br><br><b><font
+ face="Courier New,Courier">Listing 11</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#ff0000"><b>An exercise for the student</b></font></p>
+<p>This is where I am going to allow you to do some work on your own to
+help you develop an understanding of the behavior of the expression in
+Listing 11 <i>
+(otherwise known as leaving it as an exercise for the student).</i></p>
+<p>I suggest that you choose the first three values from one of the
+lines in Figure 2, such as the following values for example.</p>
+<p><b><font face="Courier New">193 0xeb 196</font></b></p>
+<p>In this case, the value to the left is the original 16-bit sample
+value.&nbsp; The hexadecimal value in the middle is the value of the <b>ULAW</b>
+byte produced by the encoder.&nbsp; The value on the right is the value
+produced by decoding the value in the middle.&nbsp; In other words, the
+value on the right is the 16-bit estimate of the value on the left,
+produced by first encoding and then decoding the value on the left.</p>
+<p>Extract the sign, the exponent, and the mantissa from the value in
+the middle and combine them according to the expression in Listing
+11.&nbsp; If you do it correctly, you should end up with a 16-bit value
+that matches the value on the right.</p>
+<p><font color="#ff0000"><b>Change the sign if necessary and return</b></font></p>
+<p>The code in Listing 12 converts the raw 16-bit value into a signed
+two's complement <b>
+short</b> value and returns that value.<br>
+&nbsp;
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    return (short)((sign != 0)<br>                        ? - rawValue : rawValue);<br>  }//end decode<br><br><b><font
+ face="Courier New,Courier">Listing 12</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>That ends the discussion of the decode method.</p>
+<center>
+<h2><a name="Run the program"></a>Run the Program</h2>
+</center>
+<p>At this point, you may find it useful to run the program and perform
+some experiments on your own.&nbsp; For example, you may find it
+interesting to change the value of the <b>BIAS</b> value in the <b>encode</b>
+method to see how that effects the difference between the actual sample
+value and the estimate of the sample value produced by first encoding
+the sample value and then decoding the <b>ULAW</b> byte.</p>
+<p>You should be able to copy the code from Listing 13 into your
+editor, compile it, and run it.</p>
+<h2 align="center"><a name="Summary">Summary</a></h2>
+<p>In this lesson, I taught you how to write a Java program to encode
+16-bit linear PCM samples into 8-bit mu-law bytes.&nbsp; I also taught
+you how to write a Java program to decode 8-bit mu-law bytes back into
+16-bit PCM samples.</p>
+<p>I performed an experiment to determine the distribution of the
+resulting information loss across a dynamic range of approximately 96
+decibels.&nbsp; I compared that distribution with the information loss
+produced by simply truncating 16-bit PCM samples into 8-bit data for
+transmission and storage purposes.</p>
+<p>The truncation approach reduces the dynamic range of the 16-bit data
+to approximately 48 db, and provides very low information loss across
+that rage.</p>
+<p>The mu-law approach maintains around 78 db of usable dynamic range,
+and provides tolerable information loss across that range.</p>
+<p>The primary advantage of mu-law encoding over simple truncation is
+that mu-law encoding maintains significantly greater dynamic range
+while keeping information loss within tolerable limits.</p>
+<h2 align="center"><a name="Whats Next">What's Next?</a></h2>
+<p>In the next lesson, I will teach you how to use the Java Sound API
+to write <b>ULAW</b> and ALAW encoded files.</p>
+<center>
+<h2><a name="Complete Program Listings"></a>Complete Program Listing</h2>
+</center>
+A complete listing of the program is contained in Listing 13.<br>
+&nbsp;
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>/*File AudioUlawEncodeDecode02.java<br>Copyright 2003, R.G.Baldwin<br><br>This program is designed to illustrate 8-bit ULAW<br>encoding and decoding, and to compare that<br>process with simple truncation from sixteen to<br>eight bits.<br><br>The 8-bit ULAW values produced by the program<br>match the values produced by Sun's ULAW encoding<br>algorithm.  The 16-bit values produced by<br>decoding the ULAW values match the values<br>produced by two different decoding algorithm<br>implementations that I found on the web and<br>used for verifying this program.<br><br>The program produces two sets of output data. The<br>first set shows the numeric results of simply<br>truncating a series of sample values from sixteen<br>bits to eight bits, preserving the eight most<br>significant bits, and then restoring those<br>truncated values back into a 16-bit format.<br><br>The second set of output data shows the numeric<br>results of encoding the same set of sample values<br>into 8-bit ULAW values, and then decoding those<br>ULAW values back into 16-bit values.<br><br>The results of the truncation experiment are<br>shown in the following table.  Each line in this<br>output shows the original sample value, the<br>16-bit representation of the truncated value,the<br>difference between the original sample value and<br>the truncated value, and that difference (error)<br>expressed as a percent of the original sample<br>value.  (Because of the difficulties encountered<br>when dividing by zero, a percent error was not<br>computed for a sample value of zero.)<br><br>Process and display truncation<br>0 0 0<br>1 0 1 100.0%<br>2 0 2 100.0%<br>3 0 3 100.0%<br>4 0 4 100.0%<br>5 0 5 100.0%<br>7 0 7 100.0%<br>9 0 9 100.0%<br>13 0 13 100.0%<br>17 0 17 100.0%<br>25 0 25 100.0%<br>33 0 33 100.0%<br>49 0 49 100.0%<br>65 0 65 100.0%<br>97 0 97 100.0%<br>129 0 129 100.0%<br>193 0 193 100.0%<br>257 256 1 0.38910505%<br>385 256 129 33.506493%<br>513 512 1 0.19493178%<br>769 768 1 0.130039%<br>1025 1024 1 0.09756097%<br>1537 1536 1 0.06506181%<br>2049 2048 1 0.048804294%<br>3073 3072 1 0.03254149%<br>4097 4096 1 0.024408104%<br>6145 6144 1 0.016273392%<br>8193 8192 1 0.012205541%<br>12289 12288 1 0.008137358%<br>16385 16384 1 0.006103143%<br>24577 24576 1 0.004068845%<br><br><br>The results of the ULAW experiment are shown in<br>the following table.  Each line in this output<br>shows the original sample value, the ULAW byte<br>value in hex notation, the 16-bit value produced<br>by decoding the ULAW byte, the difference between<br>the original sample value and the decoded value,<br>and that difference (error) expressed as a<br>percent of the original sample value.  (Because<br>of the difficulties encountered when dividing by<br>zero, a percent error was not computed for a<br>sample value of zero.)<br><br>Process and display ULAW<br>0 0xff 0 0<br>1 0xff 0 1 100.0%<br>2 0xff 0 2 100.0%<br>3 0xff 0 3 100.0%<br>4 0xfe 8 -4 -100.0%<br>5 0xfe 8 -3 -60.0%<br>7 0xfe 8 -1 -14.285714%<br>9 0xfe 8 1 11.111111%<br>13 0xfd 16 -3 -23.076923%<br>17 0xfd 16 1 5.882353%<br>25 0xfc 24 1 4.0%<br>33 0xfb 32 1 3.030303%<br>49 0xf9 48 1 2.0408163%<br>65 0xf7 64 1 1.5384616%<br>97 0xf3 96 1 1.0309278%<br>129 0xef 132 -3 -2.3255813%<br>193 0xeb 196 -3 -1.5544041%<br>257 0xe7 260 -3 -1.1673151%<br>385 0xdf 396 -11 -2.857143%<br>513 0xdb 524 -11 -2.1442494%<br>769 0xd3 780 -11 -1.4304291%<br>1025 0xcd 1052 -27 -2.6341465%<br>1537 0xc5 1564 -27 -1.7566688%<br>2049 0xbe 2108 -59 -2.8794534%<br>3073 0xb6 3132 -59 -1.919948%<br>4097 0xaf 4092 5 0.12204052%<br>6145 0xa7 6140 5 0.08136696%<br>8193 0x9f 8316 -123 -1.5012816%<br>12289 0x97 12412 -123 -1.0008951%<br>16385 0x8f 16764 -379 -2.3130913%<br>24577 0x87 24956 -379 -1.5420922%<br><br>Tested using SDK 1.4.1 under Win2000<br>************************************************/<br><br>public class AudioUlawEncodeDecode02{<br>  static int value = 0;<br>  static int increment = 1;<br>  static int limit = 4;<br>  static short shortValue = (short)value;<br><br>  public static void main(<br>                        String args[]){<br><br>    System.out.println(<br>               "Process and display truncation");<br>    processAndDisplayTruncation();<br><br>    System.out.println();<br>    System.out.println(<br>                     "Process and display ULAW");<br>    //Reinitialize values in the processing loop.<br>    value = 0;<br>    increment = 1;<br>    limit = 4;<br>    shortValue = (short)value;<br>    processAndDisplayUlaw();<br><br>  }//end main<br>  //-------------------------------------------//<br><br>  static short truncate(short sample){<br>    //Mask 8 lsb<br>    return (short)(sample &amp; 0xff00);<br>  }//end truncate<br>  //-------------------------------------------//<br><br>  //This encoding method is loosely based on<br>  // online material at:<br>  // http://www.speech.cs.cmu.edu/comp.speech/<br>  // Section2/Q2.7.html<br>  static byte encode(short sample){<br>    final short BIAS = 132;//0x84<br>    final short CLIP = 32635;//32767-BIAS<br><br>    //Convert sample to sign-magnitude<br>    int sign = sample &amp; 0x8000;<br>    if(sign != 0){<br>      sample = (short)-sample;<br>      sign = 0x80;<br>    }//end if<br><br>    //Because of the bias that is added, allowing<br>    // a value larger than CLIP would result in<br>    // integer overflow, so clip it.<br>    if(sample &gt; CLIP) sample = CLIP;<br><br>    //Convert from 16-bit linear PCM to ulaw<br>    //Adding this bias guarantees a 1 bit in the<br>    // exponent region of the data, which is the<br>    // eight bits to the right of the sign bit.<br>    sample += BIAS;<br><br>    //Exponent value is the position of the first<br>    // 1 to the right of the sign bit in the<br>    // exponent region of the data.<br>    //Find the position of the first 1 to the<br>    // right of the sign bit, counting from right<br>    // to left in the exponent region.  The<br>    // exponent position (value) can range from 0<br>    // to 7.<br>    //Could use a table lookup but will compute<br>    // on the fly instead because that is better<br>    // for teaching the algorithm.<br>    int exp;<br>    //Shift sign bit off to the left<br>    short temp = (short)(sample &lt;&lt; 1);<br>    for(exp = 7; exp &gt; 0; exp--){<br>      if((temp &amp; 0x8000) != 0) break;//found it<br>      temp = (short)(temp &lt;&lt; 1);//shift and loop<br>    }//end for loop<br><br>    //The mantissa is the four bits to the right<br>    // of the first 1 bit in the exponent region.<br>    // Shift those four bits to the four lsb of<br>    // the 16-bit value.<br>    temp = (short)(sample &gt;&gt; (exp + 3));<br>    //Mask and save those four bits<br>    int mantis = temp &amp; 0x000f;<br>    //Construct the complement of the ulaw byte.<br>    //Set the sign bit in the msb of the 8-bit<br>    // byte.  The value of sign is either 0x00 or<br>    // 0x80.<br>    //Position the exponent in the three bits to<br>    // the right of the sign bit.<br>    //Set the 4-bit mantissa in the four lsb of<br>    // the byte.<br>    //Note that the one's complement of this<br>    // value will be returned.<br>    byte ulawByte = (byte)(sign | (exp &lt;&lt; 4) |<br>                                         mantis);<br>    //Now complement to create actual ulaw byte<br>    // and return it.<br>    return (byte)~ulawByte;<br>  }//end encode<br>  //-------------------------------------------//<br><br>  //This decode method is loosely based on<br>  // material at:<br>  // http://web.umr.edu/~dcallier/school/<br>  // 311_final_report.doc<br>  //That material was published by David Callier<br>  // and Chess Combites as a semester project and<br>  // has been reformulated into Java code by this<br>  // author..<br>  static short decode(byte ulawByte){<br>    //Perform one's complement to undo the one's<br>    // complement at the end of the encode<br>    // algorithm.<br>    ulawByte = (byte)(~ulawByte);<br>    //Get the sign bit from the ulawByte<br>    int sign = ulawByte &amp; 0x80;<br>    //Get the value of the exponent in the three<br>    // bytes to the right of the sign bit.<br>    int exp = (ulawByte &amp; 0x70) &gt;&gt; 4;<br>    //Get the mantissa by masking off and saving<br>    // the four lsb in the ulawByte.<br>    int mantis = ulawByte &amp; 0xf;<br>    //Construct the 16-bit output value as type<br>    // int for simplicity and cast to short<br>    // before returning.<br>    int rawValue =<br>               (mantis &lt;&lt; (12 - 8 + (exp - 1))) +<br>                              (132 &lt;&lt; exp) - 132;<br>    //Change the sign if necessary and return<br>    // the 16-bit estimate of the original<br>    // sample value.<br>    return (short)((sign != 0)<br>                        ? - rawValue : rawValue);<br>  }//end decode<br>  //-------------------------------------------//<br><br>  static void processAndDisplayTruncation(){<br>    while((shortValue &gt;= 0) &amp;<br>                           (shortValue &lt; 32000)){<br>      short result = truncate(shortValue);<br>      System.out.print(shortValue + " ");<br>      System.out.print(result + " ");<br>      System.out.print(shortValue - result);<br>      if(shortValue &gt; 0){<br>        System.out.println(" " +<br>            ((float)(100.0*(shortValue - result)/<br>                             shortValue)) + "%");<br>      }else{<br>        System.out.println();<br>      }//end else<br>      value = value + increment;<br>      shortValue = (short)value;<br>      if(value &gt; limit){<br>        increment *= 2;<br>        limit *= 2;<br>      }//end if<br>      if(increment &gt; 32000)break;<br>    }//end while loop<br>  }//end processAndDisplayTruncation<br>  //-------------------------------------------//<br><br>  static void processAndDisplayUlaw(){<br>    while((shortValue &gt;= 0) &amp;<br>                           (shortValue &lt; 32000)){<br>      byte ulawByte = encode(shortValue);<br>      short result = decode(ulawByte);<br>      System.out.print(shortValue + " ");<br>      System.out.print("0x" +<br>                         Integer.toHexString(<br>                         ulawByte &amp; 0xff) + " ");<br>      System.out.print(result + " ");<br>      System.out.print(shortValue - result);<br>      if(shortValue &gt; 0){<br>        System.out.println(" " +<br>            ((float)(100.0*(shortValue - result)/<br>                             shortValue)) + "%");<br>      }else{<br>        System.out.println();<br>      }//end else<br>      value = value + increment;<br>      shortValue = (short)value;<br>      if(value &gt; limit){<br>        increment *= 2;<br>        limit *= 2;<br>      }//end if<br>      if(increment &gt; 32000)break;<br>    }//end while loop<br>  }//end processAndDisplayTruncation<br>  //-------------------------------------------//<br>}//end class AudioUlawEncodeDecode02.java<br><br><b><font
+ face="Courier New,Courier">Listing 13</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<p> </p>
+<p> </p>
+<hr size="3" width="100%" align="center">
+<p>Copyright 2002, Richard G. Baldwin.&nbsp; Reproduction in whole or
+in
+part in any form or medium without express written permission from
+Richard
+Baldwin is prohibited. </p>
+<h4><a name="About the author"></a>About the author</h4>
+<i><a href="mailto:Baldwin@DickBaldwin.com">Richard Baldwin</a> is a
+college professor (at Austin Community College in Austin, TX) and
+private consultant whose primary focus is a combination of Java, C#,
+and XML. In addition to the many platform and/or language independent
+benefits of Java and C# applications, he believes that a combination of
+Java, C#, and XML will become the primary driving force in the delivery
+of structured information on the Web.</i><br>
+<p><i>Richard has participated in numerous consulting projects and he
+frequently provides onsite training at the high-tech companies located
+in and around Austin, Texas.&nbsp; He is the author of Baldwin's
+Programming <a href="http://www.DickBaldwin.com">Tutorials</a>,
+which has gained a worldwide following among experienced and aspiring
+programmers.
+He has also published articles in JavaPro magazine.</i> </p>
+<p><i>Richard holds an MSEE degree from Southern Methodist University
+and
+has many years of experience in the application of computer technology
+to real-world problems.</i> </p>
+<p><i><a href="mailto:Baldwin@DickBaldwin.com">Baldwin@DickBaldwin.com</a></i>
+</p>
+<p>-end- </p>
+</body>
+</html>

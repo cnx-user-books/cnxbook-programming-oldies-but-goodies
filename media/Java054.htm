@@ -1,0 +1,346 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>... in Java by Richard G Baldwin</TITLE>
+<META NAME="Template" CONTENT="C:\PROGRAM FILES\MSOFFICE\OFFICE\html.dot">
+</HEAD>
+<BODY LINK="#0000ff" VLINK="#800080">
+
+<P><!--start--></P>
+<I><H3 ALIGN="CENTER">Richard G Baldwin (512) 223-4758, </I><A HREF="mailto:baldwin@austin.cc.tx.us"><I>baldwin@austin.cc.tx.us</I></A><I>, </I><A HREF="http://www2.austin.cc.tx.us/baldwin/"><I>http://www2.austin.cc.tx.us/baldwin/</I></A></H3>
+<H2 ALIGN="CENTER"><!--title-->Using System Resources<!--endTitle--></H2>
+<P>Java Programming, Lecture Notes # 54, Revised 10/06/99. </P>
+<P><!-toc file=Java054a.htm words=Preface-><A HREF="#Preface">Preface</A><BR>
+<!--endtoc--><!-toc file=Java054b.htm words=Introduction-><A HREF="#Introduction">Introduction</A><BR>
+<!--endtoc--><!-toc file=Java054c.htm words=Using the System Class-><A HREF="#UsingtheSystemClass">Using the System Class</A><BR>
+<!--endtoc--><!-toc file=Java054d.htm words=The Standard I/O Streams-><A HREF="#TheStandardIOStreams">The Standard I/O Streams</A><BR>
+<!--endtoc--><!-toc file=Java054e.htm words=System Properties-><A HREF="#SystemProperties">System Properties</A><BR>
+<!--endtoc--><!-toc file=Java054f.htm words=Forcing (Requesting) Finalization and Garbage Collection-><A HREF="#ForcingFinalizationandGarbageCollect">Forcing (Requesting) Finalization and Garbage Collection</A><BR>
+<!--endtoc--><!-toc file=Java054g.htm words=Miscellaneous System Methods-><A HREF="#MiscellaneousSystemMethods">Miscellaneous System Methods</A><BR>
+<!--endtoc--><!-toc file=Java054h.htm words=General Security Considerations-><A HREF="#GeneralSecurityConsiderations">General Security Considerations</A><BR>
+<!--endtoc--><!-toc file=Java054i.htm words=The Runtime Object, Using System-Dependent Properties-><A HREF="#TheRuntimeObjectUsingSystemDepende">The Runtime Object, Using System-Dependent Properties</A><BR>
+<!--endtoc--><!-toc file=Java054j.htm words=Review-><A HREF="#Review">Review</A><!--endtoc--> </P>
+<P><!-next=Java054a.htm><!-first=Java054.htm-></P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Preface"></A>Preface</H2>
+</FONT><P>Students in Prof. Baldwin's <B><U>Introductory Java Programming</B></U> classes at ACC are responsible for knowing and understanding all of the material in this lesson (except that they are not responsible for detailed information that is specific to C++). </P>
+<P>The detailed material on C++ is provided as supplementary material for the benefit of persons already familiar with C++ who are making the transition into Java. </P>
+<P><!-prev=Java054.htm-><!-next=Java054b.htm><!-first=Java054.htm-></P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Introduction"></A>Introduction</H2>
+</FONT><P>Sometimes your program will need to access various "system" resources such as stream I/O, the system clock, etc. </P>
+<P>Java provides the <B>System </B>class which provides a <U>platform-independent interface</U> between your program and these resources. Otherwise, every time you needed to run your program on a different platform, you would have to modify it to take the peculiarities of the new platform into account. </P>
+<P>The <B>System </B>class is a member of the <B>java.lang</B> package. The following table shows the declarations of the various fields and methods contained in the <B>System </B>class. </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#00ffff">
+<PRE>public  final  class  java.lang.System
+    extends  java.lang.Object 
+{
+// Fields
+public static PrintStream err; 
+public static InputStream in;  
+public static PrintStream out; 
+
+// Methods
+public static void arraycopy(
+  Object  src, int  src_position,
+  Object  dst, int  dst_position, int  length);
+public static long currentTimeMillis();
+public static void exit(int  status); 
+public static void gc(); 
+public static Properties getProperties(); 
+public static String getProperty(String  key); 
+public static String getProperty(
+  String  key, String  def);
+public static SecurityManager getSecurityManager(); 
+public static void load(String  filename); 
+public static void loadLibrary(String  libname);  
+public static void runFinalization();
+public static void setProperties(Properties  props); 
+public static void setSecurityManager(
+  SecurityManager  s); 
+}</PRE></TD>
+</TR>
+</TABLE>
+
+<P>You will recognize that we have used some of the members of this class, such as <B>out</B>, <B>in</B>, <B>exit()</B>, <B>currentTime()</B>, and <B>getProperties(),</B> in earlier lessons. In some cases we were using those members without really understanding what we were doing. </P>
+<P>We will attempt to rectify that lack of understanding in this lesson. </P>
+<P><!-prev=Java054a.htm-><!-next=Java054c.htm><!-first=Java054.htm-></P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="UsingtheSystemClass"></A>Using the System Class</H2>
+</FONT><P>You don't instantiate an object of the <B>System </B>class to use it, because all of its variables and methods are <I>class</I> variables and methods. </P>
+<P>In fact, you <U>cannot instantiate</U> an object of the System class. It is a <B>final</B> class, and all of its constructors are <B>private</B>. That is why you don't see the normal collection of constructors in the above table. </P>
+<P>You will recall that in order to access a <I>class</I> variable or method, you simply join it with the name of the class using a period such as in the very familiar </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE><TT>System.out.println("my string");</PRE></TT></TD>
+</TR>
+</TABLE>
+
+<I><P>Class</I> methods are accessed using the same syntax. In a previous lesson, we used the following code to return the default system properties which were passed to a constructor in order to store them in a <B>Properties </B>object: </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE><TT>System.getProperties()</PRE></TT></TD>
+</TR>
+</TABLE>
+
+<P>You may want to go back and review that sample program. </P>
+<P><!-prev=Java054b.htm-><!-next=Java054d.htm><!-first=Java054.htm-></P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="TheStandardIOStreams"></A>The Standard I/O Streams</H2>
+</FONT><P><A HREF="#Theprintprintln">The print(), println(), and write() Methods</A><BR>
+<A HREF="#Argumentstoprintandprintln">Arguments to print() and println()</A><BR>
+<A HREF="#PrintingObjectsofDifferentDataTypes">Printing Objects of Different Data Types</A></P>
+<P>A major future lesson deals with <I>Input/Output Streams</I>. This section of this lesson touches on the subject only in relation to the use of the <B>System </B>class. </P>
+<P>The streams used for reading and writing to the standard input and output devices are probably the most often used aspect of the <B>System </B>class. </P>
+<P>As you are already aware, <B>System </B>provides one stream for reading from the <I>standard input device</I>, one stream for writing to the <I>standard output device</I>, and one stream for writing to the <I>standard error device</I>. </P>
+<P>There are three standard input and output streams managed by the <STRONG>System</STRONG> class: </P>
+
+<UL>
+<LI>standard input--referenced by <B>System.in</B> </LI>
+<LI>standard output--referenced by <B>System.out</B> </LI>
+<LI>standard error--referenced by <B>System.err</B> </LI></UL>
+
+<P>These streams are automatically opened and linked to the devices when a program begins execution. </P>
+<FONT COLOR="#ff0000"><H3 ALIGN="CENTER"><A NAME="Theprintprintln"></A>The print(), println(), and write() Methods</H3>
+</FONT><P>The <I>class</I> variables <B>out</B> and <B>err</B> are of type <B>PrintStream</B>, meaning that they have access to the methods of the <B>PrintStream </B>class. <B>PrintStream </B>provides the following three methods to print text to the stream: </P>
+
+<UL>
+<LI>print() </LI>
+<LI>println() </LI>
+<LI>write() </LI></UL>
+
+<P>You are already familiar with the first two of these methods. Having these methods available in the PrintStream class means that you can write statements such as </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<P><TT>System.out.print(...);</TT> </P>
+<TT><P>System.out.println(...);</TT> </P>
+<TT><PRE>System.out.write(...);</PRE></TT></TD>
+</TR>
+</TABLE>
+
+<P>The methods <B>print()</B> and <B>println()</B> are the same except that <B>println()</B> automatically places a<I> newline</I> in the stream at the end of the material in the argument list. </P>
+<P>The <B>write()</B> method is used to <U>write bytes</U> to the stream. You can use <B>write()</B> to write data which is not intended to be interpreted as text (such as bit-mapped graphics data). </P>
+<FONT COLOR="#ff0000"><H3 ALIGN="CENTER"><A NAME="Argumentstoprintandprintln"></A>Arguments to print() and println()</H3>
+</FONT><P>The <STRONG>print()</STRONG> and <STRONG>println()</STRONG> methods both take a single argument of any of the following types: </P>
+
+<UL>
+<LI>Object </LI>
+<LI>String </LI>
+<LI>char[] </LI>
+<LI>int </LI>
+<LI>long </LI>
+<LI>float </LI>
+<LI>double </LI>
+<LI>boolean. </LI></UL>
+
+<P>In each case, the system converts the data to an appropriate set of characters and transfers those characters to the <I>standard output device</I>. </P>
+<P>If you invoke <B>println()</B> with no arguments, it simply places a newline in the stream. </P>
+<FONT COLOR="#ff0000"><H3 ALIGN="CENTER"><A NAME="PrintingObjectsofDifferentDataTypes"></A>Printing Objects of Different Data Types</H3>
+</FONT><P>As you are already aware, the <B>println()</B> method can be used to translate variables of all the primitive types into their representative character values and display them on the standard output device. </P>
+<P>In addition, overloaded versions (of <STRONG>toString</STRONG>) are available to produce appropriate output for <U>objects</U> of various standard classes. For example, the following statements </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<P><TT>Thread objectData = new Thread(); </P>
+<PRE>System.out.println(objectData);</PRE></TT></TD>
+</TR>
+</TABLE>
+
+<P>might produce the following output. </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE><TT>Thread[Thread-4,5,main] </PRE></TT></TD>
+</TR>
+</TABLE>
+
+<P>The <STRONG>toString()</STRONG> method, possibly overloaded, is used to convert objects to their <STRONG>String</STRONG> representation.</P>
+<P>When you use<B> print()</B> or <B>println() </B>to print an object, the output depends on the type of the object. For example, printing a <B>String </B>object yields the contents of the <B>String</B>. </P>
+<P>Printing a <B>Thread </B>object produces an output string in the following format: </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE><TT>ThreadClass[name,priority,group]</PRE></TT></TD>
+</TR>
+</TABLE>
+
+<P>We will be discussing thread objects in detail in a subsequent lesson. </P>
+<P><!-prev=Java054c.htm-><!-next=Java054e.htm><!-first=Java054.htm-></P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="SystemProperties"></A>System Properties</H2>
+</FONT><P><A HREF="#SecurityConsiderations">Security Considerations with System Properties</A><BR>
+<A HREF="#ReadingSystemProperties">Reading System Properties</A><BR>
+<A HREF="#WritingSystemProperties">Writing System Properties</A></P>
+<P>In an earlier lesson, we learned that properties are <I>key/value</I> pairs that your Java programs can use to establish and maintain various attributes or parameters between invocations. </P>
+<P>The Java environment also maintains a set of <I>system properties</I> that contain information about the current environment. As we demonstrated in an earlier lesson, you can access the system properties through the <B>System </B>class. This set of properties defines traits or attributes of the current working environment. </P>
+<P>The system properties are initialized to contain information about the runtime environment, including information such as the current user, current version of the Java runtime, etc., when the runtime system first starts up. </P>
+<P>Here is a reproduction of the system parameters which were accessed and displayed on my computer in a previous lesson: </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#00ffff">
+<PRE>-- listing properties --
+user.language=en
+java.home=C:\JAVA_JDK\JAVA\BIN\..
+awt.toolkit=sun.awt.windows.WToolkit
+file.encoding.pkg=sun.io
+java.version=1.1.3
+file.separator=\
+line.separator=
+
+user.region=US
+file.encoding=8859_1
+java.vendor=Sun Microsystems Inc.
+user.timezone=CST
+user.name=Baldwin
+os.arch=x86
+os.name=Windows 95
+java.vendor.url=http://www.sun.com/
+user.dir=C:\BALDWIN\JavaProg\Combined\Java
+java.class.path=.;c:\Baldwin\JavaProg;C:\JAVA_JDK\JAV...
+java.class.version=45.3
+os.version=4.0
+path.separator=;
+user.home=C:\JAVA_JDK\JAVA\BIN\..</PRE></TD>
+</TR>
+</TABLE>
+
+<P>Several different methods are available in the <B>System </B>class to read or write system properties. You can access properties one at a time using the <I>key </I>name, or you can read the entire set of properties in one operation as was done above. </P>
+<FONT COLOR="#ff0000"><H3 ALIGN="CENTER"><A NAME="SecurityConsiderations"></A>Security Considerations with System Properties</H3>
+</FONT><P>As of the date of this writing (1/26/97) applets can access some, but not all system properties. Also, applets <U>cannot write</U> system properties. You might expect major changes in this area in upcoming months. We will discuss this in more detail later. </P>
+<FONT COLOR="#ff0000"><H3 ALIGN="CENTER"><A NAME="ReadingSystemProperties"></A>Reading System Properties</H3>
+</FONT><P>Two methods are provided by the <B>System </B>class to read system properties: </P>
+
+<UL>
+<LI>getProperty() </LI>
+<LI>getProperties() </LI></UL>
+
+<P>If you go back and examine the class declarations at the beginning of this lesson, you will note that there are two overloaded versions of <B>getProperty()</B>. </P>
+<P>Both versions are used to retrieve the property named as the first argument. One of the two versions <U>only has one argument</U>. </P>
+<P>Also both versions <U>return an object of type</U> <B>String</B>. The names of all the standard <I>keys </I>are listed in the table above which shows the values associated with each of the <I>keys</I> on my computer at one point in history. </P>
+<P>In the event that the first of the two methods is unable to find the <I>key</I>, it will return a <I>null</I> reference. </P>
+<P>The <U>second</U> overloaded version of the getProperty() method requires <U>two strings</U> as arguments. The first argument is the <I>key </I>to look up and the second argument is a <U>default value to return</U> if the key cannot be found or if it has no value. </P>
+<P>A <U>third</U> method provided by the <B>System </B>class to access properties is the <B>getProperties()</B> method. </P>
+<P>This method returns a <B>Properties</B> object that contains the <U>complete set</U> of system property <I>key/value</I> pairs. This is the method that was used in an earlier lesson to produce the complete list of system properties shown above. </P>
+<P>Having created such an object, you can use the various methods of the <B>Properties</B> class to query the object for specific values. </P>
+<P>You can also use one of the available methods of the <B>Properties</B> class to <U>list the entire set of properties</U>. This was discussed in an earlier lesson. </P>
+<FONT COLOR="#ff0000"><H3 ALIGN="CENTER"><A NAME="WritingSystemProperties"></A>Writing System Properties</H3>
+</FONT><P>You can modify the existing set of system properties using the <B>setProperties()</B> method of the <B>System</B> class. </P>
+<P>This method takes a <B>Properties</B> object that has been initialized to contain the <I>key/value</I> pairs for the properties that you want to set. This method <U>replaces the entire set</U> of system properties with the new set represented by the object. </P>
+<P>In general, you should probably be careful not to overwrite system properties. </P>
+<P>The <B>setProperties()</B> method changes the set of system properties for the current running application <U>only</U>. </P>
+<P>The runtime system <U>re-initializes</U> the system properties each time its starts up. Therefore, changes made using <B>setProperties()</B> are <U>not persistent</U>. </P>
+<P>Changing the system properties within an application will <U>not effect future invocations</U> of the Java interpreter for this or any other application. </P>
+<P>If you want your changes to the system properties to be <U>persistent</U>, then your application must <I>save </I>the values in a file before exiting and <I>load </I>them again upon startup. The <STRONG>Properties</STRONG> class provides methods for saving and loading property objects. </P>
+<P><!-prev=Java054d.htm-><!-next=Java054f.htm><!-first=Java054.htm-></P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="ForcingFinalizationandGarbageCollect"></A>Forcing (Requesting) Finalization and Garbage Collection</H2>
+</FONT><P>All objects in Java are instantiated dynamically at run time on the heap. Whenever there are no longer any variables that reference an object, it becomes <I>eligible</I> for garbage collection. </P>
+<P>The garbage collector runs asynchronously in the background, collecting objects that are no longer referenced and making the memory occupied by those objects available for re-use. </P>
+<P>The <B>finalize()</B> method for an object is always executed before the memory occupied by that object is reclaimed. </P>
+<P>You can <U>override</U> the <B>finalize()</B> method with respect to classes that you define to cause code of your choice to be executed before the memory is reclaimed. </P>
+<P>According to <U>The Java Tutorial</U> by Campione and Walrath, </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#00ffff">
+<P>"...you can <B><I><U>force</B></I></U> the garbage collector to run using System's <B>gc() </B>method. Also, you can force the runtime system to perform object finalization using System's <B>runFinalization()</B> method."</TD>
+</TR>
+</TABLE>
+
+<P>Also according to Campione and Walrath, </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#00ffff">
+<P>"This method (<B>runFinalization()</B> )calls the <B>finalize()</B> methods on all objects that are waiting to be garbage collected."</TD>
+</TR>
+</TABLE>
+
+<P>In another paragraph, Campione and Walrath state </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#00ffff">
+<P>"You can <B><I><U>ask</B></I></U> the garbage collector to run at any time by calling System's <B>gc()</B> method"</TD>
+</TR>
+</TABLE>
+
+<P>The distinction here is between <I>"forcing"</I> the garbage collector to run and <I>"asking"</I> the garbage collector to run. </P>
+<P>The following method was added to the <B>System</B> class in JDK 1.1. </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#00ffff">
+<P><B>runFinalizersOnExit(boolean)</B> </P>
+<P>With this method, you can guarantee that finalization will occur before the program exits. This enables you to guarantee that any necessary cleanup will be accomplished before program termination by overriding the <B>finalize()</B> method for your class to perform that cleanup. </P>
+<P>To guarantee finalization on exit, call this method passing <B>true</B> as an argument somewhere early in your program.</TD>
+</TR>
+</TABLE>
+
+<P>Of the three methods involving finalization and garbage collection, the only one that I have found to be reliable is <B>runFinalizersOnExit().</B> </P>
+<B><P>System.runFinalization()</B> and <B>System.gc()</B> don't seem to behave as I would hope they would. However, the JavaSoft documentation points out that these two methods simply "suggest" that the JVM "expend its best effort" to do what you have requested (finalization or garbage collection). </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#00ff00">
+<P>C++ programmers should note that finalization and garbage collection <U>do not replicate</U> the action of a destructor in C++. For an excellent discussion of this topic, see the soon-to-be-published book by Bruce Eckel, <U>Thinking in Java</U>. A URL was provided in an earlier lesson where you can review a draft copy of this book on line or download it and review it off line.</TD>
+</TR>
+</TABLE>
+
+<P><!-prev=Java054e.htm-><!-next=Java054g.htm><!-first=Java054.htm-></P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="MiscellaneousSystemMethods"></A>Miscellaneous System Methods</H2>
+</FONT><P><A HREF="#CopyingArrays">Copying Arrays</A><BR>
+<A HREF="#ExitingtheRuntimeEnvironment">Exiting the Runtime Environment</A></P>
+<P>An examination of the declaration list for the <B>System </B>class at the beginning of this lesson indicates that there are a variety of miscellaneous methods available within the class. </P>
+<FONT COLOR="#ff0000"><H3 ALIGN="CENTER"><A NAME="CopyingArrays"></A>Copying Arrays</H3>
+</FONT><P>You can use the <B>System </B>method named <B>arraycopy()</B> to efficiently copy data from one array into another. As you can see in the declaration, the <B>arraycopy()</B> method requires five arguments. </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#00ffff">
+<PRE>public static void arraycopy(Object src, int src_position,
+                Object dst, int dst_position, int length);</PRE></TD>
+</TR>
+</TABLE>
+
+<P>Two <B>Object </B>arguments indicate the array to copy <U>from</U> and the array to copy <U>to</U>. </P>
+<P>Three <B>int</B> arguments indicate the <U>starting location</U> in each the source and the destination array, and the <U>number of elements</U> to copy. </P>
+<P>The destination array must be <U>allocated before</U> you call <B>arraycopy()</B> and it must be <U>large enough</U> to contain the data being copied. </P>
+<FONT COLOR="#ff0000"><H3 ALIGN="CENTER"><A NAME="ExitingtheRuntimeEnvironment"></A>Exiting the Runtime Environment</H3>
+</FONT><P>You can exit the Java interpreter by calling <B>System.exit()</B> and passing an integer exit code as a parameter. Note that not all operating systems pay attention to the exit code. </P>
+<FONT COLOR="#ff0000"><H3 ALIGN="CENTER"><A NAME="SecurityConsiderationswithSystemexit"></A>Security Considerations with System.exit()</H3>
+</FONT><P>According to <U>The Java Tutorial</U>, </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#00ffff">
+<P>"Invocation of the exit() method is subject to security restrictions. So depending on the browser that an applet is running in, a call to exit() from within an applet will likely result in a SecurityException."</TD>
+</TR>
+</TABLE>
+
+<P><!-prev=Java054f.htm-><!-next=Java054h.htm><!-first=Java054.htm-></P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="GeneralSecurityConsiderations"></A>General Security Considerations</H2>
+</FONT><P>According to Campione and Walrath, </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#00ffff">
+<P>"The security manager is an object that enforces a certain security policy for a Java application. You can set the current security manager for your applications using System's setSecurityManager() method and you can retrieve the current security manager using System's getSecurityManager() method."</TD>
+</TR>
+</TABLE>
+
+<P>A subsequent lesson will discuss creating and installing your own security manager using these methods in detail. </P>
+<P>Also according to Campione and Walrath, </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#00ffff">
+<P>"The security manager for an application can be set only once. Typically, a browser sets its security manager during its startup procedure. Thus, most of the time, applets cannot set the security manager because it's already been set. A SecurityException will result if your applet attempts to do so."</TD>
+</TR>
+</TABLE>
+
+<P><!-prev=Java054g.htm-><!-next=Java054i.htm><!-first=Java054.htm-></P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="TheRuntimeObjectUsingSystemDepende"></A>The Runtime Object, Using System-Dependent Resources</H2>
+</FONT><P>You should be able to meet most of your system programming needs by using the platform-independent interface provided by the <B>System </B>class. </P>
+<P>It is possible to <U>bypass</U> the platform-independent interface of the <B>System </B>class and use system resources directly from the runtime environment. </P>
+<P>The Java environment provides a <B>Runtime</B> object which represents the current runtime environment. You can use this object to access system resources directly. </P>
+<P>In doing so, you will probably <U>lose the ability</U> to execute your application on different platforms. </P>
+<P>Runtime objects provide two platform-dependent services: </P>
+
+<UL>
+<LI>Getting information and invoking functions. </LI>
+<LI>Providing the interface to capabilities which are system dependent and differ from one platform to the next. </LI></UL>
+
+<P><!-prev=Java054h.htm-><!-next=Java054j.htm><!-first=Java054.htm-></P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Review"></A>Review</H2>
+</FONT><P>Q - Java provides the <B>System </B>class which provides a platform-dependent interface between your program and various system resources: True or False? If false, explain why. </P>
+<FONT SIZE=2 COLOR="#0000ff"><P>A - False. Java provides the <B>System </B>class which provides a platform-<U>in</U>dependent interface between your program and those resources.</FONT> </P>
+<P>Q - You must instantiate an object of the <B>System</B> class in order to use it: True or False? If false, explain why. </P>
+<FONT SIZE=2 COLOR="#0000ff"><P>A - False. You don't need to instantiate an object of the <B>System </B>class to use it, because all of its variables and methods are <I>class</I> variables and methods.</FONT> </P>
+<P>Q - The following code fragment can be used to instantiate an object of the <B>System</B> class: True or False? If false, explain why. </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>System mySystemObject = new System();</PRE></TD>
+</TR>
+</TABLE>
+
+<FONT SIZE=2 COLOR="#0000ff"><P>A - False. You <U>cannot instantiate</U> an object of the System class. It is a <B>final</B> class, and all of its constructors are <B>private</B>.</FONT> </P>
+<P>Q - What is the purpose of the <B>write()</B> method of the <B>PrintStream</B> class? </P>
+<FONT SIZE=2 COLOR="#0000ff"><P>A - The <B>write()</B> method is used to <U>write bytes</U> to the stream. You can use <B>write()</B> to write data which is not intended to be interpreted as text (such as bit-mapped graphics data).</FONT> </P>
+<P><!-prev=Java054i.htm-><!-first=Java054.htm-></P>
+<P>-end-<!--end--></P></BODY>
+</HTML>

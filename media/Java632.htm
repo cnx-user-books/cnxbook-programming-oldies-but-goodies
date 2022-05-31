@@ -1,0 +1,397 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>... in Java by Richard G Baldwin</TITLE>
+<META NAME="Template" CONTENT="C:\PROGRAM FILES\MSOFFICE\OFFICE\html.dot">
+</HEAD>
+<BODY LINK="#0000ff" VLINK="#800080" BGCOLOR="#ffffff">
+
+<P><!--start--></P>
+<I><H3 ALIGN="CENTER">Richard G Baldwin (512) 223-4758, </I><A HREF="mailto:baldwin@austin.cc.tx.us"><I>baldwin@austin.cc.tx.us</I></A><I>, </I><A HREF="http://www2.austin.cc.tx.us/baldwin/"><I>http://www2.austin.cc.tx.us/baldwin/</I></A></H3>
+<H2 ALIGN="CENTER"><!--title-->CORBA, Using Stringified Object References in Java<!--endTitle--></H2>
+<P>Java Programming, Lecture Notes 632, Revised 08/22/99. </P>
+
+<UL>
+<LI><A HREF="#Preface">Preface</A> </LI>
+<LI><A HREF="#Introduction">Introduction</A> </LI>
+<LI><A HREF="#Overview">Overview</A> </LI>
+<LI><A HREF="#Sample_Program">Sample Program</A> </LI>
+<LI><A HREF="#The_Interface_Definition_Language__IDL__">The Interface Definition Language (IDL) File</A> </LI>
+<LI><A HREF="#The_Batch_file">The Batch File</A> </LI>
+<LI><A HREF="#The_Server_File">The Server File</A> </LI>
+<LI><A HREF="#The_Client_File">The Client File</A> </LI>
+<LI><A HREF="#Summary">Summary</A> </LI>
+<LI><A HREF="#Program_Listings">Program Listings</A> </LI></UL>
+
+<P><HR></P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Preface">Preface</A></H2>
+</FONT><P>Students in Prof. Baldwin's <B><U>Advanced Java Programming</B></U> classes at ACC will be responsible for knowing and understanding all of the material in this lesson beginning with the spring semester of 1999. </P>
+<P>This lesson was originally written on October 26, 1998. The sample program was tested using the JDK 1.2beta4 download package. The purpose of this lesson is to illustrate the use of stringified object references with JavaSoft's Java IDL and CORBA using a very simple example program. </P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Introduction">Introduction</A></H2>
+</FONT><P>Before embarking on this lesson, you need to study and understand all of the previous lessons on CORBA and Java. This lesson builds directly upon those lessons. Unless you understand the material in those lessons, you probably won't understand what is going on here.</P>
+<P>Using CORBA, a client machine anywhere in the world has the capability of invoking methods on an object on a cooperating server anywhere in the world, and the programs at the two ends can be developed using different programming languages. One of those programming languages is Java.</P>
+<P>Special code is required in the program on the client side to get a reference to the remote object.&nbsp; Once the client code has a reference to the remote object, the invocation of methods on the remote object is very similar to the invocation of methods on local objects. </P>
+<P>The code on the server side must define the class and instantiate the remote object of that class.&nbsp; Beyond this, special code is required on the server side to make a reference to the object available to clients so that methods of the object can be invoked remotely. </P>
+<P>Both the client code and the server code must have access to an IDL file that declares the methods that can be invoked remotely. This is the key to the whole process and the glue that holds it all together. The client and the server must also agree on how the server will provide an object reference to the client.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Overview">Overview</A></H2>
+</FONT><P>The sample programs in previous lessons have made use of a name service for the communication of an object reference from a server to a client. However, that is only one of the possible ways that such communication can be accomplished. In particular, it doesn't matter how the client gets the reference to the servant object, once it has that reference, it can invoke methods on the object.</P>
+<P>Another standard method for communicating object references from the server to the client, supported by both CORBA and Java, is the use of <EM>stringified</EM> object references. A <EM>stringified</EM> object reference is an object reference that has been converted to an ordinary (but rather cryptic) string of characters. Java provides a pair of methods to be used for this purpose. One method can be used by the server to convert the object reference to the string. The other method can be used by the client to convert the string back to an object reference. While in its <EM>stringified</EM> state, the object reference can be communicated from the server to the client using any reliable means of communicating string information.</P>
+<P>The sample program in this lesson uses a common disk file to communicate the string from the server to the client. The server writes the string in the file, and the client reads the string from the file. Obviously, to use this approach, both the server and the client must have access to the file. However, given the network programming capabilities of Java, it is a relatively easy task for a program running on one machine to write a file on another machine where it can be read by a program running on still another machine. </P>
+<P>The sample program in this lesson is initially set up to cause the client and the server to run in separate processes on the same machine. It wouldn't be too difficult to modify the program to run the client and server on different machines while writing and reading the file on a machine that is accessible to both the server and the client. </P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Sample_Program">Sample Program</A></H2>
+</FONT><P>CORBA makes it possible for a method in an object running under one virtual machine to invoke a method in an object running under a different virtual machine just as if it were a method in a local object.&nbsp; The two virtual machines can be running as different processes on the same hardware machine or they can be running on different machines connected by a TCP/IP network. </P>
+<P>This is a Java/CORBA application that makes it possible for code in a client object running under one JVM to access a method in a servant object running under a different JVM on the same machine to get the date and time. Unlike previous similar programs however, this program does not use the name service. Rather, the server writes a file containing an object reference and the client reads that file to get the reference to the remote object.</P>
+<P>The application requires three separate source files and one utility program.&nbsp; The source files are: </P>
+
+<UL>
+<LI>An IDL file that declares the signature of the method on the servant object that can be invoked by the client. </LI>
+<LI>A file that serves as the server program. </LI>
+<LI>A file that serves as the client program. </LI></UL>
+
+<P>The utility program is: </P>
+<B><BLOCKQUOTE>idltojava.exe</B> - a program that converts the IDL file to several java files, producing stub and skeleton source files and some other source files used by the client and the server.</BLOCKQUOTE>
+<P>Note that since the name service is not used, the program named <STRONG>tnameserv</STRONG> is not used with this sample program as it has been used in the past. This actually results in a program that is somewhat simpler and easier to understand because some of the fairly cryptic Java code required to make use of the name service is replaced by simple file I/O code.</P>
+<P>As you are aware by now, I prefer to make the entire process semi-automatic by encapsulating the process in an MS-DOS batch file.&nbsp; If you are not running under Windows or NT, you will need to figure out how to produce an equivalent script file for the platform that you are running on. </P>
+<P>Note that in this case, the use of a batch file to manage the overall process can lead to problems. In particular, since the client and the server run in separate processes, and both are started running by the batch file, the client can sometimes try to read the file containing the object reference before it has been successfully written by the server. If you experience this problem, simply remove the statement from the batch file that starts the client program, and start it manually after the server program has written its output file to the disk. This is not a fundamental problem with using stringified object references. It is simply a problem with using a single batch file to start both the server and the client.</P>
+<P>I have a folder on my computer that contains the following four source files:</P>
+
+<UL>
+<LI>Corba05.bat </LI>
+<LI>Corba05.idl </LI>
+<LI>Corba05Server.java </LI>
+<LI>Corba05Client.java </LI></UL>
+
+<P>Only the last three files are required. The batch file is optional, but is useful for managing the whole process (with the caveat described earlier).</P>
+<P>Initially, this folder doesn't have any sub folders. However, execution of the program <STRONG>idltojava</STRONG> creates a package to contain the source files that it generates. By default, it makes that package reside in a sub folder of the folder from which it is executed. To avoid cluttering up my disk with generated files (or more properly to make it easier to find and delete the generated files), I forced the package to be in a tree that begins with a folder named <STRONG>junk</STRONG>. As a result, a <STRONG>junk</STRONG> folder is automatically generated. The <B>junk</B> folder contains another folder named <STRONG>TheDateApp</STRONG> that is the actual package name.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="The_Interface_Definition_Language__IDL__">The Interface Definition Language (IDL) File</A></H2>
+</FONT><P>The IDL file is the glue that holds the system of programs together and makes it possible for code in a client to invoke methods in a remote object on a basis that is both platform and language independent. This was discussed in some detail in the earlier lessons.</P>
+<P>Except for the name (<STRONG>Corba05.idl</STRONG>), the IDL file for this application is similar to IDL files from previous lessons. A listing of the file is provided near the end of this lesson, and is also shown below for convenience.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Corba05.idl
+**********************************************************/
+module <STRONG>TheDateApp</STRONG>{
+  interface <STRONG>TheDate</STRONG>{
+    string <STRONG>getTheDate</STRONG>();
+  };//end interface TheDate
+};//end module TheDateApp</PRE></TD>
+</TR>
+</TABLE>
+
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="The_Batch_file">The Batch file</A></H2>
+</FONT><P>The batch file for this application is named <STRONG>Corba05.bat</STRONG>. The important parts of the file are shown below. The most significant change in this batch file relative to previous versions is that it does not contain an invocation of the program named <STRONG>tnameserv </STRONG>as used in previous programs. This is because the client and server programs don't use the name service to communicate the reference to the remote object in this version of the program.</P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>rem File Corba05.bat
+idltojava -fno-cpp -p junk Corba05.idl
+javac Corba05*.java
+start java Corba05Server
+java Corba05Client</PRE></TD>
+</TR>
+</TABLE>
+
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="The_Server_File">The Server File</A></H2>
+</FONT><P>The name of the file containing the server code is <STRONG>Corba05Server.java</STRONG>.</P>
+<P>The code for a CORBA server or a CORBA client includes quite a lot of code that is very similar from one application to the next. This is the code that is necessary to get everything initialized so that all the pieces work together in a cooperative manner. In the previous lessons, I used the name service to accomplish and support this requirement. This lesson takes a different approach.</P>
+<P>I will discuss the source code for the server in fragments, and for the most part will only discuss that code that is different from the previous approach. A complete listing of the program is provided near the end of this lesson.</P>
+<P>All code and import statements involving the name service were omitted from this version.</P>
+<P>The first fragment shows the class definition for the servant class named <STRONG>TheDateServant</STRONG>. This class includes the method named <STRONG>getTheDate()</STRONG> that satisfies the requirements of the IDL file. The use of CORBA makes it possible for remote clients to invoke this method on an object of this class.</P>
+<P>This class definition is essentially unchanged from previous lessons, and is provided here simply for your convenience. </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>class <STRONG>TheDateServant</STRONG> extends _TheDateImplBase{
+  public String <STRONG>getTheDate</STRONG>(){
+    return new Date() + "\n";
+  }//end getTheDate()
+}//end TheDateservant class</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The remainder of the server program is contained in the <STRONG>main()</STRONG> method of the class named <STRONG>Corba05Server</STRONG>. The next fragment begins at the point where the <STRONG>ORB</STRONG> for the server is created and initialized.</P>
+<P>Since this program does not use a name service, much of the complexity regarding the identification of the computer where the name service is running and the port that it is listening on doesn't exist in this program. In fact, the entire issue of where the client and server code is running tends to become moot provided that the server can find a way to provide a stringified object reference to the client. That object reference contains all of the information that the client's <STRONG>ORB</STRONG> needs to support communications between the client code and the methods of the servant object.</P>
+<P>Of course, the complexity that is eliminated by not using the name service is replaced by a different type of complexity involving the need for the server to make the stringified object reference available to the client.</P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>       ORB orb = ORB.init(args, null);</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The following code, which instantiates a servant object and registers it with the server's <STRONG>ORB,</STRONG> is unchanged from previous versions. It is repeated here for completeness.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      TheDateServant theDateRef = new TheDateServant();
+      orb.<STRONG>connect</STRONG>(theDateRef);</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The following fragment is new to this program. This is the method named <STRONG>object_to_string()</STRONG> of the <STRONG>ORB</STRONG> class that is provided by Java and used to convert an object reference to a string (to create a <EM>stringified</EM> object reference). </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>String stringObjRef = orb.<STRONG>object_to_string</STRONG>(theDateRef);</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The following box contains the string produced by the invocation of this method for this program on my computer. It was necessary for me to manually insert line breaks to force it to fit within the width of the page. This material is provided here simply to illustrate that a great deal of information is encapsulated in this string, not necessarily in a format that is intended for human consumption.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=474>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#00ffff">
+<P><FONT FACE="Courier New">IOR:000000000000001b49444c3a54686544617465417<BR>
+0702f546865446174653a312e30000000000001000000<BR>
+000000003c00010000000000144365722e61757374696<BR>
+e2e63632e74782e7573000518000000000018afabcafe<BR>
+000000022c95a7dd000000080000000000000000</FONT></TD>
+</TR>
+</TABLE>
+
+<P>The following fragment shows the code used by the server program to write the stringified object reference to a disk file named <STRONG>junk.txt</STRONG> in the user's home directory. There shouldn't be anything here that you don't already understand. Again I present this code here for completeness. I also present it here to serve as the launching pad for a discussion of the overall process.</P>
+<P>This particular code, as written in this sample program, causes this program to be generally confined to run in separate processes on a single computer. The stringified object reference is written into a file in the <EM>user's</EM> home directory. We will see later that the client program reads the file from the <EM>user's</EM> home directory. This implies that the same user executes both the server program and the client program. Although it may be possible on some systems for the same user to execute the server program and the client program on different computers, this is probably not the norm for which CORBA is intended.</P>
+<P>Therefore, in order to use this program on two or more different computers in a network, it will be necessary for you to modify the following code so that the stringified object reference is written into a disk file that is accessible by the client program. The client program will need to know in advance where that file is stored and what it is named. You can probably accomplish this by using the network programming features of Java. If you are unfamiliar with those features, you will find several lessons on network programming in these tutorials.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      String theFile = System.getProperty("<STRONG>user.home</STRONG>")
+      &#9;             + System.getProperty("file.separator")
+      &#9; &#9;                                + "<STRONG>junk.txt</STRONG>";
+      FileOutputStream fileOutputStream = 
+                             new FileOutputStream(theFile);
+      PrintStream printStream = 
+                         new PrintStream(fileOutputStream);
+      printStream.print(stringObjRef);
+      printStream.close();</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The remaining code in the server program is straightforward and very similar to code in previous lessons, so I won't discuss it further here.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="The_Client_File">The Client File</A></H2>
+</FONT><P>The file containing the client code is named <STRONG>Corba05Client.java</STRONG>.</P>
+<P>I will discuss the source code for the client in fragments, and for the most part will only discuss that code that is different from the approach in previous lessons. A complete listing of the program is provided near the end of this lesson.</P>
+<P>Again, as with the server program, note that all code and import statements involving the name service were omitted from this version. All of the code that I will discuss in this section is contained in the <STRONG>main()</STRONG> method of the class named <STRONG>Corba05Client</STRONG>.</P>
+<P>The first fragment shows the code to create and initialize the <STRONG>ORB</STRONG> for the client. As with the server, since there is no name service involved, a very simple version of the <STRONG>init()</STRONG> method of the <STRONG>ORB</STRONG> class can be used in this case. The various uses of this method have been discussed in detail in previous lessons.</P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      ORB orb = ORB.<STRONG>init</STRONG>(args, null);</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The next code fragment shows that the client code reads the stringified object reference from a text file named <STRONG>junk.txt</STRONG> in the user's home directory. In this simple example, this is very straightforward. However, I must emphasize the fact that the client code must know how to find and read the file containing the reference to the remote object.</P>
+<P>In a network situation, this could take on a variety of different approaches. For example, on a Local Area Network (LAN), it may be no more difficult than having both the server code and the client code specify a path to a network drive when writing and later reading the file containing the object reference. Of course, they would both have to know the path, and would have to know the name of the file.</P>
+<P>In an Internet situation, it might be possible for the server code to write the file on a corporate FTP server where it could be later accessed by the client code.</P>
+<P>However, you manage it, the server code must be able to make the stringified object reference available to the client code.</P>
+<P>The "bottom line" is that the following fragment reads the string that was deposited in the text file by the server, and saves that string in an object of type <STRONG>String</STRONG> named <STRONG>stringObjRef</STRONG>.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      String filename = System.getProperty("<STRONG>user.home</STRONG>")
+      &#9;              + System.getProperty("file.separator")
+      &#9;&#9;                                +"<STRONG>junk.txt</STRONG>";
+      FileInputStream fileInputStream = 
+                              new FileInputStream(filename);
+      DataInputStream dataInputStream = 
+                       new DataInputStream(fileInputStream);
+      String <STRONG>stringObjRef</STRONG> = dataInputStream.readLine(); </PRE></TD>
+</TR>
+</TABLE>
+
+<P>The following fragment uses Java's <STRONG>string_to_object()</STRONG> method of the <STRONG>ORB</STRONG> class to convert the stringified object reference back to a generic CORBA object reference.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      org.omg.CORBA.Object obj = 
+                         orb.<STRONG>string_to_object</STRONG>(stringObjRef);</PRE></TD>
+</TR>
+</TABLE>
+
+<P>As you are already aware, in order to use this generic CORBA object, it is necessary to cast or <EM>narrow</EM> it into an object of the correct type. This is accomplished by the following fragment that is essentially the same as code that you have seen on several previous occasions.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      TheDate <STRONG>theDateRef</STRONG> = TheDateHelper.<STRONG>narrow</STRONG>(obj);</PRE></TD>
+</TR>
+</TABLE>
+
+<P>At this point, the object reference can be used by the client to invoke methods on the remote object as shown in the following simple code fragment.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      String theDate = <STRONG>theDateRef.getTheDate()</STRONG>;
+      System.out.println(theDate);</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The remaining client code is essentially what you have seen before so I won't discuss it further. A complete listing of the program is provided later.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Summary">Summary</A></H2>
+</FONT><P>The following is a brief summary of the steps involved in creating a Java/CORBA software system involving remote objects and stringified object references.</P>
+
+<UL>
+<LI>Write the IDL file that declares the necessary information about the servant objects. </LI>
+<LI>Process the IDL file as a command-line parameter to the program named <STRONG>idltojava</STRONG>. </LI>
+<LI>Write the Java source code for the server and all of its servant classes. The servant classes implement the declarations in the IDL file. The server must create a stringified object reference for each servant object and make it available to the client code. </LI>
+<LI>Write the Java source code for the client that will invoke methods on the servant objects. The client code must convert each stringified object reference back to an actual object reference so that it can use the reference to invoke methods on the remote object. </LI>
+<LI>Compile all of the Java source files. </LI>
+<LI>Start the server in its own process. </LI>
+<LI>Start the client in its own process. </LI></UL>
+
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Program_Listings">Program Listings</A></H2>
+</FONT><P>Complete listings for the IDL file, the batch file and the source code files that you must create are provided in this section. Listings are not provided for the Java source code files that are automatically generated by the <STRONG>idltojava</STRONG> program.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Corba05.idl
+See Corba05Server.java for information on this program.
+**********************************************************/
+module TheDateApp{
+  interface TheDate{
+    string getTheDate();
+  };//end interface TheDate
+};//end module TheDateApp</PRE></TD>
+</TR>
+</TABLE>
+
+<FONT COLOR="#ff0000"><P>.</P></FONT>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>rem File Corba05.bat
+rem See Corba05Server.java for description of program
+rem This program does not use a name service.
+rem Caution:  Use of this batch file may result in a
+rem  race condition that causes the client to try to read 
+rem  common file before it is produced by the server.
+
+echo off
+
+echo Convert the idl file to the required set of java files
+idltojava -fno-cpp -p junk Corba05.idl
+
+echo Compile all of the java files
+javac Corba05*.java
+
+echo Start the server as a new process. 
+start java Corba05Server
+
+echo Start the client. 
+java Corba05Client</PRE></TD>
+</TR>
+</TABLE>
+
+<P>. </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Corba05Server.java
+This is a simple CORBA server that provides a servant
+object to return the date and time as a string. This
+version is similar to the Corba03 version except that
+this version uses a stringified object reference stored in
+a disk file instead of using the name service.
+
+**********************************************************/
+import junk.TheDateApp.*;
+import org.omg.CORBA.*;
+import java.util.Date;
+import java.io.*;
+ 
+class TheDateServant extends _TheDateImplBase{
+  public String getTheDate(){
+    return new Date() + "\n";
+  }//end getTheDate()
+}//end TheDateservant class
+//=======================================================//
+ 
+public class Corba05Server   {
+ 
+  public static void main(String args[]){
+    try{      
+      //Create and initialize the ORB
+      ORB orb = ORB.init(args, null);
+ 
+      //Create servant and register it with the ORB
+      TheDateServant theDateRef = new TheDateServant();
+      orb.connect(theDateRef);
+
+      //Convert the object reference to a string
+      String stringObjRef = 
+                          orb.object_to_string(theDateRef);
+      
+      //Write the stringified object ref to a file named
+      // junk.txt in the user's home directory
+      String theFile = System.getProperty("user.home")
+      &#9;             + System.getProperty("file.separator")
+      &#9; &#9;                              + "junk.txt";
+      FileOutputStream fileOutputStream = 
+                             new FileOutputStream(theFile);
+      PrintStream printStream = 
+                         new PrintStream(fileOutputStream);
+      printStream.print(stringObjRef);
+      printStream.close();
+ 
+      System.out.println("Server is running");
+      System.out.println("Obj ref stored in: " 
+                     + System.getProperty("user.home")
+      &#9;             + System.getProperty("file.separator")
+      &#9; &#9;                             + "junk.txt");
+ 
+      // wait for invocations from clients
+      java.lang.Object sync = new java.lang.Object();
+      synchronized (sync) {
+        sync.wait();
+      }//end synchronized block
+ 
+    }catch (Exception e) {
+       System.err.println("ERROR: " + e);
+       e.printStackTrace(System.out);
+    }//end catch block
+  }//end main()
+}//end Corba05Server class</PRE></TD>
+</TR>
+</TABLE>
+
+<P>. </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Corba05Client.java
+See Corba05Server.java for information on this program.
+**********************************************************/
+import junk.TheDateApp.*;
+import org.omg.CORBA.*;
+import java.io.*;
+ 
+public class Corba05Client{
+  public static void main(String args[]){
+    try{
+      // create and initialize the ORB
+      ORB orb = ORB.init(args, null);
+
+      //Read the stringified object ref from a file named
+      // junk.txt in the user's home directory
+      String filename = System.getProperty("user.home")
+      &#9;              + System.getProperty("file.separator")
+      &#9;&#9;                                +"junk.txt";
+      FileInputStream fileInputStream = 
+                              new FileInputStream(filename);
+      DataInputStream dataInputStream = 
+                       new DataInputStream(fileInputStream);
+      String stringObjRef = dataInputStream.readLine(); 
+      
+      //Convert the stringified object reference to a 
+      // generic CORBA object reference
+      org.omg.CORBA.Object obj = 
+                         orb.string_to_object(stringObjRef);
+      //Cast, or narrow the generic object reference to a 
+      // true object reference.
+      TheDate theDateRef = TheDateHelper.narrow(obj);
+ 
+      //Call the TheDate server object and print results
+      String theDate = theDateRef.getTheDate();
+      System.out.println(theDate);
+      
+      //Delay program termination so that the console
+      // won't disappear from the screen when running
+      // under control of a batch file.
+      int ch1 = '0';
+      System.out.println("Press Ctrl-z to terminate");
+      while( (ch1 = System.in.read() ) != -1);      
+    }catch (Exception e) {
+      System.out.println("ERROR : " + e) ;
+      e.printStackTrace(System.out);
+    }//end catch block
+  }//end main() method
+}//end Corba05Client class</PRE></TD>
+</TR>
+</TABLE>
+
+<P>-end- </P>
+<P><!--end--></P></BODY>
+</HTML>

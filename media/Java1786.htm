@@ -1,0 +1,610 @@
+<!doctype html public "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+   <meta name="GENERATOR" content="Microsoft FrontPage 5.0">
+   <title>... in Java by Richard G Baldwin</title>
+</head>
+<body link="#DD0000" vlink="#0000FF" alink="#FF0000" lang="EN-US">
+<h2>
+FileChannel Objects in Java,  Background Information</h2>
+<i>Baldwin explains the concept of channels (and other associated  IO features 
+new to version 1.4) from a read/write IO 
+viewpoint.</i>&nbsp;
+<p><b>Published:</b>&nbsp; October 1, 2002
+<br><b>By <a href="mailto:baldwin@DickBaldwin.com">Richard G. Baldwin</a></b>
+<p>Java Programming Notes # 1786
+<ul >
+<li>
+<a href="#Preface">Preface</a></li>
+
+<li>
+<a href="#Discussion">Discussion</a></li>
+
+<li>
+<a href="#Summary">Summary</a></li>
+
+<li>
+<a href="#Whats Next">What's Next?</a></li>
+</ul>
+
+<hr size=3 width="100%" align=center>
+<center>
+<h2>
+<a NAME="Preface"></a>Preface</h2></center>
+<b><font color="#FF0000">New features in SDK Version 1.4.0</font></b>
+<p>The recently released Java<sup>TM</sup> 2 SDK, Standard Edition Version 1.4 contains a number of new features.
+<p>Among the features which are  new to version 1.4 is the concept
+of an IO <i>channel. </i>Here is part of what Sun has to say about a channel:
+<blockquote><i>"A channel represents an open connection to an entity such
+as a hardware device, a file, a network socket, or a program</i> <i>component that is capable of performing one or more distinct I/O
+operations, ..."</i></blockquote>
+A channel is not the same as a <i>stream.</i>&nbsp; Streams have been supported 
+by Java since the earliest days of Java.&nbsp; Channels were not 
+introduced until version 1.4.<p><b><font color="#FF0000">The java.nio.channels package</font></b>
+<p>Much of the support for channels is provided in the package named <b>java.nio.channels</b>.&nbsp; 
+This package defines more than a dozen new classes, and about seven new 
+interfaces, not counting the new exception classes.&nbsp; <i>(In addition,
+there are four more new packages that begin with the name <b>java.nio</b>.)</i>&nbsp;
+Among the more interesting new classes in the <b>java.nio.channels</b>
+package are the following:
+<ul>
+<li>
+Channels</li>
+
+<li>
+DatagramChannel</li>
+
+<li>
+FileChannel</li>
+
+<li>
+Pipe.SinkChannel and Pipe.SourceChannel</li>
+
+<li>
+ServerSocketChannel</li>
+
+<li>
+SocketChannel</li>
+</ul>
+This list will give you some idea of the types of channel objects that
+can be instantiated to support the new IO features of version 1.4.
+<p><b><font color="#FF0000">There is much to learn</font></b>
+<p>As you can readily see from the above list, there is much more to learn about 
+channels than can reasonably be included in a single lesson.<p>This article is 
+the first  in a miniseries 
+that will deal mainly with the <b>FileChannel </b>class. The purpose of this 
+lesson is to introduce you to the concept
+of channels <i>(and other associated new IO features)</i> from a read/write IO 
+viewpoint.&nbsp;
+<p>Future lessons will walk
+you through sample programs that use <b>FileChannel</b> objects to perform <i>
+read/write</i> file IO for different primitive data types as well as for data 
+records containing mixed primitive data types.<p>
+Future lessons will also provide background material for the use of channels from a memory 
+mapping viewpoint, and will walk you through one or more sample programs that 
+perform <i>memory mapped IO</i> using channels.<p><b><font color="#FF0000">Future plans</font></b>
+<p>As time goes on, I plan to publish additional lessons that will help
+you learn how to use other new IO features including:
+<ul>
+<li>
+File locks</li>
+
+<li>
+Character-set encoders and decoders</li>
+
+<li>
+Pattern matching on files using regular expressions</li>
+
+<li>
+Socket channels for both clients and servers</li>
+
+<li>
+Non-blocking reads</li>
+
+<li>
+Non-blocking servers</li>
+</ul>
+<b><font color="#FF0000">Viewing tip</font></b>
+<p>You may find it useful to open another copy of this lesson in a separate
+browser window.&nbsp; That will make it easier for you to scroll back and
+forth among the different listings and figures while you are reading about
+them.
+<p><b><font color="#FF0000">Supplementary material</font></b>
+<p>I recommend that you also study the other lessons in my extensive collection
+of online Java tutorials.&nbsp; You will find those lessons published at
+<a href="http://softwaredev.earthweb.com/java">Gamelan.com</a>.&nbsp;
+However, as of the date of this writing, Gamelan doesn't maintain a consolidated
+index of my Java tutorial lessons, and sometimes they are difficult to
+locate there.&nbsp; You will find a consolidated index at <font color="#000000">
+<a href="http://www.DickBaldwin.com">www.DickBaldwin.com</a>.</font>
+<center>
+<h2>
+<font color="#000000"><a name="Discussion">Discussion</a></font></h2></center>
+<b><font color="#FF0000">The Buffer  classes</font></b>
+<p>Before getting into the details of <b>FileChannel</b> objects, I need
+to tell you that much of what you will see in these lessons will involve objects 
+of classes with names like <b>ByteBuffer</b>, <b>DoubleBuffer</b>,<b> 
+ShortBuffer</b>, etc.&nbsp; These 
+classes extend the <b>Buffer</b> class, and as such inherit a number of methods
+from the <b>Buffer</b> class.&nbsp; In addition, the subclasses of <b>Buffer</b> 
+provide methods that are appropriate for objects instantiated from the 
+subclasses.<p>It will be much easier for you to understand this discussion of <b>FileChannel</b>
+objects if you are already familiar with the features of <b>Buffer</b>
+and <b>ByteBuffer</b>.&nbsp; I have previously published lessons on these
+topics entitled
+<a href="http://softwaredev.earthweb.com/java/sdjjavase/article/0,,12395_1367031,00.html">Understanding
+the Buffer class in Java</a> and
+<a href="http://softwaredev.earthweb.com/java/article/0,,12082_1449271,00.html">The
+ByteBuffer Class in Java</a>.&nbsp; You may find it useful to review these
+two lessons in preparation for your study of this lesson.
+<p><b><font color="#FF0000">What is a FileChannel?</font></b>
+<p>Sun describes an object of the <b>FileChannel</b> class simply as
+<blockquote>
+<p> <i>"A
+channel for reading, writing, mapping, and manipulating a file."</i>&nbsp;
+
+</blockquote>
+<p>In this miniseries, I will show you how to use <b>FileChannel</b> objects for
+reading files and writing files.&nbsp;  I will also show you how to 
+map files into memory.<p><b>
+<font color="#FF0000">Tied directly to ByteBuffer </font></b>
+<p><b>FileChannel</b> objects are tied directly to <b>ByteBuffer</b> objects.&nbsp;
+As mentioned earlier, the <b>ByteBuffer</b> class extends the <b>Buffer</b>
+class.&nbsp; Hence, a <b>ByteBuffer</b> object is a <b>Buffer</b> object.
+<p>A <b>Buffer</b> object is a <i>"container for data of a specific primitive
+type."</i>&nbsp; 
+<p><b><font color="#FF0000">Essential properties</font></b><p>According to Sun, <i>"Aside from its content, the essential
+properties of a buffer are its capacity, limit, and position."</i>&nbsp;
+I discuss those three properties in some detail in the lesson on the <b>Buffer</b>
+class that I referred to earlier, and won't repeat that discussion here.&nbsp;
+However, for convenience, I will provide Sun's definition of the <i>position</i>
+property
+<blockquote><i>"A buffer's position is the index of the next element to
+be read or written."</i></blockquote>
+The sample programs in this miniseries make extensive use of the value of the <i>
+position</i> property of a buffer.<p>
+<font color="#FF0000"><b>FileChannel also has a position</b></font></p>
+<p>Similarly, a <b>FileChannel</b> object also has a current <i>position</i>
+within its file.&nbsp; The current <i>position</i> of a <b>FileChannel </b>
+object can be both queried
+and modified. </p>
+<p><font color="#FF0000"><b>Getting the FileChannel position</b></font><p>The current <i>position</i> of a <b>FileChannel</b> object can be queried
+by invoking the overloaded <b>position()</b> method on the <b>FileChannel</b> object's
+reference.&nbsp; This method returns the channel's file position.&nbsp;
+This is a non-negative <b>long</b> integer counting the number of bytes
+from the beginning of the file to the current position.
+<p><font color="#FF0000"><b>Setting the FileChannel position</b></font><p>Similarly, the current <i>position</i> of a <b>FileChannel</b> object
+can be modified by invoking the overloaded <b>position </b> method
+on the <b>FileChannel</b> object's reference.&nbsp; This overloaded version of 
+the method requires an 
+incoming integer parameter of type <b>long </b>and sets a new position
+for the channel.
+<p><font color="#FF0000"><b>Be careful when setting the position</b></font><p>Care must be exercised when setting a new position for
+the channel.&nbsp; For example, here is what Sun says will happen if the
+new position is greater than the file's current size:
+<blockquote><i>"Setting the position to a value that is greater than the
+file's current size is legal but does not change the size of the file.
+A later attempt to read bytes at such a position will immediately return
+an end-of-file indication. A later attempt to write bytes at such a position
+will cause the file to be grown to accommodate the new bytes; the values
+of any bytes between the previous end-of-file and the newly-written bytes
+are unspecified."</i></blockquote>
+<font color="#FF0000"><b>The physical file</b></font><p>The physical file associated with the <b>FileChannel</b> object contains
+a variable-length sequence of bytes.&nbsp; These bytes can be read and
+written.&nbsp; In addition, the current size of the file can be obtained
+by invoking the <b>size</b> method on the <b>FileChannel</b> object's reference.&nbsp;
+This method returns the current size of the physical file associated with
+the channel, measured in bytes as a <b>long</b> integer. </p>
+<p><font color="#FF0000"><b>Increasing and reducing the file size</b></font><p>The size of the physical file increases when bytes are written beyond
+its current size.&nbsp; It is also possible to truncate the file by invoking
+the <b>truncate</b> method on the <b>FileChannel</b> object's reference,
+passing a <b>long</b> integer as a parameter to specify the new size.
+<p>If the new size is less than the file's current size then the file is
+truncated.&nbsp; In this case, any bytes beyond the new end of the file
+are discarded.&nbsp; If the new size is greater than or equal to the file's
+current size then the file is not modified. If the current position is
+greater than the new size, then the position is set to the new size.
+<p><font color="#FF0000"><b>The ByteChannel interface</b></font><p>The <b>FileChannel</b> class implements several interfaces.&nbsp; One
+of those interfaces is named <b>ByteChannel</b>.&nbsp; The <b>ByteChannel</b> 
+interface inherits the following method declarations from the interfaces that it 
+extends:
+<ul>
+<li>
+<b>read(ByteBuffer dst)</b></li>
+
+<li>
+<b>write(ByteBuffer src)</b></li>
+
+<li>
+<b>close()</b></li>
+
+<li>
+<b>isOpen()</b></li>
+</ul>
+<font color="#FF0000"><b>Connection to ByteBuffer</b></font><p>This is where we see the first evidence of the connection between <b>FileChannel</b>
+objects and <b>ByteBuffer</b> objects.&nbsp; As you can guess from the names, the first
+two methods in the above list are used to read and write files.&nbsp; As you can 
+see from the signature, these two methods require a reference to a <b>ByteBuffer</b>
+object as a parameter. </p>
+<p><font color="#FF0000"><b>Expected behavior</b></font><p>Any class that 
+implements an interface must provide a concrete definition for all the interface 
+methods.&nbsp; In addition, those classes that implement the <b>ByteChannel</b> interface <i>(including
+DatagramChannel, <b>FileChannel</b>, and SocketChannel)</i> are expected
+to provide the following behavior for the <b>read</b> method shown in the
+above list.
+<p><b><font color="#FF0000">The read method</font></b>
+<p>The <b>read</b> method reads a sequence of bytes from the channel into
+the <b>ByteBuffer</b> object whose reference is passed as a parameter to
+the method.&nbsp; In other words, the <b>ByteBuffer</b> passed as a parameter to 
+the method is the <i>destination</i> for the data to be read from the channel.<blockquote>
+<p><i>(Thus, you might think of a channel object as a conduit through which data 
+flows between a file and a <b>ByteBuffer</b> object.)</i></blockquote>
+<p><b><font color="#FF0000">How much data gets read?</font></b><p>When the <b>read</b> method is invoked, an attempt will be made to read
+up to <b>r</b> bytes from the channel, where <b>r</b> is the number of
+bytes <i>remaining in the buffer</i> when the method is invoked. This
+value can be determined by invoking the <b>remaining</b> method on a reference
+to the buffer.<i>&nbsp; (For more information on this, see the article referred 
+to earlier that discusses the capacity, limit, and position properties of a 
+buffer.)</i>
+<blockquote>
+<p><i>(Note that the above description refers to the number of bytes remaining 
+in the buffer, and not the number of bytes remaining in the channel.)</i></blockquote>
+<p><font color="#FF0000"><b>What is remaining?</b></font><p>Briefly, the <b>remaining</b> method returns the number of elements between the
+current value of the <i>position</i> property <i>(of the buffer)</i> and the current value of
+the <i>limit</i> property <i>(of the buffer).</i>&nbsp; As a result, when working with <b>ByteBuffer</b>
+objects, you must always be cognizant of the current <i>position.</i>
+<blockquote><i>(For example, if you attempt to <b>read</b> bytes into a
+buffer whose position is equal to its limit, no data will be read into
+the buffer.&nbsp; This type of problem  can be very difficult to identify
+when your program doesn't behave as you might have expected.)</i></blockquote>
+<font color="#FF0000"><b>How does the read method affect the buffer properties?</b></font><p>Sun provides the following wording to explain the behavior of the <b>read</b>
+method as it relates to the <i>position</i> in the buffer, the <i>limit</i>
+of the buffer, the number of bytes <i>remaining</i> in the buffer, and the number of
+bytes to be read.&nbsp; I can't improve on this wording,
+so I will simply quote from the Sun documentation.&nbsp; In this description,
+<b>r</b>
+is the number of bytes <i>remaining,</i> <b>n</b> is the number of bytes
+read, and <b>p</b> is the current position </p>
+<blockquote><i>"Suppose that a byte sequence of length <b>n</b> is read, where
+  <b>0</b>&lt;=<b>n</b>&lt;=<b>r</b>. This byte sequence will be transferred
+into the buffer so that the first byte in the sequence is at index <b>p</b>
+and the last byte is at index <b>p</b>+<b>n</b>-1, where <b>p</b> is
+the buffer's position at the moment this method is invoked. Upon return
+the buffer's position will be equal to <b>p</b>+<b>n</b>; its limit will
+not have changed."</i></blockquote>
+<font color="#FF0000"><b>How many bytes will be read?</b></font><p>I indicated earlier that when the <b>read</b> method is invoked, an attempt
+is made to read up to <b>r</b> bytes from the channel.&nbsp; Such a read
+operation may not fill the buffer.&nbsp; In fact it might not read any
+bytes at all. This will depend on the state of the buffer as well as the
+nature and state of the channel. </p>
+<blockquote><i>(For example, if position equals limit for the buffer, no data will actually
+be transferred.&nbsp; Also, a file channel cannot read any more bytes than
+remain in the file.)</i></blockquote>
+<font color="#FF0000"><b>Blocking and non-blocking mode</b></font><p>Channels can be operated in a blocking or 
+a non-blocking mode.&nbsp; This
+is a topic that I plan to discuss in detail in a future lesson.&nbsp; If
+a channel is in blocking mode and there is at least one byte remaining
+in the buffer, the <b>read</b> method will block until at least one byte
+is read. </p>
+<p><font color="#FF0000"><b>Thread safety</b></font><p>The <b>read</b> method may be invoked at any time, and is thread-safe
+in the following sense.&nbsp; If another thread has already initiated a
+read operation on this channel, an invocation of the <b>read</b> method
+will block until the first operation is complete.
+<p><font color="#FF0000"><b>Return value from the read method</b></font><p>The <b>read</b> method returns the number of bytes actually read <i>(which
+may be zero).</i>&nbsp; You will see the use of this return value in the sample 
+programs in the remaining lessons in this miniseries.<p>The method returns -1 if the
+channel has reached end-of-stream, which for a file channel would be the
+end of the file.
+<p><font color="#FF0000"><b>Exceptions</b></font><p>The <b>read</b> method throws several different 
+types of exceptions, which I
+won't discuss in detail here.&nbsp; I will refer you to the Sun documentation
+for a discussion of those exceptions.
+<p><b><font color="#FF0000">The write method</font></b>
+<p>Any class that implements the <b>ByteChannel</b> interface <i>(including
+<b>FileChannel</b>)</i>
+is expected to provide the following behavior for the <b>write</b> method
+shown in the earlier list.&nbsp; The required signature of the <b>write</b>
+method is repeated below for convenience:
+<blockquote><b>write(ByteBuffer src)</b></blockquote>
+<b><font color="#FF0000">A data source</font></b><p>In this case, you will note that the <b>ByteBuffer</b> object, 
+<i>(whose reference
+is passed as a parameter to the <b>write</b> method),</i> provides the source
+of the data to be written to the channel.&nbsp; Thus, invocation of the
+<b>write</b>
+method writes a sequence of bytes to the channel from the specified buffer. </p>
+<p><b><font color="#FF0000">How many bytes are written?</font></b><p>As with the <b>read</b> method discussed earlier, when the <b>write</b> 
+method is invoked on a <b>FileChannel</b> object, an attempt is made
+to write up to <b>r</b> bytes to the channel, where <b>r</b> is the <i>number
+of bytes remaining</i> in the buffer.&nbsp; As mentioned earlier, the number of remaining bytes
+can be determined by invoking the <b>remaining</b> method on the reference
+to the <b>ByteBuffer</b> object.
+<p><b><font color="#FF0000">How does the write method affect the properties?</font></b><p>Again, here is how Sun explains the details of invoking the <b>write</b>
+method with respect to the various properties identified earlier.
+<blockquote><i>"Suppose that a byte sequence of length <b>n</b> is written,
+where <b>0</b>&lt;=<b>n</b>&lt;=<b>r</b>. This byte sequence will be transferred
+from the buffer starting at index <b>p</b>, where <b>p</b> is the buffer's
+position at the moment this method is invoked; the index of the last byte
+written will be <b>p</b>+<b>n</b>-1. Upon return the buffer's position
+will be equal to <b>p</b>+<b>n</b>; its limit will not have changed."</i></blockquote>
+<font color="#FF0000"><b>When does the write method return?</b></font><p>According to Sun,
+</p>
+<blockquote><i>"Unless otherwise specified, a write operation will return
+only after writing all of the <b>r</b> requested bytes."</i></blockquote>
+So far, I haven't found any of the standard classes that implement this
+interface for which the documentation states that the <b>write</b> method
+will return early <i>(with the possible exception of a socket channel in
+non-blocking mode, to be discussed in a future lesson).</i>
+<p><font color="#FF0000"><b>Thread safety</b></font><p>As with the <b>read</b> method discussed earlier, the <b>write</b> method
+may be invoked at any time, and is thread-safe in the following sense.&nbsp;
+If another thread has already initiated a write operation on this channel,
+an invocation of the <b>write</b> method will block until the first operation
+is complete.
+<p><font color="#FF0000"><b>Return value and exceptions</b></font><p>The <b>write</b> method returns the number of bytes written, which may
+be zero.&nbsp; It also throws several exceptions.&nbsp; I will refer you
+to the Sun documentation for a description of those exceptions.
+<p><b><font color="#FF0000">The close method</font></b>
+<p>Any class that&nbsp;implements the <b>ByteChannel</b> interface <i>(including
+<b>FileChannel</b>)</i>
+is expected to provide the following behavior for the <b>close</b> method
+shown in the earlier list.
+<p>The <b>close</b> method takes no parameters and returns <b>void</b>.&nbsp;
+Invocation of the method on a channel closes the channel.&nbsp; 
+<p><b><font color="#FF0000">What does it mean to close the channel?</font></b><p>After the <b>close</b> method has been invoked on a channel,  any
+further attempt to invoke IO operations on the channel will cause a <b>ClosedChannelException</b>
+to be thrown.&nbsp; Invoking the <b>close</b> method on a channel that
+is already closed has no effect.
+<p><b><font color="#FF0000">Thread safety</font></b><p>As with the <b>read</b> and <b>write</b> methods discussed earlier,
+the <b>close</b> method may be invoked at any time. However, if some other
+thread has already invoked the <b>close</b> method on the channel, the
+second invocation will block until the first invocation is complete.&nbsp;
+When the first invocation is complete, the second invocation will return
+having no effect on the channel.
+<p><b><font color="#FF0000">File-specific operations</font></b><p>In addition to the <b>read</b>, <b>write</b>, and <b>close</b> methods
+applicable to all classes that implement the <b>ByteChannel</b> interface,
+the <b>FileChannel</b> class defines several file-specific operations.
+<ul>
+<li>
+According to Sun, <i>"Bytes may be read or written at an absolute position
+in a file in a way that does not affect the channel's current position."</i>&nbsp; </li>
+
+<li>
+By invoking the <b>map</b> method on the channel, a region of a file may
+be mapped directly into memory.&nbsp; According to Sun, <i>"for large files
+this is often much more efficient than invoking the usual read or write
+methods."</i></li>
+
+<li>
+By invoking the <b>force</b> method on the channel, updates made to a file
+may be forced out to the underlying storage device.&nbsp; This is a safety
+feature used to ensure that data are not lost in the event of a system
+crash.</li>
+
+<li>
+By invoking the <b>transferFrom</b> and <b>transferTo</b> methods, bytes
+can be transferred from a file to some other channel, and vice versa.&nbsp;
+According to Sun, this occurs <i>"in a way that can be optimized by many
+operating systems into a very fast transfer directly to or from the filesystem
+cache."</i></li>
+
+<li>
+By invoking one of the overloaded <b>lock</b> methods on the channel, an
+entire file or a region of a file may be locked against access by other
+programs.</li>
+</ul>
+<font color="#FF0000"><b>Thread safety</b></font><p>According to Sun, <i>"File channels are safe for use by multiple concurrent
+threads."</i>&nbsp; Sun goes on to describe the behavior when different
+threads attempt to concurrently access the same file for the same or different
+purposes.&nbsp; I will refer you to the Sun documentation for additional
+information on this topic, if the topic is of interest to you. </p>
+<p><font color="#FF0000"><b>Other interfaces</b></font><p>In addition to the <b>ByteChannel</b> interface, the <b>FileChannel</b>
+class implements the <b>ScatteringByteChannel</b> interface and the <b>GatheringByteChannel</b>
+interface <i>(plus several other interfaces as well).</i>
+<p><font color="#FF0000"><b>Overloaded read and write methods</b></font><p>The <b>FileChannel</b> class provides four overloaded versions of the
+<b>read</b> method and four overloaded versions of the <b>write</b> method.&nbsp;
+
+<p>In both cases, only one version of the overloaded methods is declared in
+the <b>ByteChannel</b> interface.&nbsp; Thus, the <b>FileChannel</b> class provides file-specific
+read and write capability over and above that declared in the <b>ByteChannel</b>
+interface.&nbsp; 
+<p>Two of the four overloaded <b>read</b> methods are declared
+in the <b>ScatteringByteChannel</b> interface, and two of the overloaded
+<b>write</b> methods are declared in the <b>GatheringByteChannel</b> interface.
+<p><font color="#FF0000"><b>Reading and writing multiple buffers</b></font><p>The signatures of the overloaded versions of the <b>read</b> method
+that are declared in the <b>ScatteringByteChannel</b> interface are:
+<ul>
+<li>
+<b>read(ByteBuffer[] dsts)</b></li>
+
+<li>
+<b>read(ByteBuffer[] dsts, int offset, int length)</b></li>
+</ul>
+A <i>scattering read operation</i> reads, in a single invocation, a sequence
+of bytes into one or more of a given sequence of buffers.&nbsp; 
+<p>Similarly,
+two overloaded <b>write</b> methods are provided to support <i>gathering
+write operations.</i>&nbsp; A gathering write operation writes,
+in a single invocation, a sequence of bytes from one or more of a given
+sequence of buffers. </p>
+<p><font color="#FF0000"><b>Getting a FileChannel object</b></font><p>According to Sun,
+<blockquote>
+<p> <i>"This class does not define methods for opening
+existing files or for creating new ones; such methods may be added in a
+future release."&nbsp;</i></blockquote>
+<p>You can get a <b>FileChannel</b> object by invoking
+the <b>getChannel</b> method on an existing <b>FileInputStream</b>, <b>FileOutputStream</b>,
+or <b>RandomAccessFile</b> object.&nbsp;&nbsp; This will return a reference
+to a <b>FileChannel</b> object that is connected to the same underlying
+file.
+<p><font color="#FF0000"><b>The state of a FileChannel object</b></font><p>The state of a <b>FileChannel</b> object is connected to that of the
+object whose <b>getChannel</b> method returned  the reference to the
+<b>FileChannel</b> object.&nbsp; 
+<p>Normally, changing the channel's position,
+whether explicitly or by reading or writing bytes, will change the file
+position of the originating object, and vice versa. <i>(An exception to
+this rule will be discussed shortly.)</i>
+<p>Similarly, changing the file's length via the file channel will change
+the length seen via the originating object, and vice versa.&nbsp; Changing
+the file's content by writing bytes will change the content seen by the
+originating object, and vice versa.
+<p><font color="#FF0000"><b>The fourth overloaded read method</b></font><p>The fourth overloaded <b>read</b> method of the <b>FileChannel</b> class
+has the following signature:
+<blockquote><b>read(ByteBuffer dst, long position)</b></blockquote>
+This method reads a sequence of bytes from the channel into the given
+buffer, starting at the specified file position.&nbsp; <i>(This is the exception 
+to the norm mentioned above.)</i><p>This method works the same as the <b>read(ByteBuffer)</b>
+method, except that bytes are read starting at the specified file position
+rather than at the channel's current position. Furthermore, this method
+<i>does not modify the channel's position.</i>&nbsp; If the specified position
+is greater than the file's current size then no bytes are read. </p>
+<p><font color="#FF0000"><b>A fourth overloaded write method</b></font><p>A similar overloaded <b>write</b> method having the signature shown
+below works the same as the <b>write(ByteBuffer)</b> method.&nbsp; Again,
+however, there is an exception to the normal operation described earlier.&nbsp;
+In this case, bytes are written starting at the specified file position
+rather than at the channel's current position.
+<blockquote><b>write(ByteBuffer src, long position)</b></blockquote>
+This method does not modify the channel's position. If the specified position
+is greater than the file's current size then the file will be extended
+to accommodate the new bytes.&nbsp; Note, however, that the values of any
+bytes between the previous end-of-file and the newly-written bytes are
+unspecified.
+<p><b><font color="#FF0000">Open for reading and writing</font></b>
+<p>As I mentioned earlier, you can get a <b>FileChannel</b> object that
+is connected to an underlying file by invoking the <b>getChannel</b> method
+on an existing <b>FileInputStream</b>, <b>FileOutputStream</b>, or <b>RandomAccessFile</b>
+object.
+<p>A <b>FileChannel</b> object obtained from a <b>FileInputStream</b> object
+will be open for reading, but not for writing.&nbsp; A <b>FileChannel</b>
+object obtained from a <b>FileOutputStream</b> object will be open for
+writing, but not for reading.
+<p>Finally, a <b>FileChannel</b> object obtained from a <b>RandomAccessFile</b>
+object will be open for reading if the object was created in the <b>"r"</b>
+mode, and will be open for reading and writing if the object was created
+in the <b>"rw"</b> mode.<p><font color="#FF0000"><b>Append mode</b></font><p>If you create an instance of a <b>FileOutputStream</b> 
+object using the following constructor <i>(passing true as a parameter),</i> the 
+file will be opened in <b>append</b> mode.<p><b>FileOutputStream(File,boolean)</b><p>
+If you get a file channel from that object, the file channel will also be opened 
+in append mode.<p>According to Sun,<blockquote>
+<p><i>&quot;In this mode each invocation of a relative write operation
+first advances the position to the end of the file and then writes the requested 
+data.&quot;</i></blockquote>
+<p>Also according to Sun,<blockquote>
+<p><i>&quot;Whether the advancement of the position
+and the writing of the data are done in a single atomic operation is system-dependent and therefore unspecified.&quot;</i></blockquote>
+<h2 align="center"><a name="Summary">Summary</a></h2>
+<p>A <b>FileChannel</b> object is a channel for reading, writing, mapping, and 
+manipulating a file.<p><b>FileChannel</b> objects are tied directly to <b>ByteBuffer</b> 
+objects.&nbsp; Therefore, you must understand the use of the <b>Buffer</b> class 
+and its subclasses in order to understand the use of the <b>FileChannel</b> 
+class.<p>A <b>Buffer</b> object is a container for data of a specific primitive 
+type.<p>The essential properties of a buffer are its <i>capacity</i>, <i>limit,</i> 
+and <i>position.</i></p>
+<p>A buffer's <i>position</i> is the index of the next element to be read or 
+written.</p>
+<p>A <b>FileChannel</b> object also has a current <i>position</i>
+within its file, which can be both queried
+and modified. </p>
+<p>Care must be exercised when setting a new position for
+a <b>FileChannel</b> object.<p>The physical file associated with the <b>FileChannel</b> object contains
+a variable-length sequence of bytes, which may be read and
+written.</p>
+<p>The size of the physical file can be increased or reduced through truncation.<p>The <b>FileChannel</b> class implements several interfaces, 
+including the <b>ByteChannel</b> interface.<p>The <b>ByteChannel</b> interface 
+requires that the <b>FileChannel class </b>implement the following methods:
+<ul>
+<li>
+<b>read(ByteBuffer dst)</b></li>
+
+<li>
+<b>write(ByteBuffer src)</b></li>
+
+<li>
+<b>close()</b></li>
+
+<li>
+<b>isOpen()</b></li>
+</ul>
+<p>Any class that implements an interface must provide a concrete definition for 
+all the interface methods.&nbsp; In addition, classes that implement the <b>ByteChannel</b> interface 
+are expected
+to provide certain specific behavior for the <b>read</b>, <b>write</b>, and<b> 
+close </b>methods.<p>Channels can be operated in a blocking or a non-blocking mode.</p>
+<p>In addition to the <b>read</b>, <b>write</b>, and <b>close</b> methods
+applicable to all classes that implement the <b>ByteChannel</b> interface,
+the <b>FileChannel</b> class defines several file-specific operations.
+<p>According to Sun, <i>"File channels are safe for use by multiple concurrent
+threads."</i></p>
+<p>In addition to the <b>ByteChannel</b> interface, the <b>FileChannel</b>
+class implements the <b>ScatteringByteChannel</b> interface and the <b>GatheringByteChannel</b>
+interface <i>(plus several other interfaces as well).</i>
+<p>The <b>FileChannel</b> class provides four overloaded versions of the
+<b>read</b> method, only one of which is declared in the <b>ByteChannel</b> 
+interface.<p>Likewise, the <b>FileChannel</b> class provides four overloaded 
+versions of the <b>write</b> method, only one of which is declared in the <b>ByteChannel</b> 
+interface.<p>Thus, the <b>FileChannel</b> class provides file-specific
+read and write capability over and above that declared in the <b>ByteChannel</b>
+interface.&nbsp; 
+<p>Two of the four overloaded <b>read</b> methods are declared
+in the <b>ScatteringByteChannel</b> interface.&nbsp; Two of the overloaded
+<b>write</b> methods are declared in the <b>GatheringByteChannel</b> interface.
+<p>A <i>scattering read operation</i> reads, in a single invocation, a sequence
+of bytes into one or more of a given sequence of buffers.&nbsp; </p>
+<p>A <i>gathering write operation</i> writes,
+in a single invocation, a sequence of bytes from one or more of a given
+sequence of buffers. </p>
+<p>The fourth overloaded <b>read</b> method of the <b>FileChannel</b> class works the same as the <b>read(ByteBuffer)</b>
+method, except that bytes are read starting at a specified file position.<p>The 
+fourth overloaded <b>write</b> method of the <b>FileChannel</b> class works the same as the <b>write(ByteBuffer)</b> method 
+except that bytes are written starting at a specified file position.<p> The<b> FileChannel </b>class does not define methods for opening existing 
+files or for creating new ones.<p>You can get a <b>FileChannel</b> object by invoking
+the <b>getChannel</b> method on an existing file IO stream object.
+<p>A <b>
+FileChannel</b> object can be opened for reading, for writing, or for both 
+reading and writing.<p>A <b>FileChannel</b> object can also be opened for 
+writing in append mode.<h2 align="center"><a name="Whats Next">What's Next</a>?</h2>
+<p>Future lessons in this miniseries will walk
+you through sample programs that use <b>FileChannel</b> objects to perform <i>
+read/write</i> file IO for different primitive data types as well as for data 
+records containing mixed primitive data types.<p>
+For  data of type <b>byte, </b>you will see the connection that exists 
+between the physical file, the <b>FileChannel</b> object, and a <b>ByteBuffer</b> 
+object.<p>For  data of type <b>double</b>, you will see the connection that 
+exists between the physical file, the <b>FileChannel</b> object, a <b>ByteBuffer</b> 
+object, and a <b>DoubleBuffer</b> object that provides a <b>double</b> view of 
+data stored in the <b>ByteBuffer</b> object.<p>For  data of type <b>short</b>, you will see the connection that 
+exists between the physical file, the <b>FileChannel</b> object, a <b>ByteBuffer</b> 
+object, and a <b>ShortBuffer</b> object that provides a <b>short</b> view of 
+data stored in the <b>ByteBuffer</b> object.<p>You will learn that view objects 
+such as <b>DoubleBuffer</b> and <b>ShortBuffer</b> are available for all the 
+primitive types other than <b>boolean</b>.<p>Thus, in addition to learning 
+about <b>FileChannel</b> objects, you will also learn about some additional 
+interesting aspects of the subclasses of the <b>Buffer</b> class.<p>
+Future lessons will also provide background material for the use of channels from a memory 
+mapping viewpoint, and will walk you through one or more sample programs that 
+perform <i>memory mapped IO</i> using channels.<hr size=3 width="100%" align=center>
+<p>Copyright 2002, Richard G. Baldwin.&nbsp; Reproduction in whole or in
+part in any form or medium without express written permission from Richard
+Baldwin is prohibited.
+<h4>
+<a NAME="About the author"></a>About the author</h4>
+<b><a href="mailto:baldwin@DickBaldwin.com">Richard Baldwin</a></b><i>
+is a college professor (at Austin Community College in Austin, TX) and
+private consultant whose primary focus is a combination of Java, C#, and
+XML. In addition to the many platform and/or language independent benefits
+of Java and C# applications, he believes that a combination of Java, C#,
+and XML will become the primary driving force in the delivery of structured
+information on the Web.</i>
+<p><i>Richard has participated in numerous consulting projects, and he
+frequently provides onsite training at the high-tech companies located
+in and around Austin, Texas.&nbsp; He is the author of Baldwin's Programming
+<a href="http://www.geocities.com/Athens/7077/scoop/onjava.html">Tutorials</a>,
+which has gained a worldwide following among experienced and aspiring programmers.
+He has also published articles in JavaPro magazine.</i>
+<p><i>Richard holds an MSEE degree from Southern Methodist University and
+has many years of experience in the application of computer technology
+to real-world problems.</i>
+<p><i><a href="mailto:baldwin@DickBaldwin.com">baldwin@DickBaldwin.com</a></i>
+<p>-end-
+<br>&nbsp;
+</body>
+</html>

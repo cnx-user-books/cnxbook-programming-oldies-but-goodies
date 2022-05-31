@@ -1,0 +1,1015 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type"
+content="text/html; charset=iso-8859-1">
+<meta name="AUTHOR" content="Richard G. Baldwin">
+<meta name="GENERATOR" content="Microsoft FrontPage Express 2.0">
+<title>... in Java by Richard G Baldwin</title>
+</head>
+
+<body bgcolor="#FFFFFF">
+<!--start-->
+<h3 align="center"><b><i>Richard G Baldwin (512) 223-4758, </i></b><a
+href="mailto:baldwin@austin.cc.tx.us"><b><i>baldwin@austin.cc.tx.us</i></b></a><b><i>,
+</i></b><a href="http://www2.austin.cc.tx.us/baldwin/"><b><i>http://www2.austin.cc.tx.us/baldwin/</i></b></a></h3>
+
+<h2 align="center"><b><!--title-->Swing, Understanding Component MVC Models<!--endTitle--></b></h2>
+
+<p>Java Programming, Lecture Notes # 210, Revised 12/16/98. </p>
+
+<ul>
+    <li><a href="#Preface">Preface</a></li>
+    <li><a href="#Introduction">Introduction</a></li>
+    <li><a href="#Discussion">Discussion</a></li>
+    <li><a href="#Sample Program">Sample Program</a></li>
+    <li><ul>
+            <li><a href="#Interesting Code Fragments">Interesting
+                Code Fragments</a></li>
+            <li><a href="#Program Listing">Program Listing</a></li>
+        </ul>
+    </li>
+</ul>
+
+<hr>
+
+<h2 align="center"><a name="Preface"></a><font color="#FF0000">Preface</font></h2>
+
+<p>Students in Prof. Baldwin's <b><u>Advanced Java Programming</u></b>
+classes at ACC will be responsible for knowing and understanding
+all of the material in this lesson beginning with the Spring
+semester of 1999. </p>
+
+<p align="left">This lesson was originally written on October 3,
+1998, using the JDK 1.1.6 download package along with Swing
+1.0.3. It was upgraded to JDK 1.2 on 12/16/98. The purpose of
+this lesson is to illustrate the use of MVC models with Swing
+components.</p>
+
+<h2 align="center"><a name="Introduction"></a><font
+color="#FF0000"><b>Introduction</b></font></h2>
+
+<p>The material in this lesson assumes that you have studied my
+earlier lesson on <u>Implementing The Model-View-Controller
+Paradigm using Observer and Observable</u> as well as my earlier
+lesson on using the <b>JList</b> class to create simple
+lists.&nbsp; Of course, it also assumes that you know just about
+all there is to know about the delegation event model and other
+similar Intermediate level material. </p>
+
+<p>You may have read that Swing components are designed around a
+modified version of Model-View-Control (MVC) in which the <i>view</i>
+and the <i>control</i> are combined into an object called a <i>delegate</i>.&nbsp;
+Delegates represent the model to the user (as a view normally
+does) and also translate user input into the model (as a control
+normally does).&nbsp; As such, the Swing approach is based on a <i>model-delegate</i>
+paradigm instead of a true MVC paradigm. </p>
+
+<p align="left">Swing gives you the ability to control how
+widgets look, how they&nbsp; respond to input, and in some cases,
+how their data is represented.&nbsp; This third capability
+involving data representation is the primary topic of this
+lesson.&nbsp; We will see how, with some of the Swing components,
+you have control over the model used to maintain the data.&nbsp;
+The other two topics are covered in other lessons </p>
+
+<h2 align="center"><a name="Discussion"></a><font color="#FF0000">Discussion</font></h2>
+
+<p>I will use an object of the <b>JList</b> class as the vehicle
+for this discussion, although the general concepts discussed here
+apply to several of the more complex Swing components including: </p>
+
+<ul>
+    <li>JList</li>
+    <li>JTree</li>
+    <li>JComboBox</li>
+</ul>
+
+<p>Swing widgets, such as <b>JList</b>, are subclasses of <b>JComponent</b>.
+At any given point in time, a <b>JComponent</b> object is
+associated with a single data model and a single delegate.&nbsp;
+(Actually, some components are associated with models of other
+types, such as list selection models, which manage the rules of
+selection within the list.&nbsp; A discussion of these other
+model types is beyond the scope of this lesson and I will defer
+that discussion for a subsequent lesson.) </p>
+
+<p>To serve as a data model for a particular <b>JComponent</b>,
+an object must be of a class that implements a model interface
+specific to that component.&nbsp; For example, for an object of a
+class to serve as a model for a <b>JList</b>, the class from
+which the object is instantiated must implement the <b>ListModel</b>
+interface. </p>
+
+<p>Most (and probably all) Swing components provide a default
+model.&nbsp; For example, earlier lessons in this series showed
+how to instantiate and use <b>JTree</b> objects and <b>JList</b>
+objects using their default data models. </p>
+
+<p>The default model class for the <b>JList</b> class is the <b>DefaultListModel</b>
+class.&nbsp; The class hierarchy is as follows: </p>
+
+<blockquote>
+    <p>the <b>AbstractListModel</b> class implements the <b>ListModel</b>
+    interface and the <b>DefaultListModel</b> class extends the <b>AbstractListModel</b>
+    class to provide additional functionality.</p>
+</blockquote>
+
+<p>You have at least three options for defining a class whose
+objects can serve as data models for the <b>JList</b>
+class.&nbsp; You can define a class that implements the <b>ListModel</b>
+interface to provide an alternative list model.&nbsp; You can
+also extend the <b>AbstractListModel</b> class to create an
+alternative list model with less effort than implementing the <b>ListModel</b>
+interface.&nbsp; In this lesson, I create an alternative list
+model by extending the <b>DefaultListModel</b> class which
+provides most of the functionality of the new model and produces
+a new model with minimal effort. </p>
+
+<p>The <b>ListModel</b> interface declares four methods, so at
+first glance, it doesn't appear to be too overwhelming.&nbsp; The
+methods are listed below. &nbsp; </p>
+
+<table border="1" width="100%" bgcolor="#66FFFF" cols="1">
+    <tr>
+        <td><ul>
+            <li><b>addListDataListener(ListDataListener l)</b> -
+                Add a listener to the list that's notified each
+                time a change to the data model occurs.</li>
+            <li><b>removeListDataListener(ListDataListener l)</b>
+                - Remove a listener from the list that's notified
+                each time a change to the data model occurs.</li>
+            <li><b>getElementAt(int index)</b> - Returns the
+                value at the specified index.</li>
+            <li><b>getSize()</b> - Returns the length of the
+                list.</li>
+        </ul>
+        </td>
+    </tr>
+</table>
+
+<p>Note, however, that the first two methods encompass a
+requirement maintain a list of registered listeners and to notify
+those listeners whenever a change in the data occurs.&nbsp; This
+is no small task.&nbsp; It requires knowledge of the <b>ListDataListener</b>
+interface and the <b>ListDataEvent</b> class for instantiating
+and passing listener objects when an event of this type occurs. </p>
+
+<p>(Note that this not the type of event that I serviced in the
+sample program in this lesson.&nbsp; In this lesson, I serviced a
+selection event on the <b>JList</b> object.&nbsp; As you can see,
+one type of event can be registered on the data model, and a
+different type of event can be registered on the <b>JList</b>
+object.) </p>
+
+<p>The <b>ListDataListener</b> interface declares the following
+three methods.&nbsp; This requires the model object to recognize
+events of these types and to invoke the corresponding method on
+each registered listener when an event occurs. &nbsp; </p>
+
+<table border="1" width="100%" bgcolor="#66FFFF" cols="1">
+    <tr>
+        <td><ul>
+            <li><b>intervalAdded(ListDataEvent e)</b> - Sent
+                after the indices in the index0,index1 interval
+                have been inserted in the data model.&nbsp;</li>
+            <li><b>intervalRemoved(ListDataEvent e)</b> - Sent
+                after the indices in the index0,index1 interval
+                have been removed from the data model.&nbsp;</li>
+            <li><b>contentsChanged(ListDataEvent e)</b> - Sent
+                when the contents of the list has changed in a
+                way that's too complex to characterize with the
+                previous methods.&nbsp;</li>
+        </ul>
+        </td>
+    </tr>
+</table>
+
+<p>Whenever an event of one of these types occurs, the model
+object must instantiate a <b>ListDataEvent</b> object and pass it
+to each of the registered listeners when their method is
+invoked.&nbsp; There are symbolic constants available for the
+three types of events, which correspond to the listener methods
+listed above.&nbsp; In addition to the type, the constructor for
+the <b>ListDataEvent</b> requires information about the index
+values involved in the change in the data, and has the following
+signature: &nbsp; </p>
+
+<table border="1" width="100%" bgcolor="#66FFFF" cols="1">
+    <tr>
+        <td>public <b>ListDataEvent</b>(java.lang.Object source, <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        int type, <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        int index0, <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        int index1)</td>
+    </tr>
+</table>
+
+<p>The <b>ListDataEvent</b> class defines the following methods
+which make it possible for the code in the event handlers to
+extract the information from the incoming object. &nbsp; </p>
+
+<table border="1" width="100%" bgcolor="#66FFFF" cols="1">
+    <tr>
+        <td><ul>
+            <li>getIndex0()&nbsp;</li>
+            <li>getIndex1()&nbsp;</li>
+            <li>getType()&nbsp;</li>
+        </ul>
+        </td>
+    </tr>
+</table>
+
+<p>Fortunately, we can avoid having to deal with the complexity
+of creating and maintaining a list of registered listener
+objects, and invoking listener methods on those objects, by
+extending the <b>AbstractListModel</b> to create our alternative
+data model.&nbsp; The methods defined by <b>AbstractListModel</b>
+are shown below &nbsp; </p>
+
+<table border="1" width="100%" bgcolor="#66FFFF" cols="1">
+    <tr>
+        <td><ul>
+            <li><b>addListDataListener(ListDataListener l)</b> -
+                Add a listener to the list that's notified each
+                time a change to the data model&nbsp; occurs.</li>
+            <li><b>removeListDataListener(ListDataListener l)</b>
+                - Remove a listener from the list that's notified
+                each time a change to the data model occurs.</li>
+            <li><b>fireContentsChanged(java.lang.Object source,
+                int index0, int index1)</b> - AbstractListModel
+                subclasses must call this method after one or
+                more elements of the list change.&nbsp;</li>
+            <li><b>fireIntervalAdded(java.lang.Object source, int
+                index0, int index1)</b> - see above</li>
+            <li><b>fireIntervalRemoved(java.lang.Object source,
+                int index0, int index1)</b> - see above.</li>
+        </ul>
+        </td>
+    </tr>
+</table>
+
+<p>By extending this class, we gain the benefit of these five
+methods.&nbsp; We can completely defer the creation and
+maintenance of the list of registered listeners to the two
+inherited methods at the beginning of the above list.&nbsp; We
+still must recognize when an event occurs, and invoke the correct
+<i>event firing method</i> on the superclass of our extended
+class, but that is much simpler than processing the list and
+invoking the correct method on every listener object on the
+list.&nbsp; Invoking the <i>event firing method</i> on the
+superclass causes the code in the superclass to use our
+parameters to construct the event object, and to notify all of
+the registered listeners of the occurrence of the event by
+invoking the appropriate method on all of those listener objects.
+</p>
+
+<p>As mentioned earlier, there is a default model class available
+for <b>JList</b>.&nbsp; It is the <b>DefaultListModel</b>
+class.&nbsp; This class is designed to provide many useful
+methods for maintaining the data in the <b>JList</b>
+object.&nbsp; The methods defined by <b>DefaultListModel</b> are
+shown below. </p>
+
+<p>The class includes these methods plus the methods inherited
+from the <b>AbstractListModel</b> class described above.&nbsp; I
+show these methods here to emphasize that a class that serves as
+a data model for a <b>JList</b> object needs a lot of data
+handling capability.&nbsp; If you were to completely define your
+own data model class, this is a sampling of the types of methods
+that you would probably need to provide.&nbsp; In addition, you
+would need to provide the container for the data which would be
+manipulated by these methods. &nbsp; </p>
+
+<table border="1" width="100%" bgcolor="#66FFFF" cols="1">
+    <tr>
+        <td><ul>
+            <li>add(int index, java.lang.Object element)&nbsp;</li>
+            <li>addElement(java.lang.Object obj)&nbsp;</li>
+            <li>capacity()&nbsp;</li>
+            <li>clear()&nbsp;</li>
+            <li>contains(java.lang.Object elem)&nbsp;</li>
+            <li>copyInto(java.lang.Object[] anArray)&nbsp;</li>
+            <li>elementAt(int index)&nbsp;</li>
+            <li>elements()&nbsp;</li>
+            <li>ensureCapacity(int minCapacity)&nbsp;</li>
+            <li>firstElement()&nbsp;</li>
+            <li>get(int index)&nbsp;</li>
+            <li>getElementAt(int index)&nbsp;</li>
+            <li>getSize()&nbsp;</li>
+            <li>indexOf(java.lang.Object elem)&nbsp;</li>
+            <li>indexOf(java.lang.Object elem, int index)&nbsp;</li>
+            <li>insertElementAt(java.lang.Object obj, int
+                index)&nbsp;</li>
+            <li>isEmpty()&nbsp;</li>
+            <li>lastElement()&nbsp;</li>
+            <li>lastIndexOf(java.lang.Object elem)&nbsp;</li>
+            <li>lastIndexOf(java.lang.Object elem, int
+                index)&nbsp;</li>
+            <li>removeAllElements()&nbsp;</li>
+            <li>remove(int index)&nbsp;</li>
+            <li>removeElementAt(int index)&nbsp;</li>
+            <li>removeElement(java.lang.Object obj)&nbsp;</li>
+            <li>removeRange(int fromIndex, int toIndex)&nbsp;</li>
+            <li>set(int index, java.lang.Object element)&nbsp;</li>
+            <li>setElementAt(java.lang.Object obj, int
+                index)&nbsp;</li>
+            <li>setSize(int newSize)&nbsp;</li>
+            <li>size()&nbsp;</li>
+            <li>toArray()&nbsp;</li>
+            <li>toString()&nbsp;</li>
+            <li>trimToSize()&nbsp;</li>
+        </ul>
+        </td>
+    </tr>
+</table>
+
+<p align="left">However, things aren't necessarily as bad as they
+may seem.&nbsp; If you compare these methods with the methods in
+the <b>java.util.Vector</b> class, you will find many
+similarities.&nbsp; This suggests that you might be able to use a
+<b>Vector</b> object as your data container, and define many of
+your methods simply as pass-through methods which invoke methods
+having the same functionality on the <b>Vector</b>
+container.&nbsp; Of course, you would probably need to invent
+some new ones.&nbsp; Otherwise, there wouldn't be any need to
+define your own model.&nbsp; You could simply use the default
+model. </p>
+
+<h2 align="center"><a name="Sample Program"></a><font
+color="#FF0000">Sample Program</font></h2>
+
+<p>The name of this sample program is <b>SwingList02.java</b>.&nbsp;
+The purpose the program is to show you how to define and use your
+own alternative data model with a <b>JList</b> object.&nbsp; It
+is designed simply as a vehicle for explaining code, and is not
+intended to be worthwhile for any other purpose. </p>
+
+<p>The program also illustrates the use of the <b>ListSelectionListener</b>
+interface to instantiate listener objects that listen for the
+selection of an element in the list, retrieve the index value of
+the selected element, and display that index value. </p>
+
+<p>This program populates two <b>JList</b> objects with identical
+data. The data used to populate the two lists is obtained from
+the names of the files and directories in the root directory of
+the C-drive.&nbsp; Therefore, the list will typically be fairly
+long.&nbsp; One of the objects is based on the <b>DefaultListModel</b>.&nbsp;
+The other object is based on a <b>CustomListModel</b> of my own
+design. </p>
+
+<p>The two list models are identical except for their ability to
+remove elements from the list based on an index value.&nbsp; They
+both have a method named <b>removeElementAt(int index)</b>.&nbsp;
+Both models will throw an exception if you attempt to remove an
+element from an empty list.&nbsp; They will also throw an
+exception if you attempt to remove an element with an invalid
+index in the associated text field. </p>
+
+<p>For the <b>DefaultListModel</b>, this method removes the
+element having the specified index from the list.&nbsp; However,
+for the <b>CustomListModel</b>, this method removes the element
+from the list having an index that is one less than the specified
+index (unless the specified index is 0, in which case it removes
+the element with the specified index). </p>
+
+<p>The purpose is not to provide a confusing way to remove
+elements from the list, but rather to illustrate that the
+management of the data for a list is accomplished by a list model
+object, and the list model object for one list can be radically
+different from the list model object for another list, even
+though both lists are of type <b>JList</b> and are otherwise
+identical. </p>
+
+<p>As mentioned earlier, the data to populate the two lists is
+automatically obtained from the file and directory names in the
+root directory on the C-drive.&nbsp; When the program starts, the
+two populated lists, two buttons, and two text fields appear on
+the screen.&nbsp; One list should be above the other, and the
+buttons and text fields should appear to the right of the list
+with which they are associated. </p>
+
+<p>To remove an element from a list, enter the index of the
+element in the associated text field and click the associated
+button. </p>
+
+<p>To determine the index value of an element, select it with the
+mouse or an arrow key.&nbsp; The index number will be placed in
+the text field.&nbsp; Clicking the associated button at that
+point will cause removal to take place according to the rules
+described above. You can also manually enter an index value into
+the text field. </p>
+
+<p align="left">This program was tested using JDK 1.1.6 and Swing
+1.0.3 under Win95. It was also tested using JDK 1.2 under Win95.</p>
+
+<h3 align="center"><a name="Interesting Code Fragments"></a><font
+color="#FF0000">Interesting Code Fragments</font></h3>
+
+<p>I will discuss a number of interesting code fragments from the
+program.&nbsp; You can view the remainder of the code in the full
+listing of the program that follows later. </p>
+
+<p>The first fragment shows the beginning of the controlling
+class which extends <b>JFrame</b> and declares several instance
+variables used later in the program.&nbsp; I present this
+fragment here simply to familiarize you with the names and types
+of the instance variables. &nbsp; </p>
+
+<table border="1" bgcolor="#FFFF80">
+    <tr>
+        <td><pre>public class <b>SwingList02</b> extends JFrame{
+&nbsp; JList listA;
+&nbsp; JList listB;
+&nbsp; JScrollPane scrollPaneA;
+&nbsp; JScrollPane scrollPaneB;
+&nbsp; MyListSelectionListener listSelectionListenerA;
+&nbsp; MyListSelectionListener listSelectionListenerB;
+&nbsp; JPanel panelA = new JPanel();
+&nbsp; JPanel panelB = new JPanel();
+&nbsp; JButton buttonA;
+&nbsp; JButton buttonB;
+&nbsp; JTextField fieldA;
+&nbsp; JTextField fieldB;
+&nbsp;&nbsp;
+&nbsp; Dimension prefSize;
+&nbsp;&nbsp;
+&nbsp; //The following is a reference to the top-level JFrame
+&nbsp; // which contains everything else.
+&nbsp; SwingList02 thisObj;</pre>
+        </td>
+    </tr>
+</table>
+
+<p>The next fragment is the <b>main()</b> method which is
+provided so that you can run this program as an
+application.&nbsp; It simply instantiates an object of the
+controlling class. &nbsp; </p>
+
+<table border="1" bgcolor="#FFFF80">
+    <tr>
+        <td><pre>&nbsp; public static void <b>main</b>(String args[]) {
+&nbsp;&nbsp;&nbsp; //Instantiate the top-level JFrame object.
+&nbsp;&nbsp;&nbsp; <b>new SwingList02()</b>;
+&nbsp; }//end main</pre>
+        </td>
+    </tr>
+</table>
+
+<p>That brings us to the constructor.&nbsp; I have omitted the
+code for that portion of the constructor which creates and
+populates a <b>Vector</b> object with all the file and directory
+names in the root directory of the C-drive.&nbsp; In case you
+don't know how to do this, the code is shown in the program
+listing later in the lesson. &nbsp; </p>
+
+<table border="1" bgcolor="#FFFF80">
+    <tr>
+        <td><pre>&nbsp; public SwingList02 () {//constructor
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; getContentPane().setLayout(new FlowLayout());
+
+&nbsp;&nbsp;&nbsp; //Create a Vector object containing data for
+&nbsp;&nbsp;&nbsp; // populating two JList objects.
+&nbsp;&nbsp;&nbsp; Vector <b>theFileNames</b> = new <b>Vector</b>();
+&nbsp;&nbsp;&nbsp; //Code to populate the Vector omitted</pre>
+        </td>
+    </tr>
+</table>
+
+<p>The <b>JList</b> class has four constructors.&nbsp; Two of
+them accept an array or a vector as a parameter and use a default
+data model which gets populated with the data from the array or
+the vector.&nbsp; I'm not certain what data model is used, but my
+research indicates that it doesn't support all of the methods of
+the <b>DefaultListModel</b>.&nbsp; Another constructor builds a
+new <b>JList</b> object with no data model.&nbsp; The fourth
+allows you to specify the data model as a parameter.&nbsp; After
+confirming that the vector contains valid data, the following
+fragment instantiates the two <b>JList</b> objects, assigning
+their reference to <b>listA</b> and <b>listB</b>. </p>
+
+<p>Note that in both cases, I used the constructor that allows
+for specification of an alternative data model as a parameter to
+the constructor.&nbsp; In the case of <b>listA</b>, I specified
+the <b>DefaultListModel</b>.&nbsp; In the case of <b>listB</b>, I
+specified the <b>CustomListModel</b>.&nbsp; Possibly, I could
+have used one of the other constructors in the first case (if I
+understood its data model), but I wanted to maintain total
+parallelism between the two. </p>
+
+<p>After instantiating the two <b>JList</b> objects, I assigned
+unique names to them that are used later to distinguish between
+them in an event handler. &nbsp; </p>
+
+<table border="1" bgcolor="#FFFF80">
+    <tr>
+        <td><pre>&nbsp;&nbsp;&nbsp; if(theFileNames != null){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Create and populate two JList objects&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>listA</b> = new JList(new <b>DefaultListModel</b>());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>listB</b> = new JList(new <b>CustomListModel</b>());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Give them names to be used in event handler
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; listA.<b>setName</b>(&quot;MyNameIsListA&quot;);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; listB.setName(&quot;MyNameIsListB&quot;);</pre>
+        </td>
+    </tr>
+</table>
+
+<p>The next fragment uses enumeration of the <b>Vector</b> object
+along with methods of the <b>JList</b> and model classes to
+transfer the data from the <b>Vector</b> object to each of the <b>JList</b>
+objects.&nbsp; If you aren't familiar with enumeration, you can
+read about it in an earlier lesson. </p>
+
+<p>It is important to note here that I did <u>not</u> add data
+elements to the <b>JList</b> objects.&nbsp; Rather, I invoked the
+<b>getModel()</b> method on each of the <b>JList</b> objects to
+gain access to their model objects, and added to data to the
+model objects by invoking <b>addElement()</b> method on each of
+them. This is the first real clue that the two model objects are
+really managing the data for the two <b>JList</b> objects. &nbsp;
+</p>
+
+<table border="1" bgcolor="#FFFF80">
+    <tr>
+        <td><pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Enumeration <b>theEnum</b> = theFileNames.elements();
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>while</b>(theEnum.<b>hasMoreElements</b>()){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Object theObject = theEnum.<b>nextElement</b>();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ((DefaultListModel)listA.<b>getModel</b>()).
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>addElement</b>(theObject);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ((CustomListModel)listB.<b>getModel</b>()).
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>addElement</b>(theObject);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end while loop</pre>
+        </td>
+    </tr>
+</table>
+
+<p>At this point, each <b>JList</b> object has been instantiated,
+and the data model associated with the <b>JList</b> object has
+been populated.&nbsp; It's time to display each of the <b>JList</b>
+objects along with a button and a textfield that can be used to
+remove elements from the list. </p>
+
+<p>The next fragments puts <b>listA</b> in a <b>JScrollPane</b>
+object, and puts the scroll pane in a <b>JPanel</b> object. </p>
+
+<p>Then it instantiates a <b>ListSelectionListener</b> object and
+registers it on the <b>JList</b> object.&nbsp; This is plain
+vanilla delegation event model stuff. </p>
+
+<p>After this, it sets the height (visible row count) of the <b>JList</b>
+object to six rows, and specifies that only one element in the
+list can be selected at any one time.&nbsp; (There are options
+for multiple item selection as well but I didn't use them.)&nbsp;
+Since I didn't specify the width of the cells containing the
+elements in the list, the width of the list is dictated by the
+longest file name in the list. &nbsp; </p>
+
+<table border="1" bgcolor="#FFFF80">
+    <tr>
+        <td><pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; scrollPaneA = new <b>JScrollPane</b>(<b>listA</b>);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; panelA.<b>add</b>(scrollPaneA);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; listSelectionListenerA =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new <b>MyListSelectionListener</b>();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; listA.<b>addListSelectionListener</b>(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; listSelectionListenerA);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; listA.<b>setVisibleRowCount</b>(6);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Allow selection of one element index at a time.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; listA.<b>setSelectionMode</b>(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ListSelectionModel.<b>SINGLE_SELECTION</b>);</pre>
+        </td>
+    </tr>
+</table>
+
+<p>I placed the scroll pane containing the list in a <b>JPanel</b>
+object and placed the panel in a <b>JFrame</b>.&nbsp; At this
+point, I needed to set the size of the panel to match the size of
+the scroll pane containing the list.&nbsp; I used the <b>getPreferredScrollableViewportSize()</b>
+method on the list to obtain a <b>Dimension</b> object specifying
+the size of the list.&nbsp; I used this to <b>setBounds()</b> on
+the panel as shown in the next fragment.&nbsp; Then I added the
+entire assembly to the content pane of the <b>JFrame</b>. &nbsp; </p>
+
+<table border="1" bgcolor="#FFFF80">
+    <tr>
+        <td><pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; prefSize =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; listA.<b>getPreferredScrollableViewportSize</b>();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; panelA.setBounds(0,0,prefSize.width,prefSize.height);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>getContentPane</b>().add(<b>panelA</b>);</pre>
+        </td>
+    </tr>
+</table>
+
+<p>I needed a button and a text field for the user to remove
+elements from the list by specifying the index and clicking the
+button.&nbsp; The code to create these components is shown in the
+fragment that follows. </p>
+
+<p>This fragment also shows the instantiation and registration of
+an anonymous <b>ActionListener</b> object on the button.&nbsp;
+The behavior of the <b>actionPerformed()</b> method is to extract
+the index value for an element from the text field and invoke the
+<b>removeElementAt(int index)</b> method on the data model.&nbsp;
+Again, note that the method is being invoked on the data model
+object, and not on the <b>JList</b> object, because it is the
+model object that manages the data. </p>
+
+<p>As discussed earlier, the behavior of this method differs
+between the two data models. &nbsp; </p>
+
+<table border="1" bgcolor="#FFFF80">
+    <tr>
+        <td><pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; buttonA = new <b>JButton</b>(&quot;A&quot;);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>getContentPane</b>().add(buttonA);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; fieldA = new <b>JTextField</b>(&quot;Field A&quot;);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>getContentPane</b>().<b>add</b>(fieldA);
+&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Listener to remove elements from listA
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; buttonA.<b>addActionListener</b>(new ActionListener() {
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; public void <b>actionPerformed</b>(ActionEvent e) {
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int theElement =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Integer.parseInt(fieldA.getText());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ((DefaultListModel)listA.<b>getModel</b>()).
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>removeElementAt(theElement)</b>;}});
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Display listB, code omitted here
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Omit routine JFrame handling code here</pre>
+        </td>
+    </tr>
+</table>
+
+<p>The code to display <b>listB</b> along with its button and
+text field is essentially the same as for <b>listA</b>, so I
+won't discuss it here.&nbsp; I also omitted some routine code
+that handles the outer <b>JFrame</b> object at this point.&nbsp;
+You can view it in the program listing later. </p>
+
+<p><u>The next fragment is the key to this entire lesson</u>.&nbsp;
+It is a class used to implement a custom list model that behaves
+the same as the <b>DefaultListModel</b> in all respects but
+one.&nbsp; This class extends the <b>DefaultListModel</b> class
+and therefore gains all the capability of that class.&nbsp;
+However, it overrides the method named <b>removeElementAt(int
+index)</b> to cause it to exhibit different behavior.&nbsp; The
+overridden behavior causes the element whose index value is
+immediately below the specified index value to be removed from
+the list, except in the case where the specified index is
+zero.&nbsp; In that case, it causes the element with the
+specified index to be removed. </p>
+
+<p>As you can see, this behavior is implemented by subtracting
+one from the specified index value and passing the modified index
+to the same method in the superclass. &nbsp; </p>
+
+<table border="1" bgcolor="#FFFF80">
+    <tr>
+        <td><pre>&nbsp; class CustomListModel extends <b>DefaultListModel</b>{
+
+&nbsp;&nbsp;&nbsp; public void <b>removeElementAt</b>(int index){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(index != 0){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>super.removeElementAt(index-1)</b>;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }else{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; super.removeElementAt(index);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end else
+&nbsp;&nbsp;&nbsp; }//end overridden removeElementAt()
+&nbsp; }//end class CustomListModel</pre>
+        </td>
+    </tr>
+</table>
+
+<p>This is followed by the definition of a class which implements
+the <b>ListSelectionListener</b> interface.&nbsp; Listener
+objects of this type are registered on the lists to determine the
+index of selected list elements and to deposit that index value
+in the textfield discussed previously.&nbsp; Although the syntax
+of this code is rather messy, you shouldn't find any concepts
+here that are not already familiar to you.&nbsp; This is plain
+vanilla delegation event model material.&nbsp; Therefore, I won't
+provide any further discussion at this point.&nbsp; The listing
+of the program that follows later contains additional comments
+explaining why I did some of the things that I did in this class
+definition. &nbsp; </p>
+
+<table border="1" bgcolor="#FFFF80">
+    <tr>
+        <td><pre>&nbsp; class MyListSelectionListener&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; implements <b>ListSelectionListener</b>{
+&nbsp;&nbsp;&nbsp; public void <b>valueChanged</b>(ListSelectionEvent e){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int selectedIndex =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ((JList)e.<b>getSource</b>()).<b>getSelectedIndex</b>();
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(((Component)e.getSource()).<b>getName</b>().
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; compareTo(&quot;<b>MyNameIsListA</b>&quot;) == 0){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(selectedIndex &lt; 0) listA.setSelectedIndex(0);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; else fieldA.setText(&quot;&quot; + selectedIndex);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }else{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(selectedIndex &lt; 0) listB.setSelectedIndex(0);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; else fieldB.setText(&quot;&quot; + selectedIndex);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end if
+&nbsp;&nbsp;&nbsp; }//end valueChanged()
+&nbsp; }//end class MyListSelectionListener</pre>
+        </td>
+    </tr>
+</table>
+
+<p align="left">The code in the program that was not highlighted
+in the fragments above can be viewed in the complete listing of
+the program that follows in the next section. </p>
+
+<h3 align="center"><a name="Program Listing"></a><font
+color="#FF0000">Program Listing</font></h3>
+
+<table border="1" bgcolor="#FFFF80">
+    <tr>
+        <td><pre>/*File SwingList02.java
+Rev 12/16/98
+The purpose of this program is to illustrate the use of
+a custom list model with a Swing JList component.
+
+It also illustrates the use of the ListSelectionListener
+interface to instantiate listener objects that monitor
+for the selection of an element in the list, retrieve the
+index value of the element, and display the value.
+
+This program should be discussed only after the student
+understands how to create and use JList objects as
+described in SwingList01.java.
+
+This program populates two JList objects with identical
+data. The data used to populate the two lists is obtained
+from the names of the files and directories in the root
+directory of the C-drive.
+
+One of the objects is based on the DefaultListModel.
+The other object is based on a CustomListModel.
+
+The two list models are identical except for their ability
+to remove elements from the list.&nbsp; They both have a method
+named removeElementAt(int index).&nbsp;
+
+(Both models will throw an exception if you attempt to
+remove an element from an empty list.)
+
+For the DefaultListModel, this method removes the element&nbsp;
+having the specified index from the list.
+
+However, for the CustomListModel, this method removes the
+element from the list having an index that is one less than
+the specified index (unless the index is 0, in which case
+it removes the element with the specified index).
+
+The purpose is not to provide a confusing way to remove
+elements from the list, but rather to illustrate that the
+management of the data for a list is accomplished by a
+list model object, and the list model object for one list
+can be radically different from the list model object for
+another list.
+
+The data to populate the two lists is automatically
+obtained from the root directory on the C-drive.&nbsp; When the
+program starts, the two populated lists, two buttons, and&nbsp;
+two text fields appear on the screen.&nbsp; The buttons and&nbsp;
+text fields should appear to the right of the list with&nbsp;
+which they are associated.
+
+To remove an element from a list, enter the index in the
+associated text field and click the associated button.
+
+To determine the index value of an element, simply select
+it with the mouse or an arrow key.&nbsp; The index number will
+be placed in the text field.&nbsp; Clicking the associated&nbsp;
+button at that point will cause removal to take place&nbsp;
+according to the rules described above. You can also&nbsp;
+manually enter an index value into the text field.
+
+(The program runs under JDK 1.1.6 whether compiled using
+the JDK or the Microsoft jvc.&nbsp; However, it won't run
+under my current version of Microsoft jview even when&nbsp;
+compiled using jvc.&nbsp; It throws an exception in the area
+of populating the Vector object.)
+
+Tested using JDK 1.1.6 and Swing 1.0.3 under Win95. It
+was also tested using JDK 1.2 under Win95.
+**********************************************************/
+import java.io.*;
+import java.util.*;
+import java.awt.*;
+import java.awt.event.*;
+//import com.sun.java.swing.*;//jdk 1.1 version
+//import com.sun.java.swing.tree.*;//jdk 1.1 version
+//import com.sun.java.swing.event.*;//jdk 1.1 version
+import javax.swing.*;//jdk 1.2 version
+import javax.swing.tree.*;//jdk 1.2 version
+import javax.swing.event.*;//jdk 1.2 version
+
+//=======================================================//
+public class SwingList02 extends JFrame{
+&nbsp; JList listA;
+&nbsp; JList listB;
+&nbsp; JScrollPane scrollPaneA;
+&nbsp; JScrollPane scrollPaneB;
+&nbsp; MyListSelectionListener listSelectionListenerA;
+&nbsp; MyListSelectionListener listSelectionListenerB;
+&nbsp; JPanel panelA = new JPanel();
+&nbsp; JPanel panelB = new JPanel();
+&nbsp; JButton buttonA;
+&nbsp; JButton buttonB;
+&nbsp; JTextField fieldA;
+&nbsp; JTextField fieldB;
+&nbsp;&nbsp;
+&nbsp; Dimension prefSize;
+&nbsp;&nbsp;
+&nbsp; //The following is a reference to the top-level JFrame
+&nbsp; // which contains everything else.
+&nbsp; SwingList02 thisObj;
+&nbsp;&nbsp;
+&nbsp; //-----------------------------------------------------//
+&nbsp;&nbsp;
+&nbsp; public static void main(String args[]) {
+&nbsp;&nbsp;&nbsp; //Instantiate the top-level JFrame object.
+&nbsp;&nbsp;&nbsp; new SwingList02();
+&nbsp; }//end main
+&nbsp; //-----------------------------------------------------//
+
+&nbsp; public SwingList02 () {//constructor
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; getContentPane().setLayout(new FlowLayout());
+
+&nbsp;&nbsp;&nbsp; //Create a Vector object containing data for
+&nbsp;&nbsp;&nbsp; // populating two JList objects.
+&nbsp;&nbsp;&nbsp; Vector theFileNames = new Vector();
+&nbsp;&nbsp;&nbsp; String dir = &quot;c:/&quot;;
+&nbsp;&nbsp;&nbsp; String[] fileList = new File(dir).list();//dir listing
+
+&nbsp;&nbsp;&nbsp; //Loop and process each file in the directory
+&nbsp;&nbsp;&nbsp; for(int fileCnt = 0;fileCnt&lt;fileList.length;fileCnt++){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(new File(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; dir + &quot;/&quot; + fileList[fileCnt]).isDirectory()){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theFileNames.addElement(&quot;dir: &quot; +&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; fileList[fileCnt]);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }else{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theFileNames.addElement(&quot;file: &quot; +&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; fileList[fileCnt]);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end else
+&nbsp;&nbsp;&nbsp; }//end for loop
+
+&nbsp;&nbsp;&nbsp; if(theFileNames != null){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Create and populate two JList objects&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; listA = new JList(new DefaultListModel());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; listB = new JList(new CustomListModel());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Give them names to be used in event handler
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; listA.setName(&quot;MyNameIsListA&quot;);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; listB.setName(&quot;MyNameIsListB&quot;);
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Populate the list
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Enumeration theEnum = theFileNames.elements();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; while(theEnum.hasMoreElements()){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Object theObject = theEnum.nextElement();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ((DefaultListModel)listA.getModel()).
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; addElement(theObject);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ((CustomListModel)listB.getModel()).
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; addElement(theObject);
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end while loop
+&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Display listA, its button, and its textField
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; scrollPaneA = new JScrollPane(listA);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; panelA.add(scrollPaneA);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; listSelectionListenerA =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new MyListSelectionListener();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; listA.addListSelectionListener(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; listSelectionListenerA);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; listA.setVisibleRowCount(6);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Allow selection of one element index at a time.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; listA.setSelectionMode(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ListSelectionModel.SINGLE_SELECTION);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Get size of list and adjust JPanel accordingly
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; prefSize =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; listA.getPreferredScrollableViewportSize();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; panelA.setBounds(0,0,prefSize.width,prefSize.height);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; getContentPane().add(panelA);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; buttonA = new JButton(&quot;A&quot;);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; getContentPane().add(buttonA);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; fieldA = new JTextField(&quot;Field A&quot;);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; getContentPane().add(fieldA);
+&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Listener to remove elements from listA
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; buttonA.addActionListener(new ActionListener() {
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; public void actionPerformed(ActionEvent e) {
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int theElement =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Integer.parseInt(fieldA.getText());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ((DefaultListModel)listA.getModel()).
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; removeElementAt(theElement);}});
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Display listB
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; scrollPaneB = new JScrollPane(listB);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; panelB.add(scrollPaneB);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; listSelectionListenerB =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new MyListSelectionListener();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; listB.addListSelectionListener(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; listSelectionListenerB);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; listB.setVisibleRowCount(6);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Allow selection of one element index at a time.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; listB.setSelectionMode(ListSelectionModel.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; SINGLE_SELECTION);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Get size of list and adjust JPanel accordingly
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; prefSize =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; listB.getPreferredScrollableViewportSize();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; panelB.setBounds(0,0,prefSize.width,prefSize.height);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; getContentPane().add(panelB);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; buttonB = new JButton(&quot;B&quot;);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; getContentPane().add(buttonB);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; fieldB = new JTextField(&quot;Field B&quot;);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; getContentPane().add(fieldB);
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Listener to remove elements from listA
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; buttonB.addActionListener(new ActionListener() {
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; public void actionPerformed(ActionEvent e) {
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int theElement =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Integer.parseInt(fieldB.getText());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ((CustomListModel)listB.getModel()).
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; removeElementAt(theElement);}});
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; }//end if(theFileNames != null)
+
+&nbsp;&nbsp;&nbsp; //Save a reference to the top-level JFrame object
+&nbsp;&nbsp;&nbsp; // in an instance variable for later use.
+&nbsp;&nbsp;&nbsp; thisObj = this;
+&nbsp;&nbsp;&nbsp; setTitle(&quot;Copyright 1998, R.G.Baldwin&quot;);&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; setSize(400,350);
+&nbsp;&nbsp;&nbsp; setVisible(true);
+
+&nbsp;&nbsp;&nbsp; //An anonymous inner class to terminate the program
+&nbsp;&nbsp;&nbsp; // when the
+&nbsp;&nbsp;&nbsp; // user clicks the close button on the frame.
+&nbsp;&nbsp;&nbsp; this.addWindowListener(new WindowAdapter() {
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; public void windowClosing(WindowEvent e) {
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.exit(0);}
+&nbsp;&nbsp;&nbsp; });
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp; }//end constructor
+&nbsp;&nbsp;
+&nbsp; //=====================================================//
+
+&nbsp; //Inner class to implement a custom list model that
+&nbsp; // behaves differently from the DefaultListModel. This
+&nbsp; // model responds to requests to remove an element on
+&nbsp; // the basis of the index value, but actually removes
+&nbsp; // the element below that one in index value unless the
+&nbsp; // specified index value is zero.
+&nbsp; class CustomListModel extends DefaultListModel{
+&nbsp;&nbsp;&nbsp; //Override the method to remove element. Offset&nbsp;
+&nbsp;&nbsp;&nbsp; // specified index value by -1.
+&nbsp;&nbsp;&nbsp; public void removeElementAt(int index){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(index != 0){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; super.removeElementAt(index-1);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }else{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; super.removeElementAt(index);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end else
+&nbsp;&nbsp;&nbsp; }//end overridden removeElementAt()
+&nbsp; }//end class CustomListModel
+&nbsp; //=====================================================//
+&nbsp;&nbsp;
+&nbsp; //Inner class to monitor for selection events on the
+&nbsp; // JList object and store the index of the selected
+&nbsp; // element in the JTextField associated with the JList.
+&nbsp; class MyListSelectionListener&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; implements ListSelectionListener{
+&nbsp;&nbsp;&nbsp; public void valueChanged(ListSelectionEvent e){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int selectedIndex =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ((JList)e.getSource()).getSelectedIndex();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Don't allow the list to exist without a selected
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // element giving a selected index of -1.&nbsp; This will&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // throw an exception if the user attempts to remove
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // an element from an empty list, but a negative
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // index will also throw an exception if the user
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // attempts to remove an element with a negative
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // index.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(((Component)e.getSource()).getName().
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; compareTo(&quot;MyNameIsListA&quot;) == 0){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(selectedIndex &lt; 0) listA.setSelectedIndex(0);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; else fieldA.setText(&quot;&quot; + selectedIndex);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }else{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(selectedIndex &lt; 0) listB.setSelectedIndex(0);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; else fieldB.setText(&quot;&quot; + selectedIndex);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end if
+&nbsp;&nbsp;&nbsp; }//end valueChanged()
+&nbsp; }//end class MyListSelectionListener
+&nbsp; //=====================================================//
+}//end class SwingList02</pre>
+        </td>
+    </tr>
+</table>
+
+<p>-end- <!--end--> </p>
+</body>
+</html>

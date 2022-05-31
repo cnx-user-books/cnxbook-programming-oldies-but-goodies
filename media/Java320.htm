@@ -1,0 +1,630 @@
+<!doctype html public "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+   <meta name="Generator" content="Microsoft Office HTML Filter 2.0">
+   <meta name="Originator" content="Microsoft Word 9">
+   <meta name="author" content="richard g. baldwin">
+   <meta name="GENERATOR" content="Mozilla/4.7 [en] (WinNT; I) [Netscape]">
+   <title>... in Java by Richard G Baldwin</title>
+</head>
+<body link="#0000FF" vlink="#0000FF" lang="EN-US">
+<!--start-->
+<center>
+<h2>
+<!--title-->Java 2D Graphics, The Composite Interface and Transparency<!--endtitle--></h2></center>
+<i>by Richard G. Baldwin</i>
+<br><i><a href="mailto:baldwin@austin.cc.tx.us">baldwin@austin.cc.tx.us</a></i>
+<p>Java Programming, Lecture Notes # 320
+<p>March 20, 2000
+<ul style='margin-top:0in' type=disc>
+<li>
+<a href="#_Introduction">Introduction</a></li>
+
+<li>
+<a href="#_What_is_the">What is the CompositeContext Interface?</a></li>
+
+<li>
+<a href="#_What_is_the_1">What is the Composite Interface?</a></li>
+
+<li>
+<a href="#_What_is_the_2">What is the AlphaComposite Class?</a></li>
+
+<li>
+<a href="#_How_Do_I">How Do I Get an AlphaComposite Object?</a></li>
+
+<li>
+<a href="#_What_is_the_3">What is the setComposite() Method?</a></li>
+
+<li>
+<a href="#Sample Program">Sample Program</a></li>
+
+<li>
+<a href="#_Summary">Summary</a></li>
+
+<li>
+<a href="#Complete Program Listing">Complete Program Listing</a></li>
+</ul>
+
+<center>
+<hr size=3 width="100%" align=center></center>
+
+<center>
+<h2>
+<a NAME="_Introduction"></a>Introduction</h2></center>
+In an earlier lesson, I explained that the <b>Graphics2D</b> class extends
+the <b>Graphics</b> class to provide more sophisticated control over geometry,
+coordinate transformations, color management, and text layout. Beginning
+with JDK 1.2, <b>Graphics2D </b>is the fundamental class for rendering
+two-dimensional shapes, text and images.
+<p><b><font color="#FF0000">Must also understand other classes</font></b>
+<p>I also explained that without understanding the behavior of other classes
+and interfaces, it is not possible to fully understand the inner workings
+of the <b>Graphics2D</b> class.
+<p>Throughout this series of lessons, I have been providing you with information
+and sample programs designed to help you understand the various classes
+and interfaces that are necessary for an understanding of the <b>Graphics2D</b>
+class.
+<p><b><font color="#FF0000">Two ways to achieve transpanency</font></b>
+<p>There are at least two different ways to achieve transparency in Java
+2D.&nbsp; One way is to use new constructors for the <b>Color</b> class
+that allow you to create solid colors with a specified degree of transparency.&nbsp;
+I will discuss that approach in a subsequent lesson.
+<p><b><font color="#FF0000">A more generl approach</font></b>
+<p>A second, and possibly more general approach, is to make use of an object
+that implement the <b>Composite</b> interface, passing a reference to that
+object to the <b>setComposite()</b> method of the <b>Graphics2D</b> class.
+<p><b><font color="#FF0000">The Composite interface</font></b>
+<p>This lesson and the next are designed to give you an understanding of
+the <b>Composite</b> interface, with particular emphasis on transparency.
+<center>
+<h2>
+<a NAME="_What_is_the"></a>What is the CompositeContext Interface?</h2></center>
+I mention the <b>CompositeContext</b> interface here only because it is
+referred to in the following discussion of the
+<b>Composite</b> interface.
+<p>According to Sun,
+<br>&nbsp;
+<table BORDER CELLSPACING=3 CELLPADDING=0 WIDTH="330" BGCOLOR="#66FFFF" >
+<tr>
+<td>“The <b>CompositeContext</b> interface defines the encapsulated and
+optimized environment for a compositing operation. <b>CompositeContext</b>
+objects maintain state for compositing operations. In a multi-threaded
+environment, several contexts can exist simultaneously for a single <b>Composite</b>
+object.”</td>
+</tr>
+</table>
+
+<center>
+<h2>
+<a NAME="_What_is_the_1"></a>What is the Composite Interface?</h2></center>
+Our primary objective in this lesson is to develop an understanding of
+how to use objects of the <b>Composite</b> interface as parameters to the
+<b>setComposite</b>()
+method of the <b>Graphics2D</b> class.&nbsp; This is part of what Sun has
+to say about the <b>Composite</b> interface.
+<br>&nbsp;
+<table BORDER CELLSPACING=3 CELLPADDING=0 WIDTH="330" BGCOLOR="#66FFFF" >
+<tr>
+<td>“The <b>Composite</b> interface, along with <b>CompositeContext</b>,
+defines the methods to compose a draw primitive with the underlying graphics
+area.&nbsp;
+<p>After the <b>Composite</b> is set in the <b>Graphics2D</b> context,
+it combines a shape, text, or an image being rendered with the colors that
+have already been rendered according to pre-defined rules.”</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">We will set the composite property</font></b>
+<p>In other words, before drawing onto a <b>Graphics2D
+</b>object, we will
+invoke the <b>setComposite()</b> method to set the
+<b>composite</b> property
+of the <b>Graphics2D</b> object.
+<p>We will pass a reference to an object that implements the <b>Composite</b>
+interface as a parameter.
+<p>This
+<b>Composite </b>object will control the way in which the colors
+of overlapping pixels are rendered.
+<center>
+<h2>
+<a NAME="_What_is_the_2"></a>What is the AlphaComposite Class?</h2></center>
+There is only one class in JDK 1.2.2 that implements the <b>Composite</b>
+interface.&nbsp; That class is named&nbsp; <b>AlphaComposite</b>.&nbsp;
+Here is what Sun has to say about this class.
+<br>&nbsp;
+<table BORDER CELLSPACING=3 CELLPADDING=0 WIDTH="330" BGCOLOR="#66FFFF" >
+<tr>
+<td>“This <b>AlphaComposite</b> class implements the basic alpha compositing
+rules for combining source and destination pixels to achieve blending and
+transparency effects with graphics and images.&nbsp;
+<p>The rules implemented by this class are a subset of the Porter-Duff
+rules described in T.&nbsp; Porter and T. Duff, "Compositing Digital Images",
+SIGGRAPH 84, 253-259.&nbsp;
+<p>If any input does not have an alpha channel, an alpha value of 1.0,
+which is completely opaque, is assumed for all pixels. A constant alpha
+value can also be specified to be multiplied with the alpha value of the
+source pixels.&nbsp;
+<p>The following abbreviations are used in the description of the rules:&nbsp;
+<ul>
+<li>
+Cs = one of the color components of the source pixel.&nbsp;</li>
+
+<li>
+Cd = one of the color components of the destination pixel.&nbsp;</li>
+
+<li>
+As = alpha component of the source pixel.&nbsp;</li>
+
+<li>
+Ad = alpha component of the destination pixel.&nbsp;</li>
+
+<li>
+Fs = fraction of the source pixel that contributes to the output.&nbsp;</li>
+
+<li>
+Fd = fraction of the input destination pixel that contributes to the output.&nbsp;</li>
+</ul>
+The color and alpha components produced by the compositing operation are
+calculated as follows:&nbsp;
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Cd = Cs*Fs + Cd*Fd&nbsp;
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Ad = As*Fs + Ad*Fd
+<p>where Fs and Fd are specified by each rule. The above equations assume
+that both source and destination pixels have the color components premultiplied
+by the alpha component. Similarly, the equations expressed in the definitions
+of compositing rules below assume premultiplied alpha.&nbsp;
+<p>For performance reasons, it is preferable that Rasters passed to the
+compose method of a CompositeContext object created by the AlphaComposite
+class have premultiplied data. If either source or destination Rasters
+are not premultiplied, however, appropriate conversions are performed before
+and after the compositing operation.&nbsp;
+<p>The alpha resulting from the compositing operation is stored in the
+destination if the destination has an alpha channel. Otherwise, the resulting
+color is divided by the resulting alpha before being stored in the destination
+and the alpha is discarded. If the alpha value is 0.0, the color values
+are set to 0.0.”</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">A fairly complex topic</font></b>
+<p>This can be a fairly complex topic.&nbsp; An object of the <b>AlphaComposite</b>
+class can be used to implement any one of about eight different compositing
+rules.
+<p>As you can see from the above description, the manner in which the color
+components of the destination pixel are determined depend on the rule being
+applied (a single <b>AlphaComposite</b> object can apply only one rule).
+<p><b><font color="#FF0000">Flanagan explains the rules</font></b>
+<p>You can read about the different rules in <u>Java Foundation Classes
+in a Nutshell</u>, by David Flanagan.
+<p>In these lessons, I will illustrate only one of the compositing rules:&nbsp;
+the rule known as <b>SRC_OVER</b>.&nbsp; Here is what Flanagan has to say
+about this rule.
+<br>&nbsp;
+<table BORDER CELLSPACING=3 CELLPADDING=0 WIDTH="330" BGCOLOR="#66FFFF" >
+<tr>
+<td>“By far the most commonly used compositing rule.&nbsp; It draws the
+source on top of the destination.&nbsp; The source and destination are
+combined based on the transparency of the source.&nbsp; Where the source
+is opaque, it replaces the destination.&nbsp; Where the source is transparent,
+the destination is unchanged.&nbsp; Where the source is translucent, the
+source and destination colors are combined so that some of the destination
+color shows through the translucent source.”</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">SRC_OVER as per Sun</font></b>
+<p>Here is Sun’s formal definition of this rule from the JDK 1.2.2 documentation.
+<br>&nbsp;
+<table BORDER CELLSPACING=3 CELLPADDING=0 WIDTH="330" BGCOLOR="#66FFFF" >
+<tr>
+<td>SRC_OVER&nbsp;
+<p>public static final int SRC_OVER
+<p>Porter-Duff Source Over Destination rule. The source is composited over
+the destination.&nbsp;
+<p>Fs = 1 and Fd = (1-As), thus:
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Cd
+= Cs + Cd*(1-As)&nbsp;
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Ad
+= As + Ad*(1-As)</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">SRC_OVER as per Flanagan</font></b>
+<p>However, Sun’s explanation doesn’t agree with Flanagan’s explanation.&nbsp;
+According to Flanagan, the equations for this rule should be written as
+follows:
+<br>&nbsp;
+<table BORDER CELLSPACING=3 CELLPADDING=0 WIDTH="330" BGCOLOR="#66FFFF" >
+<tr>
+<td>Fs = As and Fd = (1-As), thus:&nbsp;
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Cd
+= Cs*As + Cd*(1-As)</td>
+</tr>
+</table>
+
+<p>In these lessons, the thing that will be most obvious will be the color
+resulting from overlapping two or more geometric figures with varying degrees
+of transparency.
+<p><b><font color="#FF0000">Which is correct?</font></b>
+<p>Although I’m not qualified to tell you which of the two explanations
+is the correct one, experimental results seem to favor Flanagan’s explanation
+over Sun’s explanation.
+<p><b><font color="#FF0000">If As is set to zero...</font></b>
+<p>For example, if <b>As</b> is set to zero, Sun’s explanation would cause
+the destination color, <b>Cd</b>, to contain equal contributions of the
+source color and the destination color.
+<p>Flanagan’s explanation for this case would eliminate all of the source
+color from the final destination color, which agrees with experimental
+results.
+<p><b><font color="#FF0000">May be a matter of interpretation</font></b>
+<p>However, these apparent discrepancies may simply be a matter of interpretation
+of the various terms used in the equations and the explanations.
+<center>
+<h2>
+<a NAME="_How_Do_I"></a>How Do I Get an AlphaComposite Object?</h2></center>
+You cannot directly instantiate an object of the
+<b>AlphaComposite</b>
+class.&nbsp; Rather, you get an <b>AlphaComposite</b> object by invoking
+the following factory method of the <b>AlphaComposite</b> class.
+<br>&nbsp;
+<table BORDER CELLSPACING=3 CELLPADDING=0 WIDTH="330" BGCOLOR="#66FFFF" >
+<tr>
+<td>public static AlphaComposite
+<br><b>&nbsp; getInstance</b>( int rule, float alpha)
+<br>Creates an <b>AlphaComposite</b> object with the specified rule and
+the constant alpha to multiply with the alpha of the source. The source
+is multiplied with the specified alpha before being composited with the
+destination.
+<p>Parameters:
+<ul style='margin-top:0in' type=disc>
+<li>
+rule - the compositing rule</li>
+
+<li>
+alpha - the constant alpha to be multiplied with the alpha of the source.
+alpha must be a floating point number in the inclusive range [0.0, 1.0].</li>
+</ul>
+</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">How do I specify the rule?</font></b>
+<p>You specify the rule by passing an <b>int</b> value given by one of
+the symbolic constants of the <b>AlphaComposite</b> class, such as <b>SRC_OVER</b>
+described earlier.
+<center>
+<h2>
+<a NAME="_What_is_the_3"></a>What is the setComposite() Method?</h2></center>
+We need to look at one more definition before embarking on our sample program.&nbsp;
+Here is part of what Sun has to say about the <b>setComposite()</b> method
+of the <b>Graphics2D</b> class.
+<br>&nbsp;
+<table BORDER CELLSPACING=3 CELLPADDING=0 WIDTH="330" BGCOLOR="#66FFFF" >
+<tr>
+<td>public abstract void
+<br><b>&nbsp; setComposite</b>(Composite comp)&nbsp;
+<p>Sets the <b>Composite</b> for the <b>Graphics2D</b> context. The <b>Composite</b>
+is used in all drawing methods such as drawImage, drawString, draw, and
+fill. It specifies how new pixels are to be combined with the existing
+pixels on the graphics device during the rendering process.
+<p>Parameters:&nbsp;
+<ul>
+<li>
+comp - the <b>Composite</b> object to be used for rendering</li>
+</ul>
+</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">You could define your own class</font></b>
+<p>The required parameter is a reference to any object that implements
+the <b>Composite</b> interface, meaning that you could define your own
+class to implement this interface.
+<p>In this lesson, I elected to make use of the existing <b>AlphaComposite</b>
+class described above.
+<center>
+<h2>
+<a NAME="Sample Program"></a>Sample Program</h2></center>
+This program is named <b>Composite01</b>.&nbsp; You will need to compile
+and execute the program so that you can view its output while reading the
+discussion.&nbsp; Without being able to view the output, the discussion
+will probably mean very little to you.
+<p><b><font color="#FF0000">A screen shot of the output</font></b>
+<p>In case you are unable to compile and execute the program, a screen
+shot of the output follows.&nbsp; Note, however that this screen shot has
+been reduced to about 70-percent of its original size in pixels, so some
+of the quality has been lost in the process.
+<p><img SRC="Java320.gif" height=330 width=330>
+<p><b><font color="#FF0000">The GUI is a Frame object</font></b>
+<p>The program draws a four-inch by four-inch <b>Frame</b> on the screen.&nbsp;
+It translates the origin to the center of the <b>Frame</b>.&nbsp; Then
+it draws a pair of X and Y-axes centered on the new origin.
+<p><b><font color="#FF0000">A large circle</font></b>
+<p>After drawing the X and Y-axes, the program draws a circle with a thick
+border centered on the origin.&nbsp; This circle is used later to provide
+visual cues relative to transparency.
+<p><b><font color="#FF0000">Transparent ellipses</font></b>
+<p>After the large circle is drawn, three ellipses are drawn on top of
+one another in each quadrant.
+<p>Each ellipse has a common center, and is rotated by sixty degrees relative
+to the ellipse beneath it.
+<p>The red ellipse is on the bottom of the stack, the green ellipse is
+in the center, and the blue ellipse is on the top of the stack.
+<p>The different ellipses are given various transparency values in the
+different quadrants to illustrate the effect of the alpha parameter to
+the <b>setComposite()</b> method.
+<p><b><font color="#FF0000">Transparency by quadrant</font></b>
+<p>Here is the transparency given to each of the ellipses in the different
+quadrants.
+<br>&nbsp;
+<table BORDER CELLSPACING=3 CELLPADDING=0 WIDTH="330" BGCOLOR="#66FFFF" >
+<tr>
+<td><b><font face="Courier New,Courier"><font size=-1>TRANSPARENCY</font></font></b>
+<br><b><font face="Courier New,Courier"><font size=-1>Upper-left quadrant</font></font></b>
+<br><font face="Courier New,Courier"><font size=-1>No transparency&nbsp;</font></font>
+<p><b><font face="Courier New,Courier"><font size=-1>Upper-right quadrant</font></font></b>
+<br><font face="Courier New,Courier"><font size=-1>Red is not transparent&nbsp;</font></font>
+<br><font face="Courier New,Courier"><font size=-1>Green is not transparent&nbsp;</font></font>
+<br><font face="Courier New,Courier"><font size=-1>Blue is 50-percent transparent&nbsp;</font></font>
+<p><b><font face="Courier New,Courier"><font size=-1>Lower-left quadrant</font></font></b>
+<br><font face="Courier New,Courier"><font size=-1>Red is not transparent&nbsp;</font></font>
+<br><font face="Courier New,Courier"><font size=-1>Green is 50-percent
+transparent&nbsp;</font></font>
+<br><font face="Courier New,Courier"><font size=-1>Blue is 90-percent transparent&nbsp;</font></font>
+<p><b><font face="Courier New,Courier"><font size=-1>Lower-right quadrant</font></font></b>
+<br><font face="Courier New,Courier"><font size=-1>Red is not transparent&nbsp;</font></font>
+<br><font face="Courier New,Courier"><font size=-1>Green is 90-percent
+transparent&nbsp;</font></font>
+<br><font face="Courier New,Courier"><font size=-1>Blue is 90-percent transparent</font></font></td>
+</tr>
+</table>
+
+<p>As you can see from the information given above, the red ellipse is
+opaque in all four quadrants.&nbsp; As a result, the large black circle
+doesn’t show through the red ellipse in any of the quadrants.
+<p><b><font color="#FF0000">Upper-left quadrant</font></b>
+<p>All three ellipses are opaque in the upper-left quadrant, so nothing
+shows through, and the stacking order of the ellipses is pretty obvious.
+<p><b><font color="#FF0000">Green and blue ellipses become transparent</font></b>
+<p>The green and blue ellipses are made progressively more transparent
+as you move through the other three quadrants.&nbsp; As a result, you can
+“see through” the green and blue ellipses and see the geometric figures
+that lie beneath them (the other ellipses and the large black circle).
+<p><b><font color="#FF0000">Upper-right quadrant</font></b>
+<p>In this quadrant, the blue ellipse is transparent, but the green ellipse
+and the red ellipse are opaque.&nbsp; Neither the large circle nor the
+red ellipse can be seen through the green ellipse.
+<p>However, both the green and red ellipses show through the blue ellipse
+in the upper-right quadrant.
+<p><b><font color="#FF0000">Lower-left quadrant</font></b>
+<p>In the lower-left quadrant, both the green and blue ellipses are transparent
+to some degree, with the blue ellipse being the more transparent of the
+two.
+<p>Both the green and the red ellipses show through the blue ellipse, which
+is on the top of the stack.
+<p>Both the red ellipse and the large circle show through the green ellipse.
+<p>The large circle would also show through the blue ellipse as well except
+that the red ellipse, which is opaque, hides the circle in the area of
+the blue ellipse.
+<p><b><font color="#FF0000">Lower-right quadrant</font></b>
+<p>In the lower-right quadrant, both the green and blue ellipses are ninety-percent
+transparent, and the large circle shows through the blue ellipse.&nbsp;
+Again, the red ellipse, which is opaque, hides the circle.
+<p>The lower-right quadrant also produces an optical illusion.&nbsp; On
+my screen, it looks like the red ellipse is partially transparent with
+the green and blue ellipses showing through the red ellipse.&nbsp; However,
+that is not the case.&nbsp; The red ellipse is opaque in this quadrant,
+as evidenced by the fact that the large circle does not show through the
+red ellipse.&nbsp; The opaque red ellipse is still on the bottom of the
+stack, and the transparent blue ellipse is still on the top of the stack.
+<p><b><font color="#FF0000">Illustrates rotation and translation</font></b>
+<p>Although this isn’t the primary purpose of this lesson, the lesson also
+provides a good illustration of the benefits of rotation and translation.
+<p>As we will see when we examine the code, the task of rotating the ellipses
+relative to each other and the task of translating them into the various
+quadrants was made much easier (even possible) through the use of the <b>AffineTransform
+</b>to
+rotate and translate the ellipses.
+<p><b><font color="#FF0000">The normal caveat regarding inches</font></b>
+<br>&nbsp;
+<table BORDER CELLSPACING=3 CELLPADDING=0 WIDTH="330" BGCOLOR="#66FFFF" >
+<tr>
+<td>This discussion of dimensions in inches on the screen depends on the
+method named <b>getScreenResolution()</b> returning the correct value.&nbsp;
+However, the <b>getScreenResolution() </b>method always seems to return
+120 on my computer regardless of the actual screen resolution settings.</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">Will discuss in fragments</font></b>
+<p>I will discuss this program in fragments.&nbsp; The controlling class
+and the constructor for the GUI class are essentially the same as you have
+seen in several previous lessons, so, I won’t repeat that discussion here.&nbsp;
+You can view that material in the complete listing of the program at the
+end of the lesson.
+<p>All of the interesting action takes place in the overridden
+<b>paint()</b>
+method, so I will begin the discussion there.
+<p><b><font color="#FF0000">Overridden paint() method</font></b>
+<p>The beginning portions of the overridden <b>paint()</b> method should
+be familiar to you by now as well.&nbsp; So, I am going to let the comments
+in <a href="Java320-fig01.htm">Figure 1</a> speak for themselves.
+<p><b><font color="#FF0000">The large circle</font></b>
+<p><a href="Java320-fig02.htm">Figure 2</a> draws the large circle with
+a border width of 0.1 inches.&nbsp; There is nothing new here, so I won’t
+provide an explanation.
+<p><b><font color="#FF0000">An ellipse reference variable</font></b>
+<p><a href="Java320-fig03.htm">Figure 3</a> simply declares a reference
+variable of the class <b>Ellipse2D.Double</b>.&nbsp; This reference variable
+will be used repeatedly in subsequent code for the instantiation of ellipse
+objects.
+<p><b><font color="#FF0000">Now things get interesting</font></b>
+<p>At this point, things get interesting.&nbsp; I need to draw the three
+filled ellipses in the upper-left quadrant.&nbsp; One way to do this (the
+hard way) would be to calculate the coordinates of the ellipses in the
+quadrant and define them according to those coordinates.
+<p>The easier way is to translate the origin to the center of what was
+previously the upper-left quadrant, and to define the bounding rectangle
+for the ellipses centered on the new origin.
+<p><a href="Java320-fig04.htm">Figure 4</a> translates the origin to the
+center of what was previously the upper-left quadrant.&nbsp; After this
+statement is executed, any geometric figure that is drawn centered on the
+origin will actually be rendered in the center of what was earlier the
+upper-left quadrant.
+<p><b><font color="#FF0000">Opaque red ellipse</font></b>
+<p>The next several fragments draw and fill a red opaque ellipse centered
+on the new origin.
+<p>The code in <a href="Java320-fig05.htm">Figure 5</a> has been covered
+in previous lessons, so I won’t discuss it further in this lesson.
+<p><b><font color="#FF0000">setComposite() and AlphaComposite</font></b>
+<p><a href="Java320-fig06.htm">Figure 6</a> shows the use of the <b>setComposite()</b>
+method and the <b>AlphaComposite</b> class.
+<p>An understanding of this single statement is pretty much the heart of
+this entire lesson.
+<p>As mentioned earlier, the parameter to the <b>setComposite()</b> method
+must be a reference to an object that implements the <b>Composite</b> interface.&nbsp;
+This requirement can be satisfied by passing a reference to an object of
+the <b>AlphaComposite</b> class.
+<p>Also, as mentioned earlier, such an object can be obtained only by invoking
+the factory method, named <b>getInstance()</b> of the <b>AlphaComposite</b>
+class.
+<p><b><font color="#FF0000">Parameters to getInstance()</font></b>
+<p>The <b>getInstance</b> method requires two parameters.&nbsp; The first
+parameter is an <b>int</b> whose value specifies the compositing rule that
+will be used.&nbsp; The second is the alpha value that will be used with
+that rule to establish how compositing will be accomplished.
+<p>This fragment specifies the <b>SRC_OVER</b> rule by passing that symbolic
+constant from the <b>AlphaComposite</b> class.&nbsp; You might want to
+use this program to experiment with the other rules of the <b>AlphaComposite</b>
+class and view the results.
+<p><b><font color="#FF0000">Specifying transparency</font></b>
+<p>This fragment also specifies that the source object will be opaque.
+<p>For this compositing rule, an alpha parameter value of <b>1.0f</b> specifies
+opaque while a value of <b>0.0f</b> specifies total transparency.
+<p>It is primarily the value of the alpha parameter that will be varied
+throughout the remainder of this program to achieve the desired results.
+<p><b><font color="#FF0000">Rendering the red ellipse</font></b>
+<p><a href="Java320-fig07.htm">Figure 7</a> simply renders the ellipse
+according to the <b>paint </b>and <b>composite </b>properties previously
+established.&nbsp; There is nothing new here.
+<p><b><font color="#FF0000">Green opaque ellipse at sixty degrees</font></b>
+<p>To some extent, the use of translation above was for convenience.&nbsp;
+I could have placed the red ellipse in the upper-left quadrant by specifying
+a bounding rectangle at that location.
+<p>However, the code in <a href="Java320-fig08.htm">Figure 8</a> will render
+a green opaque ellipse rotated by an angle of sixty degrees.&nbsp; This
+rotational transformation is not simply for convenience.&nbsp; I don’t
+know of any other way to draw an ellipse whose major axis is neither horizontal
+nor vertical, except for use of the <b>GeneralPath</b> class to construct
+the ellipse piecemeal.&nbsp; I certainly don’t want to create the ellipse
+using <b>GeneralPath</b>.
+<p>The code in Figure 8
+<ul style='margin-top:0in' type=disc>
+<li>
+Defines a new ellipse centered on the new origin with a horizontal major
+axis.</li>
+
+<li>
+Specifies that it will be rendered by rotating it sixty degrees.</li>
+
+<li>
+Sets its fill color to green.</li>
+
+<li>
+Sets its transparency to opaque.</li>
+
+<li>
+Renders it in device space (the screen).</li>
+</ul>
+<b><font color="#FF0000">Blue opaque ellipse at 120 degrees</font></b>
+<p>Recall from the earlier lesson on the use of the
+<b>AffineTransform</b>
+that successive calls to the <b>rotate()</b> method produce cumulative
+angles of rotation.&nbsp; Therefore, in order to rotate the blue ellipse
+by a total of 120 degrees, the following fragment invokes another sixty-degree
+rotation.
+<p>Otherwise, the code in <a href="Java320-fig09.htm">Figure 9</a> is straightforward,
+producing an opaque blue ellipse in the upper-left quadrant rotated by
+a total of 120 degrees relative to the red ellipse.
+<p>As mentioned earlier, the blue ellipse is on the top of the stack, the
+red ellipse is on the bottom of the stack, and the green ellipse is in
+the middle.
+<p><b><font color="#FF0000">Rotation can produce complexity</font></b>
+<p>The combination of rotation and translation can produce very complicated
+results.&nbsp; The objective of the next few fragments is to produce ellipses
+having different transparency values in the upper-right quadrant.
+<p><b><font color="#FF0000">Translate origin to upper-right quadrant</font></b>
+<p>To avoid the complexity mentioned above, before translating the origin
+to the center of the original upper-right quadrant, the code in <a href="Java320-fig10.htm">Figure
+10</a> reverses the rotation previously imposed by the code discussed above.
+<p>Note that the angle of rotation is negative, and amount of rotation
+is sixty degrees multiplied by two.
+<p>Following reversal of the previous rotation, the origin is translated.&nbsp;
+In this case, the new origin is translated two inches to the right of the
+previous origin, but at the same vertical position.&nbsp; This places the
+new origin in the center of what was originally the upper-right quadrant.
+<p><b><font color="#FF0000">Repetitive code</font></b>
+<p>From this point forward, the code becomes very repetitive.&nbsp; Therefore,
+I am going to show only that code that distinguishes the rendering of the
+ellipses in one quadrant from the rendering in the other quadrants, with
+respect to transparency.
+<p>You can view the entire program at the end of the lesson.
+<p><b><font color="#FF0000">Upper-right quadrant</font></b>
+<p><a href="Java320-fig11.htm">Figure 11</a> shows the invocation of the
+<b>setComposite()</b>
+methods for the red, green, and blue ellipses respectively.
+<p>As you can see, the first two are opaque (alpha equals
+<b>1.0f</b>)
+while the blue ellipse is fifty-percent transparent (alpha equals <b>0.5f</b>).
+<p><b><font color="#FF0000">Lower-left quadrant</font></b>
+<p><a href="Java320-fig12.htm">Figure 12</a> shows the invocation of the
+<b>setComposite()</b>
+methods for the red, green, and blue ellipses respectively in the lower-left
+quadrant.
+<p>The red ellipse is opaque (alpha equals <b>1.0f</b>).&nbsp; The green
+ellipse is fifty-percent transparent (alpha equals <b>0.5f</b>), while
+the blue ellipse is ninety-percent transparent (alpha equals <b>0.1f</b>).
+<p><b><font color="#FF0000">Lower-right quadrant</font></b>
+<p><a href="Java320-fig13.htm">Figure 13</a> shows that the red ellipse
+is opaque (alpha equals <b>1.0f</b>).&nbsp; The green and blue ellipses
+are ninety-percent transparent (alpha equals <b>0.1f</b>).
+<center>
+<h2>
+<a NAME="_Summary"></a>Summary</h2></center>
+In this lesson, I have shown you how to use the
+<b>setComposite()</b> method
+of the <b>Grapics2D</b> class along with the
+<b>AlphaComposite</b> class
+to control the manner in which new pixel values are composited with existing
+pixel values.&nbsp; The sample programs in this lesson concentrate on transparency
+as a way to demonstrate compositing pixels.
+<p>In addition, you have seen some additional uses for the <b>translate</b>
+and <b>rotate</b> transforms.
+<center>
+<h2>
+<a NAME="Complete Program Listing"></a>Complete Program Listing</h2></center>
+A complete listing of the program is provided in <a href="Java320-fig14.htm">Figure
+14</a>.
+<p>Copyright 2000, Richard G. Baldwin.&nbsp; Reproduction in whole or in
+part in any form or medium without&nbsp; express written permission from
+Richard Baldwin is prohibited.&nbsp;
+<p><b>About the author</b>
+<p><i><b><a href="mailto:baldwin@austin.cc.tx.us">Richard Baldwin</a></b>
+is a college professor and private consultant whose primary focus is a
+combination of Java and XML. In addition to the many platform-independent
+benefits of Java applications, he believes that a combination of Java and
+XML will become the primary driving force in the delivery of structured
+information on the Web.</i>
+<p><i>Richard has participated in numerous consulting projects involving
+Java, XML, or a combination of the two.&nbsp; He frequently provides onsite
+Java and/or XML training at the high-tech companies located in and around
+Austin, Texas.&nbsp; He is the author of Baldwin's Java Programming <a href="http://www.geocities.com/Athens/7077/scoop/onjava.html">Tutorials</a>,
+which has gained a worldwide following among experienced and aspiring Java
+programmers. He has also published articles on Java Programming in Java
+Pro magazine.</i>
+<p><i>Richard holds an MSEE degree from Southern Methodist University and
+has many years of experience in the application of computer technology
+to real-world problems.</i>
+<p>-end-<!--end-->
+</body>
+</html>

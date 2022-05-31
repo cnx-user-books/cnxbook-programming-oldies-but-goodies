@@ -1,0 +1,1907 @@
+<!DOCTYPE doctype PUBLIC "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+  <meta http-equiv="Content-Type"
+ content="text/html; charset=iso-8859-1">
+  <title>... in Java by Richard G Baldwin</title>
+</head>
+<body link="#0000ff" vlink="#666666" alink="#ff0000" lang="EN-US">
+<h2 align="center"> <b>
+Capturing Output Produced by Programs Running in a Child Process</b></h2>
+<i>Learn how to capture and display the standard output and the error output 
+produced by programs executing in a child process resulting from a call to the 
+exec method.&nbsp; Apply that knowledge to upgrade the MIDlet development 
+framework from the previous lesson in the series.</i><p><b>Published:</b>&nbsp; 
+January 15, 2008<br>
+<b>By <a href="mailto:Baldwin@DickBaldwin.com">Richard G. Baldwin</a></b>
+</p>
+<p>Java Programming Notes # 2572</p>
+<ul>
+	<li><a href="#Preface">Preface</a></li>
+
+	<ul>
+		<li><a href="#Viewing_tip">Viewing tip</a><ul>
+			<li><a href="#Figures">Figures</a></li>
+			<li><a href="#Listings">Listings</a></li>
+		</ul></li>
+		<li><a href="#Supplementary_material">Supplementary material</a></li>
+	</ul>
+	<li><a href="#General_background_information1">General background 
+	information</a></li>
+	<li><a href="#Preview1">Preview</a></li>
+	<li><a href="#Discussion_and_sample_code1">Discussion and sample code</a><ul>
+	<li><a href="#Command-line_input">Command-line input</a></li>
+	<li><a href="#Capturing_output_in_a_child_process">Capturing output in a 
+	child process</a></li>
+</ul></li>
+	<li><a href="#Run%20the%20program">Run the program</a></li>
+	<li><a href="#Summary">Summary</a></li>
+	<li><a href="#Whats%20Next">What's next?</a></li>
+	<li><a href="#Resources">Resources</a></li>
+	<li><a href="#Complete%20Program%20Listings">Complete program
+	listings</a></li>
+	<li><a href="#Copyright">Copyright</a></li>
+	<li><a href="#About_the_author">About the author</a></li>
+</ul>
+<hr size="3" width="100%" align="center">
+<center>
+<h2> <a name="Preface"></a>Preface</h2>
+</center>
+<p> This is the second lesson in a series of tutorial lessons designed to teach 
+you how to write programs using the Sun Java Wireless Toolkit for CLDC.&nbsp; 
+The first lesson was titled <i>Getting Started with MIDlets and the Sun Java 
+Wireless Toolkit for CLDC (see <a href="#Resources">Resources</a>)</i>.&nbsp; 
+In that lesson I provided and explained a Java programming framework 
+that makes it relatively east to experiment with MIDlet programming.</p>
+<p> <font color="#FF0000"><b>A side trip</b></font></p>
+<p> In this lesson, I will take a side trip into the world of <b>
+Runtime.getRuntime().exec(cmdString)</b>.&nbsp; I will teach you how to capture 
+and display the standard output and the error output produced by programs 
+executing in a child process resulting from a call to that method.</p>
+<p> <font color="#FF0000"><b>Upgrade the framework</b></font></p>
+<p> Then I will apply that knowledge to upgrade the MIDlet development framework 
+that I presented in the previous lesson.&nbsp; This will make it 
+possible to display compile time errors when the framework is used to compile a 
+MIDlet and will also make it possible to display information written to standard 
+output or error output by MIDlets being tested in the Sun cell phone emulator.</p>
+<p> <font color="#FF0000"><b>Not peculiar to MIDlets</b></font></p>
+<p> Although I am including this material in a series primarily dedicated to 
+MIDlets, the programming techniques that I will teach you in this lesson are not 
+peculiar to the development of MIDlets.&nbsp; Rather, these techniques represent 
+a general-purpose programming capability that is useful in a wide variety of 
+applications in which the <b>exec</b> method is 
+called for the purpose of executing another program in a child process.</p>
+<p> <font color="#FF0000"><b>Another minor upgrade to the framework</b></font></p>
+<p> While I am at it, I will also show you how to upgrade the framework program 
+to make it responsive to command-line parameters.</p>
+<h3> <a name="Viewing_tip">Viewing tip</a></h3>
+<p> I recommend that you open another copy of this document in a separate 
+browser window and use the following links to easily find and view the figures 
+and listings while you are reading about them.</p>
+<h4> <a name="Figures">Figures</a></h4>
+<ul>
+	<li><a href="#Figure_1">Figure 1</a>. User interface for the framework 
+	program.</li>
+	<li><a href="#Figure_2">Figure 2</a>. Framework output for a MIDlet with a 
+	programming error.</li>
+	<li><a href="#Figure_3">Figure 3</a>. Partial description of the Process 
+	class.</li>
+	<li><a href="#Figure_4">Figure 4</a>. Methods of the Process class.</li>
+	<li><a href="#Figure_5">Figure 5</a>. Framework output for a MIDlet that 
+	produces 
+	standard output in the cell phone emulator.</li>
+</ul>
+<h4> <a name="Listings">Listings</a></h4>
+<ul>
+	<li><a href="#Listing_1">Listing 1</a>. Contents of a simple batch file.</li>
+	<li><a href="#Listing_2">Listing 2</a>. Beginning of the class and the main 
+	method.</li>
+	<li><a href="#Listing_3">Listing 3</a>. Upgraded compile method.</li>
+	<li><a href="#Listing_4">Listing 4</a>. The method named getChildOutput.</li>
+	<li><a href="#Listing_5">Listing 5</a>. The class named ChildDataHandler.</li>
+	<li><a href="#Listing_6">Listing 6</a>. The upgraded framework program named 
+	WTKFramework02.</li>
+	<li><a href="#Listing_7">Listing 7</a>. The MIDlet named LifeCycle01.</li>
+</ul>
+<h3 align="left"> <a name="Supplementary_material">Supplementary material</a></h3>
+<p> I recommend that you also study the other lessons in my extensive collection 
+of online Java tutorials.&nbsp; You will find a consolidated index at
+<font
+ color="#000000"> <a href="http://www.dickbaldwin.com/toc.htm">
+www.DickBaldwin.com</a>.</font></p>
+<h2 align="center"><a name="General_background_information1">General background information</a></h2>
+<p>Referring back to the previous lesson <i>(see <a href="#Resources">Resources</a>)</i>, 
+The <a name="following_steps">following steps</a> are required to produce a 
+MIDlet and to get it running in a cell phone:</p>
+<ol>
+	<li>Design the MIDlet <i>(similar to designing any Java program)</i></li>
+	<li>Write the program code <i>(similar to coding any Java program)</i></li>
+	<li><b>Compile the code <i>(targeted to a Java v1.4 virtual machine, a 
+	specific version of the CLDC, and a specific version of the MIDP)</i></b></li>
+	<li><b>Pre-verify the compiled code</b></li>
+	<li><b>Create a manifest file</b></li>
+	<li><b>Create a Java ARchive <i>(JAR)</i> file</b></li>
+	<li><b>Create a Java Application Descriptor <i>(JAD)</i> file</b></li>
+	<li><b>Test the MIDlet in a cell phone emulator</b></li>
+	<li>Deploy the MIDlet into a cell phone</li>
+</ol>
+<p>The Java framework program that I presented in the previous lesson handles 
+items 3 through 8 in the above list with the single click of a button.&nbsp; As 
+mentioned earlier, I will teach you how to 
+upgrade the framework program so that it will capture and display the standard 
+output and error output produced by programs executing in a child process 
+resulting from a call to the <b>
+Runtime.getRuntime().exec(cmdString)</b> method.</p>
+<p> I will also show you how to upgrade the framework program to make it 
+responsive to command-line parameters.</p>
+<h2 align="center"><a name="Preview1">Preview</a></h2>
+<p> <font color="#FF0000"><b>The user interface</b></font></p>
+<p> Referring once more to the previous lesson, Figure 1 shows the user 
+interface for the framework.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+<p>
+ <b><a name="Figure_1">Figure 1</a>. User interface for the framework program.</b><table border="0" cols="1" bgcolor="#ffffff" id="table3">
+  <tbody>
+    <tr>
+      <td>
+      <pre><img border="1" src="java2572a1.jpg" width="401" height="251"></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>One change will impact the user interface</b></font></p>
+<p>One of the changes that I will make to the framework in this lesson will 
+impact the contents of the upper right text field shown in Figure 1.&nbsp; This 
+text field contains the default 
+program name.&nbsp; I will make it possible to change the default program name 
+by entering a different program name on the command line when the 
+framework program is started.</p>
+<p><font color="#FF0000"><b>Why make this change?</b></font></p>
+<p>This change makes it possible to create a batch 
+file to start the framework with a different default program name.&nbsp; This is 
+a very 
+convenient procedure for repeatedly testing the same MIDlet program, while 
+eliminating compile errors for example.&nbsp; If you are 
+satisfied with all of the other default values in the user interface, you can simply 
+double-click the name of the batch file and then click the <b>Run</b> button 
+in Figure 1 to cause the framework program to execute using the name of your MIDlet.</p>
+<p>Listing 1 shows the contents of a simple batch file that can be used as 
+described above to repeatedly test a MIDlet named <b>LifeCycle01</b>.</p>
+<p>
+<b><a name="Listing_1">Listing 1</a>. Contents of a simple batch file. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee" id="table4">
+  <tbody>
+    <tr>
+      <td>
+      <pre>java WTKFramework02 LifeCycle01
+pause</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Other change will impact the framework output</b></font></p>
+<p>The other change that I will make to the framework doesn't impact the user 
+interface shown in Figure 1.&nbsp; Rather it impacts the standard output 
+produced by the framework program.&nbsp; For example, Figure 2 shows a portion 
+of the standard output from the framework program where I ran the framework with 
+a MIDlet named <b>LifeCycle01</b> in which I had purposely inserted a programming error.</p>
+<p>
+ <b><a name="Figure_2">Figure 2</a>. Framework output for a MIDlet with a 
+	programming error. </b>
+<table border="1" cols="1" width="477" bgcolor="#ffffff" id="table2">
+  <tbody>
+    <tr>
+      <td>
+      <pre>Compile command:
+C:/Program Files/Java/jdk1.6.0/bin/javac 
+-target 1.4 
+-source 1.4 
+-bootclasspath
+M:/WTK2.5.2/lib/cldcapi11.jar;
+M:/WTK2.5.2/lib/midpapi20.jar 
+LifeCycle01/LifeCycle01.java
+ERR: LifeCycle01\LifeCycle01.java:65: cannot find symbol
+ERR: symbol  : variable timeBase
+ERR: location: class LifeCycle01.LifeCycle01
+ERR:     timeBase = new Date().getTime();
+ERR:     ^
+ERR: LifeCycle01\LifeCycle01.java:67: cannot find symbol
+ERR: symbol  : variable timeBase
+ERR: location: class LifeCycle01.LifeCycle01
+ERR:                   + (new Date().getTime()-timeBase));
+ERR:                                                ^
+ERR: LifeCycle01\LifeCycle01.java:77: cannot find symbol
+ERR: symbol  : variable timeBase
+ERR: location: class LifeCycle01.LifeCycle01
+ERR:                   + (new Date().getTime()-timeBase));
+ERR:                                                ^
+ERR: LifeCycle01\LifeCycle01.java:89: cannot find symbol
+ERR: symbol  : variable timeBase
+ERR: location: class LifeCycle01.LifeCycle01
+ERR:                   + (new Date().getTime()-timeBase));
+ERR:                                                ^
+ERR: LifeCycle01\LifeCycle01.java:103: cannot find symbol
+ERR: symbol  : variable timeBase
+ERR: location: class LifeCycle01.LifeCycle01
+ERR:                   + (new Date().getTime()-timeBase));
+ERR:                                                ^
+ERR: LifeCycle01\LifeCycle01.java:122: cannot find symbol
+ERR: symbol  : variable timeBase
+ERR: location: class LifeCycle01.LifeCycle01
+ERR:                   + (new Date().getTime()-timeBase));
+ERR:                                                ^
+ERR: 6 errors
+Compile error
+Terminating</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>As you can see in Figure 2, the framework program captured the error output 
+from the compiler program and displayed the errors before terminating.&nbsp; </p>
+<h2 align="center"><a name="Discussion_and_sample_code1">Discussion and sample code</a></h2>
+<p>
+
+
+<table width="275" cellpadding="0" cellspacing="0" border="0" align="right" id="table6">
+<tr>
+<td width="10">
+<td>
+  <table width="100%" cellpadding="5" cellspacing="0" border="1" id="table7">
+  <tr><td bgcolor="#eeeeee">
+  <b>The complete program</b><br />
+  You can view a complete listing of the framework program in Listing 6.&nbsp; 
+	Note that when I made this upgrade to the program, I changed the name from 
+	WTKFramework01 to WTKFramework02.</td></tr></table>
+</td>
+</tr>
+</table>
+<h3><a name="Command-line_input">Command-line input</a></h3>
+<p>Lets begin with the easy change to the framework program.&nbsp; Listing 2 
+shows a partial listing of the beginning of the class along with the <b>main</b> 
+method.</p>
+<p>In the interest of brevity, I purposely deleted much of the code from Figure 
+2 that had nothing to do with this upgrade.</p>
+<p>
+<b><a name="Listing_2">Listing 2</a>. Beginning of the class and the main 
+method. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee" id="table5">
+  <tbody>
+    <tr>
+      <td>
+      <pre>public class <b>WTKFramework02</b>{
+  //Code deleted for brevity
+  String prog = "WTK001";
+  //Code deleted for brevity
+
+  static WTKFramework02 thisObj;//New to the upgrade
+  //----------------------------------------------------//
+
+  public static void <b>main</b>(String[] args){
+    thisObj = new WTKFramework02();
+    if(args.length != 0)thisObj.prog = args[0];
+    thisObj.new GUI();
+  }//end main</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Purpose</b></font></p>
+<p>The purpose of this upgrade is to allow the user to enter a command-line 
+parameter when the framework program is started and to cause the value of that 
+parameter to be entered into the <b>Program Name</b> field in Figure 1.</p>
+<p><font color="#FF0000"><b>Methodology</b></font></p>
+<p>This upgrade involved:</p>
+<ul>
+	<li>Adding a new instance variable named <b>thisObj</b>.</li>
+	<li>Modifying the code in the <b>main</b> method.</li>
+</ul>
+<p>If you are familiar with the use of command-line parameters in Java 
+applications, the new code in the <b>main</b> method in Listing 2 should be 
+clear to you.&nbsp; The value of the command-line parameter is obtained and 
+stored in the instance variable named <b>prog</b>.&nbsp; As I explained in the 
+previous lesson <i>(see <a href="#Resources">Resources</a>)</i>, the code that 
+was already written into the program uses the value of the instance variable 
+named <b>prog</b> to populate the <b>Program Name</b> field shown in Figure 1.</p>
+<h3><a name="Capturing_output_in_a_child_process">Capturing output in a child 
+process</a></h3>
+<p><font color="#FF0000"><b>Purpose</b></font></p>
+<p>The purpose of this upgrade is to capture and display the standard output and 
+the error output produced by a program executing in a child process as a result 
+of calling the <b>Runtime.getRuntime().exec(cmdString)</b> method.&nbsp; This 
+upgrade involved quite a lot more effort than the simple upgrade described 
+above.</p>
+<p>
+
+
+<table width="275" cellpadding="0" cellspacing="0" border="0" align="right" id="table8">
+<tr>
+<td width="10">
+<td>
+  <table width="100%" cellpadding="5" cellspacing="0" border="1" id="table9">
+  <tr><td bgcolor="#eeeeee">
+  <b>The Process class</b><br />
+  Note that Process is a class in J2SE, and is not a class in the special WTK 
+	class libraries. <b>&nbsp;</b></td></tr></table>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>A Process object</b></font></p>
+<p>To begin with, a call to the <b>exec</b> method returns a reference to an object 
+of type <b>Process</b>.&nbsp; Figure 3 shows part of what Sun has to say about 
+the <b>Process</b> class.&nbsp; We will be particularly interested in the 
+caution in Figure 3 that is highlighted in boldface.</p>
+<p>
+ <b><a name="Figure_3">Figure 3</a>. Partial description of the Process class. </b>
+<table border="1" cols="1" width="477" bgcolor="#ffffff" id="table10">
+  <tbody>
+    <tr>
+      <td>
+The... Runtime.exec methods create a native process and return an 
+instance of a subclass of Process that can be used to control the 
+process and obtain information about it. The class Process provides 
+methods for performing input from the process, performing output to the process, 
+waiting for the process to complete, checking the exit status of the process, 
+and destroying (killing) the process.
+<p>...The created subprocess does not have its own terminal or console. All its 
+standard io (i.e. stdin, stdout, stderr) operations will be redirected to the 
+parent process through three streams (getOutputStream(), 
+getInputStream(), getErrorStream()). The parent process uses 
+these streams to feed input to and get output from the subprocess. <b>Because some 
+native platforms only provide limited buffer size for standard input and output 
+streams, failure to promptly write the input stream or read the output stream of 
+the subprocess may cause the subprocess to block, and even deadlock.</b></td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000">
+ <b>Methods of the Process class</b></font></p>
+<p>Figure 4 contains a brief description of each of the methods of the <b>
+Process</b> class.</p>
+<p>
+ <b><a name="Figure_4">Figure 4</a>. Methods of the Process class. </b>
+<table border="1" cols="1" bgcolor="#ffffff" id="table11">
+  <tbody>
+    <tr>
+      <td>
+<p align="center"><b>Return Type</b></td>
+      <td>
+      <p align="center"><b>Name</b></td>
+      <td width="238">
+      <p align="center"><b>Description</b></td>
+    </tr>
+    <tr>
+      <td>
+void</td>
+      <td>
+      destroy()</td>
+      <td width="238">
+      Kills the subprocess.</td>
+    </tr>
+    <tr>
+      <td>
+      int </td>
+      <td>
+      exitValue()</td>
+      <td width="238">
+      Returns the exit value for the subprocess</td>
+    </tr>
+    <tr>
+      <td>
+      InputStream </td>
+      <td>
+      getErrorStream()</td>
+      <td width="238">
+      Gets the error stream of the subprocess.</td>
+    </tr>
+    <tr>
+      <td>
+      InputStream </td>
+      <td>
+      getInputStream()</td>
+      <td width="238">
+      <b>Gets the input stream of the subprocess.</b></td>
+    </tr>
+    <tr>
+      <td>
+      OutputStream </td>
+      <td>
+      getOutputStream()</td>
+      <td width="238">
+      <b>Gets the output stream of the subprocess.</b></td>
+    </tr>
+    <tr>
+      <td>
+      int </td>
+      <td>
+      waitFor()</td>
+      <td width="238">
+      causes the current thread to wait, if necessary, until the process 
+		represented by this Process object has terminated.</td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Note that although the material in Figure 4 was copied directly from the Sun 
+documentation for the <b>Process</b> class, I believe that the two descriptions 
+shown in boldface are either reversed or at best unclear.&nbsp; <i>(See my 
+description <a href="#getInputStream()_">below</a>.)</i></p>
+<p><font color="#FF0000"><b>The <i>exit value</i></b></font></p>
+<p>The original version of the framework program that I explained in the 
+previous lesson used the <b>waitFor</b> method to get the <i>exit value</i> 
+produced by the program running in the child process.&nbsp; Although I didn't 
+use the <b>exitValue</b> method in the original version of the framework <i>(and 
+won't use it in this version either)</i>, as mentioned above, the <i>exit value</i> 
+is returned by the <b>waitFor</b> method.&nbsp; Therefore, I did use the value 
+that would be returned by the <b>exitValue</b> method in the original version 
+and will also use it in the upgraded version.</p>
+<p><font color="#FF0000"><b>Additional methods used in the upgraded version of 
+the framework</b></font></p>
+<p>I will use the following additional methods in the upgraded version of the 
+framework:</p>
+<ul>
+	<li><b>getErrorStream()</b> - Used to get error output from the program running in 
+	the child process.</li>
+	<li><a name="getInputStream()_"><b>getInputStream()</b> </a>- Used to get the 
+	standard output from the program running in the child process.</li>
+</ul>
+<p>Since none of the programs that are run in a new process by the framework 
+require standard input, even the upgraded version of the framework doesn't use 
+the method named <b>getOutputStream</b> shown in Figure 4.</p>
+<p><font color="#FF0000"><b>Will present and explain the code in fragments</b></font></p>
+<p>As mentioned earlier, you can view a complete listing of the upgraded version 
+of the framework program in Listing 6.&nbsp; I will explain the changes made to 
+the program by explaining code fragments from the program.&nbsp; Listing 3 shows 
+the first change that I will explain.&nbsp; This change is typical of the 
+changes that were made at several locations in the program, so I will only 
+explain this one change.&nbsp; Further, I explained most of the code in Listing 
+3 in the previous lesson so I won't repeat that explanation here.</p>
+<p>
+<b><a name="Listing_3">Listing 3</a>. Upgraded compile method. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee" id="table12">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  void compile(){
+    try{
+      String cmdString =
+           javaPath + "/javac -target 1.4 -source 1.4 "
+           + "-bootclasspath " + toolkit + configJar + ";"
+           + toolkit + profileJar
+           + " " + prog + "/" + prog + ".java";
+
+      System.out.println("\nCompile command:");
+      System.out.println(cmdString);
+      Process proc = Runtime.getRuntime().exec(cmdString);
+
+      //Get and display the standard output and/or the
+      // error output produced by the child process.<b>
+      getChildOutput(proc);</b>
+
+      int val = proc.waitFor();
+      compileOK = val;
+      if(val == 0){
+        System.out.println("Compile OK");
+      }else{
+        System.out.println("Compile error");
+      }//end else
+
+    }catch( Exception e ){
+      e.printStackTrace();
+    }//end catch
+
+  }//end compile</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The essential change to the code in Listing 3 is the call to the method named
+<b>getChildOutput</b> shown in boldface near the middle of Listing 3.&nbsp; A 
+reference to the <b>Process</b> in which the child program is running is passed 
+to the method.&nbsp; The <b>getChildOutput</b> method causes the standard 
+output and the error output produced by the executing child program to be 
+displayed as shown in Figure 2.&nbsp; Hopefully it is being done in such a way 
+as to avoid the problem highlighted in boldface at the bottom of Figure 3.</p>
+<p><font color="#FF0000">
+<b>The method named getChildOutput</b></font></p>
+<p>The method named <b>getChildOutput</b> is shown in its entirety in Listing 4.</p>
+<p>
+<b><a name="Listing_4">Listing 4</a>. The method named getChildOutput</b>.<table border="1" cols="1" width="477" bgcolor="#eeeeee" id="table13">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  void <b>getChildOutput</b>(Process proc){
+    try{
+      //Spawn two threads.
+      ChildDataHandler errorHandler = 
+                           new <b>ChildDataHandler</b>(
+                           proc.<b>getErrorStream</b>(),"ERR: ");
+      ChildDataHandler outputHandler = 
+                           new <b>ChildDataHandler</b>(
+                           proc.<b>getInputStream</b>(),"OUT: ");
+          
+      //Start them running
+      errorHandler.start();
+      outputHandler.start();
+
+    }catch( Exception e ){
+      e.printStackTrace();
+    }//end catch
+  }//end getChildOutput</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Two threads</b></font></p>
+<p>Listing 4 spawns two threads to handle the task of getting and displaying the 
+standard output and the error output from the program that is executing in the 
+child process referenced by the incoming parameter to the <b>getChildOutput</b> 
+method.</p>
+<p>This is accomplished by instantiating two objects from a new <b>Thread</b> 
+class named <b>ChildDataHandler</b> and starting the two threads running 
+concurrently.&nbsp; <i>(I will explain the code in the new <b>Thread</b> class 
+shortly.)</i></p>
+<p><font color="#FF0000"><b>Doesn't know and doesn't care...</b></font></p>
+<p>An object of the <b>ChildDataHandler</b> class doesn't know and doesn't care 
+whether the data stream being captured and displayed is produced by the standard 
+output or by the error output of the program being executed in the child 
+process.&nbsp; As far as that object is concerned, it is simply an output stream 
+being produced by the program.</p>
+<p><font color="#FF0000"><b>Constructor parameters</b></font></p>
+<p>The constructor for the first new <b>ChildDataHandler</b> object receives a 
+reference to the error stream produced by the program running in the child 
+process.&nbsp; This reference is obtained by calling the <b>getErrorStream</b> 
+method on the reference to the child process.&nbsp; Similarly, the constructor 
+for the second <b>ChildDataHandler</b> object receives a reference to the 
+standard output stream being produced by that program.</p>
+<p><font color="#FF0000"><b>Identifying the type of output in the display</b></font></p>
+<p>The strings that are passed as the second parameter to the constructor in 
+Listing 4 are used to label each line of output displayed by that object as 
+shown in Figure 2.&nbsp; In Figure 2, only data from the standard error output 
+of the compiler was produced.&nbsp; Therefore, each line of output text was 
+labeled <b>ERR</b>.</p>
+<p>I believe that if the program being executed in the child process were to 
+produce both standard output and error output concurrently, the display shown 
+would produce interleaved lines of text labeled <b>ERR</b> and text labeled <b>
+OUT</b>.&nbsp; However, none of my test cases exhibited that characteristic so I 
+was unable to confirm that belief.</p>
+<p><font color="#FF0000"><b>Acknowledgement</b></font></p>
+<p>Before I forget it, let me mention that this code was heavily influenced by 
+what I learned when reading the article named <i> <span class="style2">When 
+Runtime.exec() won't By </span>Michael C. Daconta (see <a href="#Resources">
+Resources</a>)</i>.</p>
+<p><font color="#FF0000">
+<b>The class named ChildDataHandler</b></font></p>
+<p>The class named <b>ChildDataHandler</b>
+is shown in its entirety in Listing 5.</p>
+<p>
+<b><a name="Listing_5">Listing 5</a>. The class named ChildDataHandler. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee" id="table14">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  class ChildDataHandler extends Thread{
+    InputStream inputStream;
+    String type;
+    
+    ChildDataHandler(InputStream inputStream,String type){
+      this.inputStream = inputStream;
+      this.type = type;
+    }//end constructor
+    
+    public void run(){
+      try{
+        InputStreamReader inputStreamReader = 
+                       new InputStreamReader(inputStream);
+        BufferedReader bufferedReader = 
+                    new BufferedReader(inputStreamReader);
+        String line=null;
+        while((line = bufferedReader.readLine()) != null){
+          System.out.println(type + line);
+        }//end while
+      }catch(Exception e){
+        e.printStackTrace();  
+      }//end catch
+    }//end run
+  }//end class ChildDataHandler</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The class named <b>ChildDataHandler</b> is a member class of the class named
+<b>WTKFramework02</b>.&nbsp; The purpose of an object of this class is to get and 
+to display either the standard output or the error output produced by a 
+programming running in a child process.</p>
+<p><font color="#FF0000"><b>A Thread class</b></font></p>
+<p>The first thing to note is that this class extends the class named <b>Thread</b>, 
+which causes it to implement the interface named <b>Runnable</b> indirectly.&nbsp; 
+If you are unfamiliar with multi-threaded programming in Java, the code in 
+Listing 5 will probably make very little sense to you.&nbsp; In that case, you 
+might want to do some background study on the subject of threading and 
+concurrent programming.&nbsp; <i>(See <font color="#000000">
+<a href="http://www.dickbaldwin.com/toc.htm">www.DickBaldwin.com</a>.</font>)</i>&nbsp; 
+Otherwise, you should be okay at least down through the constructor.</p>
+<p><font color="#FF0000"><b>The run method</b></font></p>
+<p>Our primary interest is the method named <b>run</b>.&nbsp; This method is 
+executed when 
+the code in Listing 4 calls the method named <b>start</b>.&nbsp; Since the code 
+in Listing 4 instantiates two <b>Thread</b> objects and calls the <b>start</b> 
+method on each, there will be two instances of the <b>run</b> method executing 
+concurrently.</p>
+<p>One instance of the <b>run</b> method will be monitoring the <i>standard 
+output stream</i> from the program and will display any data that appears on 
+that stream, one line at a time.&nbsp; The other instance will be monitoring the
+<i>error output stream</i> from the program and will display any data that 
+appears on that stream one line at a time.</p>
+<p>As I mentioned earlier, I believe that if the program produces output data 
+concurrently on both streams, the lines of data will be interleaved in the 
+display but I haven't been able to confirm that belief.&nbsp; That possibility 
+makes it important that the <b>run</b> method use the incoming constructor 
+parameter named <b>type</b> to label each line of output as shown in Figure 2 so 
+that they can be visually separated if they are interleaved.</p>
+<p>If you understand input stream handling in Java, the code in the <b>run</b> 
+method in Listing 5 shouldn't require an explanation.&nbsp; Otherwise, this code 
+might not make much sense to you and you might want to do some background study 
+on the subject.</p>
+<p><font color="#FF0000"><b>Sample output</b></font></p>
+<p>As discussed earlier, Figure 2 shows the compiler error output for a MIDlet 
+named <b>LifeCycle01</b> in which I had purposely inserted a syntax error.</p>
+<p>Similarly, Figure 5 shows the standard output produced by the same MIDlet 
+program <i>(after the syntax error was corrected)</i> when it was tested in the 
+Sun cell phone emulator.</p>
+<p>
+ <b><a name="Figure_5">Figure 5</a>. Framework output for a MIDlet that 
+	produces 
+	standard output in the cell phone emulator. </b>
+<table border="1" cols="1" width="477" bgcolor="#ffffff" id="table15">
+  <tbody>
+    <tr>
+      <td>
+      <pre>Emulator command
+M:/WTK2.5.2/bin/emulator.exe 
+-Xdescriptor output/LifeCycle01.jad
+OUT: Running with storage root 
+C:\Documents and Settings\Administrator\j2mewtk\2.5.2\
+appdb\DefaultColorPhone
+OUT: Running with locale: English_United States.1252
+OUT: Running in the identified_third_party security domain
+OUT: Constructed at: 0
+OUT: Started at: 31
+OUT: I'm working .....
+OUT: Paused at: 2031
+OUT: Re-started at: 4031
+OUT: I'm awake .....
+OUT: Paused at: 6031
+OUT: Re-started at: 8031
+OUT: I'm awake .....
+OUT: Paused at: 10031
+OUT: Re-started at: 12031
+OUT: I'm awake .....
+OUT: Paused at: 14031
+OUT: Re-started at: 16031
+OUT: I'm awake .....
+OUT: Paused at: 18031
+OUT: Destroyed at:  20031
+OUT: I'm awake Terminating worker
+OUT: Execution completed.
+OUT: 3544753 bytecodes executed
+OUT: 4430 thread switches
+OUT: 1671 classes in the system (including system classes)
+OUT: 18283 dynamic objects allocated (563556 bytes)
+OUT: 3 garbage collections (469252 bytes collected)
+Emulator finished
+
+Click the Run button to run another MIDlet.</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>The exact nature of the output isn't important</b></font></p>
+<p>Note that some of the output shown in Figure 5 is normal output from the cell 
+phone emulator and some of the output was produced by <b>System.out.println</b> 
+statements in the MIDlet code.&nbsp; However, the exact nature of the output 
+shown in Figure 5 isn't important for this lesson.&nbsp; It will be very 
+important in a future lesson where I explain the MIDlet named <b>LifeCycle01</b>, 
+which is designed to demonstrate the rather complex topic of the life cycle of a 
+MIDlet.</p>
+<p>Although it is not my intent to teach you about the MIDlet named <b>
+LifeCycle01</b> in this lesson, I am providing a copy in Listing 7 near the end 
+of the lesson so that you can use it to test the upgraded framework program in 
+Listing 6.</p>
+<center>
+<h2><a name="Run the program"></a>Run the program</h2>
+</center>
+<p>I encourage you to copy the framework code from Listing 6 into your text 
+editor, compile it, and execute it.&nbsp; Experiment with the MIDlet code in 
+Listing 7 in conjunction with the framework program in Listing 6.&nbsp; Make some changes 
+and observe the results 
+of your changes.</p>
+<p>Don't forget that you will need to download and install the 
+latest version of the Sun Java Wireless Toolkit for CLDC <i>(see
+<a href="#Resources">Resources</a>)</i>.&nbsp; As of the date this lesson 
+is being written, the latest version of the toolkit is 
+WTK2.5.2.</p>
+<h2 align="center"><a name="Summary">Summary</a></h2>
+<p>I taught you how to capture and to display the standard output and the error 
+output produced by programs executing in a child process resulting from a call 
+to the <b>Runtime.getRuntime().exec(cmdString)</b> method.</p>
+<p>I applied that knowledge to upgrade the MIDlet development framework from the 
+previous lesson.&nbsp; This makes it possible to display compile time errors when the 
+framework is used to compile a MIDlet.&nbsp; It also makes it possible to 
+display information written to standard output or error output by MIDlets being 
+tested in the Sun cell phone emulator.</p>
+<h2 align="center"><a name="Whats Next">What's next?</a></h2>
+<p>In the next lesson, I will explain and demonstrate the life cycle of a MIDlet.&nbsp; 
+I will also explain 
+how CLDC and MIDP fit into the grand scheme of things when developing MIDlets.</p>
+<h2 align="center"><a name="Resources">Resources</a></h2>
+<ul>
+	<li><a href="http://java.sun.com/products/sjwtoolkit/download-2_5.html">
+	Download</a> Sun Java Wireless Toolkit 2.5 for CLDC Release</li>
+	<li><a href="http://en.wikipedia.org/wiki/MIDlet">MIDlet</a>: From 
+	Wikipedia, the free encyclopedia</li>
+	<li><a href="http://www.scmad.com/j2me-glossary1.php">MIDlet</a>: According 
+	to SCMAD Certification Center</li>
+	<li><span class="style2">
+	<a href="http://developers.sun.com/mobility/device/device;jsessionid=3F91C410E754F34B1A44DEBCE011ED18">
+	The Java ME Device Table</a></span></li>
+	<li><span class="style2">
+	<a href="http://developers.sun.com/mobility/midp/ttips/getAppProperty/index.html">
+	Retrieving MIDlet Attributes</a> by Richard Marejka</span></li>
+	<li><a href="http://developers.sun.com/mobility/learn/midp/lifecycle/">
+	Learning Path: MIDlet Life Cycle</a></li>
+	<li><span class="style2">
+	<a href="http://www.javaworld.com/javaworld/jw-12-2000/jw-1229-traps.html?page=1">
+	When Runtime.exec() won't</a> By </span>Michael C. Daconta</li>
+	<li><a href="http://www.developer.com/java/j2me/article.php/3719111">2570</a> Getting Started with MIDlets and the Sun Java Wireless Toolkit 
+	for CLDC</li>
+</ul>
+<center>
+<h2> <a name="Complete Program Listings"></a>Complete program listings</h2>
+</center>
+Complete listings of the programs discussed in this lesson are shown in Listing 
+6 and Listing 7 below.
+<p>
+<b><a name="Listing_6">Listing 6</a>. The upgraded framework program named WTKFramework02. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>/*WTKFramework02.java
+Copyright 2007, R.G.Baldwin
+
+Upgraded to capture and display standard output and error
+output from child processes.
+
+Also upgraded to allow user to enter MIDlet name on the
+command line.  This is particularly useful when repeatedly
+running this program from a batch file during MIDlet
+development.
+
+The purpose of this program is to provide a framework that
+makes it easy to experiment with Java MIDlets written to
+run on small mobile devices using the Sun Java Wireless
+Toolkit (WTK2.5.2).  The framework not only makes such
+experimentation easy, it also cleans up after itself by
+automatically deleting all of the extraneous files created
+during the development of the JAR and JAD files, which
+are required for the deployment of the MIDlet program.
+
+Given a file containing the source code for the MIDlet,
+a single click of the mouse causes this framework to
+automatically cycle through the following steps:
+
+Compilation (targeted to Java v1.4 virtual machine)
+Pre-verification
+Creation of the manifest file
+Creation of the JAR file
+Creation of the JAD file
+Deletion of extraneous files, saving the JAR and JAD files
+Deployment and execution in Sun's cell phone emulator
+
+The MIDlet being processed must be stored in a folder
+having the same name as the main MIDlet class.  The
+folder containing the MIDlet must be a child of the
+folder in which the framework is being executed.
+
+Note: When you transfer control to a new process window by
+calling the exec method, the path environment variable
+doesn't go along for the ride.  Therefore, you must
+provide the full path for programs that you call in that
+new process.
+
+Tested using Java SE 6 and WTK2.5.2 running under
+Windows XP.
+*********************************************************/
+
+import java.io.*;
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+
+public class WTKFramework02{
+  String toolkit = "M:/WTK2.5.2";//Path to toolkit root
+  String vendor = "Dick Baldwin";//Default vendor name
+  String midletVersion = "1.0.0";
+  String profile = "MIDP-2.0";
+  String profileJar = "/lib/midpapi20.jar";
+  String config = "CLDC-1.1";
+  String configJar = "/lib/cldcapi11.jar";
+  //Path to the bin folder of the Java installation
+  String javaPath = "C:/Program Files/Java/jdk1.6.0/bin";
+  String prog = "WTK001";
+
+  int initialCleanupOK = 1;//Success = 0
+  int compileOK = 1;//Compiler success = 0
+  int preverifyOK = 1;//Preverify success = 0
+  int deleteClassFilesOK = 1;//Delete success = 0
+  int moveFilesOK = 1;//Move success = 0
+  int manifestFileOK = 1;//Manifest success = 0
+  int jarFileOK = 1;//Jar file success = 0
+  int jadFileOK = 1;//Jad file success = 0
+  int cleanupOK = 1;//Cleanup success = 0
+
+  long jarFileSize = 0;
+
+  JTextField progName;
+  JTextField WTKroot;
+  JTextField vendorText;
+  JTextField midletVersionText;
+  JTextField javaPathText;
+
+  JRadioButton pButton10;
+  JRadioButton pButton20;
+  JRadioButton pButton21;
+
+  JRadioButton cButton10;
+  JRadioButton cButton11;
+
+  static WTKFramework02 thisObj;
+  //----------------------------------------------------//
+
+  public static void main(String[] args){
+    //Allow user to enter the MIDlet name on the command
+    // line.  Useful when running from a batch file.
+    thisObj = new WTKFramework02();
+    if(args.length != 0)thisObj.prog = args[0];
+    thisObj.new GUI();
+  }//end main
+  //----------------------------------------------------//
+
+  void runTheProgram(){
+    //This method is called when the user clicks the Run
+    // button on the GUI.
+    System.out.println("PROGRESS REPORT");
+    System.out.println("Running program named: " + prog);
+
+    //This code calls several methods in sequence to
+    // accomplish the needed actions. If there is a
+    // failure at any step along the way, the
+    // framework will terminate at that point with a
+    // suitable error message.
+
+    //Delete leftover files from a previous run, if any
+    // exist
+    deleteOldStuff();
+    if(initialCleanupOK != 0){//Test for success
+      System.out.println("Initial cleanup error");
+      System.out.println("Terminating");
+      System.exit(1);
+    }//end if
+
+    compile();//compile the MIDlet
+    if(compileOK != 0){//Test for successful compilation.
+      System.out.println("Terminating");
+      System.exit(1);
+    }//end if
+
+    preverify();//Pre-verify the MIDlet class files
+    if(preverifyOK != 0){
+      System.out.println("Terminating");
+      System.exit(1);
+    }//end if
+
+    //Delete the class files from the original program
+    // folder
+    deleteClassFilesOK = deleteProgClassFiles();
+    if(deleteClassFilesOK != 0){
+      System.out.println("Terminating");
+      System.exit(1);
+    }//end if
+
+    //Move the preverified files back to the original
+    // program folder
+    movePreverifiedFiles();
+    if(moveFilesOK != 0){
+      System.out.println("Terminating");
+      System.exit(1);
+    }//end if
+
+    //Make manifest file
+    makeManifestFile();
+    if(manifestFileOK != 0){
+      System.out.println("Manifest file error");
+      System.out.println("Terminating");
+      System.exit(1);
+    }//end if
+
+    //Make Jar file
+    makeJarFile();
+    if(jarFileOK != 0){
+      System.out.println("JAR file error");
+      System.out.println("Terminating");
+      System.exit(1);
+    }//end if
+
+    //Make Jad file
+    makeJadFile();
+    if(jadFileOK != 0){
+      System.out.println("Terminating");
+      System.exit(1);
+    }//end if
+
+    //Delete extraneous files
+    cleanup();
+    if(cleanupOK != 0){
+      System.out.println("Terminating");
+      System.exit(1);
+    }//end if
+
+    //Run emulator
+    runEmulator();
+
+    //Reset success flags
+    initialCleanupOK = 1;//Success = 0
+    compileOK = 1;//Compiler success = 0
+    preverifyOK = 1;//Preverify success = 0
+    deleteClassFilesOK = 1;//Delete success = 0
+    moveFilesOK = 1;//Move success = 0
+    manifestFileOK = 1;//Manifest success = 0
+    jarFileOK = 1;//Jar file success = 0
+    jadFileOK = 1;//Jad file success = 0
+    cleanupOK = 1;//Cleanup success = 0
+
+    //Control returns to here when the user terminates
+    // the cell phone emulator.
+    System.out.println(
+      "\nClick the Run button to run another MIDlet.");
+    System.out.println();//blank line
+
+  }//end runTheProgram
+  //----------------------------------------------------//
+
+  //Purpose: Delete leftover files at startup
+  void deleteOldStuff(){
+    System.out.println(
+           "Deleting leftover files from a previous run");
+
+    //Delete subdirectory from output folder if it exists.
+    int successFlag = deleteOutputSubDir();
+
+    //Delete manifest file if it exists.
+    File manifestFile = new File("output/Manifest.mf");
+    if(manifestFile.exists()){
+      boolean success = manifestFile.delete();
+      if(success){
+        System.out.println("   Manifest file deleted");
+      }else{
+        successFlag = 1;
+      }//end else
+    }//end if
+
+    //Delete old JAR file if it exists.
+    File jarFile = new File("output/" + prog + ".jar");
+    if(jarFile.exists()){
+      boolean success = jarFile.delete();
+      if(success){
+        System.out.println("   Old jar file deleted");
+      }else{
+        successFlag = 1;
+      }//end else
+    }//end if
+
+    //Delete old JAD file if it exists.
+    File jadFile = new File("output/" + prog + ".jad");
+    if(jadFile.exists()){
+      boolean success = jadFile.delete();
+      if(success){
+        System.out.println("   Old jad file deleted");
+      }else{
+        successFlag = 1;
+      }//end else
+    }//end if
+
+    //Delete class files from program folder, if any exist
+    int temp = deleteProgClassFiles();
+    if(temp != 0){
+      successFlag = temp;
+    }//end if
+
+    if(successFlag == 0){
+      System.out.println("\nLeftover files deleted");
+      initialCleanupOK = 0;//success
+    }else{
+    }//end else
+
+  }//end deleteOldStuff
+  //----------------------------------------------------//
+
+  //This method compiles the MIDlet.  Note that the
+  // compilation generates class files for a Java v1.4
+  // virtual machine.  Apparently WTK2.5.2 is not
+  // compatible with Java 1.6.  Also note that the
+  // compiler uses the classes in the WTK2.5.2 library
+  // JAR files instead of using the classes in the
+  // J2SE v1.6 libraries.
+  void compile(){
+    try{
+      String cmdString =
+           javaPath + "/javac -target 1.4 -source 1.4 "
+           + "-bootclasspath " + toolkit + configJar + ";"
+           + toolkit + profileJar
+           + " " + prog + "/" + prog + ".java";
+
+      System.out.println("\nCompile command:");
+      System.out.println(cmdString);
+      Process proc = Runtime.getRuntime().exec(cmdString);
+
+      //Get and display the standard output and/or the
+      // error output produced by the child process.
+      getChildOutput(proc);
+
+      //Delay until compilation is complete. Then test the
+      // exit value of the compiler for success.  A value
+      // of 0 indicates success.  Any other value
+      // indicates that the compilation was not
+      // successful.  Also note that this framework does
+      // not display the compiler error messages.  If a
+      // compilation fails, the next step is to use the
+      // same approach from a batch file or from the
+      // command line to perform the compilation on a
+      // stand-alone basis.  That will expose the error
+      // messages and allow for identifying and fixing the
+      // problem in the MIDlet code.
+      int val = proc.waitFor();
+      compileOK = val;
+      if(val == 0){
+        System.out.println("Compile OK");
+      }else{
+        System.out.println("Compile error");
+      }//end else
+
+    }catch( Exception e ){
+      e.printStackTrace();
+    }//end catch
+
+  }//end compile
+  //----------------------------------------------------//
+
+  //Purpose:  To preverify the class files.
+  void preverify(){
+
+    System.out.println(
+        "\nPreverifying class files.");
+    File dir = new File(prog);
+    //Get a list of the files in the folder.
+    String[] children = dir.list();
+    for(int cnt = 0;cnt &lt; children.length;cnt++){
+      //Only preverify files with an extension of .class
+      String aFile = children[cnt];
+      if(aFile.endsWith(".class")){
+        //This is a class file
+        try{
+          //Remove the .class extension from the file name
+          aFile = aFile.substring(0,aFile.lastIndexOf(
+                                               ".class"));
+
+          String cmdString =
+                toolkit + "/bin/preverify.exe -classpath "
+                + toolkit + configJar + ";"
+                + toolkit + profileJar + " "
+                + prog + "/" + aFile;
+
+          System.out.println("\nPreverify command");
+          System.out.println(cmdString);
+          Process proc = Runtime.getRuntime().exec(
+                                               cmdString);
+          getChildOutput(proc);
+
+          //Delay until preverification is complete
+          int val = proc.waitFor();
+          preverifyOK = val;
+          if(val == 0){
+            System.out.println("Pre-verify OK");
+          }else{
+            System.out.println("Pre-verify error");
+            return;//return prematurely
+          }//end else
+
+        }catch( Exception e ){
+          e.printStackTrace();
+        }//end catch
+      }//end if
+    }//end for loop
+  }//end preverify
+  //----------------------------------------------------//
+
+    //Purpose: Move preverified files back to original
+    // program folder to make it easier to put them into
+    // a JAR file with the correct path.
+    void movePreverifiedFiles(){
+
+    System.out.println(
+         "\nMoving preverified files to program folder.");
+    File dir = new File("output/" + prog);
+    //Get a list of the files in the folder.
+    String[] children = dir.list();
+
+    //Destination directory
+    File dest = new File(prog);
+
+    for(int cnt = 0;cnt &lt; children.length;cnt++){
+      String filename = children[cnt];
+
+      try{
+        // File to be moved
+        String temp = "output/" + prog + "/" + filename;
+        File file = new File(temp);
+
+        // Move file to destination directory
+        boolean success = file.renameTo(
+                           new File(dest,file.getName()));
+        if(!success){
+          System.out.println("File move error");
+          return;//return prematurely
+        }else{
+         System.out.println("   " + temp + " moved");
+        }//end else
+
+      }catch( Exception e ){
+        e.printStackTrace();
+      }//end catch
+    }//end for loop
+
+    moveFilesOK = 0;//Successful move
+  }//end movePreverifiedFiles
+  //----------------------------------------------------//
+
+  void makeManifestFile(){
+    try{
+      BufferedWriter out = new BufferedWriter(
+                    new FileWriter("output/Manifest.mf"));
+      out.write("MIDlet-Name: " + prog + "\n");
+      out.write(
+               "MIDlet-Version: " + midletVersion + "\n");
+      out.write("MIDlet-Vendor: " + vendor + "\n");
+      out.close();
+      System.out.println("\nManifest file written");
+      manifestFileOK = 0;
+    }catch( Exception e ){
+      e.printStackTrace();
+    }//end catch
+
+  }//end makeManifestFile
+  //----------------------------------------------------//
+
+  void makeJarFile(){
+    try{
+      String cmdString =
+                    javaPath + "/jar cvfm output/" + prog
+                    + ".jar output/Manifest.mf ./" + prog;
+
+      System.out.println("\nJAR command");
+      System.out.println(cmdString);
+      Process proc = Runtime.getRuntime().exec(cmdString);
+
+      getChildOutput(proc);
+
+      //Delay until complete
+      int val = proc.waitFor();
+      jarFileOK = val;
+      if(val == 0){
+        System.out.println("Jar file written");
+      }else{
+        System.out.println("Jar file error");
+        return;//Return prematurely on error.
+      }//end else
+
+      //Get and save file size in bytes
+      File file = new File("output/" + prog + ".jar");
+      jarFileSize = file.length();
+      System.out.println(
+                     "   Jar file size = " + jarFileSize);
+
+    }catch( Exception e ){
+      e.printStackTrace();
+    }//end catch
+
+  }//end makeJarFile
+  //----------------------------------------------------//
+
+  void makeJadFile(){
+    try{
+      BufferedWriter out = new BufferedWriter(
+               new FileWriter("output/" + prog + ".jad"));
+
+      out.write("MIDlet-1: " + prog + ", , " + prog
+                                + "." + prog + "" + "\n");
+
+      out.write("MIDlet-Name: " + prog + "\n");
+      out.write("MIDlet-Version: "
+                                  + midletVersion + "\n");
+      out.write("MIDlet-Vendor: " + vendor + "\n");
+      out.write("MIDlet-Jar-URL: " + prog + ".jar\n");
+      out.write("MIDlet-Jar-Size: " + jarFileSize + "\n");
+      out.write("MicroEdition-Profile: "
+                                        + profile + "\n");
+      out.write("MicroEdition-Configuration: "
+                                         + config + "\n");
+      out.close();
+
+      System.out.println("\nJad file written");
+      jadFileOK = 0;
+    }catch( Exception e ){
+      e.printStackTrace();
+    }//end catch
+  }//end makeJadFile
+  //----------------------------------------------------//
+
+  //Purpose: To run Sun's cell phone emulator with this
+  // MIDlet.
+  void runEmulator(){
+    try{
+      String cmdString = toolkit + "/bin/emulator.exe "
+                + "-Xdescriptor output/" + prog + ".jad";
+
+      System.out.println("\nEmulator command");
+      System.out.println(cmdString);
+      Process proc = Runtime.getRuntime().exec(cmdString);
+
+      getChildOutput(proc);
+
+      //Delay until complete
+      int val = proc.waitFor();
+      if(val == 0){
+        System.out.println("Emulator finished");
+      }else{
+        System.out.println("Emulator error");
+      }//end else
+
+    }catch( Exception e ){
+      e.printStackTrace();
+    }//end catch
+
+  }//end runEmulator
+  //----------------------------------------------------//
+
+  //Purpose:  Delete all files and folders in the output
+  // folder other than the jar and jad files. Also delete
+  // all class files in the program folder.
+  void cleanup(){
+    //Delete subdirectory from output folder.
+    int successFlag = deleteOutputSubDir();
+
+    //Delete manifest file from output folder.
+    File manifestFile = new File("output/Manifest.mf");
+    if(manifestFile.exists()){
+      boolean success = manifestFile.delete();
+      if(success){
+        System.out.println("   Manifest file deleted");
+      }else{
+        successFlag = 1;
+      }//end else
+    }//end if
+
+    //Delete class files from program folder
+    int temp = deleteProgClassFiles();
+    if(temp != 0){
+      successFlag = temp;
+    }//end if
+
+    if(successFlag == 0){
+      System.out.println("\nExtraneous files deleted");
+      cleanupOK = 0;//success
+    }else{
+    }//end else
+
+  }//end cleanup
+  //----------------------------------------------------//
+
+  //Purpose: To delete the folder contained in the output
+  // directory and all of its files.
+  int deleteOutputSubDir(){
+    int returnVal = 0;
+
+    System.out.println(
+                  "\nDeleting files from output folder.");
+    //First delete the files in the subdirectory
+    File subDir = new File("output/" + prog);
+    //Get a list of the files in the folder.
+    String[] children = subDir.list();
+    if(children != null){
+      for(int cnt = 0;cnt &lt; children.length;cnt++){
+
+        boolean success = (new File("output/" + prog + "/"
+                               + children[cnt])).delete();
+        if(!success){
+          // Deletion failed
+          returnVal = 1;
+        }else{
+          System.out.println(
+                      "   " + children[cnt] + " deleted");
+        }//end else
+      }//end for loop
+    }//end if !null
+
+    //Now delete the subdirectory
+    if(subDir.exists()){
+      boolean success = subDir.delete();
+      if(!success){
+        // Deletion failed
+        returnVal = 1;
+      }else{
+        System.out.println("   Empty directory named "
+                         + "output/" + prog + " deleted");
+      }//end else
+    }//end if
+
+    return returnVal;
+  }//end deleteOutputSubDir
+  //----------------------------------------------------//
+
+  //The purpose of this method is to delete the compiled
+  // class files from the program folder.
+  int deleteProgClassFiles(){
+    int returnVal = 0;
+
+    System.out.println(
+        "\nDeleting class files from program folder.");
+    File dir = new File(prog);
+    //Get a list of the files in the folder.
+    String[] children = dir.list();
+    for(int cnt = 0;cnt &lt; children.length;cnt++){
+
+      //Don't delete files with extension of .java
+      String aFile = children[cnt];
+      if(aFile.indexOf(".java") &lt; 0){
+        //Not a .java file.
+        boolean success = (
+                   new File(prog + "/" + aFile).delete());
+        if(!success){
+          // Deletion failed
+          returnVal = 1;
+        }else{
+          System.out.println("   " + aFile + " deleted");
+        }//end else
+      }else{
+        //This is a .java file.
+        System.out.println("   " + aFile + " saved");
+      }//end else
+
+    }//end for loop
+
+    return returnVal;
+  }//end deleteProgClassFiles
+  //----------------------------------------------------//
+
+  //Purpose: To get and display standard output and error
+  // output from child processes.
+  void getChildOutput(Process proc){
+    try{
+      //Connect an input stream to child's standard
+      // output and child's error output.  Then
+      // instantiate a thread to get and display each
+      // type of output data from the child process.
+
+      //Spawn two threads.
+      ChildDataHandler errorHandler = 
+                           new ChildDataHandler(
+                           proc.getErrorStream(),"ERR: ");
+      ChildDataHandler outputHandler = 
+                           new ChildDataHandler(
+                           proc.getInputStream(),"OUT: ");
+          
+      //Start them running
+      errorHandler.start();
+      outputHandler.start();
+
+    }catch( Exception e ){
+      e.printStackTrace();
+    }//end catch
+  }//end getChildOutput
+  //====================================================//
+
+  //This is an inner class that controls the interactive
+  // behavior of the framework.
+  class GUI extends JFrame{
+
+    GUI(){//constructor
+      setSize(400,250);
+      setTitle("Copyright 2007, R.G.Baldwin");
+      setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+      JButton runButton = new JButton("Run");
+      JPanel runPanel = new JPanel();
+      runPanel.add(runButton);
+      getContentPane().add(runPanel,"South");
+
+      //Construct and populate fields for entry of text
+      // data.
+      JPanel textData = new JPanel();
+      textData.setLayout(new GridLayout(0,2));
+      getContentPane().add(textData,"North");
+
+      //Populate first row of grid with default values.
+      textData.add(new JLabel("  Program Name"));
+      progName = new JTextField(prog);
+      textData.add(progName);
+
+      //Populate second row, etc.
+      textData.add(new JLabel("  WTK Root"));
+      WTKroot = new JTextField(toolkit);
+      textData.add(WTKroot);
+
+      //Populate third row ...
+      textData.add(new JLabel("  Vendor"));
+      vendorText = new JTextField(vendor);
+      textData.add(vendorText);
+
+      //Populate fourth row ...
+      textData.add(new JLabel("  Midlet Version"));
+      midletVersionText = new JTextField(midletVersion);
+      textData.add(midletVersionText);
+
+      //Populate fifth row
+      textData.add(new JLabel(
+                            "  Path to Java bin folder"));
+      javaPathText = new JTextField(javaPath);
+      textData.add(javaPathText);
+
+      //Create column titles for profile and configuration
+      // buttons
+      textData.add(new JLabel(" "));//spacer
+      textData.add(new JLabel(" "));//spacer
+      textData.add(new JLabel("  Profile"));
+      textData.add(new JLabel("  Configuration"));
+
+      //Construct and populate radio buttons for
+      // selection of profile and configuration.
+      JPanel proCon = new JPanel();
+      proCon.setLayout(new GridLayout(0,2));
+      getContentPane().add(proCon,"Center");
+
+      //Construct JPanel with radio buttons for selection
+      // of profile.
+      JPanel proButtons = new JPanel();
+      proButtons.setLayout(new GridLayout(0,1));
+      pButton10 = new JRadioButton("MIDP-1.0");
+      pButton20 = new JRadioButton("MIDP-2.0",true);
+      pButton21 = new JRadioButton("MIDP-2.1");
+
+      //Make the buttons mutually exclusive.
+      ButtonGroup profileGroup = new ButtonGroup();
+      profileGroup.add(pButton10);
+      profileGroup.add(pButton20);
+      profileGroup.add(pButton21);
+
+      //Add the radio buttons to the GUI
+      proButtons.add(pButton10);
+      proButtons.add(pButton20);
+      proButtons.add(pButton21);
+      proCon.add(proButtons);
+
+      //Construct JPanel with radio buttons for selection
+      // of configuration.
+      JPanel configButtons = new JPanel();
+      configButtons.setLayout(new GridLayout(0,1));
+      cButton10 = new JRadioButton("CLDC-1.0");
+      cButton11 = new JRadioButton("CLDC-1.1",true);
+
+      //Make the buttons mutually exclusive.
+      ButtonGroup configGroup = new ButtonGroup();
+      configGroup.add(cButton10);
+      configGroup.add(cButton11);
+
+      //Add the radio buttons to the GUI
+      configButtons.add(cButton10);
+      configButtons.add(cButton11);
+      proCon.add(configButtons);
+
+      //Register an action listener on the Run button
+      runButton.addActionListener(
+        new ActionListener(){
+          public void actionPerformed(ActionEvent e){
+            //Get user inputs from text fields
+            prog = progName.getText();
+            toolkit = WTKroot.getText();
+            vendor = vendorText.getText();
+            midletVersion = midletVersionText.getText();
+            javaPath = javaPathText.getText();
+
+            //Set the profile based on which radio button
+            // was selected by the user
+            if(pButton10.isSelected()){
+              profile = "MIDP-1.0";
+              profileJar = "/lib/midpapi10.jar";
+            }else if(pButton20.isSelected()){
+              profile = "MIDP-2.0";
+              profileJar = "/lib/midpapi20.jar";
+            }else{//no other choice available
+              profile = "MIDP-2.1";
+              profileJar = "/lib/midpapi21.jar";
+            }//end else
+
+            //Set the configuration based on which radio
+            // button was selected by the user
+            if(cButton10.isSelected()){
+              config = "CLDC-1.0";
+              configJar = "/lib/cldcapi10.jar";
+            }else{//no other choice available
+              config = "CLDC-1.1";
+              configJar = "/lib/cldcapi11.jar";
+            }//end else
+
+            //Now run the program.
+            runTheProgram();
+
+          }//end actionPerformed
+        }//end new ActionListener
+      );//end addActionListener
+
+      setVisible(true);
+    }//end constructor
+  }//end class GUI
+  //====================================================//
+  
+  //This is a member class.  Thanks to "When Runtime.
+  // exec() won't" By Michael C. Daconta, JavaWorld.com
+  // The purpose of an object of this class is to get and
+  // display either the standard output or the error
+  // output produced by a child process.
+  class ChildDataHandler extends Thread{
+    InputStream inputStream;
+    String type;
+    
+    ChildDataHandler(InputStream inputStream,String type){
+      this.inputStream = inputStream;
+      this.type = type;
+    }//end constructor
+    
+    public void run(){
+      try{
+        InputStreamReader inputStreamReader = 
+                       new InputStreamReader(inputStream);
+        BufferedReader bufferedReader = 
+                    new BufferedReader(inputStreamReader);
+        String line=null;
+        while(
+              (line = bufferedReader.readLine()) != null){
+          System.out.println(type + line);
+        }//end while
+      }catch(Exception e){
+        e.printStackTrace();  
+      }//end catch
+    }//end run
+  }//end class ChildDataHandler  
+  
+  //====================================================//
+}//end class WTKFramework02
+//======================================================//
+</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>&nbsp;</p>
+<p>
+<b><a name="Listing_7">Listing 7</a>. The MIDlet named LifeCycle01. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>/*LifeCycle01.java
+Copyright 2007, R.G.Baldwin
+December 6, 2007
+
+The purpose of this MIDlet is to demonstrate the following
+three states in which a MIDlet can reside:
+paused
+active
+destroyed
+
+This MIDlet is comprised of three threads.  One thread is
+the main MIDlet thread.
+
+A second thread is instantiated from a class named
+Toggler. This thread is spawned and run to toggle the
+MIDlet between the active and paused states at
+approximately two-second itervals. After approximately
+twenty seconds, the Toggler instructs the MIDlet to enter
+the destroyed state.
+
+A third thread is instantiated from a class named Worker.
+This thread is spawned and run to do some work while the
+MIDlet is in the active state.  The work that it does is
+to display a period on the standard output device
+approximately once every half second.  This thread sleeps
+while the MIDlet is in the paused state, and dies when the
+MIDlet enters the destroyed state. (It also sleeps some of
+the time that the MIDlet is in the active state to avoid
+consuming excessive computational resources.)
+
+During those time intervals that the MIDlet is in the
+paused state, the Sun cell phone emulator displays a
+box with the following words on the cell phone screen:
+
+Incoming Call ...
+
+Tested using a Java SE 6 compiler, targeted at a V1.4
+virtual machine, and WTK 2.5.2 running under Windows XP.
+*********************************************************/
+
+package LifeCycle01;
+
+import javax.microedition.midlet.MIDlet;
+import java.lang.Thread;
+import java.util.Date;
+
+public class LifeCycle01 extends MIDlet{
+
+  Toggler theToggler;
+  Worker theWorker;
+  long timeBase;
+  boolean running = false;
+
+  public LifeCycle01(){
+    theToggler = new Toggler(this);
+    theWorker = new Worker(true,false);
+    //Establish the time (in milliseconds relative to
+    // Jan 1, 1970) that the MIDlet object is constructed.
+    // This time will be used to compute the elapsed times
+    // in milliseconds at which other events occur
+    // relative to the construction time of the MIDlet.
+    timeBase = new Date().getTime();
+    System.out.println("Constructed at: "
+                       + (new Date().getTime()-timeBase));
+  }//end constructor
+
+  //The following method is called by the AMS to change
+  // the state of the MIDlet from paused to active.
+  public void startApp(){
+    if(!running){
+      //This is the first time that this method has been
+      // called.
+      System.out.println("Started at: "
+                       + (new Date().getTime()-timeBase));
+      running = true;
+      //Start the Toggler thread running.
+      theToggler.start();
+      //Start the worker thread running in an active
+      // (not-paused) MIDlet state.
+      theWorker.paused = false;
+      theWorker.start();
+    }else{
+      //This is not the first time that this method has
+      // been called.
+      System.out.println("Re-started at: "
+                       + (new Date().getTime()-timeBase));
+      //Wake the Worker thread up if it is asleep. Set
+      // the paused flag to false to tell the worker to
+      // get to work.
+      theWorker.paused = false;
+      theWorker.interrupt();
+    }//end else
+  }//end startApp
+
+  //This method is called by the Toggler thread to cause
+  // the MIDlet to enter the paused state. It may also be
+  // called by the AMS.
+  public void pauseApp(){
+    System.out.println("\nPaused at: "
+                       + (new Date().getTime()-timeBase));
+    //Tell Worker to go to sleep for a long time the next
+    // time it checks the paused flag.
+    theWorker.paused = true;
+    //Tell the AMS that this MIDlet is in the paused
+    // state.
+    notifyPaused();
+  }//end pauseApp
+
+  //This method is called by the Toggler thread to cause
+  // the MIDlet to enter the destroyed state. It may also
+  // be called by the AMS.
+  public void destroyApp(boolean unconditional){
+    //Tell the Worker to terminate the next time it checks
+    // its flags.
+    theWorker.kill = true;
+    //Wake the worker up if it is asleep.
+    theWorker.interrupt();
+    System.out.println("Destroyed at:  "
+                       + (new Date().getTime()-timeBase));
+    //Tell the AMS that the MIDlet is in the destroyed
+    // state. It can then be launched again.
+    notifyDestroyed();
+  }//end destroyApp
+
+  public void resume(){
+    resumeRequest();
+  }//end resume
+  //====================================================//
+
+  //This is a member class.  The purpose of an object of
+  // this class is to cause the main thread to toggle
+  // between the active state and the paused state every
+  // two seconds during a total of ten cycles.  Then it
+  // causes the main thread to enter the destroyed state.
+  class Toggler extends Thread{
+    LifeCycle01 theMIDlet;
+
+    Toggler(LifeCycle01 theMIDlet){
+      this.theMIDlet = theMIDlet;
+    }//end constructor
+
+    public void run(){
+      for(int cnt = 0;cnt &lt; 10;cnt++){
+        //Sleep for two seconds.
+        try{Thread.currentThread().sleep(2000);
+        }catch(Exception e){}
+
+        if(cnt % 2 == 0){
+          //Tell the main thread to enter the paused
+          // state.
+          theMIDlet.pauseApp();
+        }else{
+          //Cause the main thread to send a request to
+          // the AMS to return it to the active
+          // state.  If the request is honored, the
+          // AMS will call the startApp method on the
+          // main thread. Note in particular that this
+          // code does not call the startApp method
+          // directly.
+          theMIDlet.resume();
+        }//end else
+      }//end for loop
+
+      //Instruct the main thread to enter the destroyed
+      // state.
+      theMIDlet.destroyApp(true);
+
+      //This thread will die at this point.
+    }//end run
+  }//end class Toggler
+  //====================================================//
+
+  //This is a member class.  The purpose of an object of
+  // this class is to do some work (display periods)
+  // while the main thread is in the active state and
+  // to sleep while the main thread is in the paused
+  // state.  It also sleeps some while the main thread
+  // is in the active state to avoid consuming major
+  // computational resources.
+  class Worker extends Thread{
+    boolean paused;//true indicates paused
+    boolean kill;//true means time to die
+    long shortSleep = 500;//one-half second
+    long longSleep = 25000000;//6.94 hours
+    long sleepTime = shortSleep;
+
+    Worker(boolean paused,boolean kill){//constructor
+      this.paused = paused;
+      this.kill = kill;
+    }//end constructor
+
+    public void run(){
+      System.out.print("I'm working ");
+      while(true){
+        //Check the kill flag and behave appropriately.
+        if(kill){
+          System.out.println("Terminating worker");
+          //This break will cause the thread to break out
+          // of the while loop and to die.
+          break;
+        }//end if
+
+        //Check the paused flag and behave appropriately.
+        if(!paused){
+          //Do some work and then go to sleep for a short
+          // time period.  The thread will sleep until it
+          // awakes normally or until it is interrupted.
+          System.out.print(".");
+          sleepTime = shortSleep;
+        }else{
+          //The main thread is in the paused state.  Go
+          // to sleep for a very long time.
+          sleepTime = longSleep;
+        }//end else
+
+        try{
+          Thread.currentThread().sleep(sleepTime);
+        }catch(InterruptedException e){
+          //Control reaches here when another thread calls
+          // the interrupt() method on this thread while
+          // it is sleeping.  Loop back to the top and
+          // either terminate or do some work depending
+          // on the state of the flags.  If the thread
+          // wakes up on its own accord, this code will
+          // not be executed.
+          System.out.print("I'm awake ");
+        }//end catch
+
+      }//end while loop
+
+      //This thread will die at this point.
+    }//end run
+  }//end class Worker
+  //====================================================//
+
+}//end class LifeCycle01
+//======================================================//</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>&nbsp;</p>
+
+<p> </p>
+<hr align="center" size="3" width="100%">
+<h2 align="center"><a name="Copyright">Copyright</a></h2>
+<p>Copyright 2008, Richard G. Baldwin.&nbsp; Reproduction in whole or in part in any 
+form or medium without express written permission from Richard Baldwin is 
+prohibited. </p>
+<h2 align="center"><a name="About_the_author">About the author</a></h2>
+<b><a href="mailto:Baldwin@DickBaldwin.com">Richard Baldwin</a></b><i> is a 
+college professor (at Austin Community College in Austin, TX) and private 
+consultant whose primary focus is a combination of Java, C#, and XML. In 
+addition to the many platform and/or language independent benefits of Java and 
+C# applications, he believes that a combination of Java, C#, and XML will become 
+the primary driving force in the delivery of structured information on the Web.</i>    
+<p><i>Richard has participated in numerous consulting projects and he 
+frequently provides onsite training at the high-tech companies located in and 
+around Austin, Texas.&nbsp; He is the author of Baldwin's Programming
+<a href="http://www.dickbaldwin.com">Tutorials</a>, which have gained a 
+worldwide following among experienced and aspiring programmers. He has also 
+published articles in JavaPro magazine.</i> </p>
+<p><i>In addition to his programming expertise, Richard has many years of 
+practical experience in Digital Signal Processing (DSP).&nbsp; His first job after he 
+earned his Bachelor's degree was doing DSP in the Seismic Research Department of 
+Texas Instruments.&nbsp; (TI is still a world leader in DSP.)&nbsp; In the following 
+years, he applied his programming and DSP expertise to other interesting areas 
+including sonar and underwater acoustics.</i> </p>
+<p><i>Richard holds an MSEE degree from Southern Methodist University and has 
+many years of experience in the application of computer technology to real-world 
+problems.</i> </p>
+<p><i><a href="mailto:baldwin@dickbaldwin.com">Baldwin@DickBaldwin.com</a></i>
+</p>
+<p><b>Keywords</b><br>
+java J2ME MIDlet &quot;cell phone emulator&quot; &quot;wireless toolkit&quot; WTK MIDP CLDC &quot;child 
+process&quot; &quot;Runtime.getRuntime().exec&quot;</p>
+<p>-end- </p>
+<p> <br>
+&nbsp; </p>
+<br>
+<br>
+<br>
+<br>
+</body>
+</html>

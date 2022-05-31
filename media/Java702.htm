@@ -1,0 +1,465 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>... in Java by Richard G Baldwin</TITLE>
+<META NAME="Template" CONTENT="C:\PROGRAM FILES\MICROSOFT OFFICE\OFFICE\html.dot">
+</HEAD>
+<BODY LINK="#0000ff" VLINK="#800080" BGCOLOR="#ffffff">
+
+<P><!--start--></P>
+<I><H3 ALIGN="CENTER">Richard G Baldwin (512) 223-4758, </I><A HREF="mailto:baldwin@austin.cc.tx.us"><I>baldwin@austin.cc.tx.us</I></A><I>, </I><A HREF="http://www2.austin.cc.tx.us/baldwin/"><I>http://www2.austin.cc.tx.us/baldwin/</I></A></H3>
+<H2 ALIGN="CENTER"><!--title-->Security, Overview of Security in JDK 1.2<!--endtitle--></H2>
+<P>Java Programming, Lecture Notes # 702, Revised 5/13/99. </P>
+
+<UL>
+<LI><A HREF="#Preface">Preface</A> </LI>
+<LI><A HREF="#Disclaimer">Disclaimer</A> </LI>
+<LI><A HREF="#Introduction">Introduction</A> </LI>
+<LI><A HREF="#SecurityPoliciesAndPermissions">Security Policies and Permissions</A> </LI>
+<LI><A HREF="#X509Certificates">X.509 Certificates</A> </LI>
+<LI><A HREF="#SecurityTools">Security Tools</A></LI></UL>
+
+<P><HR></P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Preface">Preface</A></H2>
+</FONT><P>Students in Prof. Baldwin's <B><U>Advanced Java Programming</B></U> classes at ACC will be responsible for knowing and understanding all of the material in this lesson beginning with the summer semester of 1999. </P>
+<P>This lesson was originally written on May 2, 1999 and has been updated many times since then.</P>
+<P>The purpose of this lesson is to serve as a backdrop for subsequent lessons that will deal with specific aspects of security in JDK 1.2.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Disclaimer">Disclaimer</A></H2>
+</FONT><P>I claim absolutely no expertise in the area of security. I am simply a college professor attempting to gather information about Java on one hand and present it to my students on the other. I disclaim any responsibility for any security problems that may occur as a result of anyone using any of the material in any of my tutorial lessons.</P>
+<P>You are responsible for your own actions. With regard to security, you should study not only the material that I will present, but also material provided by others who possess expertise in the security area. Hopefully my material will be useful in getting you started in that direction.</P>
+<P>Two good books on security published by O'Reilly &amp; Associates are:</P>
+
+<UL>
+<U><LI>Java Security</U> by Scott Oaks </LI>
+<U><LI>Java Cryptography</U> by Jonathan Knudsen</LI></UL>
+
+<P>I highly recommend both of these books.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Introduction">Introduction</A></H2>
+</FONT><P>JDK 1.2 introduced many changes in Java relative to JDK 1.1. These changes were scattered throughout the JVM. Important security changes were made in three areas:</P>
+
+<UL>
+<LI>The establishment and application of security policies to both applets and applications </LI>
+<LI>Certificate interfaces used for managing certificates, and X.509 v3 implementation of certificate interfaces. </LI>
+<LI>Three new tools used for managing security at the command line: </LI>
+
+<UL>
+<LI>keytool </LI>
+<LI>jarsigner </LI>
+<LI>policytool</LI></UL>
+</UL>
+
+<P>The following sections will briefly discuss the changes and additions made in each of these three important areas. Subsequent lessons will discuss them in more detail providing sample programs that implement the changes.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="SecurityPoliciesAndPermissions">Security Policies and Permissions</A></H2>
+</FONT><P>Sun refers to the new capabilities in this area as <I>"Policy-based, easily-configurable, fine-grained access control."</P>
+</I><P>The scheme is based on security <I>policies</I> and <I>permissions</I>. The user of the machine on which the JVM is running establishes permissions by creating or modifying security policy files <U>on that machine</U>. </P>
+<B><FONT COLOR="#ff0000"><P>How are permissions granted?</P>
+</B></FONT><P>Specific permissions (such as writing to disk) are granted to specific code (such as a specific application or applet) based on the <U>source</U> of the code, the <U>signer</U> of the code, or <U>both</U>. </P>
+<P>When code is loaded, it is granted permissions based on the security policy then in effect. </P>
+<B><FONT COLOR="#ff0000"><P>How are permissions initialized?</P>
+</B></FONT><P>The policy that specifies which permissions are available for code from various signers/locations is initialized <U>from an external configurable policy file</U>. According to Sun, <I>"Unless a permission is explicitly granted to code, it cannot access the resource that is guarded by that permission."</P>
+</I><B><FONT COLOR="#ff0000"><P>What code is covered by the new security policies?</P>
+</B></FONT><P>Also according to Sun</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<P>"These new concepts of permission and policy enable the JDK to offer fine-grain, highly configurable, flexible, and extensible access control. Such access control can now not only be specified for applets, but also for all Java code, including applications, beans, and servlets." </TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>What is a <I>permission</I>?</P>
+</B></FONT><P>A <I>permission</I> provides access to a system resource. An applet (or an application <U>running with a security manager</U>) can gain access to a system resource only if the corresponding permission has been explicitly granted to the code that is attempting the access. (Applications that run without a security manager are exempt from these security requirements.) </P>
+<B><FONT COLOR="#ff0000"><P>Are there any exceptions?</P>
+</B></FONT><P>There is one important exception to this rule. Code always has permission to read files from its same (URL) location, and subdirectories of that location. It does not need explicit permission to do so.</P>
+<B><FONT COLOR="#ff0000"><P>What are security policy files, and how can you edit them?</P>
+</B></FONT><P>Security policy files are text files that can be modified using any text editor, if you know the syntax. The new <B>policytool</B> utility can also be used to edit security policy files using a graphical interface that eliminates the need for you to know the syntax. The <B>policytool</B> utility provides a series of dialogs that allow you to check boxes, make selections, and enter text in fields to create or modify a policy file.</P>
+<B><FONT COLOR="#ff0000"><P>Can you grant permissions with code?</P>
+</B></FONT><P>The following code creates a <B>FilePermission</B> object representing <I>read</I> access to the file named <B>jnk</B> in the <B>temp</B> directory</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<P><CODE>permiss = new java.io.FilePermission("/temp/jnk","read");</CODE></TD>
+</TR>
+</TABLE>
+
+<P>It is very important to note, however, that even though code can create such an object, creation of the object <U>does not grant the permission</U>. Code cannot grant permissions to itself. Only the policy file then in effect can grant a permission. The object created by the code can be used, for example, to determine if the code has the specified permission prior to trying to perform the action.</P>
+<B><FONT COLOR="#ff0000"><P>Tell me more about granting permissions</P>
+</B></FONT><P>The default Policy implementation allows the security policy to be specified within one or more <I>policy configuration files</I>. These files specify what permissions are granted for code from specified sources. </P>
+<P>The following entry in a policy configuration file grants code from the <B>/baldwin/samples</B> directory to have <I>read</I> access to the file <B>/temp/jnk</B>.</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<P><CODE>grant codeBase "file:/baldwin/samples/" {<BR>
+permission java.io.FilePermission <BR>
+"/temp/jnk", "read";<BR>
+};</CODE></TD>
+</TR>
+</TABLE>
+
+<P>Note that the codebase is always specified in URL format and therefore always uses forward slashes regardless of the platform.</P>
+<B><FONT COLOR="#ff0000"><P>Where can I learn more about permission types?</P>
+</B></FONT><P>The documentation for JDK 1.2 provides tables that describe the built-in JDK 1.2 permission types and discuss the risks of granting each type of permission. </P>
+<P>The documentation also contains tables showing the methods that require permissions to be granted in order for the method to execute successfully.</P>
+<P>Without going into detail, the permission types are as follows:</P>
+
+<UL>
+<LI>AllPermission </LI>
+<LI>AWTPermission </LI>
+<LI>FilePermission </LI>
+<LI>NetPermission </LI>
+<LI>PropertyPermission </LI>
+<LI>ReflectPermission </LI>
+<LI>RuntimePermission </LI>
+<LI>SecurityPermission </LI>
+<LI>SerializablePermission </LI>
+<LI>SocketPermission</LI></UL>
+
+<B><FONT COLOR="#ff0000"><P>Where does the security policy originate?</P>
+</B></FONT><P>A Policy object represents the security policy for a Java application environment. The source location for the policy information depends on the Policy implementation. The default Policy implementation obtains its information from static policy configuration files.</P>
+<P>By default, the policy can be specified within <U>one or more</U> policy configuration files. These files specify the permissions that are allowed for code from a specified source.</P>
+<P>As mentioned earlier, a policy file can be created or updated using a simple text editor or by using the graphical <B>policytool</B> utility program.</P>
+<B><FONT COLOR="#ff0000"><P>What and where are the default policy files?</P>
+</B></FONT><P>By default, there is a single system-wide policy file, and optionally a single user policy file.</P>
+<P>Operationally, the default Policy object is initialized the first time its <B>getPermissions()</B> method is called or whenever its refresh method is called. Note, however, that this happens automatically and it is not the responsibility of the programmer to cause the default Policy object to be initialized. </P>
+<P>Initialization involves obtaining permission information from the policy configuration files and using this information to populate the Policy object.</P>
+<B><FONT COLOR="#ff0000"><P>So, where is the system-wide policy file located?</P>
+</B></FONT><P>By default, the system-wide policy file is located at</P>
+<I><BLOCKQUOTE>java.home</I>/lib/security/java.policy (Solaris)</BLOCKQUOTE>
+<I><BLOCKQUOTE>java.home</I>\lib\security\java.policy (Windows)</BLOCKQUOTE>
+<P>The term <I>java.home</I> refers to the value of the system property named <I>"java.home"</I>. This system property specifies the directory into which the JDK was installed.</P>
+<B><FONT COLOR="#ff0000"><P>What permissions are granted by the default policy?</P>
+</B></FONT><P>The default java.policy file installed with the JDK </P>
+
+<UL>
+<LI>Grants all permissions to standard extensions </LI>
+<LI>Allows anyone to listen on un-privileged ports. </LI>
+<LI>Allows any code to read certain "standard" properties that are not security-sensitive such as the "os.name" and "file.separator" properties.</LI></UL>
+
+<B><FONT COLOR="#ff0000"><P>Where is the optional user policy file located?</P>
+</B></FONT><P>By default, the optional user policy file is located at</P>
+
+<UL>
+<I><LI>user.home</I>/.java.policy (Solaris) </LI>
+<I><LI>user.home</I>\.java.policy (Windows)</LI></UL>
+
+<P>(Note the period in front of the word java.) The term <I>user.home</I> refers to the value of the system property named <I>"user.home"</I>. This property specifies the user's home directory. </P>
+<P>Given the user name baldwin, the <I>"user.home"</I> property value defaults to </P>
+
+<UL>
+<LI>C:\Winnt\Profiles\baldwin (on multi-user Windows NT systems) </LI>
+<LI>C:\Windows\Profiles\baldwin (on multi-user Windows 95 systems) </LI>
+<LI>C:\Windows (on single-user Windows 95 systems)</LI></UL>
+
+<B><FONT COLOR="#ff0000"><P>How do the different policy files interact?</P>
+</B></FONT><P>By default, the overall security policy is the sum of the permissions granted by the system policy and the user policy (and other policy files that may be incorporated). The system policy is loaded first and then the user policy is added to it.</P>
+<B><FONT COLOR="#ff0000"><P>What if I delete these policy files?</P>
+</B></FONT><P>If neither policy configuration file is found (and another one is not specified), a default policy is used that is the same as the original <I>sandbox</I> policy. You can find information about the <I>sandbox</I> policy in various publications on JDK 1.1.</P>
+<B><FONT COLOR="#ff0000"><P>Where are the various defaults specified?</P>
+</B></FONT><P>In addition to the individual configuration policy files, there is another static file named <B>java.security</B> that contains security properties. This file is located at</P>
+<I><BLOCKQUOTE>java.home</I>/lib/security/java.security (Solaris)</BLOCKQUOTE>
+<I><BLOCKQUOTE>java.home</I>\lib\security\java.security (Windows)</BLOCKQUOTE>
+<P>The term <I>java.home</I> has the same meaning as before.</P>
+<P>Among other things, this file specifies the locations of the policy configuration files described above.</P>
+<B><FONT COLOR="#ff0000"><P>Can I use more policy files?</P>
+</B></FONT><P>You are allowed to specify any number of policy configuration files that will be loaded in a specified order. The locations of the policy files are specified as the values of properties (in the security properties file) whose syntax is of the form</P>
+<CODE><BLOCKQUOTE>policy.url.n=URL</BLOCKQUOTE>
+</CODE><P>where n is a number and URL is a URL specification.</P>
+<P>The default <I>system</I> and <I>user policy</I> configuration files are specified in the security properties file as</P>
+<CODE><BLOCKQUOTE>policy.url.1=file:${java.home}/lib/security/java.policy</BLOCKQUOTE>
+<BLOCKQUOTE>policy.url.2=file:${user.home}/.java.policy</BLOCKQUOTE>
+</CODE><P>Again, note the period in front of the word java for the user file. I will have more to say about the syntax <I>${java.home}</I> later when I discuss <I>Property Expansion</I>.</P>
+<B><FONT COLOR="#ff0000"><P>Can policy files be loaded from remote URLs?</P>
+</B></FONT><P>You can specify any number of URLs, including URLs of the form <I>"http://"</I>. All of the designated policy files will be loaded in numeric order. </P>
+<P>However, as soon as the system is unable to find one of the files, it quits reading. Therefore, if you don't have a user policy file, but do have one as number three, you need to modify the properties in the properties file or number three will never be read because number two can't be found.</P>
+<B><FONT COLOR="#ff0000"><P>Can I supplement or replace policy files at runtime?</P>
+</B></FONT><P>It is also possible to specify an additional (or replacement) policy file when starting an application. This is accomplished using the following as a command line argument.</P>
+<CODE><BLOCKQUOTE>-Djava.security.policy</BLOCKQUOTE>
+</CODE><P>This argument sets the value of the <I>"java.security.policy"</I> property. For example, the following command</P>
+<CODE><BLOCKQUOTE>java -Djava.security.manager <B>-Djava.security.policy=yourURL</B> yourApp</BLOCKQUOTE>
+</CODE><P>will cause the policy file specified by <I>yourURL</I> to be loaded <U>in addition</U> to all of the policy files specified in the security properties file. If the new policy file is in the current directory, you can specify it by simply referencing its name. In that case, it isn't necessary to specify it in URL syntax.</P>
+<B><FONT COLOR="#ff0000"><P>Why include <I>-Djava.security.policy </I>on the command line?</P>
+</B></FONT><P>The inclusion of <I>-Djava.security.policy</I> causes the default security manager to be installed causing the application to be subject to policy checks. This term is not required if the application installs a security manager.</P>
+<B><FONT COLOR="#ff0000"><P>How can I replace the other policy files?</P>
+</B></FONT><P>As an alternative syntax, if you use (note the double equal signs)</P>
+<CODE><BLOCKQUOTE>java -Djava.security.manager <B>-Djava.security.policy==yourURL </B>yourApp</BLOCKQUOTE>
+</CODE><P>just the policy file that you specify will be used. The other policy files indicated in the security properties file <U>will be ignored</U>.</P>
+<B><FONT COLOR="#ff0000"><P>What about appletviewer security?</P>
+</B></FONT><P>Another syntax is available to allow you to pass a policy file to the <B>appletviewer</B> utility program. The syntax is</P>
+<BLOCKQUOTE>appletviewer -J-Djava.security.policy=yourURL yourApplet</BLOCKQUOTE>
+<P>Note the <B>-J</B> ahead of the <B>-D</B>.</P>
+<B><FONT COLOR="#ff0000"><P>Can I always specify another policy file on the command line?</P>
+</B></FONT><P>The security properties file specifies a property named <I>"policy.allowSystemProperty"</I> that is set to <I>true</I> in the default implementation. If you change this to <I>false</I>, then the value of the <I>"-Djava.security.policy"</I> argument on the command line will be ignored for both <B>java</B> and <B>appletviewer</B> commands.</P>
+<B><FONT COLOR="#ff0000"><P>Can I completely change the security policy implementation?</P>
+</B></FONT><P>It isn't even necessary to use the default policy implementation. According to Sun</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<P>"An alternative policy class can be given to replace the default Policy implementation class, as long as the former is a subclass of the abstract Policy class and implements the getPermissions method (and other methods as necessary)." </TD>
+</TR>
+</TABLE>
+
+<P>A thorough discussion of changing the policy implementation is beyond the scope of this document. If that is of interest to you, see the Sun documentation.</P>
+<B><FONT COLOR="#ff0000"><P>How are permissions really granted?</P>
+</B></FONT><P>By default, permissions must be granted by a grant entry in a policy configuration file. A policy configuration file consists of a list of entries of two types. It may contain a single <I>"keystore"</I> entry and zero or more <I>"grant"</I> entries.</P>
+<P>Permissions may be granted in the policy configuration file on the basis of the source of the code as a URL, or on the basis of the <I>"signer"</I> of the code, or both. In the latter case, the code is associated with a <I>Digital Certificate</I> signed by a particular entity.</P>
+<B><FONT COLOR="#ff0000"><P>What is a <I>keystore</I>?</P>
+</B></FONT><P>As you will learn in detail in a subsequent lesson, a <I>keystore</I> is a special database containing two different types of security data. One type consists of private keys and their associated digital certificates that authenticate the public keys associated with the private keys. </P>
+<P>The other type of data in the keystore consists of <I>"trusted"</I> certificates. These are certificates that you have previously learned to trust, which authenticate the private keys of other entities.</P>
+<P>Each entry of either type in a keystore is keyed by a unique <I>"alias"</I>.</P>
+<P>The <B>keytool</B> utility can be used to create and administer keystores.</P>
+<B><FONT COLOR="#ff0000"><P>Why specify a <I>keystore</I> in a policy file?</P>
+</B></FONT><P>The optional <I>keystore</I> specified in a policy configuration file is used to look up the public keys of the <I>signers</I> specified in the grant entries of the configuration file.</P>
+<P>If any of the grant entries in the policy configuration file specify the <I>alias</I> of a <I>signer</I>, the policy configuration file must contain a keystore entry that contains the <I>"trusted</I> <I>certificate"</I> for that <I>signer</I>.</P>
+<P>As of 5/2/99, JDK 1.2 allows only one keystore entry in a configuration file. Any keystore entries beyond the first one are ignored. The keystore entry can appear in the file anywhere outside the grant entries contained in the file. </P>
+<B><FONT COLOR="#ff0000"><P>How do you specify a <I>keystore</I>?</P>
+</B></FONT><P>The syntax of a keystore entry is as follows:</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<P><CODE>keystore "your_keystore_url", "your_keystore_type";</CODE></TD>
+</TR>
+</TABLE>
+
+<P>where:</P>
+
+<UL>
+<I><LI>your_keystore_url</I> specifies the URL location of the keystore </LI>
+<I><LI>your_keystore_type</I> specifies the type of the keystore</LI></UL>
+
+<P>The URL can be relative to the location of the policy file, or can be specified on an absolute basis.</P>
+<P>The keystore type defines:</P>
+
+<UL>
+<LI>The storage and data format of the keystore information </LI>
+<LI>The algorithms used to protect private keys in the keystore and the integrity of the keystore. </LI></UL>
+
+<B><FONT COLOR="#ff0000"><P>Tell me about security providers</P>
+</B></FONT><P>Many aspects of the keystore, along with other security features, can be customized by installing different <I>"providers"</I>. These providers supply class libraries that provide different implementations of various algorithms, etc.</P>
+<P>The default provider is SUN. If the keystore type is <I>"JKS"</I>, which is the default type provided by SUN, it does not need to be specified in the keystore entry.</P>
+<B><FONT COLOR="#ff0000"><P>What is a code source?</P>
+</B></FONT><P>Code that is to be executed is always considered to have come from a particular <I>"code source"</I>. The code source includes the URL from which the code originated. (Even if it originated in a local disk file, that file is considered to be the code source with the file represented as a URL.) </P>
+<P>The code source also includes a reference to the <I>digital</I> <I>certificate(s)</I> containing the <I>public key(s)</I> corresponding to the <I>private key(s)</I> that were used to <I>digitally sign</I> the code. (I will discuss these concepts at length in subsequent lessons.)</P>
+<P>Certificates in a code source are referenced by unique <I>alias</I> names from the user's <I>keystore</I>.</P>
+<B><FONT COLOR="#ff0000"><P>What are <I>grant entries</I> and <I>permission entries</I>?</P>
+</B></FONT><P>Each <I>grant entry</I> includes one or more <I>"permission entries"</I>. The permission entries are preceded by optional <I>codeBase</I> and <I>signedBy</I> name/value pairs. These name/value pairs identify the code to which you want to grant the specified permissions. The combination of the <I>codeBase</I> and the <I>signedBy</I> values constitute the <I>code source</I>.</P>
+<P>The basic format of a grant entry in a configuration file is as shown below</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<P><CODE>grant signedBy <I>"signer_names",</I> codeBase <I>"URL"</I> {<BR>
+permission <I>permission_class_name "target_name", "action"</I>, <BR>
+signedBy <I>"signer_names"</I>;<BR>
+....<BR>
+permission <I>permission_class_name "target_name", "action"</I>, <BR>
+signedBy <I>"signer_names"</I>;<BR>
+};</CODE></TD>
+</TR>
+</TABLE>
+
+<P>The items shown above that are not italicized must appear as is (case doesn't matter and some are optional). The italicized items represent variable values.</P>
+<P>The entry must begin with the word grant. The optional <I>signedBy</I> value refers to the <I>alias</I> for a certificate stored in the <I>keystore</I>. The <I>public key</I> contained in that certificate is used to verify the <I>digital signature</I> on the code. According to Sun</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<P>"you grant the permission(s) to code signed by the private key corresponding to the public key in the keystore entry specified by the alias"</TD>
+</TR>
+</TABLE>
+
+<P>This means that before you can grant the permissions to the code, you must first have installed the certificate for the <I>signer</I> as a trusted certificate in your <I>keystore</I> under the specified <I>alias</I>.</P>
+<B><FONT COLOR="#ff0000"><P>Are multiple <I>signers</I> allowed?</P>
+</B></FONT><P>The <I>signedBy</I> value can be a comma-separated list of aliases, such as <I>"tom,dick,harry"</I>. This means that the code must have been signed by tom AND dick AND harry. </P>
+<B><FONT COLOR="#ff0000"><P>More detailed description of the process</P>
+</B></FONT><P>Sun provides the following clarification:</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<P>a statement like "Code signed by Adam" means "Code in a class file contained in a JAR file, where the JAR file was signed using the private key corresponding to the public key that appears in a keystore certificate in an entry aliased by Adam." </TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>What if some of the fields are omitted?</P>
+</B></FONT><P>If the <I>signedBy</I> field is omitted, that means that anyone (or no one) could have signed the code.</P>
+<P>The <I>codeBase</I> value identifies the source of code to which you will grant the specified permissions. If the <I>codeBase</I> is empty, it doesn't matter where the code originated.</P>
+<B><FONT COLOR="#ff0000"><P>CodeBase is a URL, not a path/file string name</P>
+</B></FONT><P>A <I>codeBase</I> value is a URL and is not a path/file string name. It must always use forward slash characters and not backslash characters as the directory separator, regardless of the platform.</P>
+<P>For example, if the source location for code on a Windows system is <B>C:\baldwin\api\,</B> then the <I>codeBase</I> entry in the policy file should be:</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<P><CODE>grant codeBase "<B>file:/C:/baldwin/api/</B>" {<BR>
+...<BR>
+}</CODE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>What about wildcard characters in codeBase?</P>
+</B></FONT><P>Wildcard characters can be used in the <I>codeBase</I> value. The trailing characters of a <I>codeBase</I> value determine its exact meaning according to the following definitions:</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<P><CODE>"/" matches all class files (not JAR files) in the specified directory.</P>
+<P>"/*" matches all files (both class and JAR files) contained in that directory.</P>
+<P>"/-" matches all files (both class and JAR files) in the directory and recursively all files in subdirectories contained in that directory.</CODE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>What is the syntax of a <I>permission</I> entry?</P>
+</B></FONT><P>A <I>permission</I> entry begins with the word <I>permission</I>. This is followed by the name of a permission class or type, such as <B>java.io.FilePermission</B>.</P>
+<P>Many (but not all) permission types, such as <B>java.io.FilePermission</B> require that one or more <I>actions</I> be specified as a comma-separated list. For example, in the case of <B>java.io.FilePermission</B>, the different actions would specify the type of file access that is being granted (read, write, etc.).</P>
+<B><FONT COLOR="#ff0000"><P>Do all permission types have actions?</P>
+</B></FONT><P>Other permission types, such as <B>java.lang.RuntimePermission</B> don't require an action list. You either have the permission specified by the <I>"target_name"</I> value for the permission class, or you don't. Example target names for <B>java.lang.RuntimePermission</B> are </P>
+
+<UL>
+<I><LI>createClassLoader</I> and </LI>
+<I><LI>getClassLoader</I>.</LI></UL>
+
+<B><FONT COLOR="#ff0000"><P>What about that other <I>signer_name</I>?</P>
+</B></FONT><P>You may have noticed that <I>"signer_names"</I> appears at two levels in the grant template presented earlier. Once for the code source, and once for the permission.</P>
+<P>According to Sun</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<P>"The signedBy name/value pair for a permission entry is optional. If present, it indicates a signed permission. That is, the permission class itself must be signed by the given alias(es) in order for the permission to be granted."</TD>
+</TR>
+</TABLE>
+
+<P>If you need to use this capability, you can find more information in the JDK 1.2 documentation.</P>
+<B><FONT COLOR="#ff0000"><P>Is the order of items in a permission entry critical?</P>
+</B></FONT><P>The order of items in a permission entry <U>must be</U>:</P>
+
+<UL>
+<LI>permission </LI>
+<LI>permission_class_name </LI>
+<LI>"target_name" </LI>
+<LI>"action" </LI>
+<LI>signedBy </LI>
+<LI>"signer_names"</LI></UL>
+
+<P>An entry is terminated by a semicolon.</P>
+<B><FONT COLOR="#ff0000"><P>What about case?</P>
+</B></FONT><P>Case is not significant for the identifiers (permission, signedBy, codeBase, etc.) but is significant for the <I>permission_class_name</I> or for any string that is passed in as a value. </P>
+<B><FONT COLOR="#ff0000"><P>Let's talk some more about the use of the Windows backslash character</P>
+</B></FONT><P>The <I>"target_name"</I> for <B>java.io.FilePermission</B> is a path/file name. On a Windows system, when you specify a path/file in a string, you need to include two backslash characters for each actual backslash character in the path. (Note, however that this does not apply to the specification of a URL.) If you've done much in the way of programming on a Windows system, you have probably encountered this requirement before in other areas.</P>
+<B><FONT COLOR="#ff0000"><P>What about that Property Expansion feature encountered earlier?</P>
+</B></FONT><P>The <I>Property Expansion</I> feature can be used in both the policy files and the security properties file.</P>
+<P>When a string like </P>
+<CODE><BLOCKQUOTE>${some.property} </BLOCKQUOTE>
+</CODE><P>appears in one of these files, it will be expanded to the value of the matching system property. </P>
+<P>In other words, the value from the matching system property will replace the specification of the system property. This makes it possible to write general statements such as:</P>
+<CODE><BLOCKQUOTE>permission java.io.FilePermission "<B>${user.home}</B>", "read";</BLOCKQUOTE>
+</CODE><P>This statement makes it possible to use the <U>same policy file</U> for different users on a multi-user system. With this permission, each user would be able to read files from their own home directory, but not from the home directories of other users on the same system.</P>
+<B><FONT COLOR="#ff0000"><P>A special shortcut for file separators</P>
+</B></FONT><P>There is also a special shortcut notation</P>
+<CODE><BLOCKQUOTE>"${/}" </BLOCKQUOTE>
+</CODE><P>This notation is equivalent to</P>
+<CODE><BLOCKQUOTE>"${file.separator}"</BLOCKQUOTE>
+</CODE><P>This notation makes it possible to use statements such as:</P>
+<CODE><BLOCKQUOTE>permission java.io.FilePermission "${user.home}${/}*", "read";</BLOCKQUOTE>
+</CODE><P>This can help you to deal with the fact that different systems use different file separator characters (forward slash and backslash).</P>
+<B><FONT COLOR="#ff0000"><P>Property Expansion in a codeBase entry</P>
+</B></FONT><P>If you use property expansion in a <I>codeBase</I> that <U>always requires forward slashes</U>, backslash characters that may be in the property will automatically be converted to forward slash characters before being included in the codeBase.</P>
+<B><FONT COLOR="#ff0000"><P>Where can you use Property Expansion?</P>
+</B></FONT><P>Property expansion can be used anywhere a double-quoted string is allowed in the policy file. This includes the "signer_names", "URL", "target_name", and "action" fields</P>
+<P>Setting the value of the "policy.expandProperties" property in the security properties file to false can disable property expansion. The default value when the JDK is installed is <I>true</I>.</P>
+<B><FONT COLOR="#ff0000"><P>What happens if a property can't be expanded?</P>
+</B></FONT><P>If a property can't be expanded in a grant entry, permission entry, or keystore entry (perhaps because of a misspelling of the property name), that entry is simply ignored.</P>
+<B><FONT COLOR="#ff0000"><P>What about Property Expansion and the Windows double backslash requirement?</P>
+</B></FONT><P>As you have seen above, you can mix property expansion and file path specifications in a string. On a Windows system that requires double backslash characters in a file path, the path outside of the required property expansion is first resolved and then any property expansion included in that string is performed.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="X509Certificates">X.509 Certificates</A></H2>
+</FONT><P>According to Sun:</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<P>"A public-key certificate is a digitally signed statement from one entity, saying that the public key (and some other information) of another entity has some specific value."</TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>What is an entity?</P>
+</B></FONT><P>An <I>entity</I> is a person, organization, program, computer, business, bank, or something else you trust to some degree.</P>
+<B><FONT COLOR="#ff0000"><P>What are public and private keys?</P>
+</B></FONT><I><P>Public keys</I> are numbers associated with a particular entity. They are intended to be known publicly. In particular, they are specifically meant to be known to anyone who needs to have trusted interactions with that entity. </P>
+<I><P>Public keys</I> are used for a variety of encryption purposes, and in particular are used to verify digital signatures. (Verification of digital signatures will be discussed in detail in a subsequent lesson).</P>
+<I><P>Private keys </I>are numbers, intended to be known only to the particular entity that owns them (they are supposed to be kept secret). </P>
+<I><P>Private</I> and <I>public</I> keys exist in pairs in <I>public key cryptography</I> systems. Typically a <I>private</I> key corresponds to exactly one <I>public</I> key. Data encrypted using a <I>private</I> key can be decrypted using the corresponding <I>public</I> key, and vice versa.</P>
+<I><P>Private keys</I> are used for a variety of cryptographic purposes. In particular, they are used to compute digital signatures.</P>
+<B><FONT COLOR="#ff0000"><P>What is digitally signed data?</P>
+</B></FONT><I><P>Digitally signed</I> data is data that has been stored with the "identity" of an entity, and a <I>digital signature</I> intended to prove that the entity is the source of the data. The data has been <I>digitally signed</I> using the entity's <I>private key</I> in an attempt to make it impossible (or extremely difficult) to forge or modify the data. (I will discuss how to digitally sign data in detail in a subsequent lesson.)</P>
+<P>A <I>digital signature</I> is computed over some data using the private key of an entity (the signer) and can be verified using the <I>public</I> key of the same entity.</P>
+<B><FONT COLOR="#ff0000"><P>What is an identity?</P>
+</B></FONT><P>An <I>identity</I> is a known way of addressing an entity. It can be a driver's license, a public key, a Unix UID, an Email address, an X.509 Distinguished Name, or anything else that will work.</P>
+<B><FONT COLOR="#ff0000"><P>What is a Certification Authority?</P>
+</B></FONT><I><P>Public-key cryptography</I> can be used in large-scale networks where it is impossible to guarantee that prior relationships between communicating entities have been previously established (as in military communications for example).</P>
+<P>It is also generally not possible to guarantee that a central trusted repository will exist containing all <I>public</I> keys. <I>Certificates</I> were invented as a solution to the public key distribution problem. </P>
+<P>On the Internet, public-key cryptography involves the use of a <I>trusted third party</I> known as a <I>Certification Authority (CA)</I> to certify the public key, identity, and some other information about an entity.</P>
+<P>According to Sun:</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<P>"CAs are entities (e.g., businesses) that are trusted to sign (issue) certificates for other entities. It is assumed that CAs will only create valid and reliable certificates as they are bound by legal agreements. There are many public Certification Authorities, such as VeriSign, Thawte, Entrust, and so on.</P>
+<P>You can also run your own Certification Authority using products such as the Netscape/Microsoft Certificate Servers or the Entrust CA product for your organization."</TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Uses for X.509 certificates</P>
+</B></FONT><P>A common use of X.509 certificates is in web browsers that support the SSL (Secure Socket Layer) protocol. </P>
+<P>SSL is a security protocol that provides privacy and authentication for network traffic such as credit card transactions. Both the browser and the web server must support SSL for it to be usable in any particular instance.</P>
+<P>Other uses of X.509 certificates include code-signing schemes, such as signed Java ARchives, and Microsoft Authenticode. </P>
+<P>Secure E-Mail standards, such as PEM and S/MIME, use X.509 certificates as do E-Commerce protocols, such as SET. </P>
+<B><FONT COLOR="#ff0000"><P>How can you get a certificate?</P>
+</B></FONT><P>There are two basic ways to get certificates: </P>
+
+<UL>
+<LI>Create them yourself (using a tool such as <B>keytool</B>). </LI>
+<LI>Ask a CA to issue you one (either directly or by using a tool such as <B>keytool</B> to generate the request).</LI></UL>
+
+<P>If you create certificates yourself (self-signed certificates) they won't always be accepted by others until you have them certified by a CA (and maybe not even then).</P>
+<B><FONT COLOR="#ff0000"><P>Inputs to the certification generation process</P>
+</B></FONT><P>You will need a pair of matched <I>public</I> and <I>private</I> keys, generated using a special tool such as <B>keytool</B>. (The <I>private</I> key should be kept secret and used by you to sign data. If someone else knows your private key, they can masquerade as you.)</P>
+<P>You need to provide information about yourself. Normally, this will include information such as your name and organizational address. </P>
+<P>If you ask a CA to issue a certificate for you, that CA should require you to provide proof that the information is correct (but that may not happen depending on the <I>level</I> of the certificate). </P>
+<B><FONT COLOR="#ff0000"><P>A Certificate Signing Request (CSR)</P>
+</B></FONT><P>To get a certificate from a CA, you provide your public key and information about yourself encapsulated in a <I>Certificate Signing Request (CSR)</I>. You can generate a CSR using <B>keytool</B> or some other appropriate tool.</P>
+<P>You digitally sign the CSR and send it to the CA along with your public key. When satisfied with the information, the CA will generate the certificate and return it to you.</P>
+<B><FONT COLOR="#ff0000"><P>Self-signed certificates</P>
+</B></FONT><P>To generate the certificate yourself (a self-signed certificate) you will use the same information, plus the dates during which the certificate is valid, and a serial number. Then you simply create the certificate using a tool such as <B>keytool</B>. </P>
+<B><FONT COLOR="#ff0000"><P>X.509 certificates</P>
+</B></FONT><P>I will discuss the contents and other aspects of an X.509 certificate in detail in a subsequent lesson.</P>
+<B><FONT COLOR="#ff0000"><P>Security APIs in JDK 1.2</P>
+</B></FONT><P>The Certificate API, found in the <B>java.security.cert</B> package, includes several classes and interfaces used for dealing with certificates. I will discuss and use many of them in subsequent lessons.</P>
+<B><FONT COLOR="#ff0000"><P>The keytool program</P>
+</B></FONT><P>The <B>keytool</B> program (also discussed in the next section) can be used to create public/private key pairs and self-signed X.509 v1 certificates. It can also be used to manage <I>keystores</I>. </P>
+<P>Keys and certificates stored in a <I>keystore</I> can be used, along with the <B>jarsigner</B> program (see next section) to digitally sign your Java applications and applets. </P>
+<P>A <I>keystore</I> is a protected database that holds keys and certificates. Access to a keystore is guarded by a password. Only someone who knows the password can change the password. Each <I>private</I> key in a keystore can also be guarded by its own password. </P>
+<P>There are three versions of X.509 certificates. The <B>keytool</B> program can be used to display, import, and export X.509 v1, v2, and v3 certificates. It can also be used to generate new self-signed (v1 only) certificates.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="SecurityTools">Security Tools</A></H2>
+</FONT><P>The following security tools are provided with JDK 1.2 as executable programs:</P>
+
+<UL>
+<LI>keytool </LI>
+<LI>jar (also available in JDK 1.1) </LI>
+<LI>jarsigner </LI>
+<LI>policytool</LI></UL>
+
+<B><FONT COLOR="#ff0000"><P>How are the tools used?</P>
+</B></FONT><P>All of these tools are command-line tools. In addition, <B>policytool</B>, which has a graphical user interface that eliminates the requirement to learn the detailed syntax of policy configuration files (I will discuss policy configuration files in detail in a subsequent lesson).</P>
+<B><FONT COLOR="#ff0000"><P>What do the tools replace?</P>
+</B></FONT><P>The <B>keytool</B> and <B>jarsigner</B> tools replace <B>javakey</B>, which was an interim tool introduced in JDK 1.1.</P>
+<P>The new tools provide more features than <B>javakey</B>, including the ability to protect the <I>keystore</I> and <I>private keys</I> with passwords. The new tools also provide the ability to verify signed JAR files in addition to generating them. </P>
+<P>The new <I>keystore</I> architecture replaces the <I>identity database</I> that <B>javakey</B> created and managed. You can import information from an <I>identity database</I> into a <I>keystore</I>, via a <B>keytool</B> command. </P>
+<B><FONT COLOR="#ff0000"><P>What can I do with keytool?</P>
+</B></FONT><P>Here are some of the things that you can do with <B>keytool</B>:</P>
+
+<UL>
+<LI>Create public/private key pairs </LI>
+<LI>Issue certificate requests (to send to an appropriate Certification Authority) </LI>
+<LI>Import certificate replies (obtained from the Certification Authority) </LI>
+<LI>Designate public keys belonging to other parties as trusted </LI></UL>
+
+<P>You can use the <B>jar</B> tool to create JAR files. </P>
+<B><FONT COLOR="#ff0000"><P>What can I do with the jar tool?</P>
+</B></FONT><P>The JAR file format lets you bundle multiple files into a single archive file. </P>
+<P>Typically a JAR file will contain the class files and auxiliary resources associated with applets and applications. </P>
+<B><FONT COLOR="#ff0000"><P>What can I do with the jarsigner tool?</P>
+</B></FONT><P>When you need to "digitally sign" code, you can use the <B>jar</B> tool to place it in a JAR file. Then use the <B>jarsigner</B> tool to sign the JAR file. (You must first generate or import appropriate keys into your <I>keystore</I> using <B>keytool</B>). </P>
+<P>You can use the <B>jarsigner</B> tool to </P>
+
+<UL>
+<LI>Sign JAR files </LI>
+<LI>Verify signatures on signed JAR files. </LI></UL>
+
+<P>The <B>jarsigner</B> tool accesses a <I>keystore</I> created and managed by <B>keytool</B>, when it needs to find the <I>private key </I>and its associated certificate chain to use when signing a JAR file. </P>
+<B><FONT COLOR="#ff0000"><P>Who can sign JAR files?</P>
+</B></FONT><P>Since accesses to the <I>keystore</I> and to <I>private</I> keys are protected by passwords, <U>only people who know the passwords</U> will be able to access the key and use it to sign a JAR file. The <B>jarsigner</B> tool prompts for needed passwords. </P>
+<B><FONT COLOR="#ff0000"><P>What can I do with policytool?</P>
+</B></FONT><P>You can use <B>policytool </B>to create and modify the external <I>policy configuration files</I> that define your installation's security policy. </P>
+<P>I will discuss policy configuration files in detail in a subsequent lesson.</P>
+<P>The <B>policytool</B> program has a graphical user interface. You select buttons and other GUI components rather than typing in commands as with the other tools. Policy configuration files can also be created and edited using a simple text editor if your prefer.</P>
+<P>-end-<!--end--></P></BODY>
+</HTML>

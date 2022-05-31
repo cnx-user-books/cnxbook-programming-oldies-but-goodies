@@ -1,0 +1,594 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type"
+content="text/html; charset=iso-8859-1">
+<meta name="Template"
+content="C:\PROGRAM FILES\MSOFFICE\OFFICE\html.dot">
+<meta name="GENERATOR" content="Microsoft FrontPage Express 2.0">
+<title>... in Java by Richard G Baldwin</title>
+</head>
+
+<body bgcolor="#FFFFFF" link="#0000FF" vlink="#800080">
+
+<p><!--start--></p>
+
+<h3 align="center"><i>Richard G Baldwin (512) 223-4758, </i><a
+href="mailto:baldwin@austin.cc.tx.us"><i>baldwin@austin.cc.tx.us</i></a><i>,
+</i><a href="http://www2.austin.cc.tx.us/baldwin/"><i>http://www2.austin.cc.tx.us/baldwin/</i></a></h3>
+
+<h2 align="center"><!--title-->Servlets, Forms, and Databases<!--endtitle--></h2>
+
+<p>Java Programming, Lecture Notes # 682, Revised 2/3/99. </p>
+
+<p><a href="#Preface">Preface</a><br>
+<a href="#Introduction">Introduction</a><br>
+<a href="#sample_program">Sample Program</a></p>
+
+<blockquote>
+    <p><a href="#Interesting_Code_Fragments">Interesting Code
+    Fragments</a><br>
+    <a href="#program_listing">Program Listing</a></p>
+</blockquote>
+
+<hr>
+
+<h2 align="center"><a name="Preface"><font color="#FF0000">Preface</font></a></h2>
+
+<p>Students in Prof. Baldwin's <b><u>Advanced Java Programming</u></b>
+classes at ACC will be responsible for knowing and understanding
+all of the material in this lesson beginning with the spring
+semester of 1999. </p>
+
+<p>This lesson was originally written on January 4, 1999. The
+sample servlet was tested using the JDK 1.2 download package from
+JavaSoft along with the Java Servlet Development Kit (JSDK) 2.0
+from JavaSoft. All tests were performed under Win95.</p>
+
+<p>The servlet was tested using the <strong>servletrunner</strong>
+program that is included in the JSDK running as <strong>localhost</strong>
+on the same machine. The servlet was also tested using the
+JavaSoft Java Web Server 1.1.1 program running on a different
+machine on the network. </p>
+
+<p>All tests required the use of the Windows version of the <strong>mSQL
+2.0 </strong>database program from <a
+href="http://blnet.com/msqlpc/downloads.htm#win">http://blnet.com/msqlpc/downloads.htm#win</a>
+and the JDBC interface classes for mSQL and JDK 1.2 from <a
+href="http://www.Imaginary.com/Java/">http://www.Imaginary.com/Java/</a>.</p>
+
+<h2 align="center"><a name="Introduction"><font color="#FF0000">Introduction</font></a></h2>
+
+<p>The primary purpose of this lesson is to introduce you to the
+following concepts:</p>
+
+<ul>
+    <li>The use of a servlet to get data from a client form. </li>
+    <li>The use of a servlet to access a database to store data
+        obtained from the client form. </li>
+</ul>
+
+<p>The lesson also illustrates the use of a servlet to access a
+database to retrieve data and send it back to a client, but this
+was covered in an earlier lesson.</p>
+
+<h2 align="center"><a name="sample_program"></a><font
+color="#FF0000">Sample Program</font></h2>
+
+<p>The name of the sample program is <strong>Servlet02</strong>.
+This servlet performs the following operations:</p>
+
+<ul>
+    <li>Receives data submitted by an HTTP client using an HTML
+        form </li>
+    <li>Uses one piece of that data to make a decision and take
+        action based on that decision </li>
+    <li>Adds the remaining data to a database table </li>
+    <li>Extracts all of the data from the table </li>
+    <li>Formats that data in an HTML page and sends it back to
+        the client </li>
+</ul>
+
+<p>The client has the ability to either cause the existing table
+to be deleted and add data to a new table, or to simply add new
+data to an existing table. The data provided by the client
+consists of two strings, one representing a first name and the
+other representing a last name. Each time the client submits
+data, all of the data is retrieved from the table and sent back
+to be displayed on the client screen.</p>
+
+<p>The program was tested using three different computers on a
+network, all running JDK 1.2 under Win95. The HTTP server program
+from JavaSoft named Java Web Server 1.1.1 was running on one
+machine. The database server program named mSQL was running on a
+second machine. A browser was running on the third machine<br>
+<br>
+An HTML form file named <strong>Servlet02.htm</strong> containing
+three fields and one submit button was loaded into the browser.
+The three fields were:</p>
+
+<ul>
+    <li>clear (y or n) </li>
+    <li>firstName </li>
+    <li>lastName </li>
+</ul>
+
+<p>The servlet was activated and data was sent to the server by
+the highlighted tags from the HTML file shown below. If you
+aren't familiar with the HTML syntax for creating and processing
+forms, you will need to look this up in an appropriate HTML book
+or tutorial. Many such documents are freely available on the web.</p>
+
+<table border="1" cellspacing="1">
+    <tr>
+        <td bgcolor="#FFFF00"><pre><strong>&lt;FORM METHOD=GET 
+ACTION=&quot;http://webserver:8080/servlet/Servlet02&quot;&gt;
+</strong>Enter your name and press the button&lt;P&gt;
+Clear Database, y or n: <strong>&lt;INPUT TYPE=TEXT NAME=&quot;clear&quot;&gt;&lt;P&gt;
+</strong>First Name: <strong>&lt;INPUT TYPE=TEXT NAME=&quot;firstName&quot;&gt;&lt;P&gt;
+</strong>Last Name: <strong>&lt;INPUT TYPE=TEXT NAME=&quot;lastName&quot;&gt;&lt;P&gt;
+&lt;INPUT TYPE=SUBMIT&gt;</strong></pre>
+        </td>
+    </tr>
+</table>
+
+<p>These tags caused a <strong>GET</strong> method to be sent to
+the server and caused the server to call the servlet named <strong>Servlet02</strong>.
+The request from the client was handled by an overridden <strong>doGet()</strong>
+method in the servlet.</p>
+
+<p>The servlet got a connection to a specified <strong>mSQL</strong>
+database server on the machine named <strong>node3</strong> using
+the following URL:</p>
+
+<p><font face="Courier New"><strong>jdbc:msql://node3:1114/JunkDB</strong></font></p>
+
+<p>Note that the // is part of the URL and is not a comment
+indicator in this case.</p>
+
+<p>Then, the code in the servlet obtained the value of the
+parameter named clear from the client. If the value was either Y
+or y, and a table named servlet02Table already existed, it was
+deleted.</p>
+
+<p>Next, the servlet created a new table named <strong>servlet02Table</strong>
+if a table of that name didn't already exist </p>
+
+<p>The servlet then got the values for the parameters named <strong>firstName</strong>
+and <strong>lastName</strong> from the client and inserted them
+into the database table.</p>
+
+<p>After this, the servlet </p>
+
+<ul>
+    <li>accessed the database server, </li>
+    <li>got all of the names in the table ordered by last name, </li>
+    <li>formatted that data into an HTML page and </li>
+    <li>returned the page to the browser where the list of names
+        appeared in the browser window. </li>
+</ul>
+
+<p>The program was also successfully tested using the JavaSoft
+servletrunner program running on <strong>localhost</strong> as a
+substitute for the HTTP server. In this case, only two different
+machines were involved: one for the browser and servletrunner and
+one for the database server.</p>
+
+<h3 align="center"><a name="Interesting_Code_Fragments"><font
+color="#FF0000">Interesting Code Fragments</font></a></h3>
+
+<p>The first fragment is shown simply to remind you of the
+requirement to import special packages dealing with servlets and
+JDBC.</p>
+
+<table border="1" cellspacing="1">
+    <tr>
+        <td bgcolor="#FFFF00"><pre>import java.io.*;
+import javax.servlet.*;
+import javax.servlet.http.*;
+import java.sql.*;</pre>
+        </td>
+    </tr>
+</table>
+
+<p>The next fragment shows the beginning of the overridden <strong>doGet()</strong>
+method, and should remind you that each of the <strong>service()</strong>
+methods receive two objects as parameters. One object passes data
+from the client to the servlet. The other object passes data from
+the servlet to the client.</p>
+
+<table border="1" cellspacing="1">
+    <tr>
+        <td bgcolor="#FFFF00"><pre>  public void <strong>doGet</strong>(HttpServletRequest req, 
+                    HttpServletResponse res)
+                      throws ServletException, IOException{</pre>
+        </td>
+    </tr>
+</table>
+
+<p>The next fragment declares two local reference variables that
+you will need to know about when they are used later.</p>
+
+<table border="1" cellspacing="1">
+    <tr>
+        <td bgcolor="#FFFF00"><pre>      Statement stmt;//used for database access
+      ResultSet rs;//used for database access</pre>
+        </td>
+    </tr>
+</table>
+
+<p>As discussed in an earlier lesson, it is necessary to set the
+content type of the data to be returned to the client before
+accessing the writer or stream that will be used to return that
+data. This is illustrated in the following fragment that sets the
+content type to the standard for HTML text. At some point, you
+will probably want to find a good reference that discusses all of
+the possible content types.</p>
+
+<table border="1" cellspacing="1">
+    <tr>
+        <td bgcolor="#FFFF00"><pre>      res.setContentType(&quot;<strong>text/html</strong>&quot;);</pre>
+        </td>
+    </tr>
+</table>
+
+<p>The next fragment gets an output writer object that will be
+used to send data back to the client. It also begins constructing
+the tags and other information that is required to construct an
+HTML page on the fly.</p>
+
+<table border="1" cellspacing="1">
+    <tr>
+        <td bgcolor="#FFFF00"><pre>      PrintWriter out = res.getWriter();
+
+      out.println(&quot;&lt;HTML&gt;&quot;);
+      out.println(&quot;&lt;HEAD&gt;&lt;TITLE=Servlet02&lt;/TITLE&gt;&lt;/HEAD&gt;&quot;);
+      out.println(&quot;&lt;BODY&gt;&quot;);</pre>
+        </td>
+    </tr>
+</table>
+
+<p>The next fragment registers the JDBC driver for the <strong>mSQL</strong>
+database server, constructs a URL for accessing that database,
+and gets a connection to the database. It also causes the URL to
+be displayed on the client screen.</p>
+
+<table border="1" cellspacing="1">
+    <tr>
+        <td bgcolor="#FFFF00"><pre>      Class.forName(&quot;com.imaginary.sql.msql.MsqlDriver&quot;);
+      String url = &quot;jdbc:msql://node3:1114/JunkDB&quot;;
+      Connection con = DriverManager.getConnection(url,
+                                            &quot;baldwin&quot;, &quot;&quot;);
+      out.println(&quot;URL: &quot; + url + &quot;&lt;br&gt;&lt;br&gt;&quot;);</pre>
+        </td>
+    </tr>
+</table>
+
+<p>The next fragment gets a <strong>Statement</strong> object
+linked to the database connection to be used later for
+manipulating the database.</p>
+
+<table border="1" cellspacing="1">
+    <tr>
+        <td bgcolor="#FFFF00"><pre>       stmt = con.createStatement();</pre>
+        </td>
+    </tr>
+</table>
+
+<p>Up to this point, with the exception of the HTML material for
+an HTML form, everything that I have presented in this lesson was
+presented in an earlier lesson. The following fragment shows some
+new material.</p>
+
+<p>This fragment gets the incoming parameter named <strong>clear</strong>
+from the client. If the value of the parameter is either <strong>Y</strong>
+or <strong>y</strong>, an attempt is made to delete the existing
+database table. Note that <strong>clear</strong> is the name of a
+local reference variable in the method, and <strong>&quot;clear&quot;</strong>
+as a parameter to the <strong>getParameter()</strong> method is a
+string that matches the name of the data-input field on the HTML
+form. There is no requirement for these two names to match. It
+just seemed like a good idea at the time.</p>
+
+<table border="1" cellspacing="1">
+    <tr>
+        <td bgcolor="#FFFF00"><pre>      String <strong>clear</strong> = req.getParameter(<strong>&quot;clear&quot;</strong>);
+      if(clear.toUpperCase().equals(&quot;Y&quot;)){//Delete table
+        try{
+          stmt.executeUpdate(&quot;DROP TABLE servlet02Table&quot;);
+        }catch(Exception e){
+          out.println(e + &quot;&lt;br&gt;&quot;);
+          out.println(
+                    &quot;No existing table to delete&lt;br&gt;&lt;br&gt;&quot;);
+        }//end catch
+      }//end if(clear.toUpperCase().equals(&quot;Y&quot;)</pre>
+        </td>
+    </tr>
+</table>
+
+<p>The next statement shows that the servlet tries to create a
+new database table each time it is invoked. If a table with the
+same name already exists, the attempt to create a new table is
+aborted and an exception is thrown. The exception is essentially
+ignored.</p>
+
+<table border="1" cellspacing="1">
+    <tr>
+        <td bgcolor="#FFFF00"><pre>      try{
+        stmt.executeUpdate(&quot;CREATE TABLE servlet02Table (&quot;
+                + &quot;lastName char(15),firstName char(15))&quot;);
+      }catch(Exception e){
+        out.println(e + &quot;&lt;br&gt;&quot;);
+        out.println(
+                  &quot;Table exists, can't create it&lt;br&gt;&lt;br&gt;&quot;);
+      }//end catch</pre>
+        </td>
+    </tr>
+</table>
+
+<p>The next fragment shows some more material that is new to this
+lesson. This fragment uses the <strong>getParameter()</strong>
+method of the incoming request object to obtain the values of the
+first and last name fields. Then this new data is inserted into
+(added to) the data already in the database table.</p>
+
+<p>Pay particular attention to the requirement to surround the
+new data with single quotes to satisfy the SQL syntax requirement
+for string data.</p>
+
+<table border="1" cellspacing="1">
+    <tr>
+        <td bgcolor="#FFFF00"><pre>      String firstName = req.getParameter(&quot;firstName&quot;);
+      String lastName = req.getParameter(&quot;lastName&quot;);
+ 
+      stmt.executeUpdate(&quot;INSERT INTO servlet02Table (&quot;
+                    + &quot;lastName, firstName) VALUES('&quot; 
+                    + lastName + &quot;','&quot; + firstName + &quot;')&quot;);</pre>
+        </td>
+    </tr>
+</table>
+
+<p>The next fragment creates a <strong>Statement</strong> object
+and uses that object to execute a query on the database. The
+result of the query is encapsulated in an object of type <strong>ResultSet</strong>
+that is referred to by the reference variable named <strong>rs</strong>.</p>
+
+<table border="1" cellspacing="1">
+    <tr>
+        <td bgcolor="#FFFF00"><pre>      stmt = con.createStatement();
+
+      rs = stmt.executeQuery(
+         &quot;SELECT * from servlet02Table ORDER BY lastName&quot;);</pre>
+        </td>
+    </tr>
+</table>
+
+<p>The objective here is to send all of the data in the database
+table back to the client for display on the client screen. The
+next fragment uses methods of the <strong>ResultSet</strong>
+class to extract the pertinent data from the <strong>ResultSet</strong>
+object. Then it is formatted as HTML and handed over to the
+output writer for transmission to the client.</p>
+
+<table border="1" cellspacing="1">
+    <tr>
+        <td bgcolor="#FFFF00"><pre>      out.println(&quot;Contents of Database&lt;BR&gt;&quot;);
+      while(rs.<strong>next</strong>()) {
+        lastName = rs.<strong>getString</strong>(&quot;lastName&quot;);
+        firstName = rs.<strong>getString</strong>(&quot;firstName&quot;);
+        out.println(lastName + &quot;, &quot; + firstName);
+        out.println(&quot;&lt;BR&gt;&quot;);
+      }//end while loop</pre>
+        </td>
+    </tr>
+</table>
+
+<p>The next fragment constructs the remaining tags required by
+the HTML format and closes the connection to the database. </p>
+
+<table border="1" cellspacing="1">
+    <tr>
+        <td bgcolor="#FFFF00"><pre>      out.println(&quot;&lt;/BODY&gt;&lt;/HTML&gt;&quot;);
+      con.close();</pre>
+        </td>
+    </tr>
+</table>
+
+<p>This is followed by some routine wrap-up code that is not
+shown here, but which you can view in the complete listing of the
+program in the next section.</p>
+
+<h3 align="center"><a name="program_listing"></a><font
+color="#FF0000">Program Listing</font></h3>
+
+<p>A complete listing of the program follows.</p>
+
+<table border="1" cellspacing="1">
+    <tr>
+        <td bgcolor="#FFFF00"><pre>/*File Servlet02.java, Copyright 1999, R.G.Baldwin
+Rev 1/4/99
+
+The purpose of this program is to illustrate:
+1. The use of a servlet to get data from a client form.
+2, The use of a servlet to access a database to store
+   data obtained from the client form.
+3. The use of a servlet to access a database to retrieve
+   data and send it back to a client.
+
+
+The program was tested using three computers on the 
+network, all running JDK 1.2 under Win95.
+
+For this test, the HTTP server program from JavaSoft 
+named Java Web Server 1.1.1 was running on one machine.
+
+The database server program named mSQL was running on the 
+second machine.
+
+A browser was running on the third machine
+
+An HTML file containing three fields and one submit button
+was loaded into the browser.  The three fields were:
+  
+clear (y or n)
+firstName
+lastName
+
+The servlet was activated by the following tag in the
+HTML file.
+
+&lt;FORM METHOD=GET 
+ACTION=&quot;http://webserver:8080/servlet/Servlet02&quot;&gt;
+
+This tag caused a GET method to be sent to the server and
+caused the server to call the servlet named Servlet02. The
+request from the client was handled by an overridden
+doGet() method in the servlet.
+
+The servlet got a connection to a specified database
+server on the machine named node3 using the following URL:
+  
+jdbc:msql://node3:1114/JunkDB
+
+Then, the code in the servlet obtained the value of the
+parameter named clear from the client.  If the value was
+either Y or y, and a table named servlet02Table already
+existed, it was deleted.
+
+Next, the servlet created a new table named servlet02Table
+if a table of that name didn't already exist
+
+The servlet then got the values for the parameters named
+firstName and lastName from the client and inserted them
+into the database table.
+
+After this, the servlet accessed the database server, got
+all of the names in the table ordered by last name, 
+formatted that data into an HTML page and returned the page
+to the browser where the list of names appeared in the
+browser window.
+
+The program was also successfully tested using the JavaSoft 
+servletrunner program running on localhost as a substitute
+for the HTTP server.  In this case, only two different
+machines were involved:  one for the browser and 
+servletrunner and one for the database server.
+**********************************************************/
+import java.io.*;
+import javax.servlet.*;
+import javax.servlet.http.*;
+import java.sql.*;
+
+public class Servlet02 extends HttpServlet{
+  public void doGet(HttpServletRequest req, 
+                    HttpServletResponse res)
+                      throws ServletException, IOException{
+                        
+    try {
+      Statement stmt;//used for database access
+      ResultSet rs;//used for database access
+
+      //Set the content type of the data to be sent back
+      // to the client.
+      res.setContentType(&quot;text/html&quot;);
+      
+      //Get an output writer object to send data back to
+      // the client.
+      PrintWriter out = res.getWriter();
+      
+      //Begin constructing the HTML page to send back to
+      // the client.
+      out.println(&quot;&lt;HTML&gt;&quot;);
+      out.println(&quot;&lt;HEAD&gt;&lt;TITLE=Servlet02&lt;/TITLE&gt;&lt;/HEAD&gt;&quot;);
+      out.println(&quot;&lt;BODY&gt;&quot;);
+      
+      //Register the JDBC driver
+      Class.forName(&quot;com.imaginary.sql.msql.MsqlDriver&quot;);
+      //Construct URL for database on node3
+      String url = &quot;jdbc:msql://node3:1114/JunkDB&quot;;
+      //Get a connection to the database
+      Connection con = DriverManager.getConnection(url,
+                                            &quot;baldwin&quot;, &quot;&quot;);
+      //Display the URL on the client screen
+      out.println(&quot;URL: &quot; + url + &quot;&lt;br&gt;&lt;br&gt;&quot;);
+ 
+      //Get a Statement object
+      stmt = con.createStatement();
+
+      //Get the incoming parameter named clear from the 
+      // client. If it is Y or y, delete the existing
+      // table.
+      String clear = req.getParameter(&quot;clear&quot;);
+      if(clear.toUpperCase().equals(&quot;Y&quot;)){//Delete table
+        try{
+          stmt.executeUpdate(&quot;DROP TABLE servlet02Table&quot;);
+        }catch(Exception e){
+          out.println(e + &quot;&lt;br&gt;&quot;);
+          out.println(
+                    &quot;No existing table to delete&lt;br&gt;&lt;br&gt;&quot;);
+        }//end catch
+      }//end if(clear.toUpperCase().equals(&quot;Y&quot;)
+      
+      //Create a new table named servlet02Table in the 
+      // database if it doesn't already exist
+      try{
+        stmt.executeUpdate(&quot;CREATE TABLE servlet02Table (&quot;
+                + &quot;lastName char(15),firstName char(15))&quot;);
+      }catch(Exception e){
+        out.println(e + &quot;&lt;br&gt;&quot;);
+        out.println(
+                  &quot;Table exists, can't create it&lt;br&gt;&lt;br&gt;&quot;);
+      }//end catch
+      
+      //Get the two incoming data parameters from the
+      // client
+      String firstName = req.getParameter(&quot;firstName&quot;);
+      String lastName = req.getParameter(&quot;lastName&quot;);
+        
+      //Put the data into the database table. Don't forget
+      // to enclose the string data in single quotes to 
+      // satisfy the SQL syntax requirement.
+      stmt.executeUpdate(&quot;INSERT INTO servlet02Table (&quot;
+                    + &quot;lastName, firstName) VALUES('&quot; 
+                    + lastName + &quot;','&quot; + firstName + &quot;')&quot;);
+      
+      //Create a statement object linked to the database
+      // connection.
+      stmt = con.createStatement();
+
+      //Use the statement object to execute a query on the
+      // database.
+      rs = stmt.executeQuery(
+         &quot;SELECT * from servlet02Table ORDER BY lastName&quot;);
+
+      //Extract data from the ResultSet object and display
+      // in the HTML page sent back to the client.
+      out.println(&quot;Contents of Database&lt;BR&gt;&quot;);
+      while(rs.next()) {
+        lastName = rs.getString(&quot;lastName&quot;);
+        firstName = rs.getString(&quot;firstName&quot;);
+        out.println(lastName + &quot;, &quot; + firstName);
+        out.println(&quot;&lt;BR&gt;&quot;);
+      }//end while loop
+
+      //Finish the construction of the html page
+      out.println(&quot;&lt;/BODY&gt;&lt;/HTML&gt;&quot;);
+
+      //Enable the following statement to delete the table
+      // when the servlet terminates.
+      //stmt.executeUpdate(&quot;DROP TABLE servlet02Table&quot;);
+      
+      //Close the connection to the database      
+      con.close();
+    }catch( Exception e ) {
+      e.printStackTrace();
+    }//end catch
+  }//end doGet()
+}//end class Servlet02</pre>
+        </td>
+    </tr>
+</table>
+
+<p>-end-<!--end--></p>
+</body>
+</html>

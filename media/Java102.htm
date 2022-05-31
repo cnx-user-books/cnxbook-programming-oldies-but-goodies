@@ -1,0 +1,503 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>... in Java by Richard G Baldwin</TITLE>
+<META NAME="Template" CONTENT="C:\PROGRAM FILES\MICROSOFT OFFICE\OFFICE\html.dot">
+</HEAD>
+<BODY LINK="#0000ff" VLINK="#800080" >
+
+<P><!--start--></P>
+<I><H3 ALIGN="CENTER">Richard G Baldwin (512) 223-4758, </I><A HREF="mailto:baldwin@austin.cc.tx.us"><I>baldwin@austin.cc.tx.us</I></A><I>, </I><A HREF="http://www2.austin.cc.tx.us/baldwin/"><I>http://www2.austin.cc.tx.us/baldwin/</I></A></H3>
+<H2 ALIGN="CENTER"><!--title-->Event Handling in JDK 1.1, Handling Events in Extended Components without Listener Objects<!--endtitle--></H2>
+<P>Java Programming, Lecture Notes # 102, Revised 02/25/99. </P>
+
+<UL>
+<LI><A HREF="#preface">Preface</A> </LI>
+<LI><A HREF="#introduction">Introduction</A> </LI>
+<LI><A HREF="#essential_ingredients_for_extending_exis">Essential Ingredients for Extending Existing Components</A> </LI>
+<LI><A HREF="#sample_program">Sample Program</A> </LI>
+
+<UL>
+<LI><A HREF="#interesting_code_fragments">Interesting Code Fragments</A> </LI>
+<LI><A HREF="#program_listing">Program Listing</A></LI></UL>
+
+<LI><A HREF="#review">Review</A></LI></UL>
+
+<P><HR></P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="preface"></A>Preface</H2>
+</FONT><P>Students in Prof. Baldwin's <B><U>Intermediate Java Programming</B></U> classes at ACC are responsible for knowing and understanding all of the material in this lesson. </P>
+<P>JDK 1.1 was formally released on February 18, 1997 and JDK 1.1.1 was formally released on March 27, 1997. This lesson was originally written on March 29, 1997 using the software and documentation in the JDK 1.1 download package because I experienced installation problems with JDK 1.1.1 and I had not succeeded in getting it installed by March 29. </P>
+<P>On 2/25/99, the sample program in this lesson was confirmed to work properly under JDK 1.2 and Win95.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="introduction"></A>Introduction</H2>
+</FONT><P>The purpose of this lesson is to illustrate one way that you can create your own custom components by extending the existing components. When you extend an existing component, you need to handle the events associated with the new component. </P>
+<P>This lesson demonstrates an event-handling approach for the events on the new component that does not follow the <I>Source/Listener</I> mode of the <I>Delegation Event Model</I>. Sometimes this approach can be more compact. However, you should take a look at the cautions in the JDK 1.1 documentation regarding this approach. </P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="essential_ingredients_for_extending_exis"></A>Essential Ingredients for Extending Existing Components</H2>
+</FONT><P>Using the techniques illustrated in this program, the essential ingredients for creating and handling events on an extended component are: </P>
+
+<UL>
+<LI>Define and instantiate the primary container for the <B>GUI</B>. In this lesson, the primary container extends <B>Frame</B>. </LI>
+<LI>Define the class for the new component and make it <I>extend </I>an existing component. In this program the class for the new component <I>extends </I><B>TextField</B>. </LI>
+<LI>Create a mechanism for handling events on the new component. In this program, the mechanism is an overridden <B>processKeyEvent()</B> method. Note that <B>processKeyEvent()</B> is only one of several available methods that you can override. Other available methods include <B>processMouseEvent()</B>, <B>processActionEvent()</B>, etc. </LI>
+
+<UL>
+<LI>If you use methods such as <B>processKeyEvent()</B> for processing events, you must <I>enable </I>events of the proper type using statements such as <B>enableEvents(AWTEvent.KEY_EVENT_MASK)</B>. A good place to put this statement is in the constructor for the object of the new type. </LI>
+<LI>Also, if you override one of the event processing methods such as <B>processKeyEvent()</B> you <U>must always</U> invoke the superclass version of the same event using a statement such as <B>super.processKeyEvent(e)</B> passing it the event object as a parameter. </LI>
+<LI>If you take this approach, it isn't necessary to instantiate and register listener objects on the new components. Rather, all of the event handling code can be placed inside the <B>processKeyEvent()</B> method.</LI></UL>
+
+<LI>Add the new component to its container.</LI></UL>
+
+<P>. <BR>
+&nbsp; </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=624>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#00ffff">
+<P>The following rather long explanation of the rule regarding <B>super.processKeyEvent(e) </B>along with a sample program was extracted from the JavaSoft JDK 1.1.3 documentation at the location shown below.&nbsp; </P>
+<P>/java/docs/guide/awt/designspec/events.html </P>
+<P>The most important information has been highlighted using boldface. </P>
+<P>Note in particular the <I>unconditional </I>call to <B>super.processFocusEvent(e)</B> at the end of the method named <B>processFocusEvent(FocusEvent e)</B>. Not all books show this as an unconditional call. <BR>
+&nbsp; </TD>
+</TR>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#00ffff">
+<PRE>By default, the single processEvent method will invoke the proper
+event-class processing method. The event-class processing method by
+default will invoke any listeners, which are registered.&nbsp;
+
+
+<B>It's important to remember that these methods perform a critical
+function in the event processing for an AWT component and so if you
+override them you should remember to call the superclass' method
+somewhere within your own!&nbsp;
+
+</B>Selecting for Event Types
+
+One of the goals of the listener model is to improve performance by NOT
+delivering events which components are not interested in. By default, if
+a listener type is not registered on a
+component, then those events will NOT be delivered and these processing
+methods will therefore NOT be called. So if you are using this extension
+mechanism for event-handling, you'll need to select for the specific
+types of events your component wishes to receive (in case no listener is
+registered). This can be done by using the following method on
+java.awt.Component:&nbsp;
+
+&nbsp;&nbsp;&nbsp;&nbsp; protected final void enableEvents(long eventsToEnable)
+
+The parameter to this method is a bitwise mask of the event types you
+wish to enable. The event masks are defined in java.awt.AWTEvent. Note
+that changing this mask will not affect the delivery of events to
+listeners -- it only controls the delivery to the component's processing
+methods. The bottom line is that the set of events which are delivered
+to processEvent() is defined by the union of event types which have
+listeners registered and event types explicitly turned on via
+enableEvents().&nbsp;
+
+Example using Extension Mechanism
+
+Following is an example of how this extension mechanism may be used. For
+Example, if a subclass of java.awt.Canvas wishes to render some visual
+feedback when it receives/loses keyboard focus, it could do the
+following.&nbsp;
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; public class TextCanvas extends Canvas {
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; boolean haveFocus = false;
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; public TextCanvas() {
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; enableEvents(AWTEvent.FOCUS_EVENT_MASK);&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ...
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; protected void processFocusEvent(FocusEvent e) {
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; switch(e.getID()) {
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; case FocusEvent.FOCUS_GAINED:
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; haveFocus = true;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; break;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; case FocusEvent.FOCUS_LOST:
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; haveFocus = false;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; repaint();&nbsp;
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <B>// let superclass dispatch to listeners
+</B>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <B>super.processFocusEvent(e);</B>&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; public void paint(Graphics g) {
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (haveFocus) {
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // render focus feedback...
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ...rest of TextCanvas class...
+&nbsp;&nbsp;&nbsp; }</PRE></TD>
+</TR>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#00ffff">
+<P>&nbsp;</TD>
+</TR>
+</TABLE>
+
+<P>Note that this is not the only way to handle events on extended components. Event handling in JDK 1.1 is extremely flexible. This is simply the way chosen for this particular lesson. </P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="sample_program"></A>Sample Program</H2>
+</FONT><P>This program is designed to be compiled and run under JDK 1.1. It illustrates the ability to handle events in extended components without the requirement to use <B>Listener </B>objects. </P>
+<P>The program extends <B>TextField </B>to create a new type of <I>text field </I>component named <B>NumericTextField</B>. Objects of the <B>NumericTextField</B> type will only accept numeric input. If the user attempts to enter any character other than <I>0 through 9</I>, an audible alarm sounds (assuming the system setup supports audible alarms) and the character is not accepted by the runtime system. </P>
+<P>The controlling class for the program extends <B>Frame</B>. Thus, all the <B>GUI </B>action takes place inside a <B>Frame </B>object. </P>
+<P>A total of three component objects are instantiated and added to the <B>Frame </B>object. One of the objects is an object of the new <B>NumericTextField </B>class described above. </P>
+<P>A second object is a standard <B>Button </B>object. The third object is a <B>Label </B>object. </P>
+<P>Whenever the user clicks on the <B>Button</B>, the <B>String </B>data inside the <B>NumericTextField </B>object is copied into the <B>Label </B>object. </P>
+<P>If the user clicks on the <I>close </I>button on the <B>Frame</B>, the program terminates. </P>
+<P>The extended component named <B>NumericTextField </B>is created by extending the <B>TextField </B>class and providing the capability to use <B>key </B>events to filter the characters entered into the <B>NumericTextField </B>object by the user. Only <I>numbers </I>are allowed through the filter. </P>
+<P>Although the operation of the new component requires the use of <I>key events</I>, it does not operate on the basis of the <I>Source/Listener</I> mode of the <I>Delegation Event Model</I>. </P>
+<P>Rather, <I>key events</I> are enabled on all objects of the class using the <B>enableEvents() </B>method with a <B>KEY_EVENT_MASK</B>. Once this is done, the method named <B>processKeyEvent()</B> is invoked by the runtime system whenever a <I>key event</I> occurs on an object of the class. The method named<B> processKeyEvent()</B> is overridden to provide all of the processing necessary to filter out non-numeric characters without the requirement to instantiate a separate <B>Listener </B>object. </P>
+<P>The processing inside the <B>processKeyEvent()</B> method is straightforward. Whenever a <B>KEY_TYPED</B> event occurs, the character typed is intercepted and tested to confirm that it is one of the numeric characters. If not, it is replaced by a character with a zero value. This is not a legal character, so the runtime system beeps and refuses to accept it into the component. </P>
+<P>Whenever you override one of the <B>processXxxxEvent()</B> methods, you should always invoke the same method in the superclass passing the event object as a parameter. This makes certain that all necessary default processing takes place. </P>
+<P>The program was tested using JDK 1.1 running under Win95. </P>
+<FONT COLOR="#ff0000"><H3 ALIGN="CENTER"><A NAME="interesting_code_fragments"></A>Interesting Code Fragments</H3>
+</FONT><P>The first interesting code fragment is the instantiation and adding of an object of the new extended type to the primary GUI <B>Frame </B>object. <BR>
+&nbsp; </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>&nbsp;&nbsp;&nbsp; NumericTextField myNumericTextField;
+&nbsp;&nbsp;&nbsp; add(myNumericTextField =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new NumericTextField());//add a custom component</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The next interesting code fragment is inside the constructor for the new extended component object. Whenever this statement has been executed, <U>any key events</U> that occur on an object of the class are automatically delivered to a method named <B>processKeyEvent()</B>. <BR>
+&nbsp; </P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>&nbsp;&nbsp; enableEvents(AWTEvent.KEY_EVENT_MASK);</PRE></TD>
+</TR>
+</TABLE>
+
+<P>Another way of describing the situation is that once the above statement has been executed, the occurrence of a key event on an object of the class will cause a method named <B>processKeyEvent()</B> to be automatically invoked and an event object will be passed to the method as a parameter. This method <U>can be overridden</U> to produce the behavior desired. </P>
+<P>The next interesting code fragment shown below is the entire overridden version of the <B>processKeyEvent()</B> method. <BR>
+&nbsp; </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=690>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>&nbsp; protected void processKeyEvent(KeyEvent e){
+&nbsp;&nbsp;&nbsp; if(e.getID() == KeyEvent.<B>KEY_TYPED</B>)//KEY_TYPED is key-down and key-up
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(!((e.getKeyChar() = '0') &amp;&amp; (e.getKeyChar() &lt;= '9')))
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; e.setKeyChar('\000');
+&nbsp;&nbsp;&nbsp; super.processKeyEvent(e);//always do this when overriding processXxEvent&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp; }//end processKeyEvent</PRE></TD>
+</TR>
+</TABLE>
+
+<P>There are a number of different kinds of key events that are delivered to this method. The code in the method ignores all except <B>KEY_TYPED</B>. This is the type of event that occurs when a key has been pressed and released. </P>
+<P>There are also a number of methods available to work with the <B>KeyEvent </B>object passed in as a parameter. It is important to note that in this case, processing <U>occurs before</U> the character associated with the key event is actually deposited into the extend <B>TextField </B>object. Therefore, it is <U>possible to intercept</U> the character using the <B>KeyEvent </B>object and modify it before it is deposited. </P>
+<P>The logic inside this method simply confirms that the character is a numeric key, and if not, replaces the character by a character having an octal value of '\000'. This is an illegal character insofar as the runtime system is concerned, so the runtime system beeps and refuses to deposit it into the extended <B>TextField </B>object. </P>
+<P>This method also invokes the <B>processKeyEvent()</B> method of the <I>superclass </I>passing the event object as a parameter. You must <U>never forget</U> to do this because that method in the superclass performs a number of tasks critical to the overall operation of the system. The requirement to remember to do this is one of the reasons that Sun cautions against using this method of event handling. </P>
+<P>The remaining code in the program simply creates some standard <B>Listener </B>classes for copying the data in the new extended component into a <B>Label </B>object, and for terminating the program when the user closes the <B>Frame</B>. </P>
+<P>These code fragments have illustrated the <U>essential ingredients</U> of creating an extended component and handling the events for that component without the requirement to instantiate and register <B>Listener </B>objects. A complete listing of the program is contained in the next section. </P>
+<FONT COLOR="#ff0000"><H3 ALIGN="CENTER"><A NAME="program_listing"></A>Program Listing</H3>
+</FONT><P>This section contains a complete listing of the program. Refer to previous sections for an operational description of the program. <BR>
+&nbsp; </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=488>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Event29.java Copyright 1997, R.G.Baldwin
+This program is designed to be compiled and run under&nbsp;
+JDK 1.1
+
+This program illustrates the ability to handle events in&nbsp;
+extended components without the requirement to use Listener
+objects.
+
+The program extends TextField to create a new type of text
+field named NumericTextField.&nbsp; Objects of the new type will
+only accept numeric input.&nbsp; If the user attempts to enter&nbsp;
+any character other than 0 thru 9, an audible alarm sounds
+and the character is not accepted.
+
+The controlling class for the program extends Frame.&nbsp; Thus,
+all the GUI action takes place inside a Frame object.
+
+Three component objects are instantiated and added to the&nbsp;
+Frame object. One of the objects is an object of the&nbsp;
+NumericTextField class described above.&nbsp;&nbsp;
+
+A second object is a standard Button object.&nbsp; The third&nbsp;
+object is a Label object.
+
+Whenever the user clicks on the Button, the String data&nbsp;
+inside the NumericTextField object is copied into the&nbsp;
+Label object.
+
+If the user clicks on the close button on the Frame, the&nbsp;
+program terminates.
+
+The custom component named NumericTextField is created by&nbsp;
+extending the TextField class and providing the capability&nbsp;
+to use key events to filter the characters entered into&nbsp;
+the NumericTextField object.&nbsp; Only numbers are allowed&nbsp;
+through the filter.
+
+Although the operation of the new component requires the&nbsp;
+use of key events, it does not operate on the basis of the&nbsp;
+Source/Listener model of the Delegation Event Model.
+
+Rather, key events are enabled on all objects of the class&nbsp;
+using the enableEvents() method with a KEY_EVENT_MASK.&nbsp;&nbsp;
+Once this is done, the method named processKeyEvent() is&nbsp;
+invoked whenever a key event occurs on an object of the&nbsp;
+class.&nbsp; The method named processKeyEvent()is overridden to&nbsp;
+provide all of the processing necessary to filter out&nbsp;
+non-numeric characters without the requirement to&nbsp;
+instantiate a separate Listener object.
+
+The processing inside the processKeyEvent() method is&nbsp;
+straightforward. Whenever a KEY_TYPED event occurs, the&nbsp;
+character typed is intercepted and tested to confirm that&nbsp;
+it is one of the numeric characters.&nbsp; If not, it is&nbsp;
+replaced by a character with a zero value.&nbsp; This is not a&nbsp;
+legal character, so the runtime system beeps and refuses&nbsp;
+to accept it into the component.
+
+Whenever you override one of the processXxxxEvent()&nbsp;
+methods, you should always invoke the same method in the&nbsp;
+superclass passing the event object as a parameter.&nbsp; This&nbsp;
+makes certain that all necessary default processing takes&nbsp;
+place.
+
+The remaining code consists of a couple of standard&nbsp;
+Listener classes. One is used with the Button object to&nbsp;
+copy the contents of the NumericTextField object to the&nbsp;
+Label object.&nbsp; The other terminates the program when the&nbsp;
+user clicks on the close box on the Frame.
+
+The program was tested using JDK 1.1.3 running under Win95.
+*/
+//=========================================================
+import java.awt.*;
+import java.awt.event.*;
+
+//=========================================================
+
+public class Event29 extends Frame{
+&nbsp; public static void main(String[] args){
+&nbsp;&nbsp;&nbsp; new Event29();//instantiate an object of this type
+&nbsp; }//end main
+//---------------------------------------------------------
+&nbsp; public Event29(){//constructor
+&nbsp;&nbsp;&nbsp; this.setTitle("Copyright 1997, R.G.Baldwin");
+&nbsp;&nbsp;&nbsp; this.setLayout(new FlowLayout());
+&nbsp;&nbsp;&nbsp; this.setSize(250,100);
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; Button myButton;
+&nbsp;&nbsp;&nbsp; add(myButton = new Button("Copy to Label"));
+
+&nbsp;&nbsp;&nbsp; NumericTextField myNumericTextField;
+&nbsp;&nbsp;&nbsp; //add a custom component
+&nbsp;&nbsp;&nbsp; add(myNumericTextField = new NumericTextField());
+
+&nbsp;&nbsp;&nbsp; Label myLabel;
+&nbsp;&nbsp;&nbsp; add(myLabel = new Label("Initial Text"));
+
+&nbsp;&nbsp;&nbsp; this.setVisible(true);
+&nbsp;&nbsp;&nbsp; myNumericTextField.requestFocus();&nbsp;&nbsp;&nbsp;&nbsp;
+
+&nbsp;&nbsp;&nbsp; myButton.addActionListener(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new MyActionListener(myLabel,myNumericTextField));
+&nbsp;&nbsp;&nbsp; this.addWindowListener(new Terminate());&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp; }//end constructor
+
+}//end class Event29
+//=========================================================
+
+//Class to define a new type of TextField.&nbsp; This is a&nbsp;
+// custom TextField component, extended from TextField.&nbsp;&nbsp;
+// It will only accept numeric values.&nbsp; Note that it&nbsp;
+// depends on key events for its operation but it does not&nbsp;
+// use the source/listener mode of the Delegation Event&nbsp;
+// Model.
+class NumericTextField extends TextField{
+
+&nbsp; NumericTextField(){//constructor
+&nbsp;&nbsp;&nbsp; this.setColumns(10);//set the size
+&nbsp;&nbsp;&nbsp; //Enable key events so that the processKeyEvent()&nbsp;
+&nbsp;&nbsp;&nbsp; // method will be invoked whenever a key event occurs&nbsp;
+&nbsp;&nbsp;&nbsp; // on an object of this class.
+&nbsp;&nbsp;&nbsp; enableEvents(AWTEvent.KEY_EVENT_MASK);
+&nbsp; }//end constructor
+&nbsp; //-------------------------------------------------------
+&nbsp;&nbsp;
+
+&nbsp; //Because key events are enabled, this overridden method&nbsp;
+&nbsp; // will automatically be invoked whenever a key event&nbsp;
+&nbsp; // occurs on an object of the class.
+&nbsp; protected void processKeyEvent(KeyEvent e){
+&nbsp;&nbsp;&nbsp; //KEY_TYPED is key-down and key-up
+&nbsp;&nbsp;&nbsp; if(e.getID() == KeyEvent.KEY_TYPED)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //If the char is not numeric, substitute an illegal&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // character so that the runtime system will reject&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // it and beep.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(!((e.getKeyChar() = '0')&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &amp;&amp; (e.getKeyChar() &lt;= '9')))
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; e.setKeyChar('\000');
+&nbsp;&nbsp;&nbsp; //always do this when overriding processXxEvent&nbsp;
+&nbsp;&nbsp;&nbsp; super.processKeyEvent(e);
+&nbsp; }//end processKeyEvent
+}//end class NumericTextField
+//=========================================================
+
+//Class to create an ActionListener for the Button object.
+// Transfers the data from the NumericTextField to the&nbsp;
+// Label.
+class MyActionListener implements ActionListener{
+&nbsp; Label myLabel;
+&nbsp; NumericTextField myNumericTextField;
+&nbsp; //-------------------------------------------------------
+&nbsp;&nbsp;
+&nbsp; MyActionListener( //constructor
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Label inLbl, NumericTextField inNumTxtFld){
+&nbsp;&nbsp;&nbsp; myLabel = inLbl;
+&nbsp;&nbsp;&nbsp; myNumericTextField = inNumTxtFld;
+&nbsp; }//end constructor
+&nbsp; //-------------------------------------------------------
+&nbsp;&nbsp;
+&nbsp; public void actionPerformed(ActionEvent e){
+&nbsp;&nbsp;&nbsp; myLabel.setText(myNumericTextField.getText());&nbsp;&nbsp;
+&nbsp; }//end actionPerformed()
+}//end MyActionListener
+//=========================================================
+
+class Terminate extends WindowAdapter{
+&nbsp; public void windowClosing(WindowEvent e){
+&nbsp;&nbsp;&nbsp; //terminate the program when the window is closed&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; System.exit(0);
+&nbsp; }//end windowClosing
+}//end class Terminate
+//=========================================================</PRE></TD>
+</TR>
+</TABLE>
+
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="review"></A>Review</H2>
+</FONT><P>Q - Write an application that meets the specifications given below. </P>
+<FONT SIZE=2 COLOR="#0000ff"><P>A - See the application that follows:</FONT><BR>
+<FONT FACE="Courier New">&nbsp; </P></FONT>
+<TABLE BORDER CELLSPACING=1 WIDTH=486>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE><FONT COLOR="#0000ff">/*File SampProg131.java Copyright 1997, R.G.Baldwin
+This program is designed to be compiled and run under&nbsp;
+JDK 1.1
+
+Without viewing the solution that follows, write an&nbsp;
+application that contains an object that will accept text&nbsp;
+input, a Button object, and a Label object in a standard&nbsp;
+frame.&nbsp; For purposes of the remainder of this&nbsp;
+specification, the first object listed above will be&nbsp;
+referred to as the Text Object.
+
+If you enter lower case letters into the Text Object, they&nbsp;
+are automatically converted to upper case before being&nbsp;
+displayed.&nbsp;&nbsp;
+
+When you click on the Button, the data inside the Text
+Object are copied into the Label object.
+
+When you click on the close button on the Frame, the&nbsp;
+program terminates and returns control to the operating
+system.
+
+The program was tested using JDK 1.1.3 running under Win95.
+*/
+//=========================================================
+import java.awt.*;
+import java.awt.event.*;
+
+//=========================================================
+
+public class SampProg131 extends Frame{
+&nbsp; public static void main(String[] args){
+&nbsp;&nbsp;&nbsp; new SampProg131();//instantiate an object of this type
+&nbsp; }//end main
+//---------------------------------------------------------
+&nbsp; public SampProg131(){//constructor
+&nbsp;&nbsp;&nbsp; this.setTitle("Copyright 1997, R.G.Baldwin");
+&nbsp;&nbsp;&nbsp; this.setLayout(new FlowLayout());
+&nbsp;&nbsp;&nbsp; this.setSize(250,100);
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; Button myButton;
+&nbsp;&nbsp;&nbsp; add(myButton = new Button("Copy to Label"));
+
+&nbsp;&nbsp;&nbsp; NumericTextField myCustomTextField;
+&nbsp;&nbsp;&nbsp; //add a custom component
+&nbsp;&nbsp;&nbsp; add(myCustomTextField = new NumericTextField());
+
+&nbsp;&nbsp;&nbsp; Label myLabel;
+&nbsp;&nbsp;&nbsp; add(myLabel = new Label("Initial Text"));
+
+&nbsp;&nbsp;&nbsp; this.setVisible(true);
+
+&nbsp;&nbsp;&nbsp; myButton.addActionListener(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new MyActionListener(myLabel,myCustomTextField));&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; this.addWindowListener(new Terminate());&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp; }//end constructor
+
+}//end class SampProg131
+//=========================================================
+
+//Class to define a new type of TextField.&nbsp; This is a&nbsp;
+// custom TextField component, extended from TextField.&nbsp;&nbsp;
+// It will only accept numeric values.&nbsp; Note that it&nbsp;
+// depends on key events for its operation but it does not&nbsp;
+// use the source/listener mode of the Delegation Event&nbsp;
+// Model.
+class NumericTextField extends TextField{
+
+&nbsp; NumericTextField(){//constructor
+&nbsp;&nbsp;&nbsp; this.setColumns(10);//set the size
+&nbsp;&nbsp;&nbsp; //Enable key events so that the processKeyEvent()&nbsp;
+&nbsp;&nbsp;&nbsp; // method will be invoked whenever a key event occurs&nbsp;
+&nbsp;&nbsp;&nbsp; // on an object of this class.
+&nbsp;&nbsp;&nbsp; enableEvents(AWTEvent.KEY_EVENT_MASK);
+&nbsp; }//end constructor
+&nbsp; //-------------------------------------------------------
+&nbsp;&nbsp;
+
+&nbsp; //Because key events are enabled, this overridden method&nbsp;
+&nbsp; // will automatically be invoked whenever a key event&nbsp;
+&nbsp; // occurs on an object of the class.
+&nbsp; protected void processKeyEvent(KeyEvent e){
+&nbsp;&nbsp;&nbsp; //KEY_TYPED is key-down and key-up
+&nbsp;&nbsp;&nbsp; if(e.getID() == KeyEvent.KEY_TYPED)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //If the char is lower case, convert it to upper
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // case.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(e.getKeyChar()  'Z')
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; e.setKeyChar((char)(e.getKeyChar() -('a' - 'A')));
+&nbsp;&nbsp;&nbsp; //always do this when overriding processXxEvent&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; super.processKeyEvent(e);
+&nbsp; }//end processKeyEvent
+}//end class NumericTextField
+//=========================================================
+
+//Class to create an ActionListener for the Button object.
+// Transfers the data from the NumericTextField to the&nbsp;
+// Label.
+class MyActionListener implements ActionListener{
+&nbsp; Label myLabel;
+&nbsp; NumericTextField myCustomTextField;
+&nbsp; //-------------------------------------------------------
+&nbsp;&nbsp;
+&nbsp; MyActionListener( //constructor
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Label inLbl, NumericTextField inNumTxtFld){
+&nbsp;&nbsp;&nbsp; myLabel = inLbl;
+&nbsp;&nbsp;&nbsp; myCustomTextField = inNumTxtFld;
+&nbsp; }//end constructor
+&nbsp; //-------------------------------------------------------
+&nbsp;&nbsp;
+&nbsp; public void actionPerformed(ActionEvent e){
+&nbsp;&nbsp;&nbsp; myLabel.setText(myCustomTextField.getText());&nbsp;&nbsp;
+&nbsp; }//end actionPerformed()
+}//end MyActionListener
+//=========================================================
+
+class Terminate extends WindowAdapter{
+&nbsp; public void windowClosing(WindowEvent e){
+&nbsp;&nbsp;&nbsp; //terminate the program when the window is closed&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; System.exit(0);
+&nbsp; }//end windowClosing
+}//end class Terminate
+//=========================================================</PRE></FONT></TD>
+</TR>
+</TABLE>
+
+<P>-end-<!--end--></P></BODY>
+</HTML>

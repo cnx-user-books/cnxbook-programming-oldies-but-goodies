@@ -1,0 +1,2265 @@
+<!DOCTYPE doctype PUBLIC "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+                
+  <meta http-equiv="Content-Type"
+ content="text/html; charset=iso-8859-1">
+                
+  <meta name="GENERATOR" content="Microsoft FrontPage 6.0">
+  <title>... JAVA and DSP by Richard G Baldwin</title>
+</head>
+<body link="#0000ff" vlink="#666666" alink="#ff0000" lang="EN-US">
+ 
+<h2>Processing Image Pixels, Understanding Image Convolution in Java</h2>
+    <i>Learn how and why image convolution works by examining the changes to the 
+wave-number spectrum produced by image convolution.&nbsp; Also learn how to 
+write the code for a general purpose image-convolution class in Java.</i><p><b>Published:</b>&nbsp; 
+January 10, 2006 <br>
+   <b>By <a href="#About_the_author">Richard G. Baldwin</a></b> </p>
+     
+<p>Java Programming, Notes # 410</p>
+     
+<ul>
+  <li><a href="#Preface">Preface</a></li>
+	<li><a href="#Background_Information">Background Information</a></li>
+  <li><a href="#Preview">Preview</a></li>
+	<li><a href="#Experimental_Results">Experimental Results</a></li>
+  <li><a href="#Discussion_and_Sample_Code">Discussion and Sample Code</a><li><a href="#Run_the_Programs">Run the Program</a></li>
+  <li><a href="#Summary">Summary</a></li>
+	<li><a href="#Whats Next">What's Next</a></li>
+	<li><a href="#References">References</a></li>
+  <li><a href="#Complete_Program_Listings">Complete Program Listing</a> </li>
+</ul>
+        
+<hr size="3" width="100%" align="center">    
+<center>    
+<h2> <a name="Preface">Preface</a></h2>
+   </center>
+<p><font color="#FF0000"><b>Next in a series</b></font></p>
+<p>This lesson is one in a series designed to teach you how to 
+use Java to create special effects with images by directly manipulating the 
+pixels in the images.&nbsp; This lesson has two primary objectives:</p>
+<ul>
+	<li>To teach you how and why image convolution works.</li>
+	<li>To provide you with a general purpose image convolution capability in 
+	Java.</li>
+</ul>
+<p>The first lesson in the series was entitled 
+<a href="http://www.developer.com/java/other/article.php/3403921">Processing 
+Image Pixels using Java, Getting Started</a>.&nbsp; The previous lesson 
+was entitled <a href="http://www.developer.com/java/other/article.php/3522711">
+Processing Image Pixels, Performing Convolution on Images</a>.&nbsp; This lesson 
+builds upon those earlier lessons.</p>
+<p><font color="#FF0000"><b>Not a lesson on JAI</b></font></p>
+<p>The lessons in this series do not provide instructions on how to use 
+the Java Advanced Imaging <i>(JAI)</i> API.&nbsp; 
+<i>(That will be the primary topic for a future series of lessons.)</i>&nbsp; The purpose of 
+this series is to teach you how to implement common 
+<i>(and sometimes uncommon)</i> image-processing algorithms by 
+working directly with the pixels.</p><p><b><font color="#ff0000">Viewing tip</font></b> </p>
+ 
+<p>You may find it useful to open another copy of this lesson in a separate
+ browser window.&nbsp; That will make it easier for you to scroll back and
+ forth among the different figures and listings while you are reading about
+ them.</p>
+<h2 align="center"><a name="Background_Information">Background Information</a></h2>
+<p>The earlier lesson entitled 
+<a href="http://www.developer.com/java/other/article.php/3403921">Processing 
+Image Pixels using Java, Getting Started</a> provided a great deal of background 
+information as to how images are constructed, stored, transported, and rendered.&nbsp; 
+I won't repeat that material here, but will simply refer you to the earlier 
+lesson.</p>
+<p><font color="#FF0000"><b>A three-dimensional array of pixel data as type int</b></font></p>
+<p>The earlier lessons introduced and explained the concept of a pixel.&nbsp; 
+They also introduced you to the use of three-dimensional arrays of type <b>int</b> 
+for maintaining pixel data within the programs.</p>
+<p><font color="#FF0000"><b>Will receive and return three-dimensional array of 
+type int</b></font></p>
+<p>This lesson will provide information to help you understand the use of 
+two-dimensional convolution on images.&nbsp; This will be accomplished through 
+the explanation of several examples.&nbsp; The program that I will present to 
+illustrate the concepts will receive and return a three-dimensional array of 
+type <b>int</b> containing data in the same layered format as pixel data in an 
+image.</p>
+<p><font color="#FF0000"><b>A grid of colored pixels</b></font></p>
+<p>Each three-dimensional array object represents one image consisting of a 
+grid of colored pixels.&nbsp; The pixels in the grid are arranged in rows 
+and columns when they are rendered.&nbsp; One of the dimensions of the array represents rows.&nbsp; 
+A second dimension represents columns.&nbsp; The third dimension represents the color <i>(and transparency)</i> of 
+the pixels.</p>
+<p><font color="#FF0000"><b>Fundamentals</b></font></p>
+<p>Once again, I will refer you to the earlier lesson entitled 
+<a href="http://www.developer.com/java/other/article.php/3403921">Processing 
+Image Pixels using Java, Getting Started</a> to learn:</p>
+<ul>
+	<li>How the primary colors of red, green, and blue and the transparency of a 
+	pixel are represented by four <b><i>unsigned</i></b> 8-bit bytes of data.</li>
+	<li>How specific colors are created by mixing different amounts of red, 
+	green, and blue.</li>
+	<li>How the range of each primary color and the range of transparency 
+	extends from 0 to 255.</li>
+	<li>How black, white, and the colors in between are created.</li>
+	<li>How the overall color of each individual pixel is 
+determined by the values stored in the three color bytes for that pixel, as 
+	modified by the transparency byte.</li>
+</ul>
+<p><font color="#FF0000"><b>Convolution in one dimension</b></font></p>
+<p>The earlier lesson entitled 
+<a href="http://www.developer.com/java/other/article.php/3484591">Convolution 
+and Frequency Filtering in Java</a> taught you about performing convolution in 
+one dimension.&nbsp; In that lesson, I showed you how to apply a convolution operator to a 
+sampled time series in one dimension.&nbsp; As you may recall, the mathematical 
+process in one dimension involves the following steps:</p>
+<ul>
+	<li>Register the n-point convolution operator with the first <b>n</b> samples in 
+	the time series.</li>
+	<li>Compute an output point value, which is the sum of the products of the 
+	convolution operator values and the corresponding time series values.&nbsp; 
+	Optionally divide the sum of products by the number of coefficient values in 
+	the convolution operator.</li>
+	<li>Move the convolution operator one step forward, registering it with the 
+	next <b>n</b> samples in the time series and compute the next output point 
+	value as a sum 
+	of products.</li>
+	<li>Repeat this process until all samples in the time series have been 
+	processed.</li>
+</ul>
+<p><font color="#FF0000"><b>Convolution in two dimensions</b></font></p>
+<p>Convolution in two dimensions involves essentially the same steps except that 
+in this case we are dealing with three different 3D sampled surfaces and a 3D convolution 
+operator instead of a simple sampled time series.</p>
+<blockquote>
+	<p><i>(There is a red surface, a green surface, and a blue surface, each of 
+	which must be processed.&nbsp; Note that when the values stored in the array are taken into 
+	account, a populated 2D array represents a 3D surface.&nbsp; Each surface has width and height 
+	corresponding to the first two dimensions of the 3D surface.&nbsp; In 
+	addition, each sampled value that represents the surface can be different.&nbsp; 
+	This constitutes the third dimension of the surface.&nbsp; There is also an 
+	alpha or transparency surface that could be processed, but the programs in 
+	this lesson don't process the alpha surface.&nbsp; Similarly, the 
+	convolution operator has three dimensions corresponding to width, height, 
+	and the values of the coefficients in the operator.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Lots of arithmetic required</b></font></p>
+<p>Because each surface has three dimensions and there are three surfaces to be 
+processed by the convolution operator, the amount of arithmetic that must be 
+performed can be quite large.&nbsp; Although it is possible in certain cases to 
+take advantage of special circumstances to make the arithmetic process more efficient, 
+that won't be emphasized in this lesson.&nbsp; Rather, this lesson will present 
+and explain a general purpose image convolution program that is designed to 
+allow you to apply any two-dimensional convolution operator to an image so long 
+as the operator is smaller than the image.</p>
+<p><font color="#FF0000"><b><a name="Steps_in_the_processing">Steps in the processing</a></b></font></p>
+<p>Basically, the steps involved in processing one of the three surfaces to 
+produce an output surface consist of:</p>
+<ul>
+	<li>Register the width and height of the convolution 
+	operator with the first 2D area at the beginning of the first row of samples on the 
+	input surface.</li>
+	<li>Compute a point for the output surface, by computing the sum of the 
+	products of the convolution operator values and the corresponding input 
+	surface values.&nbsp; Optionally divide the sum of products by the number of 
+	points in the convolution operator.</li>
+	<li>Move the convolution operator one step forward along the row, 
+	registering it with the next 2D area on the surface and compute the next point 
+	on the output surface in the manner described above.&nbsp; When that row has been 
+	completely processed, move the convolution operator to the beginning of the 
+	next row, registering it with the corresponding 2D area on the input surface 
+	and compute the next point for the output surface.</li>
+	<li>Repeat this process until all samples in the surface have been 
+	processed.</li>
+</ul>
+<p><font color="#FF0000"><b>Repeat once for each color surface</b></font></p>
+<p>Repeat the above set of steps three times, once for each of the three color 
+surfaces.</p>
+<p><font color="#FF0000"><b>Watch out for the edges</b></font></p>
+<p>Special care must be taken to avoid 
+having the edges of the convolution operator extend outside the boundaries of 
+the input surface.&nbsp; This will be taken into account in the program.</p>
+<p><font color="#FF0000"><b>Some tricky issues</b></font></p>
+<p>The convolution of color pixel data exposes some tricky issues for 
+which there are several possible solutions, none of which is necessarily the <i>
+right</i> solution.</p>
+<p>Color data is not bipolar data.&nbsp; Rather, color values in an image file 
+consist of eight-bit unsigned values ranging from 0 to 255.&nbsp; Hence, there 
+is an inherent DC offset in the color data.&nbsp; One of the issues is 
+deciding how to deal with this DC offset.&nbsp; The program that I will present 
+in this lesson deals with the issue using only one several possible approaches.</p>
+<p>A second issue has to do with the fact that the convolution process 
+can easily produce negative output values as well as values that exceed 255.&nbsp; 
+The issue here is to decide how to restore the results of the convolution 
+operation to the range from 0 to 255 inclusive without loss of information.&nbsp; Once again, the program 
+that I will present in this lesson deals with the issue using only one of 
+several possible approaches.</p>
+<p><b><font color="#ff0000">Supplementary material</font></b> </p>
+ 
+<p>I recommend that you also study the other lessons in my extensive collection
+ of online Java tutorials.&nbsp; You will find those lessons published at
+<a href="http://softwaredev.earthweb.com/java">Gamelan.com</a>.&nbsp; However, 
+as of the date of this writing, Gamelan doesn't maintain a consolidated index 
+of my Java tutorial lessons, and sometimes they are difficult to locate there.&nbsp; 
+You will find a consolidated index at <a
+ href="http://www.dickbaldwin.com">www.DickBaldwin.com</a><font
+ color="#000000">.</font></p>
+<p>In preparation for understanding the material in this lesson, 
+I recommend that you make certain that you understand the material in the lessons that 
+are listed in the
+<a href="#References">References</a> section of this lesson.</p>
+<h2 align="center"><a name="Preview">Preview</a></h2>
+<p><font color="#FF0000"><b>The class named ImgMod32</b></font></p>
+<p>The class named <b>ImgMod32</b> that I will present and discuss in this 
+lesson provides a general purpose 2D image convolution capability in the form of 
+a static method named <b>convolve</b>.&nbsp; The <b>convolve</b> method class receives an incoming 3D array of image pixel data of type
+<b>int</b> containing four color planes <i>(red, green, blue, and alpha)</i>.&nbsp; 
+The format of this image data is consistent with the format for image data used 
+in the class named <b>ImgMod02a</b>.</p>
+<blockquote>
+	<p><i>(See the earlier lesson entitled
+	<a href="http://www.developer.com/java/other/article.php/3441391">Processing 
+	Image Pixels Using Java: Controlling Contrast and Brightness</a> for an 
+	explanation of the class named <b>ImgMod02a</b>.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Identification of the color planes</b></font></p>
+<p>The color planes are identified as follows in terms of their index position 
+in the 3D array:</p>
+<ul>
+	<li>0 - alpha or transparency data</li>
+	<li>1 - red color data</li>
+	<li>2 - green color data</li>
+	<li>3 - blue color data</li>
+</ul>
+<p>The <b>convolve</b> method also receives an incoming 2D array of type double 
+containing the weights that make up a 2D convolution filter.</p>
+<p><font color="#FF0000"><b>Apply same filter to all three planes</b></font></p>
+<p>The color values on each color plane are convolved separately with the same 
+convolution filter.&nbsp; The results are normalized so as to cause the filtered 
+output to fall within the range from 0 to 255.&nbsp; This causes the color 
+values to be compatible with standard eight-bit unsigned color values.</p>
+<p>The values on the alpha plane are not modified.</p>
+<p><font color="#FF0000"><b>Output format matches input format</b></font></p>
+<p>The <b>convolve</b> method returns a filtered 3D pixel array in the same 
+format as the incoming pixel array.&nbsp; The returned array contains filtered 
+values for each of the three color planes.</p>
+<p><font color="#FF0000"><b>Original array not modified</b></font></p>
+<p>The method does not modify the contents of the incoming array of pixel data.</p>
+<p><font color="#FF0000"><b>Treatment at the edges</b></font></p>
+<p>An unfiltered dead zone equal to half the filter length is preserved around the 
+edge of the filtered image to avoid any attempt to perform convolution 
+using data from outside the bounds of the image.&nbsp; There is no <i>right</i> 
+way to handle the problem at the edge of the image.&nbsp; There simply isn't 
+enough available information to produce correct output values at the edge.&nbsp; 
+This is simply one approach to handling that problem.</p>
+<p><font color="#FF0000"><b>Stand-alone testing</b></font></p>
+<p>Although this class is intended to be used to integrate 2D convolution into 
+other programs, a <b>main</b> method is provided so that the class can be tested 
+in a stand-alone fashion.</p>
+<blockquote>
+	<p><i>(A future lesson will explain how to integrate this image 
+	convolution class into other programs, and will also present several 
+	interesting examples of image convolution including edge detection, embossing, 
+	and smoothing.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Relationship between convolution and wave-number 
+spectrum</b></font></p>
+<p>In addition, the <b>main</b> method illustrates the relationship between 
+convolution in the image domain and the wave-number spectrum of the raw and 
+filtered image.</p>
+<p>When the <b>main</b> method is executed, this class displays raw surfaces, 
+filtered surfaces, and the Fourier Transform of both raw and filtered surfaces.&nbsp;
+<i>(See the details in the comments in the main method.)</i></p>
+<p>The program also displays some text on the command-line screen.</p>
+<p><font color="#FF0000"><b>Other classes required</b></font></p>
+<p>Execution of the main method in this class also requires access to the following 
+classes, plus some inner classes defined within those classes:</p>
+<ul>
+	<li>ImgMod29.class - Displays 3D surfaces.</li>
+	<li>ImgMod30.class - Provides 2D Fourier Transform.</li>
+</ul>
+<p>Source code for the classes in the above list can be found in the lessons 
+listed in the <a href="#References">References</a> section of this lesson.</p>
+<p><font color="#FF0000"><b>Testing</b></font></p>
+<p>This program was tested using J2SE 5.0 and WinXP.</p>
+<h2 align="center"><a name="Experimental_Results">Experimental Results</a></h2>
+<p align="left">Before getting into the program details, I am going to show you 
+some experimental results.</p>
+<p align="left">The <b>convolve</b> method of this class applies the 
+same 2D convolution filter to the red, green, and blue color planes in a 3D 
+array containing pixel data.&nbsp; However, the <b>main</b> method of this class doesn't 
+actually treat the three color planes as if they contain the color values for an 
+image.&nbsp; Rather, the <b>main</b> method simply treats the three color planes 
+as opportune places to construct interesting test surfaces.&nbsp; Then when the 
+convolution filter is applied to the 3D array, it is applied separately to each 
+of those surfaces.</p>
+<p align="left">The three surfaces and the convolution filter were chosen to 
+illustrate some important characteristics of the application of convolution 
+filters to images.</p>
+<p align="left"><font color="#FF0000"><b>A rough ride ahead</b></font></p>
+<p align="left">It's time to fasten your seatbelt.&nbsp; Unless you already have 
+quite a lot of Digital Signal Processing <i>(DSP)</i> experience, you may find 
+the remainder of this section to be technically complex.</p>
+<p align="left"><font color="#FF0000"><b>A separate browser window</b></font></p>
+<p align="left">This would also be an excellent time to open this lesson in a 
+separate browser window.&nbsp; Locate this text in one window and 
+<a href="#Figure_1">Figure 1</a> in 
+the other window.&nbsp; Place the two windows side-by-side on your screen so 
+that you can easily refer to <a href="#Figure_1">Figure 1</a> while reading the explanation of that 
+material in the text.</p>
+<p align="left"><font color="#FF0000"><b>A single impulse</b></font></p>
+<p align="left">A single impulse having dimensions of one pixel on each side and an elevation 
+value of 255 was constructed on the first <i>(or red)</i> color surface.&nbsp; You might 
+think of it as looking something like the
+<a href="http://sc94.ameslab.gov/TOUR/washmon.html">Washington Monument</a> 
+without the pointy part on the top and being the same size from top to bottom.&nbsp; </p>
+<p align="left">When 
+viewed from above, looking straight down on the surface, the impulse appears as 
+shown in the upper-left image in <a name="Figure_1">Figure 1</a>.</p>
+
+
+
+<p>
+<table border="1" bgcolor="#ccffff">
+	<tr>
+		<td><img border="0" src="java410a11.jpg" width="133" height="176"></td>
+		<td><img border="0" src="java410a12.jpg" width="133" height="176"></td>
+		<td><img border="0" src="java410a13.jpg" width="133" height="176"></td>
+	</tr>
+	<tr>
+		<td><img border="0" src="java410a21.jpg" width="133" height="176"></td>
+		<td><img border="0" src="java410a22.jpg" width="133" height="176"></td>
+		<td><img border="0" src="java410a23.jpg" width="133" height="176"></td>
+	</tr>
+	<tr>
+		<td><img border="0" src="java410a31.jpg" width="133" height="176"></td>
+		<td><img border="0" src="java410a32.jpg" width="133" height="176"></td>
+		<td><img border="0" src="java410a33.jpg" width="133" height="176"></td>
+	</tr>
+	<tr>
+		<td><img border="0" src="java410a41.jpg" width="133" height="176"></td>
+		<td><img border="0" src="java410a42.jpg" width="133" height="176"></td>
+		<td><img border="0" src="java410a43.jpg" width="133" height="176"></td>
+	</tr>
+	<tr>
+	<td>
+<pre><b>Figure 1</b></b></pre></td>
+	</tr>
+</table>
+<p><font color="#FF0000"><b>Shorthand notation</b></font></p>
+<p><a href="#Figure_1">Figure 1</a> contains twelve individual images.&nbsp; 
+Because I will be discussing the individual images at some 
+length, I will need a shorthand way of referring to them.&nbsp; I 
+will refer to the individual images in <a href="#Figure_1">Figure 1</a> by row and column.&nbsp; For example, the 
+upper-left image in <a href="#Figure_1">Figure 1</a> will be <a href="#Figure_1">Figure 1-1-1</a>, for: </p>
+<blockquote>
+	<p>Figure 1, Row 1, Column 1&nbsp; </p>
+</blockquote>
+<p>The bottom right image will be <a href="#Figure_1">Figure 1-4-3</a> for:</p>
+<blockquote>
+	<p>Figure 1, Row 4, Column 3</p>
+</blockquote>
+<p><font color="#FF0000"><b>The top of the impulse</b></font></p>
+<p>The small white square in <a href="#Figure_1">Figure 1-1-1</a> is the top surface of the impulse.&nbsp; The dimensions 
+of the impulse are one pixel on each side.</p>
+<p><font color="#FF0000"><b>An elevation scale</b></font></p>
+<p>An elevation scale is shown at 
+the bottom of each image in <a href="#Figure_1">Figure 1</a> with black being the lowest elevation, white being the 
+highest elevation, and the elevations in between being represented by the colors 
+shown.</p>
+<blockquote>
+	<p><i>(I explained this surface plotting technique in the earlier lesson 
+	entitled <a href="http://www.developer.com/java/other/article.php/3508706">
+	Plotting 3D Surfaces using Java</a>.)</i></p>
+</blockquote>
+<p>The black area in <a href="#Figure_1">Figure 1-1-1</a> shows that the remainder of the surface 
+outside of the impulse has an 
+elevation of 0.&nbsp; Because the surface elevations in <a href="#Figure_1">Figure 1-1-1</a> only have values of 0 and 
+255, the only colors showing in this image are black and white.&nbsp; <i>(As you can 
+see, many of the other images in <a href="#Figure_1">Figure 1</a> show different colors 
+as well.)</i></p>
+<p><font color="#FF0000"><b>A square 3x3 tower</b></font></p>
+<p>A square tower having dimensions of three pixels on each side and an elevation 
+value of 255 was constructed on the second or green color surface.&nbsp; When 
+viewed from above, the 3x3 square tower appears as 
+shown in <a href="#Figure_1">Figure 1-1-2</a>.&nbsp; You could think of this as 
+nine <a href="http://sc94.ameslab.gov/TOUR/washmon.html">Washington Monuments</a> 
+placed side-by-side so as to be arranged in a square.&nbsp; Once again, we would 
+need to modify each monument to remove the pointy part on the top and to make 
+the size the same from top to bottom.</p>
+<p><font color="#FF0000"><b>A square 5x5 tower</b></font></p>
+<p>A square tower having dimensions of five pixels on each side and an elevation 
+value of 255 was constructed on the third or blue color surface.&nbsp; When 
+viewed from above, the 5x5 square tower appears as 
+shown in <a href="#Figure_1">Figure 1-1-3</a>.</p>
+<p><font color="#FF0000"><b>Wave-number spectra</b></font></p>
+<p>The <b>main</b> method performs two-dimensional Fourier Transforms on each of 
+the three surfaces shown in the first row of <a href="#Figure_1">Figure 1</a>, producing the wave-number spectra shown in 
+the second row of <a href="#Figure_1">Figure 1</a>.</p>
+<blockquote>
+	<p><i>(I explained the use of the 2D Fourier Transform to produce 
+	wave-number spectra in the lessons entitled
+	<a href="http://www.developer.com/java/other/article.php/3519441">2D Fourier 
+	Transforms using Java</a>&nbsp; and
+	<a href="http://www.developer.com/java/other/article.php/3526241">2D Fourier 
+	Transforms using Java, Part 2</a>.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>A flat wave-number spectrum</b></font></p>
+<p><a href="#Figure_1">Figure 1-2-1</a> shows the wave-number spectrum of the impulse shown in 
+<a href="#Figure_1">Figure 
+1-1-1</a>.&nbsp; Theoretically, the wave-number spectrum of an impulse is perfectly 
+flat.&nbsp; However, due to small arithmetic inaccuracies, the Fourier Transform 
+of an impulse is never perfectly flat.&nbsp; Rather, it will always have 
+ripples, albeit very small ripples.</p>
+<p>In order to preserve plotting dynamic range, the surface-plotting technique 
+used in <a href="#Figure_1">Figure 1</a> is normalized for each individual image such that the lowest elevation is plotted 
+as black and the highest elevation is plotted as white.&nbsp; This is true even 
+if the difference between the lowest and highest elevations is very small.&nbsp; 
+Unless every value is exactly the same, there will still be a lowest value, which will be black and a highest value, which 
+will be white.</p>
+<p>Thus, the rather ugly result shown 
+in <a href="#Figure_1">Figure 1-2-1</a> is a representation of a nearly flat <i>
+(but not perfectly flat)</i> wave-number spectrum.</p>
+<p><font color="#FF0000"><b>Non-flat wave-number spectra</b></font></p>
+
+
+
+<p align="left">The wave-number spectrum in <a href="#Figure_1">Figure 1-2-2</a> corresponds to the 
+square 3x3 tower above it in <a href="#Figure_1">Figure 1-1-2</a>.&nbsp; Similarly, the wave-number 
+spectrum in <a href="#Figure_1">Figure 1-2-3</a> corresponds to the square 5x5 tower above it in 
+<a href="#Figure_1">Figure 
+1-1-3</a>.</p>
+<p align="left">Theoretically, the elevation values in these two spectra peak at a 
+wave number of zero in the center of the image and fall off as a <i><b>sin(x)/x</b></i> function for larger 
+values of wave number in all directions.&nbsp; The rate of the falloff in any particular direction 
+depends on the projected width of the tower along that direction.</p>
+<p align="left">If you examine <a href="#Figure_1">Figure 1-2-2</a> and 
+<a href="#Figure_1">Figure 1-2-3</a> carefully, you 
+will see the white area at the 0,0 origin in the center with small black areas 
+at larger wave numbers.&nbsp; You will also see many of the colors from the 
+color scale showing up at the different wave numbers.</p>
+<p align="left">These wave-number spectra extend from a wave number of zero in 
+the center to the Nyquist folding wave number at the edges.&nbsp; The Nyquist 
+wave number is determined by the spacing of the pixels that make up the sampled 
+surface.</p>
+<p align="left"><font color="#FF0000"><b>The convolution operator</b></font></p>
+<p align="left">Each of the surfaces shown in the top row of <a href="#Figure_1">Figure 1</a> was 
+convolved with the square two-dimensional convolution operator shown in
+<a name="Figure_2">Figure 
+2</a>, producing the three surfaces shown in the third row of
+<a href="#Figure_1">Figure 1</a>.</p>
+
+<p>
+<table border="1" cols="1" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><b>-1,-1,-1
+-1, 8,-1
+-1,-1,-1</b><br></pre>
+      <pre><b>Figure 2</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>The impulse response</b></font></p>
+<p>When a convolution operator is convolved with an impulse, the result is 
+commonly called the impulse response of the convolution filter.&nbsp; The 
+impulse response is very important.&nbsp; The Fourier Transform of the impulse 
+response shows the response of the convolution filter in the wave-number domain.</p>
+<blockquote>
+	<p><i>(Recall from earlier lessons that the image domain in two dimensions 
+	is analogous to the time domain in one dimension.&nbsp; Similarly the 
+	wave-number domain in two dimensions is analogous to the frequency domain in 
+	one dimension.&nbsp; Thus, a two-dimensional wave-number response is 
+	analogous to a one-dimensional frequency response.)</i></p>
+</blockquote>
+<p>The impulse response of the convolution filter from <a href="#Figure_2">Figure 2</a> is shown in
+<a href="#Figure_1">Figure 1-3-1</a>.&nbsp; The Fourier Transform of the impulse response is shown in 
+<a href="#Figure_1">Figure 1-4-1</a>.&nbsp; Thus, <a href="#Figure_1">Figure 1-4-1</a> shows the wave-number response of the 
+convolution operator from <a href="#Figure_2">Figure 2</a>.</p>
+<p><font color="#FF0000"><b>The shape of the impulse response</b></font></p>
+<p>The impulse response shown in <a href="#Figure_1">Figure 1-3-1</a> traces out a scaled version of the 
+shape of the convolution filter shown in <a href="#Figure_2">Figure 2</a>.&nbsp; The black areas in 
+<a href="#Figure_1">Figure 1-3-1</a> represent the values of -1 in 
+<a href="#Figure_2">Figure 2</a>.&nbsp; The white area in 
+<a href="#Figure_1">Figure 1-3-1</a> represents the value of +8 in 
+<a href="#Figure_2">Figure 2</a>. The blue area in <a href="#Figure_1">Figure 
+1-3-1</a> represents an elevation of zero.</p>
+<p>Thus, the elevation values for the surface shown in <a href="#Figure_1">Figure 1-3-1</a> extend from 
+-255 <i>(-1 * 255)</i> to + 2040 <i>(+8 * 255)</i>.</p>
+<p><font color="#FF0000"><b>Zero response at the wave-number origin</b></font></p>
+<p>By inspection, we can determine that the response of this convolution filter 
+is zero at a wave number of zero because the sum of the positive values equals 
+the sum of the negative values.</p>
+<blockquote>
+	<p><i>(If we were to apply this filter to a perfectly flat surface, the 
+	positive values in the sum of products computation would equal the negative 
+	values in the sum of products computation resulting in a net zero value for 
+	the sum of products at every location on the flat surface.&nbsp; A flat 
+	surface has a wave number of zero.)</i></p>
+</blockquote>
+<p>Thus, we would expect the wave-number response of the convolution filter to 
+go through 0 at the origin.</p>
+<p><font color="#FF0000"><b>Brief analysis of the wave-number response</b></font></p>
+<p>Probably the most important characteristic of the wave-number response of the 
+convolution filter shown in <a href="#Figure_1">Figure 1-4-1</a> is that it has a minimum response at 
+the origin with the maximum response occurring at wave numbers near the edges of 
+the wave-number plot.&nbsp; Further, the transition from the minimum at the 
+center to the maxima at the edges seems to be a relatively smooth curve.</p>
+<p><font color="#FF0000"><b>A high-pass filter</b></font></p>
+<p>The conclusion is that when this convolution filter is applied to a surface, 
+it will suppress the low wave numbers belonging to the surface and enhance the 
+high wave numbers.&nbsp; Thus, it is a <i>high-pass</i> filter in the 
+wave-number domain.</p>
+<p><font color="#FF0000"><b>Applying the convolution operator to the 3x3 tower</b></font></p>
+<p>This is exactly what happens when the convolution operator is applied to the 
+3x3 tower shown in <a href="#Figure_1">Figure 1-1-2</a>.&nbsp; The surface that results from that 
+convolution is shown in <a href="#Figure_1">Figure 1-3-2</a>.&nbsp; The resulting surface does not 
+consist of a 3x3 tower.&nbsp; Rather, it is more like a hollow 5x5 structure.</p>
+<p>Because the surface has negative elevation values, an elevation value of zero 
+in <a href="#Figure_1">Figure 1-3-2</a> is represented by the green area instead of a black area.&nbsp; Black is reserved for the 
+lowest elevation value which is a negative value in this case.</p>
+<p><font color="#FF0000"><b>A cross section through the structure</b></font></p>
+<p>If you trace out the elevation of the structure along a line running from 
+West to East through the center of the structure, you find the following colors 
+in order:</p>
+<ul>
+	<li>green - this is the baseline at an elevation of 0</li>
+	<li>black - go way down into negative territory</li>
+	<li>yellow - go way up to about 80-percent of the highest possible value</li>
+	<li>green - go back down to the baseline</li>
+	<li>yellow - go way up again to about 80-percent of the highest possible 
+	value</li>
+	<li>black - go way down again into negative territory</li>
+	<li>green - go back to the baseline and stay there for the remainder of the 
+	trip</li>
+</ul>
+<p><font color="#FF0000"><b>Needs high wave-number components</b></font></p>
+<p>Those of us who are familiar with this sort of thing will immediately 
+recognize that such a structure must be rich in high-valued wave-number 
+components and that is true in this case.&nbsp; An important clue is the ability 
+of the surface to make very rapid transitions from low values to high values and 
+back again to low values.&nbsp; That is not possible in a surface made up mostly 
+of low-valued wave-number components.</p>
+<blockquote>
+	<p><i>(This is analogous to the fact that in order for a time series to make 
+	rapid transitions from low to high values and back to low values, the time 
+	series must be rich in high-frequency components.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Wave-number spectrum of the convolution output</b></font></p>
+<p>The wave-number spectrum of the output from the convolution process is shown 
+in <a href="#Figure_1">Figure 1-4-2</a>.&nbsp; As you can see, the peak energy in this spectrum occurs 
+in the red zones in the wave numbers at the edges of the wave-number plot.&nbsp; 
+The energy in the origin at the center of the plot is very low because it is 
+colored dark blue.</p>
+<p><font color="#FF0000"><b>A very important concept</b></font></p>
+<p>You should make it a point to remember this fact.</p>
+<blockquote>
+	<p><b>Convolution in the image domain is analogous to multiplication in the 
+	wave-number domain.</b></p>
+</blockquote>
+<p>The process of convolving the convolution filter shown in <a href="#Figure_2">Figure 2</a> with the 
+3x3 tower shown in <a href="#Figure_1">Figure 1-1-2</a> is equivalent to multiplying the wave-number 
+response of the convolution operator <i>(<a href="#Figure_1">Figure 1-4-1</a>)</i> by the 
+wave-number 
+spectrum of the 3x3 tower <i>(<a href="#Figure_1">Figure 1-2-2</a>)</i> to 
+produce the wave-number spectrum shown in <a href="#Figure_1">Figure 1-4-2</a>.</p>
+<p><font color="#FF0000"><b>Wave-number spectrum must be low at the origin</b></font></p>
+<p>Because the wave-number response of the convolution filter shown in 
+<a href="#Figure_1">Figure 
+1-4-1</a> is very low <i>(theoretically zero)</i> at the origin, the product of that 
+response with the spectrum of the 3x3 tower shown in <a href="#Figure_1">Figure 1-2-2</a> must also be 
+very low at the origin regardless of the value of the spectrum of the 3x3 tower 
+at the origin.&nbsp; <i>(Any value, no matter how large, multiplied by zero 
+produces zero.)</i>&nbsp; This is borne out by <a href="#Figure_1">Figure 1-4-2</a> which is dark blue
+<i>(possibly black)</i> at the origin.</p>
+<p><font color="#FF0000"><b>Rich in high wave-number components</b></font></p>
+<p>Because the wave-number response of the convolution filter is high in the red 
+areas near the edges of the wave-number plot, and the wave-number spectrum of 
+the 3x3 tower is not particularly low in those same wave-number regions, the 
+product of the two can be expected to be high in those regions.</p>
+<p>This is borne out by the wave-number spectrum in <a href="#Figure_1">Figure 1-4-2</a> where the red 
+peaks occur at the edges in the North, South, East, and West directions.&nbsp; </p>
+<p>Because of the yellow and red areas at high wave-number values in<a href="#Figure_1"> Figure 
+1-4-2</a>, the surface in <a href="#Figure_1">Figure 1-3-2</a> is rich in high wave-number values as I 
+predicted it must be to produce the shape of the surface shown in 
+<a href="#Figure_1">Figure 1-3-2</a>.</p>
+<p><font color="#FF0000"><b>Now on to the 5x5 tower surface</b></font></p>
+<p>The result of convolving the convolution operator with the 5x5 tower shown in 
+<a href="#Figure_1">Figure 1-1-3</a> is similar to the result for the 3x3 tower.&nbsp; However, because 
+the 5x5 tower has a larger footprint, its wave-number energy is more 
+concentrated near the origin of its spectrum as shown in <a href="#Figure_1">Figure 1-2-3</a>.</p>
+<p><font color="#FF0000"><b>The convolution output in the image domain</b></font></p>
+<p>The convolution of the operator with the 5x5 tower produces a hollow output 
+shape with a larger footprint but generally the same values in the walls of the 
+structure.</p>
+<p>The product of the wave-number response of the convolution filter in 
+<a href="#Figure_1">Figure 
+1-4-1</a> with the spectrum of the 5x5 tower shown in <a href="#Figure_1">Figure 1-2-3</a> produces the 
+wave-number spectrum shown in <a href="#Figure_1">Figure 1-4-3</a>.&nbsp; Once again, the resulting 
+wave-number spectrum is rich in high wave-number values resulting in the hollow 
+shape with rapid transitions from low to high elevations shown in 
+<a href="#Figure_1">Figure 1-3-3</a>.</p>
+<p><font color="#FF0000"><b>Summary of experimental results</b></font></p>
+<p>In both cases, the original surfaces shown in <a href="#Figure_1">Figure 1-1-2</a> and
+<a href="#Figure_1">Figure 1-1-3</a> were 
+rich in low wave-number components.&nbsp; This is evidenced by the spectra shown 
+in <a href="#Figure_1">Figures 1-2-2</a> and <a href="#Figure_1">Figure 1-2-3</a> with large peaks at the origin in wave-number space.</p>
+<p>However, the convolution filter has a very low response to low wave numbers 
+and a high response to high wave numbers as shown by the wave-number response in 
+<a href="#Figure_1">Figure 1-4.1</a>.</p>
+<p>The application of the convolution filter to each of the two surfaces 
+suppresses components with low wave numbers and preserves components with high 
+wave numbers in the output as shown in <a href="#Figure_1">Figures 1-4-2</a> and
+<a href="#Figure_1">Figure 1-4-3</a>.</p>
+<p><font color="#FF0000"><b>More than you ever wanted to know</b></font></p>
+<p>And that is probably more than you ever wanted to know about the 
+relationships among:</p>
+<ul>
+	<li>Image convolution</li>
+	<li>The wave-number response of the convolution filter</li>
+	<li>The wave-number spectrum of the surface being filtered, and </li>
+	<li>The wave-number spectrum of the result of the convolution process</li>
+</ul>
+<p>It's time to lighten up a bit and discuss the program code.</p>
+<h2 align="center"><a name="Discussion_and_Sample_Code">Discussion and Sample 
+Code</a></h2>
+<p><font color="#FF0000"><b>The class named ImgMod32</b></font></p>
+<p>I will discuss and explain the code in this class in fragments.&nbsp; The 
+source code is presented in its entirety in Listing 20 near the end of the 
+lesson.</p>
+<p><font color="#FF0000"><b>Three categories of code</b></font></p>
+<p>The code in this class falls into three categories:</p>
+<ul>
+	<li>Ten utility methods.</li>
+	<li>The method named <b>convolve</b>.</li>
+	<li>The method named <b>main</b>, which is used to run and test the class on a 
+	stand-alone basis.</li>
+</ul>
+<p><font color="#FF0000"><b>The utility methods</b></font></p>
+<p>I will discuss the utility methods first.&nbsp; All of the utility methods 
+are short and to the point.&nbsp; The code in these methods is straightforward and shouldn't 
+require a detailed explanation.&nbsp; The code for each of the utility methods 
+can be found in Listing 20 near the end of the lesson.</p>
+<p>A brief description of each of the utility methods follows:</p>
+<ul>
+	<li><b>getPlane</b> - Extracts a color plane from a <b>double</b> version of an 
+image and returns it as a 2D array of type <b>double</b>.&nbsp; Used only in support of 
+the test operations in the <b>main</b> method.&nbsp; Not required for performing the 
+convolution.</li>
+	<li><b>removeMean</b> - Removes the mean value from a specified color plane in 
+the <b>double</b> version of an image pixel array.&nbsp; Returns the mean value 
+that was removed so that it can be saved by the calling method and restored 
+later.</li>
+	<li><b>addConstantToColor</b> - Adds a constant to every color value in a 
+specified color plane in the <b>double</b> version of an image pixel array.&nbsp; 
+For example, this method can be used to restore the mean value to a color plane 
+that was removed earlier.</li>
+	<li><b>scaleColorPlane</b> - Multiplies every color value in a specified color 
+plane in the <b>double</b> version of an image pixel array by a specified scale 
+factor.</li>
+	<li><b>getMax</b> - Returns the algebraic maximum color value for a specified 
+color plane in the <b>double</b> version of an image pixel array.</li>
+	<li><b>getMin</b> - Returns the algebraic minimum color value for a specified 
+color plane in the <b>double</b> version of an image pixel array.</li>
+	<li><b>intToDouble</b> - Converts an image pixel array <i>(where the pixel values 
+are represented as type <b>int</b>)</i> to an image pixel array where the pixel 
+values are represented as type <b>double</b>.</li>
+	<li><b>doubleToInt</b> - Converts an image pixel array <i>(where the pixel values 
+are represented as type <b>double</b>)</i> to an image pixel array where the 
+pixel values are represented as type <b>int</b>.</li>
+	<li><b>getMaxColor</b> - returns the maximum value among three color values where 
+the color values are represented as type <b>double</b>.</li>
+	<li><b>getMinColor</b> - returns the minimum value among three color values where 
+the color values are represented as type <b>double</b>.</li>
+</ul>
+<p>Now that you are familiar with the purpose of each of the utility methods, 
+you will be better prepared to understand the code that follows.</p>
+<p><font color="#FF0000"><b>The convolve method</b></font></p>
+<p>This method applies an incoming 2D convolution filter to each color plane in 
+an incoming 3D array of pixel data of type <b>int</b> and returns a filtered 3D 
+array of pixel data of type <b>int</b>.</p>
+<p>The convolution operator is applied separately to each color plane.</p>
+<p>The alpha plane is not modified.</p>
+<p>The output is normalized so as to guarantee that the output color values fall 
+within the range from 0 to 255.</p>
+<p>The convolution filter is passed to the method as a 2D array of type <b>
+double</b>.&nbsp; All convolution and normalization arithmetic is performed as 
+type <b>double</b>.&nbsp; The normalized results are converted to type <b>int</b> 
+before returning them to the calling method.</p>
+<p>This method does not modify the contents of the incoming array of pixel data.</p>
+<p>An unfiltered dead zone equal to half the filter length is left around the 
+perimeter of the filtered image to avoid any attempt to perform convolution 
+using data outside the bounds of the image.</p>
+<p>The <b>convolve</b> method begins in Listing 1.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  public static int[][][] convolve(
+                    int[][][] threeDPix,double[][] filter){
+    //Get the dimensions of the image and filter arrays.
+    int numImgRows = threeDPix.length;
+    int numImgCols = threeDPix[0].length;
+    int numFilRows = filter.length;
+    int numFilCols = filter[0].length;
+
+    //Display the dimensions of the image and filter
+    // arrays.
+    System.out.println("numImgRows = " + numImgRows);
+    System.out.println("numImgCols = " + numImgCols);
+    System.out.println("numFilRows = " + numFilRows);
+    System.out.println("numFilCols = " + numFilCols);<br><br><b><font face="Courier New,Courier">Listing 1</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The code in Listing 1 gets, saves, and displays the dimensions of the 
+incoming arrays containing the pixel data and the convolution operator.&nbsp; 
+These dimensions are frequently used in <b>for</b> loops in the code that 
+follows.</p>
+<p><font color="#FF0000"><b>Copy the incoming pixel array</b></font></p>
+<p>Listing 2 makes a working copy of the incoming 3D pixel array to avoid making 
+permanent changes to the original image data.&nbsp; The pixel data of type <b>
+int</b> is converted to type <b>double</b> in the process.&nbsp; The filtered 
+pixel data will be converted back to type <b>int</b> when those results are returned by 
+the method.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    double[][][] work3D = intToDouble(threeDPix);<br><br><b><font face="Courier New,Courier">Listing 2</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Remove the mean value</b></font></p>
+<p>One of the issues that we encounter when processing color pixels arises from 
+the fact that the color pixel data is not bipolar data.&nbsp; Rather, every 
+color value is described by a positive integer having a value between 0 and 255.</p>
+<p>Many digital signal processing techniques work best when applied to bipolar 
+data, preferably with a mean value of zero.&nbsp; However, the format of the color values 
+results in an inherent non-zero mean bias across all the values on a color plane.&nbsp; 
+Without getting into the details, the application of convolution to data with a 
+significant non-zero mean bias can result in arithmetic complications and degrade the 
+accuracy of the process.</p>
+<p>There are several ways to deal with this issue, none of which is clearly the
+<i>right</i> way.&nbsp; I decided to remove the mean color bias from all the 
+values on each color plane prior to convolution and then to restore the same 
+mean color bias to the values on each color plane following convolution.&nbsp; 
+Thus my approach doesn't change the bias when the color values on a plane are 
+convolved with the convolution operator.</p>
+<p>Listing 3 removes the mean value from each color plane and saves the values 
+for later restoration.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    double redMean = removeMean(work3D,1);
+    double greenMean = removeMean(work3D,2);
+    double blueMean = removeMean(work3D,3);<br><br><b><font face="Courier New,Courier">Listing 3</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Create an output array</b></font></p>
+<p>Listing 4 creates an output array the same size as the incoming array of 
+pixels.&nbsp; Then Listing 4 copies the alpha values directly to the output 
+array.&nbsp; The alpha values are not modified during the convolution process.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    //Create an empty output array.
+    double[][][] output = 
+                     new double[numImgRows][numImgCols][4];
+    
+    //Copy the alpha values directly to the output array.
+    for(int row = 0;row &lt; numImgRows;row++){
+      for(int col = 0;col &lt; numImgCols;col++){
+        output[row][col][0] = work3D[row][col][0];
+      }//end inner loop
+    }//end outer loop<br><br><b><font face="Courier New,Courier">Listing 4</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Perform the actual convolution</b></font></p>
+<p>Listing 5 shows the beginning of four nested <b>for</b> loops that are used 
+to convolve each of the three 2D color planes with the 2D convolution operator. </p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>for(int yReg = numFilRows-1;yReg &lt; numImgRows;yReg++){
+  for(int xReg = numFilCols-1;xReg &lt; numImgCols;xReg++){
+    for(int filRow = 0;filRow &lt; numFilRows;filRow++){
+      for(int filCol = 0;filCol &lt; numFilCols;filCol++){
+        
+        output[yReg-numFilRows/2][xReg-numFilCols/2][1] += 
+                      work3D[yReg-filRow][xReg-filCol][1] *
+                                    filter[filRow][filCol];
+
+        output[yReg-numFilRows/2][xReg-numFilCols/2][2] += 
+                      work3D[yReg-filRow][xReg-filCol][2] *
+                                    filter[filRow][filCol];
+
+        output[yReg-numFilRows/2][xReg-numFilCols/2][3] += 
+                      work3D[yReg-filRow][xReg-filCol][3] *
+                                    filter[filRow][filCol];
+
+      }//End loop on filCol
+    }//End loop on filRow<br><br><b><font face="Courier New,Courier">Listing 5</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Rather than to try to explain the code in Listing 5, I am going to refer you 
+back to the earlier section entitled <a href="#Steps_in_the_processing">Steps in 
+the processing</a> for a general description as to what is taking place in 
+Listing 5.</p>
+<p>The code in Listing 5 is complicated by the fact that the surface 
+being convolved is of a finite size and care must be taken to avoid trying to do 
+arithmetic using values outside the dimensions of the surface.&nbsp; As 
+mentioned earlier, the code in Listing 5 leaves an unfiltered dead zone equal to half the filter length around the 
+perimeter of the filtered image to avoid this potential problem.</p>
+<p><font color="#FF0000"><b>Divide by the number of convolution points</b></font></p>
+<p>Note that the code in Listing 5 does not include the termination of the two 
+outer <b>for</b> loops.</p>
+<p>The typical definition of convolution involves computing the sum of products 
+and then dividing the sum by the number of points in the convolution filter.&nbsp; 
+The rationale for this usually assumes a very wide dynamic range for the bipolar 
+values in the data being convolved.&nbsp; Ultimately, however, the dynamic range 
+for color values is quite low, only one part in 127.&nbsp; For this situation, 
+performing the division described above isn't always helpful.&nbsp; In 
+particular, it is not helpful when a large percentage of the filter coefficients 
+have a value of zero.&nbsp; </p>
+<p><font color="#FF0000"><b>No clear <i>right</i> or <i>wrong</i> way</b></font></p>
+<p>Once again, there is no <i>right</i> or <i>wrong</i> way to deal with this 
+issue.&nbsp; I included the code to perform this division in Listing 6 but 
+disabled that code when producing the experimental results shown in
+<a href="#Figure_1">Figure 1</a>.</p>
+<blockquote>
+	<p><i>(Although including or excluding the division by the number of 
+	convolution filter points would have a negligible impact on the results 
+	shown in <a href="#Figure_1">Figure 1</a>, it will have a significant impact 
+	on some of the convolution examples that I will show you in the next lesson 
+	in this series.&nbsp; Therefore, I show that code as being disabled in 
+	Listing 6.)</i></p>
+</blockquote>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>/*
+    output[yReg-numFilRows/2][xReg-numFilCols/2][1] = 
+           output[yReg-numFilRows/2][xReg-numFilCols/2][1]/
+                                   (numFilRows*numFilCols);
+    output[yReg-numFilRows/2][xReg-numFilCols/2][2] = 
+           output[yReg-numFilRows/2][xReg-numFilCols/2][2]/
+                                   (numFilRows*numFilCols);
+    output[yReg-numFilRows/2][xReg-numFilCols/2][3] = 
+           output[yReg-numFilRows/2][xReg-numFilCols/2][3]/
+                                   (numFilRows*numFilCols);
+*/
+  }//End loop on xReg
+}//End loop on yReg<br><br><b><font face="Courier New,Courier">Listing 6</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Listing 6 also shows the termination of the two outer <b>for</b> loops that 
+began in Listing 5.&nbsp; When the code in Listing 5 and Listing 6 has been executed, 
+all of the convolution arithmetic has been completed.</p>
+<p><font color="#FF0000"><b>Restore the mean values</b></font></p>
+<p>As mentioned earlier, the approach that I use in this class to deal with the 
+fact that the color data is not bipolar is to remove the mean value from each 
+color plane prior to applying the convolution filter and then restoring the original 
+mean value to each color plane following convolution.&nbsp; Listing 7 restores 
+the original mean values to each of the color planes.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    addConstantToColor(output,1,redMean);
+    addConstantToColor(output,2,greenMean);
+    addConstantToColor(output,3,blueMean);<br><br><b><font face="Courier New,Courier">Listing 7</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Normalize the results</b></font></p>
+<p>Another major issue in convolving color data arises from the fact that 
+convolution can easily produce new values that are less than zero or greater 
+than 255.&nbsp; Such results must be converted back into the 
+range from 0 to 255 before attempting to restore them into an actual color 
+image.&nbsp; This is another case where there isn't a clear <i>right</i> or <i>
+wrong</i> way to do the job.</p>
+<p>In this program, I begin by dealing with the minimum algebraic color value.&nbsp; 
+If any color plane contains a negative value, I add a constant to all color 
+values in all three color planes to guarantee that the minimum value in any 
+color plane is 0.</p>
+<p>I start by getting the minimum value of the filtered output across all color 
+planes.&nbsp; Then I make the same adjustment to every color value in every 
+plane if the minimum value is less than zero.&nbsp; Otherwise, I don't make any 
+adjustment on the basis of the minimum value.</p>
+<p>Having done that, I next deal with the maximum color value.&nbsp; If any 
+color value in any color plane exceeds 255, I multiply all color values in all 
+planes by the same scale factor to guarantee that the maximum color value in any 
+color plane is 255.</p>
+<p>First I get the peak value of the filtered output across all color planes.&nbsp; 
+Then I make the adjustment if the maximum value is greater than 255.&nbsp; 
+Otherwise, I don't make any adjustment on the basis of the maximum value.</p>
+<p><font color="#FF0000"><b>Deal with the minimum color value</b></font></p>
+<p>Listing 8 deals with the minimum color value as described above.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    //Get the minimum value of the filtered output across
+    // all color planes.
+    //Get the minimum value for each plane.
+    double redOutMin = getMin(output,1);
+    double greenOutMin = getMin(output,2);
+    double blueOutMin = getMin(output,3);
+    //Get and save the minimum color value among all three
+    // color planes
+    double minOut = getMinColor(
+                         redOutMin,greenOutMin,blueOutMin);
+    
+    //Make the adjustment to every color value if the
+    // minimum value is less than zero.
+    if(minOut &lt; 0){
+      addConstantToColor(output,1,-minOut);
+      addConstantToColor(output,2,-minOut);
+      addConstantToColor(output,3,-minOut);
+    }//end if<br><br><b><font face="Courier New,Courier">Listing 8</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The code in Listing 8 is straightforward and shouldn't require any 
+explanation beyond that already given.</p>
+<p><font color="#FF0000"><b>Deal with the maximum color value</b></font></p>
+<p>Listing 9 deals with the maximum color value in the manner described earlier.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    //Get the peak value of the filtered output across all
+    // color planes.
+    //Get the maximum value for each color plane.
+    double redOutMax = getMax(output,1);
+    double greenOutMax = getMax(output,2);
+    double blueOutMax = getMax(output,3);
+    //Get and save the maximum color value among all three
+    // color planes
+    double peakOut = getMaxColor(
+                         redOutMax,greenOutMax,blueOutMax);
+    
+    //Make the adjustment if the maximum value is greater
+    // than 255.
+    if(peakOut &gt; 255){
+      scaleColorPlane(output,1,255/peakOut);
+      scaleColorPlane(output,2,255/peakOut);
+      scaleColorPlane(output,3,255/peakOut);
+    }//end if<br><br><b><font face="Courier New,Courier">Listing 9</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The code in Listing 9 is straightforward and shouldn't require further 
+explanation.</p>
+<p><font color="#FF0000"><b>Return the convolved results</b></font></p>
+<p>Listing 10 converts the filtered <b>double</b> color values to a 3D array 
+containing color value of type <b>int</b> and returns a reference to that array.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    return doubleToInt(output);
+
+  }//end convolve method<br><br><b><font face="Courier New,Courier">Listing 10</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Listing 10 also signals the end of the method named <b>convolve</b>.&nbsp; If 
+the class didn't contain a <b>main</b> method used for self testing, we would be 
+finished at this point.&nbsp; However, it does contain a <b>main</b> method, 
+which is the next topic for discussion.</p>
+<p><font color="#FF0000"><b>The main method</b></font></p>
+<p>As mentioned earlier, this class is designed to be integrated into other 
+programs in order to provide 2D convolution capability for those programs.&nbsp; 
+However, the class also contains a <b>main</b> method that can be used to test 
+the class in a stand-alone fashion.</p>
+<blockquote>
+	<p><i>(The next lesson in this series will teach you how to integrate this 
+	class into other image pixel processing programs.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>The primary purpose</b></font></p>
+<p>The primary purpose of the <b>main</b> method is to test the class in a 
+stand-alone mode.&nbsp; A secondary purpose is to illustrate the relationship 
+between convolution filtering in the image domain and the spectrum of the raw 
+and filtered images in the wave-number domain.</p>
+<p><font color="#FF0000"><b>A nine-point convolution filter</b></font></p>
+<p>The code in this method creates a nine-point convolution filter and applies 
+it to three different surfaces.&nbsp; The convolution filter has a DC response 
+of zero with a high response at the folding wave numbers.&nbsp; Hence, it tends 
+to have the characteristic of an extreme sharpening or edge-detection filter.</p>
+<p><font color="#FF0000"><b>The three surfaces</b></font></p>
+<p>The three surfaces consist of:</p>
+<ul>
+	<li>A single impulse.</li>
+	<li>A 3x3 square tower.</li>
+	<li>A 5x5 square tower.</li>
+</ul>
+<p>The three surfaces are constructed on what is ordinarily considered to be the 
+color planes in an image.&nbsp; However, in this case, the surfaces have nothing 
+in particular to do with color.&nbsp; They simply represent three surfaces on 
+which it is convenient to synthetically construct 3D shapes that are useful for 
+testing and illustrating the image convolution concepts.</p>
+<p>However, to be consistent with the concept of color planes, the comments in 
+the <b>main</b> method frequently refer to the values as color values.</p>
+<p><font color="#FF0000"><b>Graphic display</b></font></p>
+<p>In addition to the display of some text material on the command-line screen, 
+the program displays the twelve different graphs shown in <a href="#Figure_1">
+Figure 1</a>.&nbsp; Six show image-domain data and the other six show spectral 
+data.</p>
+<p><font color="#FF0000"><b>Display of image-domain surfaces</b></font></p>
+<p>The following image-domain surfaces are displayed:</p>
+<ul>
+	<li>The impulse.</li>
+	<li>The raw 3x3 square tower.</li>
+	<li>The raw 5x5 square tower.</li>
+	<li>The filtered impulse.</li>
+	<li>The filtered 3x3 square tower.</li>
+	<li>The filtered 5x5 square tower.</li>
+</ul>
+<p><font color="#FF0000"><b>Display of wave-number surfaces</b></font></p>
+<p>In addition, a 2D Fourier Transform is computed and the spectral results are 
+displayed for the following surfaces:</p>
+<ul>
+	<li>The impulse.</li>
+	<li>The 3x3 square tower.</li>
+	<li>The 5x5 square tower.</li>
+	<li>The filtered impulse</li>
+	<li>The filtered 3x3 square tower.</li>
+	<li>The filtered 5x5 square tower.</li>
+</ul>
+<p><font color="#FF0000"><b>The convolution filter</b></font></p>
+<p>
+<p>Listing 11 shows the beginning of the <b>main</b> method and the definition 
+of the nine-point, 2D convolution filter array.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  public static void <b>main</b>(String[] args){
+   
+    //Create a 2D convolution filter having nine weights in
+    // a square.
+    double[][] filter = {
+                         {-1,-1,-1},
+                         {-1, 8,-1},
+                         {-1,-1,-1}
+                        };<br><br><b><font face="Courier New,Courier">Listing 11</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<blockquote>
+	<p><i>(Note that when the values are taken into account, a populated 2D 
+	array represents a 3D surface.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Create the three surfaces</b></font></p>
+<p>Listing 12 creates synthetic image pixel data for a 3D image array containing 
+three color planes and an alpha plane.&nbsp; The color surfaces in the image 
+array are of a size that is sufficiently large to produce good resolution in the 
+2D Fourier Transform that will be performed later.&nbsp; Those portions of the 
+color surfaces that don't describe the shapes of interest are filled with pixel 
+values of zero.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    int rowLim = 31;
+    int colLim = 31;
+    int[][][] threeDPix = new int[rowLim][colLim][4];
+
+    //Place a single impulse in the red plane 1
+    threeDPix[3][3][1] = 255;
+  
+    //Place a 3x3 square in the green plane 2
+    threeDPix[2][2][2] = 255;
+    threeDPix[2][3][2] = 255;
+    threeDPix[2][4][2] = 255;    
+    
+    threeDPix[3][2][2] = 255;
+    threeDPix[3][3][2] = 255;
+    threeDPix[3][4][2] = 255;
+    
+    threeDPix[4][2][2] = 255;
+    threeDPix[4][3][2] = 255;
+    threeDPix[4][4][2] = 255;   
+
+    //Place a 5x5 square in the blue plane 3
+    threeDPix[2][2][3] = 255;
+    threeDPix[2][3][3] = 255;
+    threeDPix[2][4][3] = 255;
+    threeDPix[2][5][3] = 255;
+    threeDPix[2][6][3] = 255;
+        
+    threeDPix[3][2][3] = 255;
+    threeDPix[3][3][3] = 255;
+    threeDPix[3][4][3] = 255;
+    threeDPix[3][5][3] = 255;
+    threeDPix[3][6][3] = 255;
+    
+    threeDPix[4][2][3] = 255;
+    threeDPix[4][3][3] = 255;
+    threeDPix[4][4][3] = 255;
+    threeDPix[4][5][3] = 255;
+    threeDPix[4][6][3] = 255;
+    
+    threeDPix[5][2][3] = 255;
+    threeDPix[5][3][3] = 255;
+    threeDPix[5][4][3] = 255;
+    threeDPix[5][5][3] = 255;
+    threeDPix[5][6][3] = 255;
+    
+    threeDPix[6][2][3] = 255;
+    threeDPix[6][3][3] = 255;
+    threeDPix[6][4][3] = 255;
+    threeDPix[6][5][3] = 255;
+    threeDPix[6][6][3] = 255;<br><br><b><font face="Courier New,Courier">Listing 12</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Perform the convolution</b></font></p>
+<p>Listing 13 convolves each of the three color planes with the convolution 
+filter described above.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    int[][][] output = convolve(threeDPix,filter);<br><br><b><font face="Courier New,Courier">Listing 13</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>All of the remaining code in the <b>main</b> method is used to construct and 
+display the surfaces shown in <a href="#Figure_1">Figure 1</a>.</p>
+<p><font color="#FF0000"><b>Convert to double and remove the mean values</b></font></p>
+<p>The <b>convolve</b> method performs all of its computations as type <b>double</b>, 
+but converts the filtered results to type <b>int</b> before they are returned.&nbsp; 
+In order to preserve dynamic range during the computation of the 2D Fourier 
+Transforms and the display of the 3D surfaces, it is useful to convert the color 
+values from type <b>int</b> to type <b>double</b> and to remove the mean values 
+from each of the filtered color planes.&nbsp; This is accomplished in Listing 
+14.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    //First convert the color values from int to double.
+    double[][][] outputDouble = intToDouble(output);
+    //Now remove the mean color value from each plane.
+    removeMean(outputDouble,1);
+    removeMean(outputDouble,2);
+    removeMean(outputDouble,3);<br><br><b><font face="Courier New,Courier">Listing 14</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>For the same reasons, it is useful to convert the raw image data from type <b>
+int</b> to type <b>double</b> before performing the 2D Fourier Transforms.&nbsp; 
+This is accomplished in Listing 15.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    double[][][] rawDouble = intToDouble(threeDPix);<br><br><b><font face="Courier New,Courier">Listing 15</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Very repetitive code</b></font></p>
+<p>The code required to produce the images in each of the three columns in
+<a href="#Figure_1">Figure 1</a> is very similar.&nbsp; I will explain the code 
+used to produce the four images in the left-most column and leave it up to you 
+to study the code for the other two columns.&nbsp; 
+You will find all of the code in Listing 20 near the end of the lesson.</p>
+<p><font color="#FF0000"><b>Plot the surface for the red plane</b></font></p>
+<p>Listing 16 produces the image in <a href="#Figure_1">Figure 1-1-1</a>.&nbsp; </p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    //Get the plane of interest.
+    double[][] temp = getPlane(rawDouble,1);
+    //Generate and display the graph by plotting the 3D
+    // surface on the computer screen.
+    new ImgMod29(temp,4,true,1);<br><br><b><font face="Courier New,Courier">Listing 16</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The code in Listing 16 gets and plots the surface that was earlier deposited 
+on the red color plane, which is the plane at index 1 in the 3D array of pixel 
+data.</p>
+<p>The code begins by invoking the <b>getPlane</b> utility method to get the 
+plane of interest.&nbsp; Then it instantiates a new object of the class named <b>
+ImgMod29</b> to construct and display the graph representing the surface.&nbsp; The class named <b>
+ImgMod29</b> was explained in detail the previous lesson entitled
+<a href="http://www.developer.com/java/other/article.php/3508706">Plotting 3D 
+Surfaces using Java</a>, so I won't repeat that explanation here.</p>
+<p><font color="#FF0000"><b>Display 2D Fourier Transform of Plane 1</b></font></p>
+<p>Listing 17 computes and plots the wave-number spectrum of Plane 1 as shown in
+<a href="#Figure_1">Figure 1-2-1</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    temp = getPlane(rawDouble,1);
+
+    //Prepare arrays to receive the results of the Fourier
+    // transform.
+    double[][] real = new double[rowLim][colLim];
+    double[][] imag = new double[rowLim][colLim];
+    double[][] amp = new double[rowLim][colLim];
+
+    //Perform the 2D Fourier transform.
+    ImgMod30.xform2D(temp,real,imag,amp);
+
+    //Ignore the real and imaginary results.  Prepare the
+    // amplitude spectrum for more-effective plotting by
+    // shifting the origin to the center in wave-number
+    // space.
+    double[][] shiftedAmplitudeSpect = 
+                                 ImgMod30.shiftOrigin(amp);
+    //Generate and display the graph by plotting the 3D
+    // surface on the computer screen.
+    new ImgMod29(shiftedAmplitudeSpect,4,true,1);<br><br><b><font face="Courier New,Courier">Listing 17</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Get the plane</b></font></p>
+<p>As before, Listing 17 begins by invoking the <b>getPlane</b> method to get 
+access to the plane of interest.</p>
+<p><font color="#FF0000"><b>Perform the 2D Fourier Transform</b></font></p>
+<p>Then Listing 17 prepares three arrays to receive the results produced by the 
+2D Fourier Transform process.&nbsp; Of the three, only the array containing the 
+amplitude data will be displayed.&nbsp; The other two arrays of data will simply 
+be discarded.</p>
+<p>Then Listing 17 invokes the static method named <b>xform2d</b> belonging to 
+the class named <b>ImgMod30</b> to perform the 2D Fourier Transform.&nbsp; This 
+class and method were explained in detail in the earlier lesson entitled
+<a href="http://www.developer.com/java/other/article.php/3519441">2D Fourier 
+Transforms using Java</a>.&nbsp; Therefore, I won't repeat that explanation 
+here.</p>
+<p><font color="#FF0000"><b>Prepare wave-number spectrum for plotting</b></font></p>
+<p>Then Listing 17 invokes the static method named <b>shiftOrigin</b> belonging 
+to the class named <b>ImgMod30</b> to rearrange the wave-number data and make it 
+more suitable for plotting.&nbsp; In a nutshell, this method rearranges the 
+results of the Fourier Transform to place the wave-number origin at the center 
+of the plot instead of at the upper-left corner.&nbsp; This class and method 
+were also explained in the earlier lesson entitled
+<a href="http://www.developer.com/java/other/article.php/3519441">2D Fourier 
+Transforms using Java</a> so I won't repeat that explanation here.</p>
+<p><font color="#FF0000"><b>Plot the wave-number spectrum</b></font></p>
+<p>Finally, Listing 17 instantiates a new object of the class named <b>ImgMod29</b> 
+to plot the surface shown in <a href="#Figure_1">Figure 1-2-1</a>.</p>
+<p><font color="#FF0000"><b>Plot the filtered plane</b></font></p>
+<p>Listing 18 plots the filtered version of the plane at index 1.&nbsp; This is 
+the impulse response of the convolution filter shown in <a href="#Figure_1">
+Figure 1-3-1</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    temp = getPlane(outputDouble,1);
+    new ImgMod29(temp,4,true,1);<br><br><b><font face="Courier New,Courier">Listing 18</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>By now, the code in Listing 18 should be familiar and shouldn't require 
+further explanation.</p>
+<p><font color="#FF0000"><b>Plot the wave-number response of the convolution 
+filter</b></font></p>
+<p>Listing 19 computes and plots the wave-number response of the convolution 
+filter by performing a 2D Fourier Transform on the impulse response of the 
+convolution filter.&nbsp; The result is shown in <a href="#Figure_1">Figure 
+1-4-1</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    temp = getPlane(outputDouble,1);
+    real = new double[rowLim][colLim];
+    imag = new double[rowLim][colLim];
+    amp = new double[rowLim][colLim];
+    ImgMod30.xform2D(temp,real,imag,amp);
+    shiftedAmplitudeSpect = ImgMod30.shiftOrigin(amp);
+    new ImgMod29(shiftedAmplitudeSpect,4,true,1);<br><br><b><font face="Courier New,Courier">Listing 19</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Everything in Listing 19 should be very familiar to you by now.</p>
+<p><font color="#FF0000"><b>The remainder of the main method</b></font></p>
+<p>The remainder of the code in the <b>main</b> method performs very similar 
+operations on the other two color planes to produce the images in the middle 
+column and the right-most column in <a href="#Figure_1">Figure 1</a>.&nbsp; 
+Because of the similarity of the remaining code to the code that I have already 
+discussed, I won't discuss the remaining code further.&nbsp; As mentioned 
+earlier, the remaining code is available in Listing 20 near the end of the 
+lesson.</p>
+<h2 align="center"><a name="Run_the_Programs">Run the Program</a></h2>
+<p>I encourage you to copy, compile, and run the program in Listing 20.&nbsp; Experiment with 
+the code, making changes and observing the results of your changes.&nbsp; For 
+example, you might want to try modifying the convolution filter shown in
+<a href="#Figure_1">Figure 2</a> and see if you can explain the results produced 
+using your new convolution filter.</p>
+<p>You might also want to try creating some different surfaces on the three 
+color planes.&nbsp; For example, replace the 5x5 column with a surface shaped 
+like a pyramid and see if you can explain the results of convolving it with my 
+convolution filter, or with a convolution filter of your own design.&nbsp; Then 
+change the footprint from a square to a circle and change the pyramid to a cone 
+and see if you can explain the results.</p>
+<p>Try replacing the synthetic image with the data from a real image.</p>
+<blockquote>
+	<p><i>(You should be able to find the necessary code to read an image file 
+	in an earlier lesson in this series.)</i></p>
+</blockquote>
+<p>Then run the program to see the effects of image convolution in both the 
+image domain and the wave-number domain.&nbsp; This 
+should show you wave-number spectral information for each color plane of your 
+chosen image both before and after convolution filtering.&nbsp; 
+See if you can explain the wave-number spectral data for your image.</p>
+<p><font color="#ff0000"><b>Have fun and learn</b></font></p>
+<p>Above all, have fun and use this program to learn as much as you can about 
+performing 2D convolution on images.</p>
+<p><font color="#FF0000"><b>Other required classes</b></font></p>
+<p>In order to compile and run the class named <b>ImgMod32</b>, you will need 
+the following class files.</p>
+<ul>
+	<li>ImgMod29.class - See the source code in the previous lesson entitled
+	<a href="http://www.developer.com/java/other/article.php/3508706">Plotting 
+	3D Surfaces using Java</a>.</li>
+	<li>ImgMod30.class - See the source code in the previous lesson entitled
+	<a href="http://www.developer.com/java/other/article.php/3519441">2D Fourier 
+	Transforms using Java</a>. <br>
+&nbsp;</li>
+</ul>
+<h2 align="center"><a name="Summary">Summary</a></h2>
+<p>In this lesson, I have attempted to teach you how and why image convolution 
+works by examining the changes to the wave-number spectrum produced by image 
+convolution.</p>
+<p>I also provided you with a general purpose image convolution class and 
+explained the code for the class in detail.</p>
+<h2 align="center"><a name="Whats Next">What's Next?</a></h2>
+<p>In the next lesson in the series, I will teach you how to integrate the 
+general purpose image convolution capability provided in this lesson into other 
+programs.&nbsp; I will also provide some interesting convolution examples 
+including edge detection, embossing, sharpening, and softening of images.</p>
+<p>Future lessons will show you how to write image-processing programs that 
+implement many common special effects as well as a few that aren't so common.&nbsp; 
+This will include programs to do the following:</p>
+<ul>
+	<li>Deal with the effects of noise in an image.</li>
+	<li>Morph one image into another image.</li>
+	<li>Rotate an image.</li>
+	<li>Change the size of an image.</li>
+	<li>Create a kaleidoscope of an image.</li>
+	<li>Other special effects that I may dream up or discover while doing the 
+	background research for the lessons in this series.</li>
+</ul>
+<h2 align="center"><a name="References">References</a></h2>
+<p>In preparation for understanding the material in this lesson, I recommend 
+that you study the material in the following previously-published lessons: </p>
+<ul>
+	<li><a href="http://www.dickbaldwin.com/dsp/Dsp00100.htm">100</a>&nbsp;&nbsp; Periodic 
+	Motion and Sinusoids</li>
+	<li><a href="http://www.dickbaldwin.com/dsp/Dsp00104.htm">104</a>&nbsp;&nbsp; Sampled 
+	Time Series</li>
+	<li><a href="http://www.dickbaldwin.com/dsp/Dsp00108.htm">108</a>&nbsp;&nbsp; 
+	Averaging Time Series</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3374611">1478</a> 
+	Fun with Java, How and Why Spectral Analysis Works</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3380031">1482</a> 
+	Spectrum Analysis using Java, Sampling Frequency, Folding Frequency, and the 
+	FFT Algorithm</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3392871">1483</a> 
+	Spectrum Analysis using Java, Frequency Resolution versus Data Length</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3411041">1484</a> 
+	Spectrum Analysis using Java, Complex Spectrum and Phase Angle</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3436341">1485</a> 
+	Spectrum Analysis using Java, Forward and Inverse Transforms, Filtering in 
+	the Frequency Domain</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3484591">1487</a> 
+	Convolution and Frequency Filtering in Java</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3487996">1488</a> 
+	Convolution and Matched Filtering in Java</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3508706">1489</a> 
+	Plotting 3D Surfaces using Java </li>
+	<li><a href="http://www.developer.com/java/other/article.php/3519441">1490</a> 
+	2D Fourier Transforms using Java </li>
+	<li><a href="http://www.developer.com/java/other/article.php/3526241">1491</a> 
+	2D Fourier Transforms using Java, Part 2 </li>
+	<li><a href="http://www.developer.com/java/data/article.php/3529186">1492</a> 
+	Plotting Large Quantities of Data using Java</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3403921">400</a> 
+	Processing Image Pixels using Java, Getting Started</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3423661">402</a> 
+	Processing Image Pixels using Java, Creating a Spotlight</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3441391">404</a> 
+	Processing Image Pixels Using Java: Controlling Contrast and Brightness</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3512456">406</a> 
+	Processing Image Pixels, Color Intensity, Color Filtering, and Color 
+	Inversion</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3522711">408</a> 
+	Processing Image Pixels, Performing Convolution on Images </li>
+</ul>
+<h2 align="center"><a name="Complete_Program_Listings">Complete Program Listing</a></h2>
+<p>
+A complete listing of the class discussed in this lesson is provided in Listing 
+20.</p>
+<p><font color="#FF0000"><b>A disclaimer</b></font></p>
+<p>The programs that I am providing and explaining in this series of lessons are 
+not intended to be used for high-volume production work.&nbsp; Numerous 
+integrated image-processing programs are available for that purpose.&nbsp; In 
+addition, the Java Advanced Imaging API <i>(JAI)</i> has a number of built-in special effects if you prefer to write 
+your own production image-processing programs using Java.</p>
+<p>The programs that I am providing in this series are intended to 
+make it easier for you to develop and experiment with image-processing algorithms and 
+to gain a better understanding of how they work, and why they do what they do.</p>
+<table border="1" cols="1" width="400" bgcolor="#FFFF00">
+<tbody>
+<tr>
+<td>                     
+<pre>
+/*File ImgMod32.java
+Copyright 2005, R.G.Baldwin
+
+This class provides a general purpose 2D image convolution 
+capability in the form of a static method named convolve.
+
+The convolve method that is defined in this class receives 
+an incoming 3D array of image pixel data of type int 
+containing four planes. The format of this image data is 
+consistent with the format for image data used in the 
+program named ImgMod02a.
+
+The planes are identified as follows:
+0 - alpha or transparency data
+1 - red color data
+2 - green color data
+3 - blue color data
+
+The convolve method also receives an incoming 2D array of 
+type double containing the weights that make up a 2D 
+convolution filter.
+
+The pixel values on each color plane are convolved 
+separately with the same convolution filter.  
+
+The results are normalized so as to cause the filtered 
+output to fall within the range from 0 to 255.
+
+The values on the alpha plane are not modified.
+
+The method returns a filtered 3D pixel array in the same 
+format as the incoming pixel array.  The returned array 
+contains filtered values for each of the three color 
+planes.
+
+The method does not modify the contents of the incoming 
+array of pixel data.
+
+An unfiltered dead zone equal to half the filter length is
+left around the perimeter of the filtered image to avoid
+any attempt to perform convolution using data outside the
+bounds of the image.
+
+Although this class is intended to be used to implement 2D 
+convolution in other programs, a main method is provided so
+that the class can be tested in a stand-alone mode.  In 
+addition, the main method illustrates the relationship 
+between convolution in the image domain and the 
+wave-number spectrum of the raw and filtered image.
+
+When run as a stand-alone program, this class displays raw 
+surfaces, filtered surfaces, and the Fourier Transform of 
+both raw and filtered surfaces.  See the details in the 
+comments in the main method.  The program also displays
+some text on the command-line screen.
+
+Execution of the main method in this class requires access
+to the following classes, plus some inner classed defined
+within these classes:
+
+ImgMod29.class - Displays 3D surfaces
+ImgMod30.class - Provides 2D Fourier Transform
+ImgMod32.class - This class
+
+Tested using J2SE 5.0 and WinXP
+**********************************************************/
+
+class ImgMod32{
+  //The primary purpose of this main method is to test the
+  // class in a stand-alone mode.  A secondary purpose is
+  // to illustrate the relationship between convolution
+  // filtering in the image domain and the spectrum of the
+  // raw and filtered images in the wave-number domain.
+  
+  //The code in this method creates a nine-point
+  // convolution filter and applies it to three  different
+  // surfaces.  The convolution filter has a dc response of
+  // zero with a high response at the folding wave numbers.
+  // Hence, it tends to have the characteristic of a
+  // sharpening or edge-detection filter.  
+
+  //The three surfaces consist of:
+  // 1. A single impulse
+  // 2. A 3x3 square
+  // 3. A 5x5 square
+  
+  //The three surfaces are constructed on what ordinarily
+  // is considered to be the color planes in an image.
+  // However, in this case, the surfaces have nothing in
+  // particular to do with color.  They simply  represent
+  // three surfaces on which it is convenient to
+  // synthetically construct 3D shapes that are useful for
+  // testing and illustrating the image convolution
+  // concepts.  But, in order to be consistent with the
+  // concept of color planes, the comments in the main
+  // method frequently refer to the values as color values.
+  
+  //In addition to the display of some text material on the
+  // command-line screen, the program displays twelve
+  // different graphs.  They are described as follows:
+  
+  //The following surfaces are displayed:
+  // 1. The impulse
+  // 2. The raw 3x3 square
+  // 3. The raw 5x5 square
+  // 4. The filtered impulse
+  // 5. The filtered 3x3 square
+  // 6. The filtered 5x5 square
+  
+  // In addition, a 2D Fourier Transform is computed and
+  // the results are displayed for the following surfaces:
+  // 1. The impulse
+  // 2. The 3x3 square input
+  // 3. The 5x5 square input
+  // 4. The filtered impulse
+  // 5. The filtered 3x3 square
+  // 6. The filtered 5x5 square
+  public static void main(String[] args){
+   
+    //Create a 2D convolution filter having nine weights in
+    // a square.
+    double[][] filter = {
+                         {-1,-1,-1},
+                         {-1, 8,-1},
+                         {-1,-1,-1}
+                        };
+
+    //Create synthetic image pixel data.  Use a surface
+    // that is sufficiently large to produce good
+    // resolution in the 2D Fourier Transform.  Zero-fill
+    // those portions of the surface that don't describe
+    // the shapes of interest.
+    int rowLim = 31;
+    int colLim = 31;
+    int[][][] threeDPix = new int[rowLim][colLim][4];
+
+    //Place a single impulse in the red plane 1
+    threeDPix[3][3][1] = 255;
+  
+    //Place a 3x3 square in the green plane 2
+    threeDPix[2][2][2] = 255;
+    threeDPix[2][3][2] = 255;
+    threeDPix[2][4][2] = 255;    
+    
+    threeDPix[3][2][2] = 255;
+    threeDPix[3][3][2] = 255;
+    threeDPix[3][4][2] = 255;
+    
+    threeDPix[4][2][2] = 255;
+    threeDPix[4][3][2] = 255;
+    threeDPix[4][4][2] = 255;   
+
+    //Place a 5x5 square in the blue plane 3
+    threeDPix[2][2][3] = 255;
+    threeDPix[2][3][3] = 255;
+    threeDPix[2][4][3] = 255;
+    threeDPix[2][5][3] = 255;
+    threeDPix[2][6][3] = 255;
+        
+    threeDPix[3][2][3] = 255;
+    threeDPix[3][3][3] = 255;
+    threeDPix[3][4][3] = 255;
+    threeDPix[3][5][3] = 255;
+    threeDPix[3][6][3] = 255;
+    
+    threeDPix[4][2][3] = 255;
+    threeDPix[4][3][3] = 255;
+    threeDPix[4][4][3] = 255;
+    threeDPix[4][5][3] = 255;
+    threeDPix[4][6][3] = 255;
+    
+    threeDPix[5][2][3] = 255;
+    threeDPix[5][3][3] = 255;
+    threeDPix[5][4][3] = 255;
+    threeDPix[5][5][3] = 255;
+    threeDPix[5][6][3] = 255;
+    
+    threeDPix[6][2][3] = 255;
+    threeDPix[6][3][3] = 255;
+    threeDPix[6][4][3] = 255;
+    threeDPix[6][5][3] = 255;
+    threeDPix[6][6][3] = 255;
+    
+    //Perform the convolution.
+    int[][][] output = convolve(threeDPix,filter);
+    
+    //All of the remaining code in the main method is used
+    // to display material that is used to test and to
+    // illustrate the convolution process.
+                               
+    //Remove the mean values from the filtered color planes
+    // before plotting and computing spectra.
+
+    //First convert the color values from int to double.
+    double[][][] outputDouble = intToDouble(output);
+    //Now remove the mean color value from each plane.
+    removeMean(outputDouble,1);
+    removeMean(outputDouble,2);
+    removeMean(outputDouble,3);
+
+    //Convert the raw image data from int to double
+    double[][][] rawDouble = intToDouble(threeDPix);
+
+    //Get and plot the raw red plane 1.  This is an input
+    // to the filter process.
+    //Get the plane of interest.
+    double[][] temp = getPlane(rawDouble,1);
+    //Generate and display the graph by plotting the 3D
+    // surface on the computer screen.
+    new ImgMod29(temp,4,true,1);
+
+    //Get and display the 2D Fourier Transform of plane 1.
+    //Get the plane of interest.
+    temp = getPlane(rawDouble,1);
+    //Prepare arrays to receive the results of the Fourier
+    // transform.
+    double[][] real = new double[rowLim][colLim];
+    double[][] imag = new double[rowLim][colLim];
+    double[][] amp = new double[rowLim][colLim];
+    //Perform the 2D Fourier transform.
+    ImgMod30.xform2D(temp,real,imag,amp);
+    //Ignore the real and imaginary results.  Prepare the
+    // amplitude spectrum for more-effective plotting by
+    // shifting the origin to the center in wave-number
+    // space.
+    double[][] shiftedAmplitudeSpect = 
+                                 ImgMod30.shiftOrigin(amp);
+    //Generate and display the graph by plotting the 3D
+    // surface on the computer screen.
+    new ImgMod29(shiftedAmplitudeSpect,4,true,1);
+    
+
+    //Get and plot the filtered plane 1.  This is the
+    // impulse response of the convolution filter.
+    temp = getPlane(outputDouble,1);
+    new ImgMod29(temp,4,true,1);
+                               
+    //Get and display the transform of filtered plane 1.
+    // This is the transform of the impulse response of
+    // the convolution filter.
+    temp = getPlane(outputDouble,1);
+    real = new double[rowLim][colLim];
+    imag = new double[rowLim][colLim];
+    amp = new double[rowLim][colLim];
+    ImgMod30.xform2D(temp,real,imag,amp);
+    shiftedAmplitudeSpect = ImgMod30.shiftOrigin(amp);
+    new ImgMod29(shiftedAmplitudeSpect,4,true,1);
+
+
+    //Get and plot the raw green plane 2.  This is another
+    // input to the filter process.
+    temp = getPlane(rawDouble,2);
+    new ImgMod29(temp,4,true,1);
+
+    //Get and display the transform of plane 2.
+    temp = getPlane(rawDouble,2);
+    real = new double[rowLim][colLim];
+    imag = new double[rowLim][colLim];
+    amp = new double[rowLim][colLim];
+    ImgMod30.xform2D(temp,real,imag,amp);
+    shiftedAmplitudeSpect = ImgMod30.shiftOrigin(amp);
+    new ImgMod29(shiftedAmplitudeSpect,4,true,1);
+    
+    
+    //Get and plot the filtered plane 2.
+    temp = getPlane(outputDouble,2);
+    new ImgMod29(temp,4,true,1);
+    
+    //Get and display the transform of filtered plane 2.
+    temp = getPlane(outputDouble,2);
+    real = new double[rowLim][colLim];
+    imag = new double[rowLim][colLim];
+    amp = new double[rowLim][colLim];
+    ImgMod30.xform2D(temp,real,imag,amp);
+    shiftedAmplitudeSpect = ImgMod30.shiftOrigin(amp);
+    new ImgMod29(shiftedAmplitudeSpect,4,true,1);
+
+
+    //Get and plot the raw blue plane 3.  This is another
+    // input to the filter process.
+    temp = getPlane(rawDouble,3);
+    new ImgMod29(temp,4,true,1);
+
+    //Get and display the transform of plane 3.
+    temp = getPlane(rawDouble,3);
+    real = new double[rowLim][colLim];
+    imag = new double[rowLim][colLim];
+    amp = new double[rowLim][colLim];
+    ImgMod30.xform2D(temp,real,imag,amp);
+    shiftedAmplitudeSpect = ImgMod30.shiftOrigin(amp);
+    new ImgMod29(shiftedAmplitudeSpect,4,true,1);
+    
+
+    //Get and plot the filtered plane 3.
+    temp = getPlane(outputDouble,3);
+    new ImgMod29(temp,4,true,1);
+    
+    //Get and display the transform of filtered plane 3
+    temp = getPlane(outputDouble,3);
+    real = new double[rowLim][colLim];
+    imag = new double[rowLim][colLim];
+    amp = new double[rowLim][colLim];
+    ImgMod30.xform2D(temp,real,imag,amp);
+    shiftedAmplitudeSpect = ImgMod30.shiftOrigin(amp);
+    new ImgMod29(shiftedAmplitudeSpect,4,true,1);
+                               
+  }//end main
+  //-----------------------------------------------------//
+  
+  //The purpose of this method is to extract a color plane
+  // from the double version of an image and to return it
+  // as a 2D array of type double.  This is useful, for
+  // example, for performing Fourier transforms on the data
+  // in a color plane.
+  //This method is used only in support of the operations
+  // in the main method.  It is not required for performing
+  // the convolution.
+  
+  public static double[][] getPlane(
+                   double[][][] threeDPixDouble,int plane){
+    
+    int numImgRows = threeDPixDouble.length;
+    int numImgCols = threeDPixDouble[0].length;
+    
+    //Create an empty output array of the same
+    // size as a single plane in the the incoming array of
+    // pixels.
+    double[][] output =new double[numImgRows][numImgCols];
+
+    //Copy the values from the specified plane to the
+    // double array converting them to type double in the
+    // process.
+    for(int row = 0;row &lt; numImgRows;row++){
+      for(int col = 0;col &lt; numImgCols;col++){
+        output[row][col] =
+                          threeDPixDouble[row][col][plane];
+      }//end loop on col
+    }//end loop on row
+    return output;
+  }//end getPlane
+  //-----------------------------------------------------//
+
+  //The purpose of this method is to get and remove the
+  // mean value from a specified color plane in the double
+  // version of an image pixel array.  The method returns
+  // the mean value that was removed so that it can be
+  // saved by the calling method and restored later.
+  static double removeMean(
+                   double[][][] inputImageArray,int plane){
+    int numImgRows = inputImageArray.length;
+    int numImgCols = inputImageArray[0].length;
+    
+    //Compute the mean color value
+    double sum = 0;
+    for(int row = 0;row &lt; numImgRows;row++){
+      for(int col = 0;col &lt; numImgCols;col++){
+        sum += inputImageArray[row][col][plane];
+      }//end inner loop
+    }//end outer loop
+    
+    double mean = sum/(numImgRows*numImgCols);
+    
+    //Remove the mean value from each pixel value.
+    for(int row = 0;row &lt; numImgRows;row++){
+      for(int col = 0;col &lt; numImgCols;col++){
+        inputImageArray[row][col][plane] -= mean;
+      }//end inner loop
+    }//end outer loop
+    
+    return mean;
+  }//end removeMean
+  //-----------------------------------------------------//
+  
+  //The purpose of this method is to add a constant to
+  // every color value in a specified color plane in the
+  // double version of an image pixel array.  For example,
+  // this method can be used to restore the mean value to a
+  // color plane that was removed earlier.
+  static void addConstantToColor(
+                              double[][][] inputImageArray,
+                              int plane,
+                              double constant){
+    int numImgRows = inputImageArray.length;
+    int numImgCols = inputImageArray[0].length;
+    //Add the constant value to each color value
+    for(int row = 0;row &lt; numImgRows;row++){
+      for(int col = 0;col &lt; numImgCols;col++){
+        inputImageArray[row][col][plane] = 
+               inputImageArray[row][col][plane] + constant;
+      }//end inner loop
+    }//end outer loop
+  }//end addConstantToColor
+  //-----------------------------------------------------//
+  
+  //The purpose of this method is to scale every color
+  // value in a specified color plane in the double version
+  // of an image pixel array by a specified scale factor.
+  static void scaleColorPlane(
+      double[][][] inputImageArray,int plane,double scale){
+    int numImgRows = inputImageArray.length;
+    int numImgCols = inputImageArray[0].length;
+    //Scale each color value
+    for(int row = 0;row &lt; numImgRows;row++){
+      for(int col = 0;col &lt; numImgCols;col++){
+        inputImageArray[row][col][plane] = 
+                  inputImageArray[row][col][plane] * scale;
+      }//end inner loop
+    }//end outer loop
+  }//end scaleColorPlane
+  //-----------------------------------------------------//
+
+  //The purpose of this method is to get and to return the
+  // algebraic maximum color value for a specified color
+  // plane in the double version of an image pixel array.
+  static double getMax(
+                   double[][][] inputImageArray,int plane){
+    int numImgRows = inputImageArray.length;
+    int numImgCols = inputImageArray[0].length;
+    
+    double maxValue = -Double.MAX_VALUE;
+    //Find the maximum value
+    for(int row = 0;row &lt; numImgRows;row++){
+      for(int col = 0;col &lt; numImgCols;col++){
+        if(inputImageArray[row][col][plane] &gt; maxValue){
+          maxValue = inputImageArray[row][col][plane];
+        }//end if
+      }//end inner loop
+    }//end outer loop
+    return maxValue;
+  }//end getMax
+  //-----------------------------------------------------//
+  
+  //The purpose of this method is to get and return the
+  // algebraic minimum color value for a specified color
+  // plane in the double version of an image pixel array.
+  static double getMin(
+                   double[][][] inputImageArray,int plane){
+    int numImgRows = inputImageArray.length;
+    int numImgCols = inputImageArray[0].length;
+    
+    double minValue = Double.MAX_VALUE;
+    //Find the minimum value
+    for(int row = 0;row &lt; numImgRows;row++){
+      for(int col = 0;col &lt; numImgCols;col++){
+        if(inputImageArray[row][col][plane] &lt; minValue){
+          minValue = inputImageArray[row][col][plane];
+        }//end if
+      }//end inner loop
+    }//end outer loop
+    return minValue;
+  }//end getMin
+  //-----------------------------------------------------//
+  
+  //The purpose of this method is to convert an image pixel
+  // array (where the pixel values are represented as type
+  // int) to an image pixel array where the pixel values
+  // are represented as type double.
+  static double[][][] intToDouble(
+                                int[][][] inputImageArray){
+    
+    int numImgRows = inputImageArray.length;
+    int numImgCols = inputImageArray[0].length;
+    
+    double[][][] outputImageArray =
+                     new double[numImgRows][numImgCols][4];
+    for(int row = 0;row &lt; numImgRows;row++){
+      for(int col = 0;col &lt; numImgCols;col++){
+        outputImageArray[row][col][0] = 
+                              inputImageArray[row][col][0];
+        outputImageArray[row][col][1] = 
+                              inputImageArray[row][col][1];
+        outputImageArray[row][col][2] = 
+                              inputImageArray[row][col][2];
+        outputImageArray[row][col][3] = 
+                              inputImageArray[row][col][3];
+      }//end inner loop
+    }//end outer loop
+    return outputImageArray;
+  }//end intToDouble
+  //-----------------------------------------------------//
+
+  //The purpose of this method is to convert an image pixel
+  // array (where the pixel values are represented as type
+  // double) to an image pixel array where the pixel values
+  // are represented as type int.
+  static int[][][] doubleToInt(
+                             double[][][] inputImageArray){
+    
+    int numImgRows = inputImageArray.length;
+    int numImgCols = inputImageArray[0].length;
+    
+    int[][][] outputImageArray =
+                        new int[numImgRows][numImgCols][4];
+    for(int row = 0;row &lt; numImgRows;row++){
+      for(int col = 0;col &lt; numImgCols;col++){
+        outputImageArray[row][col][0] = 
+                         (int)inputImageArray[row][col][0];
+        outputImageArray[row][col][1] = 
+                         (int)inputImageArray[row][col][1];
+        outputImageArray[row][col][2] = 
+                         (int)inputImageArray[row][col][2];
+        outputImageArray[row][col][3] = 
+                         (int)inputImageArray[row][col][3];
+      }//end inner loop
+    }//end outer loop
+    return outputImageArray;
+  }//end doubleToInt
+  //-----------------------------------------------------//
+  
+  //The purpose of this method is to get and return the
+  // maximum value among three color values where the color
+  // values are represented as type double.
+  static double getMaxColor(
+                      double red,double green,double blue){
+    double max = -Double.MAX_VALUE;
+    if(red &gt; max){
+      max = red;
+    }//end if
+    
+    if(green &gt; max){
+      max = green;
+    }//end if
+    
+    if(blue &gt; max){
+      max = blue;
+    }//end if
+    
+    return max;
+  }//end getMaxColor
+  //-----------------------------------------------------//
+  
+  //The purpose of this method is to get and return the
+  // minimum value among three color values where the
+  // color values are represented as type double.
+  static double getMinColor(
+                      double red,double green,double blue){
+    double min = Double.MAX_VALUE;
+    if(red &lt; min){
+      min = red;
+    }//end if
+    
+    if(green &lt; min){
+      min = green;
+    }//end if
+    
+    if(blue &lt; min){
+      min = blue;
+    }//end if
+    
+    return min;
+  }//end getMinColor
+  //-----------------------------------------------------//
+  
+  //This method applies an incoming 2D convolution filter
+  // to each color plane in an incoming 3D array of pixel
+  // data and returns a filtered 3D array of pixel data.
+  //The convolution operator is applied separately to each
+  // color plane.
+  //The alpha plane is not modified.
+  //The output is normalized so as to guarantee that the
+  // output color values fall within the range from 0
+  // to 255.
+  //The convolution filter is passed to the method as a 2D
+  // array of type double.  All convolution and
+  // normalization arithmetic is performed as type double.
+  //The normalized results are converted to type int before
+  // returning them to the calling method.
+  //This method does not modify the contents of the
+  // incoming array of pixel data.
+  //An unfiltered dead zone equal to half the filter length
+  // is left around the perimeter of the filtered image to
+  // avoid any attempt to perform convolution using data
+  // outside the bounds of the image.
+  public static int[][][] convolve(
+                    int[][][] threeDPix,double[][] filter){
+    //Get the dimensions of the image and filter arrays.
+    int numImgRows = threeDPix.length;
+    int numImgCols = threeDPix[0].length;
+    int numFilRows = filter.length;
+    int numFilCols = filter[0].length;
+
+    //Display the dimensions of the image and filter
+    // arrays.
+    System.out.println("numImgRows = " + numImgRows);
+    System.out.println("numImgCols = " + numImgCols);
+    System.out.println("numFilRows = " + numFilRows);
+    System.out.println("numFilCols = " + numFilCols);
+
+    //Make a working copy of the incoming 3D pixel array to
+    // avoid making permanent changes to the original image
+    // data. Convert the pixel data to type double in the
+    // process.  Will convert back to type int when
+    // returning from this method.
+    double[][][] work3D = intToDouble(threeDPix);
+    
+    //Remove the mean value from each color plane.  Save
+    // the mean values for later restoration.
+    double redMean = removeMean(work3D,1);
+    double greenMean = removeMean(work3D,2);
+    double blueMean = removeMean(work3D,3);
+    
+    //Create an empty output array of the same size as the
+    // incoming array of pixels.
+    double[][][] output = 
+                     new double[numImgRows][numImgCols][4];
+    
+    //Copy the alpha values directly to the output array.
+    // They will not be processed during the convolution
+    // process.
+    for(int row = 0;row &lt; numImgRows;row++){
+      for(int col = 0;col &lt; numImgCols;col++){
+        output[row][col][0] = work3D[row][col][0];
+      }//end inner loop
+    }//end outer loop
+
+//Because of the length of the following statements, and
+// the width of this publication format, this format
+// sacrifices indentation style for clarity. Otherwise,it
+// would be necessary to break the statements into so many
+// short lines that it would be very difficult to read
+// them.
+
+//Use nested for loops to perform a 2D convolution of each
+// color plane with the 2D convolution filter.
+
+for(int yReg = numFilRows-1;yReg &lt; numImgRows;yReg++){
+  for(int xReg = numFilCols-1;xReg &lt; numImgCols;xReg++){
+    for(int filRow = 0;filRow &lt; numFilRows;filRow++){
+      for(int filCol = 0;filCol &lt; numFilCols;filCol++){
+        
+        output[yReg-numFilRows/2][xReg-numFilCols/2][1] += 
+                      work3D[yReg-filRow][xReg-filCol][1] *
+                                    filter[filRow][filCol];
+
+        output[yReg-numFilRows/2][xReg-numFilCols/2][2] += 
+                      work3D[yReg-filRow][xReg-filCol][2] *
+                                    filter[filRow][filCol];
+
+        output[yReg-numFilRows/2][xReg-numFilCols/2][3] += 
+                      work3D[yReg-filRow][xReg-filCol][3] *
+                                    filter[filRow][filCol];
+
+      }//End loop on filCol
+    }//End loop on filRow
+/*
+    //Divide the result at each point in the output by the
+    // number of filter coefficients.  Note that in some
+    // cases, this is not helpful.  For example, it is not
+    // helpful when a large number of the filter
+    // coefficients have a value of zero.
+    output[yReg-numFilRows/2][xReg-numFilCols/2][1] = 
+           output[yReg-numFilRows/2][xReg-numFilCols/2][1]/
+                                   (numFilRows*numFilCols);
+    output[yReg-numFilRows/2][xReg-numFilCols/2][2] = 
+           output[yReg-numFilRows/2][xReg-numFilCols/2][2]/
+                                   (numFilRows*numFilCols);
+    output[yReg-numFilRows/2][xReg-numFilCols/2][3] = 
+           output[yReg-numFilRows/2][xReg-numFilCols/2][3]/
+                                   (numFilRows*numFilCols);
+*/
+  }//End loop on xReg
+}//End loop on yReg
+
+    //Return to the normal indentation style.
+
+    //Restore the original mean value to each color plane.
+    addConstantToColor(output,1,redMean);
+    addConstantToColor(output,2,greenMean);
+    addConstantToColor(output,3,blueMean);
+    
+    //Normalize the color values, if necessary, to
+    // guarantee that they fall within the range
+    // from 0 to 255.
+    
+    //Begin by dealing with the minimum algebraic color
+    // value. If any color plane contains a negative value,
+    // add a constant to all color values in all planes to
+    // guarantee that the minimum value in any color plane
+    // is 0.
+    
+    //Get the minimum value of the filtered output across
+    // all color planes.
+    //Get the minimum value for each plane.
+    double redOutMin = getMin(output,1);
+    double greenOutMin = getMin(output,2);
+    double blueOutMin = getMin(output,3);
+    //Get and save the minimum color value among all three
+    // color planes
+    double minOut = getMinColor(
+                         redOutMin,greenOutMin,blueOutMin);
+    
+    //Make the adjustment to every color value if the
+    // minimum value is less than zero.  Otherwise, don't
+    // make any adjustment on the basis of the minimum
+    // value.
+    if(minOut &lt; 0){
+      addConstantToColor(output,1,-minOut);
+      addConstantToColor(output,2,-minOut);
+      addConstantToColor(output,3,-minOut);
+    }//end if
+    
+    //If any color value exceeds 255, scale all color
+    // values to guarantee that the maximum color value in
+    // any  color plane is 255.
+    
+    //Get the peak value of the filtered output across all
+    // color planes.
+    //Get the maximum value for each color plane.
+    double redOutMax = getMax(output,1);
+    double greenOutMax = getMax(output,2);
+    double blueOutMax = getMax(output,3);
+    //Get and save the maximum color value among all three
+    // color planes
+    double peakOut = getMaxColor(
+                         redOutMax,greenOutMax,blueOutMax);
+    
+    //Make the adjustment if the maximum value is greater
+    // than 255.  Otherwise, don't make any adjustment on
+    // the basis of the maximum value.
+    if(peakOut &gt; 255){
+      scaleColorPlane(output,1,255/peakOut);
+      scaleColorPlane(output,2,255/peakOut);
+      scaleColorPlane(output,3,255/peakOut);
+    }//end if
+
+    //Return a reference to the array containing the
+    // normalized filtered pixels.  Convert the color
+    // valuesto type int before returnng.
+    return doubleToInt(output);
+
+  }//end convolve method
+  //-----------------------------------------------------//
+}//end class ImgMod32
+
+<b>Listing 20</b>
+</pre>
+</td>
+</tr>
+</tbody>                                
+</table><p>
+<p></p>
+<p>
+<hr size="3" width="100%" align="center">    
+<p>Copyright 2006, Richard G. Baldwin.&nbsp; Reproduction in whole or in
+part in any form or medium without express written permission from Richard
+Baldwin is prohibited. </p>
+     
+<h4> <a name="About_the_author">About the author</a></h4><b>
+<a href="mailto:baldwin@dickbaldwin.com">Richard Baldwin</a></b><i>
+  is a college professor (at Austin Community College in Austin, TX) and
+private  consultant whose primary focus is a combination of Java, C#, and
+XML. In addition to the many platform and/or language independent benefits
+of Java and C# applications, he believes that a combination of Java, C#,
+and XML will become the primary driving force in the delivery of structured
+information on the Web.</i>    
+<p><i>Richard has participated in numerous consulting projects and he frequently 
+ provides onsite training at the high-tech companies located in and around 
+ Austin, Texas.&nbsp; He is the author of Baldwin's Programming <a
+ href="http://www.dickbaldwin.com">Tutorials</a>,
+  which has gained a worldwide following among experienced and aspiring programmers.
+  He has also published articles in JavaPro magazine.</i> </p>
+     
+<p><i>In addition to his programming expertise, Richard has many years of 
+ practical experience in Digital Signal Processing (DSP).&nbsp; His first
+ job after he earned his Bachelor's degree was doing DSP in the Seismic Research 
+ Department of Texas Instruments.&nbsp; (TI is still a world leader in DSP.)&nbsp; 
+ In the following years, he applied his programming and DSP expertise to other
+ interesting areas including sonar and underwater acoustics.</i> </p>
+     
+<p><i>Richard holds an MSEE degree from Southern Methodist University and
+  has many years of experience in the application of computer technology
+to  real-world problems.</i> </p>
+     
+<p><i><a href="mailto:baldwin@dickbaldwin.com">Baldwin@DickBaldwin.com</a></i>
+  </p>
+     
+<p><b>Keywords</b><br>
+Java pixel convolution filter Gaussian smooth blur image jpg color linear DSP 3D 
+2D frequency spectrum wave number Fourier Transform amplitude impulse 
+time-series </p>
+<p>-end- </p>
+<p>&nbsp;</p>
+   </body>
+</html>

@@ -1,0 +1,4010 @@
+<!DOCTYPE doctype PUBLIC "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+  <meta http-equiv="Content-Type"
+ content="text/html; charset=iso-8859-1">
+  <title>... in Java by Richard G Baldwin</title>
+</head>
+<body link="#0000ff" vlink="#666666" alink="#ff0000" lang="EN-US">
+<h2>Understanding the Huffman Data Compression Algorithm in Java</h2>
+Learn how to write a Java program that exposes the inner workings of the Huffman 
+lossless data compression algorithm.&nbsp; Apply the algorithm to different test 
+messages.
+<p><b>Published:</b>&nbsp; May 2, 2006<br>
+<b>By <a href="mailto:Baldwin@DickBaldwin.com">Richard G. Baldwin</a></b>
+</p>
+<p>Java Programming Notes # 2442</p>
+<ul>
+  <li> <a href="#Preface">Preface</a></li>
+  <li> <a href="#General%20Background%20Information">General
+Background Information</a></li>
+  <li> <a href="#Preview">Preview</a></li>
+  <li> <a href="#Discussion%20and%20Sample%20Programs">Discussion and
+Sample Code</a></li>
+<ul>
+	<li> <a href="#Encode_the_message">Encode the Message</a></li>
+	<li> <a href="#Decode_the_Message">Decode the Message</a></li>
+</ul>
+  <li> <a href="#Run%20the%20program">Run the Program</a></li>
+  <li> <a href="#Summary">Summary</a></li>
+  <li> <a href="#Whats%20Next">What's Next?</a></li>
+	<li> <a href="#References">References</a></li>
+  <li> <a href="#Complete%20Program%20Listings">Complete Program
+Listing</a></li>
+</ul>
+<hr size="3" width="100%" align="center">
+<center>
+<h2> <a name="Preface"></a>Preface</h2>
+</center>
+<p>This is the second lesson in a series of lessons that will teach you about 
+data and image compression.&nbsp; The series began with the lesson entitled 
+<a href="http://www.developer.com/java/data/article.php/3586396">Understanding the Lempel-Ziv Data Compression Algorithm in Java</a> <i>(commonly 
+known as LZ77).</i></p>
+<p>Different variations of the LZ algorithms, the Huffman algorithm, and other 
+compression algorithms are often combined in data and image compression 
+programs.&nbsp; For example, numerous sources on the web indicate that commercially 
+available zip programs often incorporate something called <b>DEFLATE</b>.&nbsp; 
+According to <a href="http://en.wikipedia.org/wiki/DEFLATE_(algorithm)">Wikipedia</a>,</p>
+<blockquote>
+	<p><i>&quot;<b>DEFLATE</b> is a lossless data compression algorithm that uses a 
+	combination of the LZ77 algorithm and Huffman coding.&nbsp; It was originally 
+	defined by
+	<a title="Phil Katz" href="http://en.wikipedia.org/wiki/Phil_Katz">Phil Katz</a> 
+	for version 2 of his
+	<a title="PKZIP" href="http://en.wikipedia.org/wiki/PKZIP">PKZIP</a> 
+	archiving tool, and was later specified in
+	<a title="Request for Comments" href="http://en.wikipedia.org/wiki/Request_for_Comments">
+	RFC</a> 1951.&quot;</i></p>
+</blockquote>
+<p>This lesson will teach you about Huffman coding.</p>
+<p>Future lessons will cover a variety of compression schemes, including:</p>
+<ul>
+	<li>Run-length data encoding</li>
+	<li>GIF image compression</li>
+	<li>JPEG image compression</li>
+</ul>
+<p><font color="#FF0000"><b>Use at your own risk</b></font></p>
+<p>The programs that I will provide in these lessons are provided for 
+educational purposes only.&nbsp; If you use these programs for any purpose, you are 
+using them at your own risk.&nbsp; I accept no responsibility for any damages that 
+you may incur as a result of the use of these programs.</p>
+<p> <b><font color="#ff0000">Viewing tip</font></b> </p>
+<p>You may find it useful to open another copy of this lesson in a
+separate browser window.&nbsp; That will make it easier for you to
+scroll back
+and forth among the different listings and figures while you are
+reading
+about them.</p>
+<p><b><font color="#ff0000">Supplementary material</font></b> </p>
+<p>I recommend that you also study the other lessons in my extensive
+collection of online Java tutorials.&nbsp; You will find those lessons
+published
+at <a href="http://softwaredev.earthweb.com/java">Gamelan.com</a>.&nbsp;
+However, as of the date of this writing, Gamelan doesn't maintain a
+consolidated index of my Java tutorial lessons, and sometimes they are
+difficult to locate there.&nbsp; You will find a consolidated index at <font
+ color="#000000"> <a href="http://www.dickbaldwin.com/">www.DickBaldwin.com</a>.</font></p>
+<p>I particularly recommend that you study my earlier lessons in the section 
+entitled <a href="#References">References</a> in preparation for understanding 
+the material in this lesson.</p>
+<h2 align="center"><font color="#000000"> <a
+ name="General Background Information">General Background Information</a></font></h2>
+<p>Most of us use data or image compression on a daily basis without even 
+thinking about it.&nbsp; If you use one of the popular zip programs to archive your 
+data, you are using a program that typically implements several different data 
+compression algorithms in combination.&nbsp; If you take pictures with a digital 
+camera, you are probably creating files that describe images using the JPEG image 
+compression format.</p>
+<p><font color="#FF0000"><b>What is Huffman coding?</b></font></p>
+<p>According to <a href="http://en.wikipedia.org/wiki/Huffman_coding">Wikipedia</a>, </p>
+<blockquote>
+	<p><i>&quot;... <b>Huffman coding</b> is an
+	<a title="Entropy encoding" href="http://en.wikipedia.org/wiki/Entropy_encoding">
+	entropy encoding</a>
+	<a title="Algorithm" href="http://en.wikipedia.org/wiki/Algorithm">algorithm</a> 
+	used for
+	<a title="Lossless data compression" href="http://en.wikipedia.org/wiki/Lossless_data_compression">
+	lossless data compression</a>. The term refers to the use of a 
+	variable-length code table for encoding a source symbol (such as a character 
+	in a file) where the variable-length code table has been derived in a 
+	particular way based on the estimated probability of occurrence for each 
+	possible value of the source symbol.&quot;</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Other variable-length entropy coding systems</b></font></p>
+<p>Huffman coding is not the only encoding scheme to use variable-length code 
+based on the probability of occurrence of the characters in a message.&nbsp; For 
+example, the <a href="http://en.wikipedia.org/wiki/Morse_Code">International 
+Morse Code</a>, originally created by
+<a title="Samuel Morse" href="http://en.wikipedia.org/wiki/Samuel_Morse">Samuel 
+Morse</a> in the mid-1830s is a variable-length code, apparently based on his 
+concept of the probability of occurrence of the letters in the English alphabet.&nbsp; 
+For example, the code for the letter E is the shortest code.&nbsp; The letter E occurs very frequently in English text.&nbsp; The 
+longest code is for the number 0.&nbsp; Excluding the numbers, however, the two 
+longest codes are for the letters Q and W.&nbsp; The 
+letter Q doesn't appear very often in English Text.</p>
+<blockquote>
+	<p><i>(As an aside, one might surmise that similar probability tables were 
+	used to develop the QWERTY keyboard where the key for the letter E is 
+	relatively easy to strike.&nbsp; On the other hand, the key for the letter Q is more difficult 
+	for many people to strike because it requires the use of the little finger 
+	on the left hand.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Morse is not a prefix-free code</b></font></p>
+<p>While Morse code is easy for a trained radio operator to understand <i>(this 
+author was a radio operator in the U.S. Air Force for several years)</i>, the 
+code has a characteristic that makes it difficult, or at least inefficient to 
+implement using a computer.&nbsp; In particular, the code sequences for the most 
+probable characters occur as the beginning parts of the code sequences for other 
+characters.&nbsp; <i>(For example, the entire code sequence for the letter E 
+occurs as the first element in the codes for many other letters.)&nbsp; </i>A 
+trained human can easily deal with that situation but a significant amount of 
+overhead is required to cause a computer to deal with it.</p>
+<p><font color="#FF0000"><b>Huffman is a prefix-free code</b></font></p>
+<p>Huffman coding solves this problem.&nbsp; The methodology used for Huffman coding 
+results in a
+<a title="Prefix-free code" href="http://en.wikipedia.org/wiki/Prefix-free_code">
+prefix-free code</a>.&nbsp; A prefix-free code is one in which the bit coding 
+sequence 
+representing some particular character is never a prefix of the bit coding 
+sequence 
+representing any other character.&nbsp; For example, here is a possible bit 
+sequence for a Huffman code on an alphabet with four characters where D is the 
+most probable and A is the least probable:</p>
+<p><pre>A 110
+D 0
+C 10
+B 111</pre></p>
+<p><font color="#FF0000"><b>Code length is based on probability of occurrence</b></font></p>
+<p>As with Morse code, the methodology used for the Huffman coding causes the 
+bit coding sequence to be shortest for the most frequently occurring characters, and 
+causes the coding sequence to be longest for the least frequently occurring 
+characters.&nbsp; Unlike the Morse code, however, the probabilities for Huffman 
+are usually determined on a message-by-message basis instead of being based on 
+some general overall expectation of the probability of occurrence of the 
+characters.</p>
+<p><font color="#FF0000"><b>Message-by-message probabilities</b></font></p>
+<p>The upside of determining the probabilities on a message-by-message basis is 
+that the encoding can be optimized for each specific message.&nbsp; The downside 
+is that the probability encoding table used to encode a specific message must 
+also be 
+used to decode the message.&nbsp; The requirement to transport the encoding 
+table along with the message adds some overhead to the overall process.</p>
+<p><font color="#FF0000"><b>An optimal encoding scheme</b></font></p>
+<p>Once again, according to
+<a href="http://en.wikipedia.org/wiki/Huffman_coding">Wikipedia</a>, </p>
+<blockquote>
+	<p><i>&quot;Huffman was able to design the most efficient compression method of 
+	this type: no other mapping of individual source symbols to unique strings 
+	of bits will produce a smaller average output size when the actual symbol 
+	frequencies agree with those used to create the code.&quot;</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Some caution is advised</b></font></p>
+<p><a href="http://en.wikipedia.org/wiki/Huffman_coding">Wikipedia</a> goes on 
+to caution us,</p>
+<blockquote>
+	<p><i>&quot;Assertions of the optimality of Huffman coding should be phrased 
+	carefully, because its optimality can sometimes accidentally be over-stated. 
+	For example,
+	<a title="Arithmetic coding" href="http://en.wikipedia.org/wiki/Arithmetic_coding">
+	arithmetic coding</a> ordinarily has better compression capability, because 
+	it does not require the use of an integer number of bits for encoding each 
+	source symbol. <a title="LZW" href="http://en.wikipedia.org/wiki/LZW">LZW</a> 
+	coding can also often be more efficient, particularly when the input symbols 
+	are not independently-distributed, because it does not depend on encoding 
+	each input symbol one at a time (instead, it batches up a variable number of 
+	input symbols into each encoded syntax element). The efficiency of Huffman 
+	coding also depends heavily on having a good estimate of the true 
+	probability of the value of each input symbol.&quot;</i> </p>
+</blockquote>
+<p>As mentioned earlier, some data compression schemes combine Huffman coding 
+with one of the Lempel-Ziv <i>(LZ)</i> coding schemes to get the best of both 
+worlds.</p>
+<p><font color="#FF0000"><b><a name="A_binary_tree">A binary tree</a></b></font></p>
+<p>As you will soon see, Huffman coding works by creating a
+<a title="Binary tree" href="http://en.wikipedia.org/wiki/Binary_tree">binary 
+tree</a> of nodes, with each node being either a leaf node or an internal node.</p>
+<blockquote>
+	<p><i>(A picture of an actual Huffman binary tree, along with a 
+	corresponding example, can be seen at the
+	<a href="http://www.binaryessence.com/dct/en000080.htm">Binary Essence</a> 
+	web site.&nbsp; Additional Huffman binary trees are also shown in
+	<a href="#Figure_6">Figure 6</a>, <a href="#Figure_8">Figure 8</a>, and
+	<a href="#Figure_10">Figure 10</a> later in this lesson.)</i> </p>
+</blockquote>
+<p>All nodes are initially leaf nodes, and there is one leaf node for every 
+character in the message being compressed.&nbsp; Then the leaf nodes are combined 
+with internal nodes to form the tree.</p>
+<p>As mentioned above, here is one leaf node for each character in the message.&nbsp; A leaf node 
+contains the character and the frequency of usage for that character.</p>
+<p>Internal nodes contain links to two child nodes plus a <i>frequency</i> which 
+is the sum of the frequencies of the two child nodes.</p>
+<p><font color="#FF0000"><b>A variable-length bit sequence</b></font></p>
+<p>A different, variable-length bit sequence is assigned to each character used 
+in the message.&nbsp; The specific bit sequence assigned to an individual 
+character is determined by tracing out the path from the root of the tree to the 
+leaf that represents that character.&nbsp; By convention, bit '0' represents 
+following the left child when tracing out the path and bit '1' represents following the right child 
+when tracing out the path.</p>
+<p><font color="#FF0000"><b>Path lengths are different</b></font></p>
+<p>The tree is constructed such that the paths from the root to the most 
+frequently used characters are short while the paths to less frequently used 
+characters are long.&nbsp; This results in short codes for frequently used 
+characters and long codes for less frequently used characters.</p>
+<h2 align="center"><font color="#000000"><a name="Preview">Preview</a></font></h2>
+<p><font color="#FF0000"><b>The program named Huffman01</b></font></p>
+<p>In this lesson, I will present and explain a program named <b>Huffman01</b>, 
+which illustrates the encoding and subsequent decoding of a text message using 
+the Huffman encoding algorithm.</p>
+<p><font color="#FF0000"><b>Get and use an encoder object</b></font></p>
+<p>Overall control of this operation of this program takes place in the <b>main</b> 
+method.&nbsp; I will begin by instantiating an object of the <b>HuffmanEncoder</b> class 
+and by invoking the <b>encode</b> method on that object from the <b>main</b> 
+method.</p>
+<p><font color="#FF0000"><b>Create a frequency chart</b></font></p>
+<p>Inside the encode method, I will invoke the <b>createFreqData</b> method to 
+create a frequency table that identifies each of the individual characters in 
+the original message and the number of times <i>(frequency)</i> that each 
+character appears in the message being compressed.</p>
+<p><font color="#FF0000"><b>Create the leaves and construct the tree</b></font></p>
+<p>Next, I will invoke the <b>createLeaves</b> method to create a <b>HuffLeaf</b> 
+object for each character identified in the frequency table.&nbsp; I will store the
+<b>HuffLeaf</b> objects in a <b>TreeSet</b> object.&nbsp; Each <b>HuffLeaf</b> 
+object encapsulates the character that it represents as well as the number of 
+times that the character appears in the original message <i>(frequency)</i>.</p>
+<p>Then I will invoke the <b>createHuffTree</b> method to assemble the <b>
+HuffLeaf</b> objects into a Huffman tree <i>(a <b>HuffTree</b> object)</i>.&nbsp; 
+A Huffman tree is a special form of a binary tree consisting of properly linked
+<b>HuffNode</b> and <b>HuffLeaf</b> objects.</p>
+<p>When the <b>createHuffTree</b> method returns, the <b>HuffTree</b> object 
+will remain as the only object stored in the <b>TreeSet</b> object that 
+previously contained all of the <b>HuffLeaf</b> objects.&nbsp; This is because 
+all of the <b>HuffLeaf</b> objects will have been combined with <b>HuffNode</b> 
+objects to form the tree.&nbsp; When two <b>HuffLeaf</b> objects are combined 
+with a single <b>HuffNode</b> object, the two <b>HuffLeaf</b> objects are 
+removed from the <b>TreeSet</b> object, and the <b>HuffNode</b> object is added 
+to the <b>TreeSet</b> object.</p>
+<p><font color="#FF0000"><b>Create the bit codes</b></font></p>
+<p>Following that, I will invoke the <b>createBitCodes</b> method, which uses 
+the Huffman tree in a recursive manner to create a bit code for each character 
+in the message.</p>
+<blockquote>
+	<p><i>(As mentioned earlier, the bit codes are different lengths with the 
+	shorter codes corresponding to the characters with a high frequency value 
+	and the longer codes corresponding to the characters with the lower 
+	frequency values.)</i></p>
+</blockquote>
+<p>The <b>createBitCodes</b> method populates a data structure that is used to 
+encode the message and is also required 
+later to decode the encoded message.</p>
+<p><font color="#FF0000"><b>Dealing with a difficult bit-manipulation challenge</b></font></p>
+<p>At this point in the execution of the program, I know the variable-length 
+bit code that is required to replace each character in the original message to 
+produce a Huffman-encoded message.</p>
+<blockquote>
+	<p><i>(The compression provided by Huffman encoding depends on the 
+	frequently used characters having short bit codes and the less frequently 
+	used characters having longer bit codes.)</i></p>
+</blockquote>
+<p>Although I know the bit code required to replace each character in the 
+original message, a direct transformation from characters in the message to a 
+stream of contiguous bit codes is something of a challenge.&nbsp; The computer's 
+memory is organized on 8-bit boundaries.&nbsp; I am unaware of any capability in 
+Java that allows the memory to be viewed simply as a continuous sequence of 
+individual bits.</p>
+<blockquote>
+	<p><i>(Note that it may be possible to accomplish this by using a Java 
+	BitSet object.&nbsp; I may give that a try someday when I have the time.)</i></p>
+</blockquote>
+<p>This program deals with this challenge in a way that is straightforward, but 
+is probably inefficient from both a speed and memory requirements viewpoint.&nbsp; </p>
+<p><font color="#ff0000"><b>Not a production compression program</b></font></p>
+<p>This program was specifically designed to serve its primary purpose of 
+education.&nbsp; No thought or effort was given to speed, efficiency, memory 
+utilization, or any other factor that would be important in a program written 
+for production data compression purposes.&nbsp; In some cases, the program was 
+purposely made less efficient <i>(in the name of clarity)</i> by using two or 
+more statements to accomplish a task that could be accomplished by a single more 
+complex statement.</p>
+<p><font color="#FF0000"><b>The solution to the bit-manipulation challenge</b></font></p>
+<p>The solution to the bit-manipulation challenge mentioned above was to do a simple 
+table lookup and to <span lang="en-us"></span>create a long <b>String</b> object consisting of only 1 
+and 0 characters.&nbsp; Each character in the original message is represented by 
+a substring that matches the required bit code.</p>
+<p>This is easy to accomplish because <i>(unlike a long sequence of bits)</i> 
+there are no artificial boundaries requiring the length of the <b>String</b> to 
+be some multiple of a fixed number of characters.</p>
+<p>I will invoke the <b>encodeToString</b> method to encode the message into a
+<b>String</b> representation of the bits that will make up the final encoded 
+message.&nbsp; After the String containing 1 and 0 characters representing the 
+bits in the Huffman-encoded message is created, this <b>String</b> will be 
+processed to produce the Huffman-encoded message in a binary bit stream format.</p>
+<p><font color="#FF0000"><b>Creating the binary bit stream format</b></font></p>
+<p>Creation of the Huffman-encoded message in a binary bit stream format is 
+accomplished using another lookup table containing 256 entries <i>(the number of 
+possible combinations of eight bits)</i>.</p>
+<p>I will invoke the <b>buildEncodingBitMap</b> method to populate a lookup 
+table that relates eight bits represented as a <b>String</b> to every possible 
+combination of eight actual bits.&nbsp; Then I will invoke the <b>
+encodeStringToBits</b> method to encode the <b>String</b> representation of the 
+bits that make up the encoded message into the actual bits that make up the 
+encoded message.</p>
+<p><font color="#FF0000"><b><a name="Extraneous_characters_at_the_end">Extraneous characters at the end</a></b></font></p>
+<p>The <b>encodeStringToBits</b> method doesn't handle the end of the 
+message very gracefully for those cases where the number of required bits is not 
+a multiple of 8.&nbsp; The method simply adds enough &quot;0&quot; characters to the end 
+of the <b>String</b> to cause the length to be a multiple of 8.&nbsp; This will 
+usually result in extraneous characters at the end of the decoded message later.</p>
+<p>Some mechanism must be found to eliminate the extraneous characters when 
+decoding the message later.&nbsp; This program assumes that the length of the original 
+message is preserved and provided to the decoding software along with the 
+required decoding table.&nbsp; Since the length of the decoded message must 
+match the length of the original message, this value is used to eliminate 
+extraneous characters at the end of the decoded message.</p>
+<p>Having created the Huffman-encoded message in a binary bit stream format, 
+I will return the encoded message from the <b>encode</b> method back to the <b>main</b> 
+method.</p>
+<p><font color="#FF0000"><b>Hexadecimal display</b></font></p>
+<p>At this point in the program, the message has been Huffman encoded.&nbsp; 
+Back in the <b>main</b> method, I will 
+provide the capability to display the binary encoded data in Hexadecimal format 
+for comparison with the original message.</p>
+<p><font color="#FF0000"><b>Decode the encoded message</b></font></p>
+<p>The program continues the demonstration by decoding and displaying the 
+Huffman-encoded message.</p>
+<p>I will begin the decoding process by 
+instantiating a <b>HuffmanDecoder</b> object from within the <b>main</b> method.&nbsp; Then 
+I will invoke the <b>
+decode</b> method on the <b>HuffmanDecoder</b> object to decode the message.</p>
+<p>I will pass the encoded message along with a reference to a data structure 
+containing encoding particulars and the length of the original message to the <b>
+decode</b> method so that 
+extraneous characters on the end can be eliminated.</p>
+<p><font color="#FF0000"><b>Decode from binary to String representation</b></font></p>
+<p>Inside the <b>decode</b> method, I will invoke the <b>buildDecodingBitMap
+</b>method to create a decoding bit map, which is essentially the reverse of the 
+encoding bit map that was used to encode the original message.</p>
+<p>I will invoke the <b>decodeToBitsAsString</b> method to decode the encoded 
+message from a binary bit stream representation to a <b>String</b> of 1 and 0 
+characters that represent the actual bits in the encoded message.</p>
+<p><font color="#FF0000"><b>Decode from string representation back to the 
+original characters</b></font></p>
+<p>I will invoke the <b>buildHuffDecodingTable</b> method to create a Huffman 
+decoding table by swapping the keys and the values from the Huffman encoding 
+table received as an incoming parameter by the <b>decode</b> method.</p>
+<p>Finally, I will invoke the <b>decodeStringBitsToCharacters</b> method to 
+decode the <b>String</b> containing only 1 and 0 characters that represent the 
+bits in the encoded message.&nbsp; This will produce a replica of the original 
+message that was subjected to Huffman encoding.</p>
+<p><font color="#FF0000"><b>Remove extraneous characters and return the decoded 
+message</b></font></p>
+<p>I will write the resulting decoded message into a <b>String</b> object and 
+return the <b>String</b> with any extraneous characters at the end having been 
+removed.</p>
+<p><font color="#FF0000"><b>Display results at critical points in the process</b></font></p>
+<p>Numerous opportunities will be provided to enable code that will display 
+information that is useful towards gaining an understanding of the Huffman 
+encoding algorithm.&nbsp; I will present and discuss much of that information in 
+this lesson.</p>
+<p><font color="#FF0000"><b>Program testing</b></font></p>
+<p>The program was tested using J2SE 5.0 and WinXP.&nbsp; The program requires 
+J2SE 5.0 or later to support generics.</p>
+<p><font color="#ff0000"><b>Sample messages</b></font></p>
+<p>Three test messages are hard-coded into the program.&nbsp; You can switch among 
+those messages by enabling and disabling them using comments and by then 
+recompiling the program.&nbsp; You can also insert your own test message and 
+recompile the program to see the result of compressing your message.</p>
+<center>
+<h2> <a name="Discussion and Sample Programs"></a><font color="#000000">Discussion
+and Sample Code</font></h2>
+</center>
+<font color="#FF0000"><b>The class named Huffman01</b></font><p>I will discuss 
+this program in fragments.&nbsp; You can view a complete listing of the program 
+in <a href="#Listing_45">Listing 45</a> near the end of the lesson.</p>
+<p>The class definition for the class named <b>Huffman01</b> along with the <b>
+main</b> method begins in Listing 1.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>public class Huffman01{
+  
+  public static void main(String[] args){
+
+    Hashtable &lt;Character,String&gt;huffEncodeTable;<br><br><b><font face="Courier New,Courier">Listing 1</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Listing 1 declares a data structure that is used to communicate encoding particulars from the Huffman encoder to the Huffman decoder.&nbsp; 
+Because the encoding particulars are different for every message, this is necessary for the decoder to be able to decode the encoded message.</p>
+<p><font color="#FF0000"><b>Test messages</b></font></p>
+<p><a name="Listing_2">Listing 2</a> creates and displays the raw test message that will be encoded.&nbsp; 
+The message is displayed 48 characters to the line.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>/*
+    //The following test message was copied directly from
+    // an Internet news site.  It is probably
+    // representative of typical English text.
+    String rawData = "BAGHDAD, Iraq Violence increased "
+    + "across Iraq after a lull following the Dec. 15 "
+    + "parliamentary elections, with at least two dozen "
+    + "people including a U.S. soldier killed Monday in "
+    + "shootings and bombings mostly targeting the Shiite-"
+    + "dominated security services. The Defense Ministry "
+    + "director of operations, Brig. Gen. Abdul Aziz "
+    + "Mohammed-Jassim, blamed increased violence in the "
+    + "past two days on insurgents trying to deepen the "
+    + "political turmoil following the elections. The "
+    + "violence came as three Iraqi opposition groups "
+    + "threatened another wave of protests and civil "
+    + "disobedience if allegations of fraud are not "
+    + "properly investigated.";
+*/
+/*
+    String rawData = "Now is the time for all good men "
+    + "to come to the aid of their country.";
+*/
+
+    //Use the following test message or some other 
+    // similarly short test message to illustrate the
+    // construction of the HuffTree object.
+    String rawData = "AAAAABBBBCCCDDE";
+
+    System.out.println("Raw Data");
+    display48(rawData);<br><br><b><font face="Courier New,Courier">Listing 2</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>As mentioned earlier, you can modify the comment indicators to enable any one of the test messages 
+in Listing 2, or 
+you can insert a test message of your own and then recompile the program.</p>
+<p>Listing 2 invokes the utility method named <b>display48</b> to display the 
+message 48 characters to the line.&nbsp; That method is straightforward and 
+shouldn't require an explanation.&nbsp; You can view the method in its entirety 
+in <a href="#Listing_45">Listing 45</a>.</p>
+<p><font color="#FF0000"><b>Program output</b></font></p>
+<p>The text at the top of <a name="Figure_1">Figure 1</a> was produced by the 
+code in Listing 2 after modifying the comment indicators to enable the news 
+story shown in Listing 2.</p>
+<table border="1" cols="1" width="482" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre>Raw Data
+BAGHDAD, Iraq Violence increased across Iraq aft
+er a lull following the Dec. 15 parliamentary el
+ections, with at least two dozen people includin
+g a U.S. soldier killed Monday in shootings and
+bombings mostly targeting the Shiite-dominated s
+ecurity services. The Defense Ministry director
+of operations, Brig. Gen. Abdul Aziz Mohammed-Ja
+ssim, blamed increased violence in the past two
+days on insurgents trying to deepen the politica
+l turmoil following the elections. The violence
+came as three Iraqi opposition groups threatened
+another wave of protests and civil disobedience
+if allegations of fraud are not properly invest
+igated.
+
+Number raw data bits: 5048
+Number binary encoded data bits: 2816
+Compression factor: 1.7926136363636365
+
+Binary Encoded Data in Hexadecimal Format
+b889531b2812a0668f6b9c2eaf9759dceb2c86d996148
+9a3c1ae734124336fabffe82bffa8dcf7e9f4e50563e1a8
+778c1fe684bcb0b8fcae7a9d0668dd3ee69df2c93a6356b
+54717de1af3e773afeadb9efcdae3c4f92bf6e2186fdff
+9b689a7b30bb9f27b553cf7a667b68b5c5e7bd343493f17
+4b5e679efd3e9d11ef74911b543ced26d90ad50e91721b
+bcb283e52f4e50602e8744f3f248badc057341aa0d5e16
+9ea7419ae21d78f94cb8f84c5b2bfc263ba3b44d7ad0c26c
+2235644e84668bf684db73acb21b6bbd5f2eb3b9f4fa778
+c93a6356b3a9a9f73a2a179794d202f3dfa6b589fbe9f4
+ef2bfd3cb6fe95421aefe82bffa8dcf7e9f4e3f2b9ea741f
+297a75deaf9759cb684e64d3e813a3c1ae7b579e5274f53e
+bc295f134fa05a4b9b667a9f4868cd74ea8378152525333d
+b2faef7f5b92a29b71759dd066ffcded3d4e9aa0d032b6c
+c073d4ef2bc21f1773dd293d7b49be
+
+Decoded Data
+BAGHDAD, Iraq Violence increased across Iraq aft
+er a lull following the Dec. 15 parliamentary el
+ections, with at least two dozen people includin
+g a U.S. soldier killed Monday in shootings and
+bombings mostly targeting the Shiite-dominated s
+ecurity services. The Defense Ministry director
+of operations, Brig. Gen. Abdul Aziz Mohammed-Ja
+ssim, blamed increased violence in the past two
+days on insurgents trying to deepen the politica
+l turmoil following the elections. The violence
+came as three Iraqi opposition groups threatened
+another wave of protests and civil disobedience
+if allegations of fraud are not properly invest
+igated.<br></pre>
+      <pre><b>Figure 1</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>A compression factor of 1.793</b></font></p>
+<p>The statistics following the test message in Figure 1 show that the 
+compression factor achieved by the Huffman algorithm for this particular message 
+was 1.793.&nbsp; This can also be thought of as a compression ratio of 0.558.&nbsp; 
+In other words, the compressed message requires 55.8 percent of the number of 
+bits required by the original uncompressed message.</p>
+<p>As you will see later, different messages result in different 
+compression factors.</p>
+<p><font color="#FF0000"><b>The binary encoded test message</b></font></p>
+<p>The block of text near the middle of Figure 1 shows the binary version of the 
+encoded message displayed in Hexadecimal format.&nbsp; At the surface, this may 
+appear to be longer than the original message.&nbsp; Recall, however, that in 
+the display of the original message at the top of Figure 1, each character 
+represents eight bits.&nbsp; However, in the Hexadecimal display, each character 
+represents only four bits.&nbsp; As mentioned above, the number of actual bits in the compressed 
+message was only 55.8 percent of the number of bits in the original message.</p>
+<p><font color="#FF0000"><b>The decoded message</b></font></p>
+<p>The bottom block of text in Figure 1 is a replica of the original message 
+that was produced by decoding the binary version of the encoded message.&nbsp; 
+Hopefully, this is an exact copy of the original message at the top of Figure 1, 
+which is a requirement for a lossless compression algorithm.</p>
+<p><font color="#FF0000"><b>Display raw data length</b></font></p>
+
+<p>Listing 3 gets and displays the length of the test message in bits, as shown 
+in the upper half of Figure 1.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    int rawDataLen = rawData.length();
+    
+    System.out.println("\nNumber raw data bits: " 
+                                   + rawData.length() * 8);<br><br><b><font face="Courier New,Courier">Listing 3</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Instantiate a HuffmanEncoder object</b></font></p>
+<p>Listing 4 instantiates a new object of the <b>HuffmanEncoder</b> class.&nbsp; 
+The instance method named <b>encode</b> belonging to that object will be used to encode the test message 
+using the Huffman compression algorithm.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    HuffmanEncoder encoder = new HuffmanEncoder();<br><br><b><font face="Courier New,Courier">Listing 4</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<h3><a name="Encode_the_message">Encode the Message</a></h3>
+<p>Listing 5 begins by instantiating a new <b>Hashtable</b> object that will be 
+passed to the <b>encode</b> method to be populated with encoding particulars.&nbsp; 
+This object will be used to encode the message and will also be required later to decode the message.</p>
+<p>Still in the <b>main</b> method, <a name="Listing_5">Listing 5</a> invokes the <b>encode</b> method of the <b>HuffmanEncoder</b> 
+object to perform the actual encoding.&nbsp; <i>(Control is transferred from the
+<b>main</b> method to the <b>encode</b> method.)</i></p>
+<p>The test message and the <b>
+Hashtable</b> mentioned above are passed as parameters to the <b>encode</b> 
+method.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    huffEncodeTable = new Hashtable&lt;Character,String&gt;();
+
+    ArrayList&lt;Byte&gt; binaryEncodedData = encoder.encode(
+                                  rawData,huffEncodeTable);<br><br><b><font face="Courier New,Courier">Listing 5</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The encoded message is received back later as bytes stored in an <b>ArrayList</b> object.</p>
+<p><font color="#FF0000"><b>The HuffmanEncoder class</b></font></p>
+<p>At this point, I am going to set the <b>main</b> method aside and explain the
+<b>encode</b> method of the <b>HuffmanEncoder</b> class.&nbsp; I will return to 
+the discussion of the <b>main</b> method later.</p>
+<p>The <b>HuffmanEncoder</b> class definition begins in Listing 6.&nbsp; An 
+object of this class can be used to encode a message using the Huffman 
+encoding algorithm.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>
+class HuffmanEncoder{
+  String rawData;  
+  <b>TreeSet &lt;HuffTree&gt;theTree = new TreeSet&lt;HuffTree&gt;();</b>
+  ArrayList &lt;Byte&gt;binaryEncodedData = 
+                                     new ArrayList&lt;Byte&gt;();
+  Hashtable &lt;Character,Integer&gt;frequencyData = 
+                        new Hashtable&lt;Character,Integer&gt;();
+  StringBuffer code = new StringBuffer();
+  Hashtable &lt;Character,String&gt;huffEncodeTable;
+  String stringEncodedData;
+  Hashtable &lt;String,Byte&gt;encodingBitMap = 
+                              new Hashtable&lt;String,Byte&gt;();
+<br><b><font face="Courier New,Courier">Listing 6</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Declaration of instance variables</b></font></p>
+<p>Listing 6 contains the declaration of several instance variables along 
+with the initialization of some of them.&nbsp; I will discuss the instance 
+variables in 
+conjunction with the code that uses them later.</p>
+<blockquote>
+	<p><i>(By the way, in case you are unfamiliar with the syntax of the boldface 
+statement in Listing 6 that declares a reference to and instantiates a new <b>TreeSet</b> object, see my earlier lesson entitled
+	<a href="http://www.developer.com/java/other/article.php/3495121">Generics in 
+J2SE 5.0, Getting Started</a>.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>The encode method</b></font></p>
+<p>The <b>encode</b> method begins in Listing 7.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  ArrayList&lt;Byte&gt; <b>encode</b>(
+              String rawData,
+              Hashtable &lt;Character,String&gt;huffEncodeTable){
+    //Save the incoming parameters.
+    this.rawData = rawData;
+    this.huffEncodeTable = huffEncodeTable;<br><br><b><font face="Courier New,Courier">Listing 7</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The<b> encode </b>method encodes an incoming <b>String</b> message using the 
+Huffman encoding algorithm.&nbsp; The method also receives a reference to an 
+empty data structure of type <b>Hashtable</b>.&nbsp; This data structures is 
+populated with encoding particulars.&nbsp; These encoding particulars are used 
+to encode the message.&nbsp; They are also required later by the <b>decode</b> 
+method to decode and transform the encoded message back into the original <b>
+String</b> version.</p>
+<p>In order to keep this method simple, pad characters may be appended onto the 
+end of the original message when it is encoded.&nbsp; This is done to cause the 
+number of bits in the encoded message to be a multiple of eight, thus causing 
+the length of the encoded message to be an integral number of bytes.&nbsp; 
+Additional code would be required to avoid this at this point.&nbsp; However, it 
+is easy to eliminate the extraneous characters during decoding if the length of 
+the original message is known.</p>
+<p>The code in Listing 7 saves the incoming parameters in a pair of local 
+variables.</p>
+<p><font color="#FF0000"><b>Display original message as bits</b></font></p>
+<p><a name="Listing_8">Listing 8</a> shows the first of several opportunities 
+throughout this program to remove comment indicators and cause information of 
+interest be <span lang="en-us"></span>displayed.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>/*
+    System.out.println("\nRaw Data as Bits");
+    displayRawDataAsBits();
+*/<br><br><b><font face="Courier New,Courier">Listing 8</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>By removing the comment indicators to enable the two statements shown in 
+Listing 8, you can display the original message as a stream of bits.&nbsp; This 
+can be visually compared with a similar display for the encoded message later to 
+illustrate the amount of compression provided by the encoding process.</p>
+<p><font color="#FF0000"><b>Display the message as a stream of bits</b></font></p>
+<p>The bottom portion of <a name="Figure_2">Figure 2</a> shows the result of enabling these two 
+statements and running the program using the test message shown at the top of 
+Figure 2.&nbsp; <i>(This test message is much shorter 
+than the test message from <a href="#Figure_1">Figure 1</a>.)</i></p>
+<table border="1" cols="1" width="482" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre>Raw Data
+Now is the time for all good men to come to the
+aid of their country.
+
+Number raw data bits: 552
+
+Raw Data as Bits
+
+010011100110111101110111001000000110100101110011
+001000000111010001101000011001010010000001110100
+011010010110110101100101001000000110011001101111
+011100100010000001100001011011000110110000100000
+011001110110111101101111011001000010000001101101
+011001010110111000100000011101000110111100100000
+011000110110111101101101011001010010000001110100
+011011110010000001110100011010000110010100100000
+011000010110100101100100001000000110111101100110
+001000000111010001101000011001010110100101110010
+001000000110001101101111011101010110111001110100
+011100100111100100101110<br></pre>
+      <pre><b>Figure 2</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>The method named displayRawDataAsBits</b></font></p>
+<p>The utility method named <b>displayRawDataAsBits</b>, which is invoked in
+<a href="#Listing_8">Listing 8</a>, is relatively straightforward and shouldn't 
+require an explanation.&nbsp; You can view the method in its entirety in 
+<a href="#Listing_45">Listing 45</a>.</p>
+<p><font color="#FF0000"><b>Create a frequency chart</b></font></p>
+<p><a name="Listing_9">Listing 9</a> invokes the method named <b>
+<a name="createFreqData">createFreqData</a></b> to create a frequency chart that 
+identifies each of the individual characters in the original message and the 
+number of times <i>(frequency)</i> that each character appears in the message.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    createFreqData();
+    //For illustration purposes only, enable the following
+    // statement to display the contents of the frequency
+    // chart created above.
+/*
+    displayFreqData();
+*/<br><br><b><font face="Courier New,Courier">Listing 9</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Listing 9 also optionally invokes the method named <b>displayFreqData</b> to 
+display the results.</p>
+<p><font color="#FF0000"><b>The createFreqData method</b></font></p>
+<p>Listing 10 shows the <b>createFreqData</b> in its entirety.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  void createFreqData(){
+    for(int cnt = 0;cnt &lt; rawData.length();cnt++){
+      char key = rawData.charAt(cnt);
+      if(frequencyData.containsKey(key)){
+        int value = frequencyData.get(key);
+        value += 1;
+        frequencyData.put(key,value);
+      }else{
+        frequencyData.put(key,1);
+      }//end else
+    }//end for loop
+  }//end createFreqData<br><br><b><font face="Courier New,Courier">Listing 10</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The <b>createFreqData</b> method creates the frequency chart described
+<a href="#createFreqData">above</a>.&nbsp; The results are stored in a <b>
+Hashtable</b> with the characters being the <i>keys</i> and the usage frequency 
+values of each character being the corresponding <b>Hashtable</b> <i>values</i> 
+for those <i>key</i>.</p>
+<p>The code in Listing 10 is relatively straightforward and shouldn't require a 
+detailed explanation.</p>
+<p><font color="#FF0000"><b>The displayFreqData method</b></font></p>
+<p>The method named <b>displayFreqData</b> that is called in
+<a href="#Listing_9">Listing 9</a> can be viewed in its entirety in 
+<a href="#Listing_45">Listing 45</a>.&nbsp; It is too simple to require an 
+explanation.</p>
+<p><font color="#FF0000"><b>The frequency data</b></font></p>
+<p>The bottom portion of <a name="Figure_3">Figure 3</a> shows the frequency data for each of the 
+characters contained in the test message shown at the top of Figure 3.</p>
+
+
+
+
+
+
+<p>
+
+<p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre>Raw Data
+Now is the time for all good men to come to the
+aid of their country.
+
+Number raw data bits: 552
+
+Frequency Data
+. 1
+  15
+N 1
+y 1
+w 1
+u 1
+t 7
+s 1
+r 3
+o 9
+n 2
+m 3
+l 2
+i 4
+h 3
+g 1
+f 2
+e 6
+d 2
+c 2
+a 2<br></pre>
+      <pre><b>Figure 3</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>And the results are...</b></font></p>
+<p>As you can see, for this message, the space character occurred most 
+frequently for a total of 15 occurrences.&nbsp; The character 'o' occurred next 
+most frequently with nine occurrences followed by the 't' with seven 
+occurrences.&nbsp; The period character and the characters 'N', 'y', 'w', 'u', 
+'s', and 'q' tied for last place with only one occurrence each.</p>
+<p><font color="#FF0000"><b>Three special classes</b></font></p>
+
+<p>At this point, I need to explain the following three special classes in order 
+for everything that follows to make sense:</p>
+<ul>
+	<li>HuffTree</li>
+	<li>HuffLeaf</li>
+	<li>HuffNode</li>
+</ul>
+<p><font color="#FF0000"><b>The HuffTree class</b></font></p>
+<p>The <b>HuffTree</b> class is the abstract superclass of the other two classes 
+in the above list.&nbsp; Objects of the <b>HuffNode</b> and <b>HuffLeaf</b> 
+classes are used to construct the <a href="#A_binary_tree">binary tree</a> 
+mentioned earlier.</p>
+<p>The class definition for the <b>HuffTree</b> class begins in Listing 11.&nbsp; 
+Note that this class implements the <b>Comparable</b> interface.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>abstract class <b>HuffTree</b> implements <b>Comparable</b>{
+
+  int frequency;
+  
+  public int getFrequency(){
+    return frequency;
+  }//end getFrequency<br><br><b><font face="Courier New,Courier">Listing 11</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>The Comparable interface</b></font></p>
+<p>In case you are unfamiliar with the use and purposes of the <b>Comparable</b> 
+interface, see <a href="http://www.developer.com/java/article.php/803891">Part 1</a> 
+and <a href="http://www.developer.com/java/article.php/809421">Part2</a> my 
+earlier lesson on that topic.&nbsp; Pay particular attention to the discussion 
+of the requirement for objects that will be stored in a <b>TreeSet</b> object to 
+implement the interface and to define the <b>compareTo</b> method.</p>
+<p><font color="#FF0000"><b>The frequency property</b></font></p>
+<p>Listing 11 declares the property variable named <b>frequency</b>.</p>
+<p>Listing 11 also provides the property method named <b>getFrequency</b>, which 
+when called on an object of the class, will return the value of the <b>frequency</b> 
+property.</p>
+<blockquote>
+	<p><i>(In the event that you are unfamiliar with properties in Java, see the 
+	lessons on properties in the <a href="#References">References</a> section.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>The compareTo method</b></font></p>
+<p>The method named <b>compareTo</b> is declared by the <b>Comparable</b> 
+interface and therefore must be defined by the <b>HuffTree</b> class.&nbsp; Here 
+is some of what Sun has to say about the method:</p>
+<blockquote>
+	<p><i>&quot;Compares this object with the specified object for order. Returns a 
+	negative integer, zero, or a positive integer as this object is less than, 
+	equal to, or greater than the specified object.&quot;</i></p>
+</blockquote>
+<p>Listing 12 shows the definition of the <b>compareTo</b> method in the <b>
+HuffTree</b> class.&nbsp; Along with the property named <b>frequency</b>, the <b>
+compareTo</b> 
+method is inherited by both <b>HuffNode</b> and <b>HuffLeaf</b>.&nbsp; 
+<a name="Listing_12">Listing 
+12</a> also signals the end of the <b>HuffTree</b> class definition.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  public int <b>compareTo</b>(Object obj){
+    HuffTree theTree = (HuffTree)obj;
+    if (frequency == theTree.frequency){
+      //The objects are in a tie based on the frequency
+      // value.  Return a tiebreaker value based on the
+      // relative hashCode values of the two objects.
+      return (hashCode() - theTree.hashCode());
+    }else{
+      //Return negative or positive as this frequency is
+      // less than or greater than the frequency value of
+      // the object referred to by the parameter.
+      return frequency - theTree.frequency;
+    }//end else
+  }//end compareTo
+
+}//end HuffTree class<br><br><b><font face="Courier New,Courier">Listing 12</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Purpose and description of the compareTo method</b></font></p>
+<p>The purpose of the <b>compareTo</b> method in this program is to make it 
+possible for a collection object of the <b>TreeSet</b> class to compare two 
+objects of the <b>HuffTree</b> class <i>(<b>HuffNode</b> or <b>HuffLeaf</b> 
+objects)</i> to determine which is greater when sorting the objects into 
+ascending order.</p>
+<p>The<b> compareTo </b>method compares the object on which it is invoked to 
+another object whose reference is received as an incoming parameter.&nbsp; The 
+method guarantees that sorting processes that depend on this method, such as <b>
+TreeSet</b> objects, will sort the objects into a definitive order.</p>
+<p>If the <b>frequency</b> property values of the two objects are different, the 
+sort is based on the <b>frequency</b> values.</p>
+<p>If the <b>frequency</b> values of the two objects are equal, the objects are 
+sorted based on their relative <b>hashCode</b> values.&nbsp; Thus, if the same 
+two objects with the same <b>frequency</b> value are compared two or more times 
+during the execution of the program, those two objects will always be sorted 
+into the same order.&nbsp; There is no chance of an ambiguous tie as to which 
+object should be first except for the case where an object is compared to itself 
+using two references to the same object.</p>
+<p><font color="#FF0000"><b><a name="The_HuffNode_class">The HuffNode class</a></b></font></p>
+<p>The inner class named <b>HuffNode</b> is used to construct a node object in 
+the Huffman tree.&nbsp; The class definition is shown in its entirety in Listing 
+13.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  class <b>HuffNode extends HuffTree</b>{
+  
+    private HuffTree left;
+    private HuffTree right;
+  
+    //HuffNode constructor
+    public HuffNode(
+               int frequency,HuffTree left,HuffTree right){
+      this.frequency = frequency;
+      this.left = left;
+      this.right = right;
+    }//end HuffNode constructor
+  
+    public HuffTree getLeft(){
+      return left;
+    }//end getLeft
+  
+    public HuffTree getRight(){
+      return right;
+    }//end getRight
+  
+  }//end HuffNode class<br><br><b><font face="Courier New,Courier">Listing 13</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>HuffNode extends HuffTree</b></font></p>
+<p>As you should expect from the previous discussion, the <b>HuffNode</b> class 
+extends the <b>HuffTree</b> class.&nbsp; The class declares two instance 
+variables named <b>left</b> and <b>right</b>.&nbsp; The purpose of these 
+instance variables can best be explained by referring to the picture of the 
+Huffman binary tree on the
+<a href="http://www.binaryessence.com/dct/en000080.htm">Binary Essence</a> web 
+site.</p>
+<p>The <b>HuffNode</b> class is used to create internal node objects in the 
+Huffman tree. <i>(See the node labeled 38 on the
+<a href="http://www.binaryessence.com/dct/en000080.htm">Binary Essence</a> web 
+site for example.)</i>&nbsp; Except for the root node, each such internal node is either a <i>left</i> or
+<i>right</i> child of a parent node.&nbsp; Also, each such node holds references 
+to two child objects, which may be either <b>HuffNode</b> objects or <b>HuffLeaf</b> 
+objects.&nbsp; The references to those two child objects are stored in the 
+instance variables named <b>left</b> and <b>right</b> in Listing 13.</p>
+<blockquote>
+	<p><i>(The two instance variables named <b>left</b> and <b>right</b> can 
+	hold references to <b>HuffNode</b> objects or <b>HuffLeaf</b> objects 
+	because they are declared as type <b>HuffTree</b>.&nbsp;&nbsp; <b>HuffTree</b> 
+	is the abstract superclass of both <b>HuffNode</b> and <b>HuffLeaf</b>.)</i></p>
+</blockquote>
+<p>Beyond the explanation given above, the <b>HuffNode</b> code shown in Listing 
+13 is pretty straightforward and shouldn't require further explanation.</p>
+<p><font color="#FF0000"><b>The HuffLeaf class</b></font></p>
+<p>The inner class named <b>HuffLeaf</b> is used to construct a leaf object in the Huffman tree.&nbsp; 
+The class definition for the <b>HuffLeaf</b> class is shown in its entirety in 
+Listing 14.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  class HuffLeaf extends HuffTree{
+    
+    private int value;
+    
+    //HuffLeaf constructor
+    public HuffLeaf(int value, int frequency){
+      this.value = value;
+      //Note that frequency is inherited from HuffTree
+      this.frequency = frequency;
+    }//end HuffLeaf constructor
+    
+    public int getValue(){
+      return value;
+    }//end getValue
+  
+  }//End HuffLeaf class<br><br><b><font face="Courier New,Courier">Listing 14</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Once again, as you should expect from the previous discussion, the <b>
+HuffLeaf</b> class extends the <b>HuffTree</b> class.</p>
+<p><font color="#FF0000"><b>Two instance variables</b></font></p>
+<p>The class declares a single instance variable named <b>value</b> and inherits 
+another instance variable named <b>frequency</b> from the <b>HuffTree</b> class.&nbsp; 
+The purpose of these instance variables can once again be explained by 
+referring to the picture of the Huffman binary tree on the
+<a href="http://www.binaryessence.com/dct/en000080.htm">Binary Essence</a> web 
+site.</p>
+<p>The <b>HuffLeaf</b> class is used to create leaf objects in the Huffman tree.
+<i>(See the leaf nodes labeled A, B, C, D, and E on the
+<a href="http://www.binaryessence.com/dct/en000080.htm">Binary Essence</a> web 
+site for example.)</i>&nbsp; Each such leaf node is either a <i>left</i> or <i>
+right</i> child of a parent node of type <b>HuffNode</b>.</p>
+<blockquote>
+	<p><i>(Leaf node B is the left child of the parent node labeled 22 and leaf 
+	node C is the right child of the parent node labeled 22.)</i>&nbsp; </p>
+</blockquote>
+<p>Leaf nodes do not hold references to child objects.&nbsp; Rather, they hold 
+two values.&nbsp; One value is the representation of a character or symbol that 
+appears in the message being compressed.&nbsp; The other value is the frequency, 
+or the number of times that the character appears in the message being 
+compressed.&nbsp; These two values are stored in the instance variables named <b>
+frequency</b> and <b>value</b> belonging to an object of the <b>HuffLeaf</b> 
+class.</p>
+<p><font color="#FF0000"><b>HuffNode objects also contain a value</b></font></p>
+<p>I didn't mention it in the <a href="#The_HuffNode_class">earlier discussion</a> 
+of the <b>HuffNode</b> objects because it didn't seem to be germane at that 
+point.&nbsp; However, in addition to the two references to child objects that 
+are held by <b>HuffNode</b> objects, <b>HuffNode</b> objects also hold a 
+frequency value.&nbsp; In the case of a <b>HuffNode</b> object, the frequency 
+value is the sum of the frequency values of its two child objects.</p>
+<p>For example, in the picture of the Huffman binary tree on the
+<a href="http://www.binaryessence.com/dct/en000080.htm">Binary Essence</a> web 
+site, the internal node labeled 22 holds a frequency value of 22, which is the 
+sum of the frequency values of the child nodes labeled B and C.&nbsp; The 
+frequency value held by child node B is 12, and the frequency value held by 
+child node C is 10.&nbsp; The sum of these two frequency values is 22, the value 
+held by their parent node.</p>
+<p>The character values held by those two child nodes are respectively B and C.</p>
+<p>Now that we understand the <b>HuffTree</b>, <b>HuffNode</b>, and <b>HuffLeaf</b> 
+classes, I can resume the discussion of the <b>encode</b> method of the <b>
+HuffmanEncoder</b> class.</p>
+<p><font color="#FF0000"><b>Create a set of HuffLeaf objects</b></font></p>
+<p>Returning now to the discussion of the <b>encode</b> method, Listing 15 
+invokes the <b>createLeaves</b> method to create a <b>HuffLeaf</b> object for 
+every character identified in the frequency chart that was created in
+<a href="#Listing_9">Listing 9</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    createLeaves();<br><br><b><font face="Courier New,Courier">Listing 15</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>The createLeaves method</b></font></p>
+<p>The <b>createLeaves</b> method is shown in its entirety in Listing 16.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  void createLeaves(){
+    Enumeration &lt;Character&gt;enumerator = 
+                                      frequencyData.keys();
+    while(enumerator.hasMoreElements()){
+      Character nextKey = enumerator.nextElement();
+      theTree.add(new HuffLeaf(
+                      nextKey,frequencyData.get(nextKey)));
+    }//end while
+  }//end createLeaves<br><br><b><font face="Courier New,Courier">Listing 16</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>As mentioned above, the <b>createLeaves</b> method creates a <b>HuffLeaf</b> 
+object for every character identified in the frequency chart.&nbsp; The <b>
+HuffLeaf</b> objects are stored in a <b>TreeSet</b> object.&nbsp; Each <b>
+HuffLeaf</b> object encapsulates the character as well as the number of times 
+that the character appears in the original message that is being compressed.</p>
+<blockquote>
+	<p><i>(In case you are unfamiliar with the Enumeration interface, see my 
+	earlier lesson entitled
+	<a href="http://www.dickbaldwin.com/java/Java076.htm">Vectors, Hashtables, 
+	and Enumerations</a>.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Create the Huffman tree</b></font></p>
+<p>Listing 17 invokes the <b>createHuffTree</b> method to assemble the 
+collection of <b>HuffLeaf</b> objects stored in the <b>TreeSet</b> object into a 
+Huffman tree <i>(a <b>HuffTree</b> object)</i>, also stored in the same <b>
+TreeSet</b> object.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    createHuffTree();<br><br><b><font face="Courier New,Courier">Listing 17</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>A Huffman tree is a special form of a binary tree consisting of properly 
+linked <b>HuffNode</b> objects and <b>HuffLeaf</b> objects.</p>
+<p>When the <b>createHuffTree</b> method in Listing 17 returns, the <b>HuffTree</b> 
+object remains as the only object stored in the <b>TreeSet</b> object that 
+previously contained all of the <b>HuffLeaf</b> objects.&nbsp; This is because 
+all of the <b>HuffLeaf</b> objects have been combined with <b>HuffNode</b> 
+objects to form the single <b>HuffTree</b> object.</p>
+<p><font color="#FF0000"><b>The createHuffTree method</b></font></p>
+<p>The <b>createHuffTree</b> method begins in <a name="Listing_18">Listing 18</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  void createHuffTree(){
+    
+    //Enable the following statements to see the original
+    // contents of the TreeSet object. Do this only for
+    // small trees because it generates lots of output.
+/*     
+    System.out.println("\n\nDisplay Original TreeSet");
+    Iterator &lt;HuffTree&gt; originalIter = theTree.iterator();
+    while(originalIter.hasNext()){
+      System.out.println(
+                      "\nHuffNode, HuffLeaf, or HuffTree");
+      displayHuffTree(originalIter.next(),0);
+    }//end while loop
+    //End code to display the TreeSet
+*/
+<br><b><font face="Courier New,Courier">Listing 18</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>When enabled, the code in Listing 18 displays the contents of the <b>TreeSet</b> 
+object before the effort is begun to combine the <b>HuffLeaf</b> objects with <b>
+HuffNode</b> objects to create the <b>HuffTree</b> object.</p>
+<blockquote>
+	<p><i>(Note the caution in Listing 18 against enabling this display code for 
+	large trees, meaning messages that contain lots of different characters.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>A short example</b></font></p>
+<p><a name="Figure_4">Figure 4</a> shows the output produced by the code in 
+Listing 18 <i>(and the code from some earlier listings)</i> for the short message shown at the 
+top of Figure 4.</p>
+<table border="1" cols="1" width="482" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre>Raw Data
+AAAAABBBBCCCDDE
+
+Number raw data bits: 120
+
+Frequency Data
+A 5
+E 1
+D 2
+C 3
+B 4
+
+
+Display Original TreeSet
+
+<b><font color="#0000FF">HuffNode, HuffLeaf, or HuffTree
+Leaf:E
+Back</font>
+<font color="#FF0000">HuffNode, HuffLeaf, or HuffTree
+Leaf:D
+Back</font>
+<font color="#0000FF">HuffNode, HuffLeaf, or HuffTree
+Leaf:C
+Back</font>
+<font color="#FF0000">HuffNode, HuffLeaf, or HuffTree
+Leaf:B
+Back</font>
+<font color="#0000FF">HuffNode, HuffLeaf, or HuffTree
+Leaf:A
+Back</font></b><br></pre>
+      <pre><b>Figure 4</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Five HuffLeaf objects</b></font></p>
+<p>The frequency chart for this message appears near the top of Figure 4.&nbsp; 
+From this frequency chart <i>(and also from the text of the test message at the 
+top)</i>, we can see that the <b>TreeSet</b> object should contain five <b>
+HuffLeaf</b> objects encapsulating the character values A, B, C, D, and E.</p>
+<p>The bottom portion of Figure 4 shows the five <b>HuffLeaf</b> objects.</p>
+<blockquote>
+	<p><i>(I manually colored the individual elements with alternating colors of 
+	blue and red to make them visually distinguishable.&nbsp; I will have more 
+	to say about the display format later.)</i></p>
+</blockquote>
+<p>At this point, it important to note that the five <b>HuffLeaf</b> objects 
+have been <a name="sorted_into_ascending_order">sorted into ascending order</a> 
+based on their frequency values as shown in the frequency chart near the top of 
+Figure 4.&nbsp; I will be referring back to that fact later.</p>
+<p><font color="#FF0000"><b>The displayHuffTree method</b></font></p>
+<p><a href="#Listing_18">Listing 18</a> invokes the <b>displayHuffTree</b> 
+method to produce the output shown in the bottom portion of Figure 4.&nbsp; I 
+will be calling that method again later in a more significant way <i>(insofar as 
+the output format is concerned)</i> so I will defer any further discussion until then.</p>
+<p><font color="#FF0000"><b>Create the Huffman tree</b></font></p>
+<p>The code that creates the Huffman tree begins in <a href="#Listing_19">Listing 19</a>.&nbsp; Before 
+getting into the details of the code, here is a general description of the 
+behavior of the code that creates the Huffman tree </p>
+<p>Overall, the code assembles the collection of <b>HuffLeaf</b> objects into a
+<b>HuffTree</b> object.&nbsp; A <b>HuffTree</b> object is a special form of a 
+binary tree consisting of properly linked <b>HuffNode</b> objects and <b>
+HuffLeaf</b> objects.</p>
+<p>When the operation has been completed, the <b>HuffTree</b> object remains as 
+the only object stored in the <b>TreeSet</b> object that previously contained 
+all of the <b>HuffLeaf</b> objects.&nbsp; This is because, at that point in the 
+execution of the code, all of the <b>HuffLeaf</b> objects have been removed from 
+the <b>TreeSet</b> object and combined with <b>HuffNode</b> objects to form the 
+Huffman tree <i>(as represented by the single <b>HuffTree</b> object)</i>.</p>
+<p><font color="#FF0000"><b>Displays at runtime</b></font></p>
+<p>The <b>createHuffTree</b> method contains two sections of code that can be 
+enabled to display: </p>
+<ol>
+	<li>The contents of the original TreeSet object.</li>
+	<li>The contents of the TreeSet object for each iteration during which <b>
+	HuffLeaf</b> objects are being combined with <b>HuffNode</b> objects to form 
+	the final <b>HuffTree</b> object.</li>
+</ol>
+<p>You have already seen an example of the first display in <a href="#Figure_4">
+Figure 4</a>.&nbsp; You will see an example of the second display later in 
+<a href="#Figure_5">Figure 5</a>.</p>
+<p>These displays are very useful for understanding how the Huffman tree is 
+actually constructed.</p>
+<p><font color="#FF0000"><b>Steps in constructing the HuffTree object</b></font></p>
+<p>The <b>HuffTree</b> object is constructed by performing the following 
+operations:</p>
+<ol>
+	<li>Extracting pairs of <b>HuffLeaf</b> and/or <b>HuffNode</b> objects from 
+	the <b>TreeSet</b> object in ascending order based on their frequency 
+	values.</li>
+	<li>Using the pair of extracted objects to construct a new <b>HuffNode</b> 
+	object where the two extracted objects become children of the new <b>
+	HuffNode</b> object, and where the frequency value stored in the new <b>
+	HuffNode</b> object is the sum of the frequency values in the two child 
+	objects.</li>
+	<li>Removing the two original <b>HuffLeaf</b> and/or <b>HuffNode</b> objects 
+	from the <b>TreeSet</b> object and adding the new <b>HuffNode</b> object to 
+	the <b>TreeSet</b> object.&nbsp; The position of the new <b>HuffNode</b> 
+	object in the sorted <b>TreeSet</b> object is determined by its frequency 
+	value relative to the other <b>HuffNode</b> and/or <b>HuffLeaf</b> objects 
+	in the collection.&nbsp; The new <b>HuffNode</b> object will eventually 
+	become a child of another new <b>HuffNode</b> object unless it ends up as 
+	the root of the <b>HuffTree</b> object.</li>
+	<li>Continuing this process until the <b>TreeSet</b> object contains a 
+	single object of type <b>HuffTree</b>.</li>
+</ol>
+<p><font color="#FF0000"><b>Iterate on the TreeSet object</b></font></p>
+<p><a name="Listing_19">Listing 19</a> shows the beginning of a <b>while</b> loop that iterates on the <b>
+TreeSet</b> object until the number of elements contained in the object is equal 
+to 1.&nbsp; When the number of elements in the<b> TreeSet</b> object has been 
+reduced to 1, all of the <b>HuffNode</b> and <b>HuffLeaf</b> elements in the 
+collection will have been combined into a single element of type <b>HuffTree</b>. </p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    while(theTree.size() &gt; 1){
+      //Get, save, and remove the first two elements.
+      HuffTree left = theTree.first();
+      theTree.remove(left);
+      HuffTree right = theTree.first();
+      theTree.remove(right);
+<br><b><font face="Courier New,Courier">Listing 19</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>As we saw in <a href="#Figure_4">Figure 4</a>, the collection of <b>HuffLeaf</b> 
+objects in the <b>TreeSet</b> object is initially sorted into
+<a href="#sorted_into_ascending_order">ascending order</a> based on the 
+frequency values encapsulated in the objects.</p>
+<p>The code in Listing 19 removes and saves the first two objects in the 
+collection, which are the objects containing the lowest frequency values.</p>
+<blockquote>
+	<p><i>(Initially, these two objects are both <b>HuffLeaf</b> objects, but 
+	later they may be either <b>HuffLeaf</b> objects or <b>HuffNode</b> objects 
+	or both.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Create and save a HuffNode object</b></font></p>
+<p><a name="Listing_20">Listing 20</a> combines the two saved objects into a new <b>HuffNode</b> 
+object
+<i>(forming a three-object sub tree)</i> and adds the sub tree to the <b>
+TreeSet</b> object.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>      HuffNode tempNode = new HuffNode(left.getFrequency() 
+                        + right.getFrequency(),left,right);
+      theTree.add(tempNode);
+<br><b><font face="Courier New,Courier">Listing 20</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Thus, each pass through the while loop removes the first two elements from the
+<b>TreeSet</b> collection, uses those two elements to create a sub tree, and adds the sub tree 
+back to the collection.&nbsp; This process continues until the sub tree is 
+the final tree, at which point the number of elements in the collection 
+has been reduced to one and the <b>while</b> loop terminates.</p>
+<p><font color="#FF0000"><b>Display the contents of the TreeSet object</b></font></p>
+<p>Still in the <b>while</b> loop, L<a name="isting_21">isting 21</a> contains 
+code that can be enabled to display the contents of the <b>TreeSet</b> object at 
+the end of each iteration.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>      //Enable the following statements to see the HuffTree
+      // being created from HuffNode and HuffLeaf objects.
+      // Do this only for small trees because it will
+      // generate a lot of output.
+/*      
+      System.out.println("\n\nDisplay Working TreeSet");
+      Iterator &lt;HuffTree&gt; workingIter = theTree.iterator();
+      while(workingIter.hasNext()){
+        System.out.println(
+                      "\nHuffNode, HuffLeaf, or HuffTree");
+        displayHuffTree(workingIter.next(),0);
+      }//end while loop
+      //End code to display the TreeSet
+*/    
+    }//end while
+  }//end createHuffTree<br><br><b><font face="Courier New,Courier">Listing 21</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Listing 21 also signals the end of the <b>while</b> loop and the end of the
+<b>createHuffTree</b> method.</p>
+<p><font color="#FF0000"><b>The program output</b></font></p>
+<p>The bottom portion of <a name="Figure_5">Figure 5</a> shows the output 
+produced during the first iteration of the <b>while</b> loop by enabling the 
+display code in Listing 21.</p>
+<table border="1" cols="1" width="482" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre>Raw Data
+AAAAABBBBCCCDDE
+
+Number raw data bits: 120
+
+
+Display Working TreeSet
+
+<font color="#0000FF"><b>HuffNode, HuffLeaf, or HuffTree
+Leaf:C
+Back</b></font>
+<font color="#FF0000"><b>HuffNode, HuffLeaf, or HuffTree
+Left to 1 Leaf:E
+Back Right to 1 Leaf:D
+Back Back</b></font>
+<font color="#0000FF"><b>HuffNode, HuffLeaf, or HuffTree
+Leaf:B
+Back</b></font>
+<b><font color="#FF0000">HuffNode, HuffLeaf, or HuffTree
+Leaf:A
+Back</font></b><br></pre>
+      <pre><b>Figure 5</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>At the end of the first iteration...</b></font></p>
+<p>At the end of the first iteration of the <b>while</b> loop, the collection 
+contains four different elements.&nbsp; <i>(Recall from Figure 4 that the 
+collection originally contained five elements.)</i></p>
+<p>I colored the four elements in Figure 5 with alternating colors of blue 
+and red to make them visually distinguishable.</p>
+<p>In <a href="#Figure_4">Figure 4</a>, the first two elements in the collection 
+were the <b>HuffLeaf</b> objects encapsulating the characters E and D.&nbsp; In 
+Figure 5, those two elements have been removed and combined with a <b>HuffNode</b> 
+object to form a sub tree, which is shown as the first red element in 
+<a href="#Figure_5">Figure 5</a>.</p>
+<p><font color="#FF0000"><b>The sub tree</b></font></p>
+<p><a name="Figure_6">Figure 6</a> is an attempt to show a picture of the sub tree, which is the second
+<i>(red)</i> element in the collection shown in <a href="#Figure_5">Figure 5</a>.&nbsp;
+<i>(Hopefully this picture will survive the various publishing programs to which 
+this lesson will be subjected)</i></p><p>
+<table border="1" cols="1" width="482" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><b>
+           Root  
+Level 0     O  
+           / \  
+Level 1   E   D  
+      </b><br></pre>
+      <pre><b>Figure 6</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The sub tree consists of three parts.&nbsp; The root of the sub tree is a <b>
+HuffNode</b> object <i>(shown by the O in Figure 6)</i>.&nbsp; The left child of 
+the node is a <b>HuffLeaf</b> object <i>(shown by the E in Figure 6)</i>.&nbsp; 
+The right child of the node is also a <b>HuffLeaf</b> object <i>(shown by the D 
+in Figure 6)</i>.</p>
+<p><font color="#FF0000"><b>The format of the printed description</b></font></p>
+<p>Conceptually, we can think of the root node as existing at Level 0 in the 
+tree and the two child nodes existing at Level 1 in the tree.&nbsp; That brings 
+us to the format used to describe the elements in <a href="#Figure_5">Figure 5</a>.</p>
+<p>Consider the first line in the description of the sub tree in
+<a href="#Figure_5">Figure 5</a>, which reads HuffNode, HuffLeaf, or HuffTree.&nbsp; 
+This line simply serves as a separator between the elements.</p>
+<p>Beginning with the second line in the description of the sub tree, the text 
+is a verbal description of how to start at the root and to <i>traverse</i> the 
+tree.&nbsp; This text describes the sub tree by the traversal path.&nbsp; It 
+says:</p>
+<ul>
+	<li>Starting at the root <i>(Level 0 implied)</i>, go down and to the left 
+	to Level 1.&nbsp; There you will find a Leaf that encapsulates the character 
+	E.</li>
+	<li>Then go back up one level.&nbsp; This will return you to Level 0.&nbsp; 
+	Go down and to the right to Level 1.&nbsp; There you will find a Leaf that 
+	encapsulates the character D.</li>
+	<li>Then go back up two levels, which will pop you out of the top of the 
+	tree.</li>
+</ul>
+<p><font color="#FF0000"><b>Adding the sub tree to the TreeSet collection</b></font></p>
+<p>After the E and D leaves were removed from the collection and combined with a 
+node to form a sub tree, that sub tree was added back to the collection as shown 
+in <a href="#Listing_20">Listing 20</a>.</p>
+<p>The node that forms the root of the sub tree was assigned the frequency value 3, which is 
+the sum of the frequency values for D and E as shown in the frequency chart in
+<a href="#Figure_4">Figure 4</a>.&nbsp; As a 
+result, the frequency value for the root of the sub tree has the same frequency 
+value as the leaf for the character C.</p>
+<p><font color="#FF0000"><b>Tied for position in the collection</b></font></p>
+<p>This causes the new sub tree to be 
+tied for position in the sorted collection with the leaf for the character C.&nbsp; 
+It also causes the frequency value for the sub tree to be less than the 
+frequency value for the B leaf which has a frequency value of 4.</p>
+<p>Given these values, the sub tree could have ended up as either the first or 
+the second element in the collection shown in <a href="#Figure_5">Figure 5</a>, 
+because it tied for the first position with the C leaf.&nbsp; However, it had to 
+be closer to the beginning than the B leaf.&nbsp; As it turns out, the 
+tie-breaker methodology used in the <b>compareTo</b> method in
+<a href="#Listing_12">Listing 12</a> placed it after the C leaf in
+<a href="#Figure_5">Figure 5</a>.&nbsp; </p>
+<p><font color="#FF0000"><b>Output following the second iteration</b></font></p>
+<p><a name="Figure_7">Figure 7</a> shows the state of the <b>TreeSet</b> object following the 
+completion of the second iteration of the <b>while</b> loop that began in
+<a href="#Listing_19">Listing 19</a>.</p>
+
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><b><font color="#0000FF">HuffNode, HuffLeaf, or HuffTree
+Leaf:B
+Back</font>
+<font color="#FF0000">HuffNode, HuffLeaf, or HuffTree
+Leaf:A
+Back</font>
+<font color="#0000FF">HuffNode, HuffLeaf, or HuffTree
+Left to 1 Leaf:C
+Back Right to 1 Left to 2 Leaf:E
+Back Right to 2 Leaf:D
+Back Back Back</font></b><br></pre>
+      <pre><b>Figure 7</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>At this point, the number of elements in the collection has been reduced from 
+the four elements shown in <a href="#Figure_5">Figure 5</a> to the three shown 
+in Figure 7.&nbsp; The reduction was accomplished by removing the C leaf in the 
+first element and the sub tree from the second element in <a href="#Figure_5">
+Figure 5</a> and using them to construct a larger sub tree.&nbsp; That larger 
+sub tree is shown as the last element in Figure 7.</p>
+<blockquote>
+	<p><i>(See if you can create a sketch of the new sub tree on the basis of 
+	the traversal description in Figure 7.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>The new sub tree</b></font></p>
+<p>The pictorial representation of this larger sub tree, shown as the last 
+element in the collection in <a href="#Figure_7">Figure 7</a>, is shown in <a name="Figure_8">Figure 8</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><b>                Root
+Level 0          O
+                / \
+Level 1        C   O
+                  / \
+Level 2          E   D</b><br></pre>
+      <pre><b>Figure 8</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>The Huffman tree</b></font></p>
+<p>Skipping ahead to the last iteration, <a name="Figure_9">Figure 9</a> shows the state of the <b>TreeSet</b> object 
+following the final iteration of the <b>while</b> loop.&nbsp; At this point, the 
+collection contains only one element, and it is the Huffman tree produced by 
+combining all of the leaf elements shown in <a href="#Figure_4">Figure 4</a> 
+with nodes to produce the tree.</p>
+
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre>HuffNode, HuffLeaf, or HuffTree
+Left to 1 Left to 2 Leaf:C
+Back Right to 2 Left to 3 Leaf:E
+Back Right to 3 Leaf:D
+Back Back Back Right to 1 Left to 2 Leaf:B
+Back Right to 2 Leaf:A
+Back Back Back<br></pre>
+      <pre><b>Figure 9</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Pictorial representation of the Huffman tree</b></font></p>
+<p>The pictorial representation of the Huffman tree described in Figure 9 is 
+shown in <a name="Figure_10">Figure 10</a></p>
+
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><b>                     Root
+Level 0               X
+                     / \
+                   0/   \1
+                   /     \
+                  /       \
+Level 1          X         X
+               0/ \1     0/ \1
+Level 2        C   X     B   A
+                 0/ \1
+Level 3          E   D</b><br></pre>
+      <pre><b>Figure 10</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>In Figure 10, I used the character X to indicate an internal node in place of 
+the character O that was used to depict the internal nodes in the earlier 
+pictures of the trees.&nbsp; This is because I wanted to decorate the tree in 
+Figure 10 with 0 and 1 characters and I wanted to avoid confusion between the 
+character for an internal node and the zero character.</p>
+<blockquote>
+	<p><i>(You will see the reason for the decoration of the tree using 0 and 1 
+	characters later.)</i></p>
+</blockquote>
+<p>Hopefully you now understand how the <b>TreeSet</b> object containing a 
+collection of <b>HuffLeaf</b> objects is processed to produce a single <b>
+HuffTree</b> object, which is the required Huffman tree.</p>
+<p><font color="#FF0000"><b>The displayHuffTree method</b></font></p>
+
+<p>The output shown in <a href="#Figure_4">Figure 4</a>, <a href="#Figure_5">Figure 5</a>, 
+<a href="#Figure_7">Figure 7</a>, and <a href="#Figure_9">Figure 9</a>&nbsp; was produced by the invocation of the 
+<b>displayHuffTree</b> method in <a href="#Listing_18">Listing 18</a> and 
+<a href="#isting_21">Listing 21</a>.&nbsp; You can 
+view the <b>displayHuffTree</b> method in its entirety in <a href="#Listing_45">
+Listing 45</a>.&nbsp; This 
+is a recursive method, which is very similar 
+to another recursive method named<b> createBitCodes</b>&nbsp; that I will discuss later, so I 
+will leave it up to you to understand the inner workings of the <b>
+displayHuffTree</b> method on your own at this point.</p>
+<p><font color="#FF0000"><b>Recap</b></font></p>
+<p>At this point, I have developed the frequency information for the characters 
+in the short test message at the top of <a href="#Figure_4">Figure 4</a>.&nbsp; 
+I displayed the frequency information in <a href="#Figure_4">Figure 4</a>.</p>
+<p>I used the frequency information to create a <b>HuffLeaf</b> object for 
+every character in the message where the <b>HuffLeaf</b> object encapsulates the 
+character and the frequency information for that character.&nbsp; I displayed 
+the <b>HuffLeaf</b> objects in <a href="#Figure_4">Figure 4</a> also.</p>
+<p>Then I combined those <b>HuffLeaf</b> objects with <b>HuffNode</b> objects 
+to create a <b>HuffTree</b> object.&nbsp; I displayed intermediate pictorial 
+versions of the <b>HuffTree</b> object in <a href="#Figure_6">Figure 6</a> and 
+<a href="#Figure_8">Figure 8</a>, and displayed 
+the final version in <a href="#Figure_10">Figure 10</a>.&nbsp; 
+<a href="#Figure_10">Figure 10</a> shows the Huffman binary tree 
+for the short test message at the top of <a href="#Figure_4">Figure 4</a>.</p>
+<p>If we compare the Huffman tree in <a href="#Figure_10">Figure 10</a> with the frequency information in
+<a href="#Figure_4">Figure 4</a>, we see that the leaf objects representing the 
+characters with the highest frequency of usage in the message <i>(C, B, and A)</i> occur closest to 
+the root of the tree <i>(Level 2)</i> and those with the lowest frequency of usage
+<i>(E and D)</i> occur further 
+from the root of the tree<i> (Level 3)</i>.</p>
+<p><font color="#FF0000"><b><a name="Traversing_the_Huffman_tree">Traversing the 
+Huffman tree</a></b></font></p>
+<p>The next task is to use the Huffman tree to create a unique binary bit code 
+for every character used in the original test message.</p>
+<blockquote>
+	<p><i>(That is the reason 
+that I decorated the tree in <a href="#Figure_10">Figure 10</a> with 0 and 1 characters.)</i></p>
+</blockquote>
+<p>The way 
+that I will create the binary codes is to traverse the path from the root of the 
+binary tree to each leaf of the tree, keeping track of the decorations that I 
+encounter along the way.&nbsp; Each time I encounter a 0, I will append a 0 to 
+the bit code for that character.&nbsp; Each time I encounter a 1, I will append 
+1 to the bit code for that character.</p>
+<p><font color="#FF0000"><b>Manually generated bit codes</b></font></p>
+<p><a name="Figure_11">Figure 11</a> shows the result of 
+manually performing this operation for each of the leaves in Figure 10 in 
+left-to-right order for the leaves.</p>
+
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><b>C 00
+E 010
+D 011
+B 10
+A 11</b><br></pre>
+      <pre><b>Figure 11</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<p></p>
+<p>Now that you know how the task is accomplished, we will take a look at the 
+code that automates this process.</p>
+<p><font color="#FF0000"><b>Automate the task of creating bit codes</b></font></p>
+
+<p>Back in the <b>encode</b> method, Listing 22 invokes the method named <b>
+createBitCodes</b> to automate the task of traversing the Huffman 
+tree for the purpose of creating a unique bit code for every character described 
+by a leaf of the tree.&nbsp; A reference to the single <b>HuffTree</b> object 
+stored in the <b>TreeSet</b> object is passed to the <b>createBitCodes</b> 
+method.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    createBitCodes(theTree.first());<br><br><b><font face="Courier New,Courier">Listing 22</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>A recursive method</b></font></p>
+<p>The <b>createBitCodes</b> method traverses the Huffman tree in a recursive manner 
+to create a bit code for each character in the message.&nbsp; The bit codes are 
+different lengths with the shorter codes corresponding to the characters with a 
+high frequency value and the longer codes corresponding to the characters with 
+the lower frequency values.</p>
+<p>Note that the method call extracts the reference to the Huffman tree from the
+<b>TreeSet</b> object and passes that reference to the method.&nbsp; This is 
+necessary because the <b>createBitCodes</b> method is recursive and can't conveniently work directly 
+with the <b>TreeSet</b> object.</p>
+<p>The <b>createBitCodes</b> method populates 
+the data structure that is used to encode the message and required later to 
+decode the encoded message.</p>
+<p><font color="#FF0000"><b>Recursion in Java</b></font></p>
+<p>In order to understand the method named <b>createBitCodes</b>, you must 
+understand
+<a href="http://en.wikipedia.org/wiki/Recursion">recursion</a>.&nbsp; Unfortunately, 
+none of the <a href="http://www.dickbaldwin.com/toc.htm">several hundred</a> Java programming 
+tutorials that I have published in recent years, <i>(several of which use recursion)</i>, 
+are dedicated to an understanding of recursion in Java.</p>
+<blockquote>
+	<p><i>(The writing 
+of a tutorial on recursion has been on my list of things to do for several years 
+now.)</i></p>
+</blockquote>
+<p>Fortunately, if you <a href="http://www.google.com">Google</a> the keywords
+<b>Java</b> and <b>recursion</b>, you will find a variety of references, some 
+good, and some not so good.&nbsp; One that seems to be very good can be found 
+on the web site of the
+<a href="http://www.soi.city.ac.uk/~sg331/java/eckel/javanotes3/c11/s1.html">
+City University, London</a>.</p>
+<p><font color="#FF0000"><b>The createBitCodes method</b></font></p>
+<p>The <b>createBitCodes</b> method begins in <a href="#Listing_23">Listing 23</a>.&nbsp; This method 
+traverses 
+the Huffman tree in a recursive manner to create a bit code for each character 
+in the message.&nbsp; The bit codes are different lengths with the shorter bit 
+codes corresponding to the characters with a high usage frequency value and the 
+longer bit codes corresponding to the characters with the lower frequency 
+values.</p>
+<p>This method receives a reference to the Huffman tree that was earlier 
+contained as the only object in the <b>TreeSet</b> object.</p>
+<p><font color="#FF0000"><b>A Huffman encoding table</b></font></p>
+<p>The <b>createBitCodes</b> method creates a Huffman encoding table as a <b>
+Hashtable</b> object that relates the variable-length bit codes to the 
+characters in the original message.&nbsp; The bit codes are constructed as 
+objects of type <b>StringBuffer</b> consisting of sequences of the characters 1 
+and 0 and converted to type <b>String</b> for storage in the <b>Hashtable</b>.</p>
+<p><font color="#FF0000"><b>The traversal path</b></font></p>
+<p>Each bit code describes the traversal path from the root of the Huffman tree 
+to a leaf on that tree.&nbsp; Each time the path turns to the left, a 0 
+character is appended onto the <b>StringBuffer</b> object and becomes a part of 
+the resulting bit code.&nbsp; Each time the path turns to the right, a 1 
+character is appended onto the <b>StringBuffer</b> object.</p>
+<p>When a leaf is reached at the end of the traversal path, the character stored 
+in that leaf is retrieved and put into the <b>Hashtable</b> object as a key.&nbsp; 
+A <b>String</b> representation of the <b>StringBuffer</b> object is used as the 
+value for that key in the <b>Hashtable</b>.</p>
+<p><font color="#FF0000"><b>The final result</b></font></p>
+<p>At completion, the <b>Hashtable</b> object contains a series of keys 
+consisting of the original characters in the message and a series of 
+corresponding values as <b>String</b> objects <i>(consisting only of 1 and 0 
+characters)</i> representing the bit codes that will eventually be used to 
+encode the original message.</p>
+<p>The Hashtable object that is populated by this method is the data structure 
+that is used to encode the message and is required later to decode the encoded 
+message.</p>
+<p><font color="#FF0000"><b>Test for the type of node</b></font></p>
+<p>If you understand recursion in Java, you should find the <b>createBitCodes</b> 
+method to be straightforward.&nbsp; If not, you will probably find it to be very 
+difficult to understand.</p>
+<p><a name="Listing_23">Listing 23</a> begins by testing the node to determine 
+if it is an internal node or a leaf node.</p><p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  void createBitCodes(HuffTree tree){
+    if(tree instanceof HuffNode){
+      // This is a node, not a leaf.  Process it as a node.
+
+      //Cast to type HuffNode.
+      HuffNode node = (HuffNode)tree;
+      // Get and save the left and right branches
+      HuffTree left = node.getLeft();
+      HuffTree right = node.getRight();
+      
+      //Append a 0 onto the StringBuffer object.  Then make
+      // a recursive call to this method passing a
+      // reference to the left child as a parameter.  This
+      // recursive call will work its way all the way down
+      // to a leaf before returning.  Then it will be time
+      // to process the right path.
+      code.append("0");
+      createBitCodes(left);
+<br><b><font face="Courier New,Courier">Listing 23</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>If you understand recursion, the comments in Listing 23 should cause the code 
+in Listing 23 to be self explanatory.</p>
+<p><font color="#FF0000"><b>Process the right leg</b></font></p>
+<p>Listing 24 picks up at the point where the recursive process has finally 
+returned from its traversal down the left leg of the binary tree.&nbsp; The code 
+in Listing 24 processes the right leg of the binary tree.</p><p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>      
+      //Return to here from recursive call on left child.
+
+      //Delete the 0 from the end of the StringBuffer
+      // object to restore the contents of that object to
+      // the same state that it had before appending the 0
+      // and making the recursive call on the left branch.
+      //Now we will make a right turn.  Append a 1 to the
+      // StringBuffer object and make a recursive call to
+      // this method passing a reference to the right child
+      // as a parameter.  Once again, this recursive call
+      // will work its way all the  way down to a leaf
+      // before returning.
+      code.deleteCharAt(code.length() - 1);//Delete the 0.
+      code.append("1");
+      createBitCodes(right);
+      
+      //Return to here from recursive call on right child.
+
+      //Delete the character most recently appended to the
+      // StringBuffer object and return from this recursive
+      // call to the method.  The character is deleted
+      // because control is being transferred back one
+      // level in the recursive process and the
+      // StringBuffer object must be restored to the same
+      // state that it had when this recursive call was
+      // made.
+      code.deleteCharAt(code.length() - 1);<br><br><b><font face="Courier New,Courier">Listing 24</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Process a leaf node</b></font></p>
+<p><a href="#Listing_23">Listing 23</a> and Listing 24 were both concerned with the processing of internal 
+nodes in the binary tree.&nbsp; Listing 25 picks up at the point where it has 
+been determined that the node is a leaf node instead of an internal node.&nbsp; 
+Listing 25 processes the leaf node.</p><p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    }else{
+      //This is a leaf.  Process it as such.
+      //Cast the object to type HuffLeaf.
+      HuffLeaf leaf = (HuffLeaf)tree;
+      
+      //Put an entry into the Hashtable.  The Hashtable
+      // key consists of the character value stored in the
+      // leaf. The value in the Hashtable consists of the
+      // contents of the StringBuffer object representing
+      // the path from the root of the tree to the leaf.
+      // This is the bitcode and is stored in the Hashtable
+      // as a String consisting of only 1 and 0 characters.
+      huffEncodeTable.put((char)(
+                         leaf.getValue()),code.toString());
+    }//end else
+
+  }//end createBitCodes<br><br><b><font face="Courier New,Courier">Listing 25</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Understanding the inner workings</b></font></p>
+<p>Hopefully, you have been able to understand the inner workings of the method 
+named <b>createBitCodes</b>.&nbsp; If not, just take my word for it that the 
+behavior of the method is to automate the process that I described earlier in 
+the section entitled <a href="#Traversing_the_Huffman_tree">Traversing the 
+Huffman tree</a>.&nbsp; Even if you don't understand exactly how the method 
+named <b>createBitCodes</b> does its job, you should understand the outcome of 
+invoking that method.</p>
+<p><font color="#FF0000"><b>Display the bit codes</b></font></p>
+<p>The code in Listing 26 can be enabled to display the bit codes that were 
+created above and which are used to populate the Huffman encoding table.</p><p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    //For purposes of illustration only, enable the 
+    // following two statements to display a table showing
+    // the relationship between the characters in the
+    // original message and the bitcodes that will replace
+    // those characters to produce the Huffman-encoded
+    // message.
+/*
+    System.out.println();
+    displayBitCodes();
+*/<br><br><b><font face="Courier New,Courier">Listing 26</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>The displayBitCodes method</b></font></p>
+<p>You can view the displayBitCodes method in its entirety in
+<a href="#Listing_45">Listing 45</a>.&nbsp; 
+This method is very straightforward and should not require further explanation.</p>
+<p><font color="#FF0000"><b>Sample bit code display</b></font></p>
+<p>The bottom portion of <a name="Figure_12">Figure 12</a> shows the bit codes for the characters in the short message at the 
+top of Figure 12.&nbsp; Compare these bit codes with the bit codes that I 
+produced manually in <a href="#Figure_11">Figure 11</a>.&nbsp; Except for the display order, you should 
+find that they match exactly.</p>
+
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre>Raw Data
+AAAAABBBBCCCDDE
+
+Number raw data bits: 120
+
+
+Message Characters versus Huffman BitCodes
+A 11
+E 010
+D 011
+C 00
+B 10</pre>
+      <pre><b>Figure 12</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<blockquote>
+	<p><i>(If you investigate deeply enough, you will find that the method named
+	<b>createBitCodes</b> develops the bit codes and populates the <b>Hashtable</b> 
+	in the same order as shown in <a href="#Figure_11">Figure 11</a>.&nbsp; However, when an <b>
+	Enumeration</b> object is used to retrieve and display the codes in the <b>
+	displayBitCodes</b> method, the enumerator retrieves them in a different 
+	order.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Bit codes for a longer message</b></font></p>
+<p>The bottom portion of <a name="Figure_13">Figure 13</a> shows the variable-length bit codes for the 
+somewhat longer test message shown at the top of Figure 13.</p>
+
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre>Raw Data
+Now is the time for all good men to come to the
+aid of their country.
+
+Number raw data bits: 552
+
+
+Message Characters versus Huffman BitCodes
+. 100111
+  00
+N 111000
+y 011101
+w 110010
+u 100110
+t 010
+s 011100
+r 11101
+o 101
+n 10000
+m 11110
+l 10001
+i 0110
+h 11111
+g 110011
+f 01111
+e 1101
+d 111001
+c 11000
+a 10010<br></pre>
+      <pre><b>Figure 13</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Whereas the bit codes in <a href="#Figure_12">Figure 12</a> were all either two bits or three bits in 
+length, the bit codes in Figure 13 range from two bits <i>(00)</i> at the 
+shortest to six bits <i>(111000 for example)</i> at the longest.</p>
+<p><font color="#FF0000"><b>Bit codes for a much longer message</b></font></p>
+<p>The bottom portion of <a name="Figure_14">Figure 14</a> shows the bit codes for the characters in the 
+even longer message shown at the top of Figure 14.</p><p>
+<table border="1" cols="1" width="482" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre>Raw Data
+BAGHDAD, Iraq Violence increased across Iraq aft
+er a lull following the Dec. 15 parliamentary el
+ections, with at least two dozen people includin
+g a U.S. soldier killed Monday in shootings and
+bombings mostly targeting the Shiite-dominated s
+ecurity services. The Defense Ministry director
+of operations, Brig. Gen. Abdul Aziz Mohammed-Ja
+ssim, blamed increased violence in the past two
+days on insurgents trying to deepen the politica
+l turmoil following the elections. The violence
+came as three Iraqi opposition groups threatened
+another wave of protests and civil disobedience
+if allegations of fraud are not properly invest
+igated.
+
+Number raw data bits: 5048
+
+Message Characters versus Huffman BitCodes
+V 000100000    U 101110000    T 01010010     S 10001000
+M 10001001     J 000110101    I 10001111     H 000110110
+G 01010011     D 0101000      B 101110001    A 0001001
+5 000100001    1 000110100    . 000111       - 00010001
+, 0001100        110          z 10001110     y 000101
+w 1000110      v 1011101      u 010101       t 1001
+s 0100         r 0000         q 10111001     p 111100
+o 1010         n 0111         m 100001       l 11111
+k 000110111    i 1110         h 111101       g 101111
+f 100000       e 001          d 10110        c 01011
+b 1000101      a 0110</pre>
+      <pre><b>Figure 14</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The bit codes for the message in Figure 14 range from three bits for the 'e' 
+and the space character to nine bits for several characters including 'U', 'V', 
+and 'k'.</p>
+<blockquote>
+	<p><i>(Note that I manually rearranged the bit codes in Figure 14 so that 
+	they 
+	would fit on a single screen for easier viewing.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Encode message into a String of 1 and 0 characters</b></font></p>
+
+<p>
+<p>Back in the <b>encode</b> method, Listing 27 invokes the <b>encodeToString</b> 
+method to encode the message into a <b>String</b> representation of the bits 
+that will make up the final encoded message.</p><p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    encodeToString();<br><br><b><font face="Courier New,Courier">Listing 27</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The <b>encodeToString</b> method also provides the optional capability to 
+display the <b>String</b> showing the bit values that will appear in the final 
+Huffman-encoded message.&nbsp; This can be useful for comparing back against the 
+bits in the original message for purposes of evaluating the amount of 
+compression provided by encoding the message.</p>
+<p><font color="#FF0000"><b>The encodeToString method</b></font></p>
+<p>The <b>encodeToString</b> method is shown in its entirety in Listing 28.</p><p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  void encodeToString(){
+    StringBuffer tempEncoding = new StringBuffer();
+    for(int cnt = 0;cnt &lt; rawData.length();cnt++){
+      //Do a table lookup to get the substring that
+      // represents the bitcode for each message character.
+      // Append those substrings to the string that
+      // represents the Huffman-encoded message.
+      tempEncoding.append(huffEncodeTable.get(
+                                     rawData.charAt(cnt)));
+    }//end for loop
+    
+    //Convert the StringBuffer object to a String object.
+    stringEncodedData = tempEncoding.toString();
+
+    //For illustration purposes, enable the following two
+    // statements to display the String showing the bit
+    // values that will appear in the Huffman-encoded
+    // message.  Display 48 bits to the line except for
+    // the last line, which may be shorter, and which may
+    // not be a multiple of 8 bits.
+/*
+    System.out.println("\nString Encoded Data");
+    display48(stringEncodedData);
+*/
+  }//end encodeToString<br><br><b><font face="Courier New,Courier">Listing 28</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The <b>encodeToString</b> method encodes the message into a <b>String</b> 
+representation of the bits that will make up the final encoded message.&nbsp; 
+The <b>String</b> consists of only 1 and 0 characters where each character 
+represents the state of one of the bits in the Huffman-encoded message.&nbsp; 
+Also for illustration purposes, this method optionally displays the <b>String</b> 
+showing the bit values that will appear in the Huffman-encoded message.</p>
+<p>The <b>encodeToString</b> method is completely straightforward and shouldn't 
+require further explanation.</p>
+<p><font color="#FF0000"><b><a name="Build_an_encoding_bit_map">Build an 
+encoding bit map</a></b></font></p>
+<p>Back in the <b>encode</b> method, Listing 29 invokes the <b>
+buildEncodingBitMap</b> method to populate a lookup table that relates eight bits represented as a 
+<b>String</b> to every possible 
+combination of eight actual bits.</p><p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    buildEncodingBitMap();<br><br><b><font face="Courier New,Courier">Listing 29</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>You can view the <b>buildEncodingBitMap</b> method in <a href="#Listing_45">
+Listing 45</a>.&nbsp; It is 
+so straightforward as to not warrant an explanation here.</p>
+<p><font color="#FF0000"><b>Encode the String representation into actual bits</b></font></p>
+<p>Listing 30 invokes the method named <b>encodeStringToBits</b> to encode the
+<b>String</b> representation of the bits that make up the encoded message to the 
+actual bits that make up the encoded message.</p><p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    encodeStringToBits();
+<br><b><font face="Courier New,Courier">Listing 30</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>The encodeStringToBits method</b></font></p>
+<p>The <b>encodeStringToBits</b> method is shown in its entirety in Listing 31.</p><p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>
+  void encodeStringToBits(){
+    //Extend the length of the stringEncodedData to cause
+    // it to be a multiple of 8.
+    int remainder = stringEncodedData.length()%8;
+    for(int cnt = 0;cnt &lt; (8 - remainder);cnt++){
+      stringEncodedData += "0";
+    }//end for loop
+    
+    //For illustration purposes only, enable the following
+    // two statements to display the extended 
+    // stringEncodedData in the same format as the 
+    // original stringEncodedData.
+/*
+    System.out.println("\nExtended String Encoded Data");
+    display48(stringEncodedData);
+*/
+    //Extract the String representations of the required
+    // eight bits.  Generate eight actual matching bits by
+    // looking the bit combination up in a table.
+    for(int cnt = 0;cnt &lt; stringEncodedData.length();
+                                                 cnt += 8){
+      String strBits  = stringEncodedData.substring(
+                                                cnt,cnt+8);
+      byte realBits = encodingBitMap.get(strBits);
+      binaryEncodedData.add(realBits);
+    }//end for loop
+  }//end encodeStringToBits<br><br><b><font face="Courier New,Courier">Listing 31</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The purpose of the <b>encodeStringToBits</b> method is to create actual bit data that matches the 1 and 0 characters in the
+<b>stringEncodedData</b> that represents bits with the 1 and 0 characters.</p>
+<p><font color="#FF0000"><b>Pad characters at the end</b></font></p>
+<p>Note that this method doesn't handle the end of the data very gracefully for those cases where the number of required bits is not a multiple of 8.&nbsp; 
+The method simply adds enough "0" characters to the end to cause the length to be a multiple of 8.&nbsp; This may result in extraneous characters at the end of the decoded message later.&nbsp; However, it isn't difficult to remove the extraneous characters at decode time as long as the length of the original message is known.</p>
+<p>For illustration purposes, this method may optionally display the extended version of the 
+<b>stringEncodedData</b> for comparison with the non-extended version.</p>
+<p><font color="#FF0000"><b>Output format</b></font></p>
+<p>The binary Huffman-encoded data produced by this method is stored in a data structure of type 
+<b>ArrayList &lt;Byte&gt;</b>.</p>
+<p>Once you understand the methodology, the code in Listing 31 is 
+straightforward and should not require further explanation.</p>
+<p><font color="#FF0000"><b>Return from the encode method</b></font></p>
+<p>Back in the <b>encode</b> method, the code in Listing 32 returns the binary 
+Huffman-encoded data, terminates the <b>encode</b> method, and returns control 
+to the <b>main</b> method where it was called in <a href="#Listing_5">Listing 5</a>.</p><p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    return binaryEncodedData;
+  }//end encode method<br><br><b><font face="Courier New,Courier">Listing 32</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Listing 32 also signals the end of the class definition for the class named
+<b>HuffmanEncoder</b>.</p>
+<p><font color="#FF0000"><b>Meanwhile, back in the main method...</b></font></p>
+<p>Listing 33 displays the number of bits in the encoded message and then 
+computes and displays the compression factor.</p><p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    System.out.println("Number binary encoded data bits: " 
+                           + binaryEncodedData.size() * 8);
+    System.out.println("Compression factor: " 
+      + (double)rawData.length()/binaryEncodedData.size());<br><br><b><font face="Courier New,Courier">Listing 33</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>An example of compression factor</b></font></p>
+<p>Listing 33 produces the compression-factor output shown in the bottom portion 
+of <a name="Figure_15">Figure 15</a> for the test message shown in the top of Figure 15.</p><p>
+<table border="1" cols="1" width="482" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre>Raw Data
+BAGHDAD, Iraq Violence increased across Iraq aft
+er a lull following the Dec. 15 parliamentary el
+ections, with at least two dozen people includin
+g a U.S. soldier killed Monday in shootings and
+bombings mostly targeting the Shiite-dominated s
+ecurity services. The Defense Ministry director
+of operations, Brig. Gen. Abdul Aziz Mohammed-Ja
+ssim, blamed increased violence in the past two
+days on insurgents trying to deepen the politica
+l turmoil following the elections. The violence
+came as three Iraqi opposition groups threatened
+another wave of protests and civil disobedience
+if allegations of fraud are not properly invest
+igated.
+
+Number raw data bits: 5048
+Number binary encoded data bits: 2816
+Compression factor: 1.7926136363636365<br></pre>
+      <pre><b>Figure 15</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Another example of compression factor</b></font></p>
+<p>Similarly, the bottom portion of <a name="Figure_16">Figure 16</a> shows the compression factor 
+achieved for the test message shown in the top of Figure 16.</p>
+<table border="1" cols="1" width="482" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre>Raw Data
+Now is the time for all good men to come to the
+aid of their country.
+
+Number raw data bits: 552
+Number binary encoded data bits: 272
+Compression factor: 2.0294117647058822<br></pre>
+      <pre><b>Figure 16</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Comparing the results in <a href="#Figure_15">Figure 15</a> with the results in 
+<a href="#Figure_16">Figure 16</a>, you can see 
+that the compression results are highly dependent on the content of the message, 
+even for the case where the message is composed entirely of English text.</p>
+<p><font color="#FF0000"><b>Display the encoded message in hexadecimal format</b></font></p>
+<p>The test message has now been Huffman encoded.&nbsp; Continuing with the <b>
+main</b> method, Listing 34 invokes the method named <b>hexDisplay48</b> to display the
+<b>binaryEncodedData</b> in hexadecimal format, 48 characters per line.</p><p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    System.out.println(
+            "\nBinary Encoded Data in Hexadecimal Format");
+    hexDisplay48(binaryEncodedData);
+    System.out.println();<br><br><b><font face="Courier New,Courier">Listing 34</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>The method named hexDisplay48</b></font></p>
+<p>The method named <b>hexDisplay48</b> can be viewed in its entirety in 
+<a href="#Listing_45">Listing 45</a>.&nbsp; The code in this method is completely straightforward and shouldn't 
+require further explanation.</p>
+<p><font color="#FF0000"><b>Sample hexadecimal display of Huffman-encoded data</b></font></p>
+<p>The bottom portion of <a name="Figure_17">Figure 17</a> shows a hexadecimal display of the binary 
+Huffman-encoded version of the message shown at the top of Figure 17</p><p>
+<table border="1" cols="1" width="482" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre>Raw Data
+Now is the time for all good men to come to the
+aid of their country.
+
+Number raw data bits: 552
+Number binary encoded data bits: 272
+Compression factor: 2.0294117647058822
+
+Binary Encoded Data in Hexadecimal Format
+e2e43382fe89bda3ef49462676f27b602a62fb4545fd24dc
+95e2feb74c59a0baece0<br></pre>
+      <pre><b>Figure 17</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Comparing hexadecimal and raw data displays</b></font></p>
+<p>When comparing the hexadecimal display with the display of the raw data, 
+remember that each raw-data character represents eight bits while each 
+hexadecimal character represents only four bits.&nbsp; Therefore, even though 
+the hexadecimal display appears to be about as long as the raw-data display, the 
+number of bits required to represent the Huffman-encoded version of the message 
+in Figure 17 is only 49.2 percent of the number of bits required to represent the raw 
+unencoded version.&nbsp; This results in a compression factor of 2.029 for this 
+particular message.</p>
+<p>Having encoded the message, the time has come to decode it to produce an 
+exact <i>(lossless)</i> replica of the original message.</p>
+
+<h3><a name="Decode_the_Message">Decode the Message</a></h3>
+<p>Still in the <b>main</b> method, I will continue the demonstration by 
+decoding the encoded message.&nbsp; I will accomplish this by instantiating an 
+object of the <b>HuffmanDecoder</b> class and invoking the <b>decode</b> method 
+on that object as shown in Listing 35.</p><p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    HuffmanDecoder decoder = new HuffmanDecoder();
+    
+
+    String decodedData = decoder.decode(binaryEncodedData,
+                                        huffEncodeTable,
+                                        rawDataLen);<br><br><b><font face="Courier New,Courier">Listing 35</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<blockquote>
+	<p><i>(As you will soon see, it is somewhat easier to decode a Huffman-encoded 
+message than it is to encode it.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Information required to decode the message</b></font></p>
+<p>Listing 35 passes the encoded message to the decode method of the <b>HuffmanDecoder</b> object 
+along with a reference to the&nbsp; data structure containing the encoding particulars 
+as well as the length of the original message.</p>
+<blockquote>
+	<p><i>(The length of the original 
+message is used to eliminate extraneous characters on the end of the decoded message.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>The HuffmanDecoder class</b></font></p>
+<p>Putting the <b>main</b> method aside for awhile, the beginning of the class 
+definition of the <b>HuffmanDecoder</b> class begins in <a name="Listing_36">
+Listing 36</a>.</p><p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>class HuffmanDecoder{
+  Hashtable &lt;String,Character&gt;huffDecodeTable = 
+                         new Hashtable&lt;String,Character&gt;();
+  String stringDecodedData;
+  String decodedData = "";
+  Hashtable &lt;Byte,String&gt;decodingBitMap = 
+                              new Hashtable&lt;Byte,String&gt;();
+  ArrayList &lt;Byte&gt;binaryEncodedData;
+  
+  //The following structure contains particulars as to how
+  // the original message was encoded, and must be received
+  // as an incoming parameter to the decode method along
+  // with the encoded message and the length of the
+  // original message.
+  Hashtable &lt;Character,String&gt;huffEncodeTable;
+  //Used to eliminate the extraneous characters on the end.
+  int rawDataLen;<br><b><font face="Courier New,Courier">Listing 36</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>An object of the<b> HuffmanDecoder </b>class can be used to decode a 
+Huffman-encoded message given the encoded message, a data structure containing 
+particulars as to how the original message was encoded, and the length of the 
+original message.</p>
+<p>The code in Listing 36 gets things started by declaring several instance 
+variables and initializing some of them.&nbsp; I will discuss the instance 
+variables in conjunction with the code that uses them.</p>
+<p><font color="#FF0000"><b>The decode method</b></font></p>
+<p>Listing 37 shows the beginning of the <b>decode</b> method of the <b>
+HuffmanDecoder</b> class.</p><p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  String decode(ArrayList &lt;Byte&gt;binaryEncodedData,
+               Hashtable &lt;Character,String&gt;huffEncodeTable,
+               int rawDataLen){
+    //Save the incoming parameters.
+    this.binaryEncodedData = binaryEncodedData;
+    this.huffEncodeTable = huffEncodeTable;
+    this.rawDataLen = rawDataLen;<br><br><b><font face="Courier New,Courier">Listing 37</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The <b>decode</b> method receives a Huffman-encoded message along with a data 
+structure containing particulars as to how the original message was encoded and 
+the length of the original message.&nbsp; It decodes the original message and 
+returns the decoded version as a <b>String</b> object.</p>
+<p>Listing 37 saves the incoming parameters in instance variables that were 
+declared in <a href="#Listing_36">Listing 36</a>.</p>
+<p><font color="#FF0000"><b>Create a decoding bit map</b></font></p>
+<p>Listing 38 invokes the <b>buildDecodingBitMap</b> method, which is essentially the reverse of the 
+<a href="#Build_an_encoding_bit_map">encoding bit map</a> that was used to encode the original message.</p><p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    buildDecodingBitMap();<br><br><b><font face="Courier New,Courier">Listing 38</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>The buildDecodingBitMap method</b></font></p>
+<p>The <b>buildDecodingBitMap</b> method can be viewed in its entirety in
+<a href="#Listing_45">Listing 45</a>.&nbsp; This method populates a lookup table 
+that relates eight bits represented as a <b>String</b> to eight actual bits for 
+all possible combinations of eight bits.</p>
+<p>This is essentially a reverse lookup table relative to the <b>encodingBitMap</b> 
+table that is used to encode the message.&nbsp; The only difference between the 
+two is a reversal of the key and the value in the Hashtable that contains the 
+table.</p>
+<p><font color="#FF0000"><b>Decode from binary to String</b></font></p>
+<p>Listing 39 invokes the <b>decodeToBitsAsString</b> method to decode the 
+encoded message from a binary representation to a <b>String</b> of 1 and 0 
+characters that represent the actual bits in the encoded message.</p><p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    decodeToBitsAsString();<br><br><b><font face="Courier New,Courier">Listing 39</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>The decodeToBitAsString method</b></font></p>
+<p>This method, which can be viewed in its entirety in <a href="#Listing_45">
+Listing 45</a> is very straightforward.&nbsp; Therefore no further discussion is 
+warranted.</p>
+<p><font color="#FF0000"><b>Build a decoding table</b></font></p>
+<p>Listing 40 invokes the <b>buildHuffDecodingTable</b> method to create a Huffman decoding 
+lookup table by swapping the keys and values from the Huffman encoding table received as an incoming parameter by the decode method.</p><p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    buildHuffDecodingTable();<br><br><b><font face="Courier New,Courier">Listing 40</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>The buildHuffDecodingTable method</b></font></p>
+<p>You guessed it!&nbsp; Once again, this method, which can be viewed in
+<a href="#Listing_45">Listing 45</a>, is too simple to deserve further 
+discussion.</p>
+<p><font color="#FF0000"><b>Decode the message</b></font></p>
+<p>Listing 41 invokes the <b>decodeStringBitsToCharacters</b> method to decode 
+the String containing only 1 and 0 characters that represent the bits in the 
+encoded message.&nbsp; This produces a replica of the original message that was 
+subjected to Huffman encoding.</p><p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    decodeStringBitsToCharacters();<br><br><b><font face="Courier New,Courier">Listing 41</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>The decodeStringBitsToCharacters method</b></font></p>
+<p>The <b>decodeStringBitsToCharacters</b> method is shown in its entirety in 
+Listing 42.</p><p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  void decodeStringBitsToCharacters(){
+    StringBuffer output = new StringBuffer();
+    StringBuffer workBuf = new StringBuffer();
+
+    for(int cnt = 0;cnt &lt; stringDecodedData.length();
+                                                    cnt++){
+      workBuf.append(stringDecodedData.charAt(cnt));
+      if(huffDecodeTable.containsKey(workBuf.toString())){
+        output.append(
+                  huffDecodeTable.get(workBuf.toString()));
+        workBuf = new StringBuffer();
+      }//end if
+    }//end for loop
+    
+    decodedData = output.toString();
+  }//End decodeStringBitsToCharacters();<br><br><b><font face="Courier New,Courier">Listing 42</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Two empty StringBuffer objects</b></font></p>
+<p>The <b>decodeStringBitsToCharacters</b> method begins with one empty <b>
+StringBuffer</b> object referred to by the variable named <b>workBuf</b> and 
+another empty <b>StringBuffer</b> object referred to by the variable named <b>
+output</b>.</p>
+<p>The <b>StringBuffer</b> object referred to by <b>output</b> is used to 
+construct the decoded message.&nbsp; The <b>StringBuffer</b> object referred to 
+by <b>workBuf</b> is used as a temporary holding area for substring data.</p>
+<p><font color="#FF0000"><b>Build a working string one character at a time</b></font></p>
+<p>The method reads the <b>String</b> containing only 1 and 0 characters that 
+represent the bits in the encoded message <i>(stringDecodedData)</i>.&nbsp; The 
+characters are read from this string one character at a time.&nbsp; As each new 
+character is read, it is appended to the <b>StringBuffer</b> object referred to 
+by <b>workBuf</b>.</p>
+<p><font color="#FF0000"><b>Compare the working string to the decoding keys</b></font></p>
+<p>As each new character is appended to the <b>StringBuffer</b> object, a test 
+is performed to determine if the current contents of the <b>StringBuffer</b> 
+object match one of the keys in a <b>Hashtable</b> table that relates 
+strings representing Huffman bit codes to characters in the original message.</p>
+<p><font color="#FF0000"><b>When a match is found...</b></font></p>
+<p>When a match is found, the <i>value</i> associated with that <i>key</i> is 
+retrieved from the <b>Hashtable</b> and appended onto the <b>StringBuffer</b> object 
+referred to by <b>output</b>.&nbsp; Thus, the output text is built up one character at 
+a time.</p>
+<p><font color="#FF0000"><b>Clear the working string</b></font></p>
+<p>Having processed the matching key, a new empty <b>StringBuffer</b> object is 
+instantiated and is referred to by <b>workBuf</b>.&nbsp; The process of reading, 
+appending, and testing for a match is repeated until all of the characters in 
+the string that represents the bits in the encoded message have been processed.</p>
+<p><font color="#FF0000"><b>The original message has been reconstructed, with 
+extra characters</b></font></p>
+<p>At that point, the <b>StringBuffer</b> object referred to by <b>output</b> 
+contains the entire decoded message.&nbsp; <i>(It may contain <a href="#Extraneous_characters_at_the_end">extraneous 
+characters</a> at the end.)</i>&nbsp; It is converted to type <b>String</b> and 
+referred to by <b>decodedData</b>.&nbsp; Then the <b>
+decodeStringBitsToCharacters</b> method returns control to the
+<b>decode</b> method with the task of decoding the encoded message having been 
+completed.</p>
+<p><font color="#FF0000"><b>Back in the decode method...</b></font></p>
+<p>As shown in Listing 43, the <b>decode</b> method returns control to the <b>
+main</b> method returning a reference to a <b>String</b> containing a replica of 
+the original message in the process.</p><p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    return decodedData.substring(0,rawDataLen);    
+  }//end decode method<br><br><b><font face="Courier New,Courier">Listing 43</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Note that the code in Listing 43 uses the known length of the original 
+message to trim <a href="#Extraneous_characters_at_the_end">extraneous 
+characters</a> from the end of the decoded message.</p>
+<p>Listing 43 signals the end of the<b> decode</b> method and the end of the<b> 
+HuffmanDecoder</b> class.<b> </b></p>
+<p><font color="#FF0000"><b>Back in the main method...</b></font> </p>
+<p>Listing 44 invokes the <b>display48</b> method to display the decoded 
+results, 48 characters to the line as shown near the bottom of
+<a href="#Figure_1">Figure 1</a>.</p><p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    System.out.println("\nDecoded Data");
+    display48(decodedData);
+
+  }//end main<br><br><b><font face="Courier New,Courier">Listing 44</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>And that's a wrap!&nbsp; I hope that you have enjoyed this lesson on Huffman 
+encoding.<br>
+</p>
+<center>
+<h2><a name="Run the program"></a>Run the Program</h2>
+</center>
+<p>I encourage you to copy the code from <a href="#Listing_45">Listing 45</a> into your text
+editor, compile it, and execute it.&nbsp; Experiment with it, making
+changes, and observing the results of your changes.</p>
+<p>Create a variety of test messages of your own and determine the compression 
+factor for different types of messages.&nbsp; For example apply the Huffman 
+compression algorithm to raw HTML messages to see if they compress more 
+than straight text messages.&nbsp; Create a simulation of an encrypted message 
+using byte values from a random number generator as the message content and see 
+how well that message compresses.</p>
+<h2 align="center"><a name="Summary">Summary</a></h2>
+<p>In this lesson, I have taught you about the inner workings of the Huffman 
+lossless compression algorithm.&nbsp; I also showed you the results obtained by 
+applying the algorithm to several different test messages.</p>
+<ul>
+</ul>
+<h2 align="center"><a name="Whats Next">What's Next?</a></h2>
+<p>Future lessons in this series will explain the inner workings behind several 
+other data and image compression schemes, including the following:</p>
+<ul>
+	<li>Run-length data encoding</li>
+	<li>GIF image compression</li>
+	<li>JPEG image compression</li>
+</ul>
+<h2 align="center"><a name="References">References</a></h2>
+<p><a href="http://www.developer.com/java/data/article.php/3586396">2440</a> Understanding the Lempel-Ziv Data Compression Algorithm in Java<br>
+<a href="http://www.dickbaldwin.com/java/Java076.htm">076</a><font color="#000000"> 
+Vectors, Hashtables, and Enumerations</font><br>
+<a href="http://www.dickbaldwin.com/java/Java508.htm">508</a> JavaBeans, 
+Properties of Beans, Simple and Indexed<br>
+<a href="http://www.dickbaldwin.com/java/Java510.htm">510</a> JavaBeans, 
+Properties of Beans, Bound Properties&nbsp; <br>
+<a href="http://www.dickbaldwin.com/java/Java512.htm">512</a> JavaBeans, 
+Properties of Beans, Constrained Properties<br>
+<a href="http://www.developer.com/java/article.php/763411">1350</a> Data 
+Structures in Java: Part 1, Getting Started <br>
+<a href="http://softwaredev.earthweb.com/java/article/0,,12082_767451,00.html">
+1352</a> Data Structures in Java: Part 2, What Is a Collection? <br>
+<a href="http://softwaredev.earthweb.com/java/sdjjavase/article/0,,12395_774751,00.html">
+1354</a> Data Structures in Java: Part 3, Purpose of Framework Interfaces <br>
+<a href="http://softwaredev.earthweb.com/java/article/0,,12082_778571,00.html">
+1356</a> Data Structures in Java: Part 4, Purpose of Implementations and 
+Algorithms <br>
+<a href="http://softwaredev.earthweb.com/java/article/0,,12082_795301,00.html">
+1358</a> Data Structures in Java: Part 5, The Core Collection Interfaces <br>
+<a href="http://softwaredev.earthweb.com/java/article/0,,12082_799661,00.html">
+1360</a> Data Structures in Java: Part 6, Data Structures in Java: Part 6, 
+Duplicate Elements, Ordered Collections, Sorted Collections, and Interface 
+Specialization <br>
+<a href="http://softwaredev.earthweb.com/java/article/0,,12082_803891,00.html">
+1362</a> Data Structures in Java: Part 7, The Comparable Interface, Part 1 <br>
+<a href="http://softwaredev.earthweb.com/java/article/0,,12082_809421,00.html">
+1364</a> Data Structures in Java: Part 8, The Comparable Interface, Part 2 <br>
+<a href="http://softwaredev.earthweb.com/java/article/0,,12082_858411,00.html">
+1366</a> Data Structures in Java: Part 9, The Comparator Interface, Part 1 <br>
+<a href="http://softwaredev.earthweb.com/java/article/0,,12082_862991,00.html">
+1368</a> Data Structures in Java: Part 10, The Comparator Interface, Part 2 <br>
+<a href="http://softwaredev.earthweb.com/java/article/0,,12082_867311,00.html">
+1370</a> Data Structures in Java: Part 11, The Comparator Interface, Part 3 <br>
+<a href="http://softwaredev.earthweb.com/java/article/0,,12082_871771,00.html">
+1372</a> Data Structures in Java: Part 12, The Comparator Interface, Part 4 <br>
+<a href="http://www.developer.com/java/other/article.php/876331">1374</a> Data 
+Structures in Java: Part 13, The Comparator Interface, Part 5 <br>
+<a href="http://softwaredev.earthweb.com/java/article/0,,12082_879601,00.html">
+1376</a> Data Structures in Java: Part 14, The Comparator Interface, Part 6 <br>
+<a href="http://softwaredev.earthweb.com/java/sdjjavaee/article/0,,12396_883811,00.html">
+1378</a> Data Structures in Java: Part 15, The toArray Method, Part 1 <br>
+<a href="http://www.developer.com/java/article.php/888731">1380</a> Data 
+Structures in Java: Part 16, The toArray Method, Part 2<br>
+<a href="http://www.developer.com/java/other/article.php/3495121">2300</a> 
+Generics in J2SE, Getting Started</p>
+<center>
+<h2> <a name="Complete Program Listings"></a>Complete Program Listing</h2>
+</center>
+A complete listing of the program discussed in this lesson is shown in
+<a name="Listing_45">Listing 45</a> below. <br>
+&nbsp;
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>/*File Huffman01.java 
+
+This program illustrates the encoding and later decoding of
+a text message using the Huffman encoding technique.
+
+This program is provided for educational purposes only. If
+you use the program for any purpose, you use it at your
+own risk.  The author of the program accepts no
+responsibility for any damages that may result from your
+use of the program.
+
+We begin by instantiating an object of the HuffmanEncoder 
+class and invoking the encode method on that object.
+
+Inside the encode method, we invoke the createFreqData 
+method to create a frequency chart that identifies each of 
+the individual characters in the original message and the 
+number of times (frequency) that each character appeared in
+the message.
+
+Next, we invoke the createLeaves method to create a 
+HuffLeaf object for each character identified in the 
+frequency chart.  We store the HuffLeaf objects in a 
+TreeSet object.  Each HuffLeaf object encapsulates the 
+character as well as the number of times that the 
+character appeared in the original message (frequency).
+
+Then we invoke the createHuffTree method to assemble the 
+HuffLeaf objects into  a Huffman tree (a HuffTree object).
+A Huffman tree is a special form of a binary tree  
+consisting of properly linked HuffNode and HuffLeaf 
+objects.
+
+When the createHuffTree method returns, the HuffTree
+object remains as the only object stored in the TreeSet 
+object that previously contained all of the HuffLeaf 
+objects.  This is because all of the HuffLeaf objects have 
+been combined with HuffNode objects to form the tree.
+
+Following that, we invoke the createBitCodes method. This
+method uses the Huffman tree in a recursive manner to 
+create a bit code for each character in the message.  The
+bit codes are different lengths with the shorter codes 
+corresponding to the characters with a high frequency 
+value and the longer codes corresponding to the characters 
+with the lower frequency values.  The  createBitCodes 
+method populates a data structure that is required later 
+to decode the encoded message.
+    
+At this point, we know the variable-length bitcode that is 
+required to replace each character in the original message 
+to produce a Huffman-encoded message.  (The compression 
+provided by Huffman encoding depends on the frequently
+used characters having short bitcodes and the less 
+frequently used characters having longer bitcodes.)
+    
+Although we know the bitcode required to replace each
+character in the original message, a direct transformation 
+from characters in the message to a stream of contiguous 
+bitcodes is something of a challenge.  The computer's 
+memory is organized on 8-bit boundaries.  I am unaware of 
+any capability in Java that allows the memory to be viewed 
+simply as a continuous sequence of individual bits.
+
+(Note that it may be possible to accomplish this by using 
+a Java BitSet object.  I may give that a try someday when I
+have the time.)
+    
+This program uses a solution to this challenge that is 
+straightford, but is probably inefficient from both a speed
+and memory requirement viewpoint.  The solution is to do a 
+simple table lookup in order to create a long String object
+consisting of only 1 and 0  characters.  Each character in 
+the original message is represented by a substring that 
+matches the required bitcode. This is easy to accomplish
+because (unlike a long sequence of bits) there are no 
+artificial boundaries requiring the length of the String to
+be some multiple of a fixed number of characters.
+
+We invoke the encodeToString method to encode the message 
+into a String representation of the bits that will make up 
+the final encoded message.      
+    
+After the String containing 1 and 0 characters representing
+the bits in the Huffman-encoded message is created, this 
+String is processed to produce the Huffman-encoded message
+in a binary bit stream format.  This is accomplished using 
+another lookup table containing 256 entries (the number of 
+possible combinations of eight bits).
+
+We invoke the buildEncodingBitMap method to populate a 
+lookup table that relates eight bits represented as a 
+String to every possible combination of eight actual bits.
+
+Then we invoke the encodeStringToBits method to Encode the 
+String representation of the bits that make up the encoded 
+message to the actual bits that make up the encoded 
+message.
+
+Note that this method doesn't handle the end of the message
+very gracefully for those cases where the number of 
+required bits is not a multiple of 8.  The method simply 
+adds enough "0" characters to the end of the String to 
+cause the length to be a multiple of 8.  This will usually
+result in extraneous characters at the end of the decoded
+message later.  Some mechanism must be found to eliminate
+the extraneous characters when decoding the message.  This
+program assumes that the length of the original message is
+preserved and provided to the decoding software along with
+the decoding table.  Since the length of the decoded 
+message must match the length of the original message, this
+value is used to eliminate extraneous characters at the
+end of the decoded message.
+
+Then we return the binaryEncodedData from the encode method
+to the main method.  The message has now been Huffman 
+encoded.  We provide the capability to display the
+binaryEncodedData in Hexadecimal format at this point for
+comparison with the original message.
+
+The program continues the demonstration by decoding and
+displaying the Huffman-encoded message.
+
+We begin the decoding process by instantiating a 
+HuffmanDecoder object.
+
+Then we invoke the decode method on the HuffmanDecoder 
+object to decode the message.  We pass the encoded message 
+along with a reference to a data structure containing 
+encoding particulars and the length of the original 
+message so that extraneous characters on the end can be 
+eliminated.
+    
+Inside the decode method, we invoke the buildDecodingBitMap
+method to create a decoding bit map, which is essentially 
+the reverse of the encoding bit map that was used to encode 
+the original message.
+
+We invoke the decodeToBitsAsString method to decode the 
+encoded message from a binary representation to a String of
+1 and 0 characters that represent the actual bits in the 
+encoded message.
+    
+We invoke the buildHuffDecodingTable method to create a 
+Huffman decoding table by swapping the keys and the values 
+from the Huffman encoding table received as an incoming 
+parameter by the decode method.
+    
+Finally, we invoke the decodeStringBitsToCharacters method
+to decode the String containing only 1 and 0 characters
+that represent the bits in the encoded message. This
+produces a replica of the original message that was
+subjected to Huffman encoding.  We write the resulting
+decoded message into a String object and return the 
+decoded message with any extraneous characters at the end
+having been removed.
+
+The program was tested using J2SE 5.0 and WinXP.
+Requires J2SE 5.0 to support generics.
+**********************************************************/
+
+import java.util.*;
+import java.io.*;
+
+public class Huffman01{
+  
+  public static void main(String[] args){
+    
+    //The following data structure is used to
+    // communicate encoding particulars from the Huffman
+    // encoder to the Huffman decoder.  This is necessary
+    // for the decoder to be able to decode the encoded
+    // message.  Note that this data structure must be
+    // empty when it is passed to the encode method.
+    Hashtable &lt;Character,String&gt;huffEncodeTable;
+    
+    //Begin the demonstration by applying Huffman encoding
+    // to a text message.
+                        
+    //Create and display the raw text message that will be
+    // encoded.  Display 48 characters to the line.
+    
+    //Modify the comment indicators to enable one of the
+    // following test messages, or insert a test message
+    // of your own and then recompile the program.
+/*
+    //The following test message was copied directly from
+    // an Internet news site.  It is probably
+    // representative of typical English text.
+    String rawData = "BAGHDAD, Iraq Violence increased "
+    + "across Iraq after a lull following the Dec. 15 "
+    + "parliamentary elections, with at least two dozen "
+    + "people including a U.S. soldier killed Monday in "
+    + "shootings and bombings mostly targeting the Shiite-"
+    + "dominated security services. The Defense Ministry "
+    + "director of operations, Brig. Gen. Abdul Aziz "
+    + "Mohammed-Jassim, blamed increased violence in the "
+    + "past two days on insurgents trying to deepen the "
+    + "political turmoil following the elections. The "
+    + "violence came as three Iraqi opposition groups "
+    + "threatened another wave of protests and civil "
+    + "disobedience if allegations of fraud are not "
+    + "properly investigated.";
+*/
+/*
+    String rawData = "Now is the time for all good men "
+    + "to come to the aid of their country.";
+*/
+
+    //Use the following test message or some other 
+    // similarly short test message to illustrate the
+    // construction of the HuffTree object.
+    String rawData = "AAAAABBBBCCCDDE";
+
+    //Enable the following two statements to display the
+    // raw data 48 characters to the line.
+    System.out.println("Raw Data");
+    display48(rawData);
+
+    int rawDataLen = rawData.length();
+    
+    System.out.println("\nNumber raw data bits: " 
+                                   + rawData.length() * 8);
+
+    //Instantiate a Huffman encoder object
+    HuffmanEncoder encoder = new HuffmanEncoder();
+    
+    //Encode the raw text message.  The encoded message
+    // is received back as bytes stored in an ArrayList
+    // object.  Pass the raw message to the encode
+    // method.  Also pass a reference to the empty data
+    // structure mentioned above to the encode method where
+    // it will be populated with encoding particulars
+    // needed to decode the message later
+    huffEncodeTable = new Hashtable&lt;Character,String&gt;();
+    ArrayList&lt;Byte&gt; binaryEncodedData = encoder.encode(
+                                  rawData,huffEncodeTable);
+      
+    System.out.println("Number binary encoded data bits: " 
+                           + binaryEncodedData.size() * 8);
+    System.out.println("Compression factor: " 
+      + (double)rawData.length()/binaryEncodedData.size());
+
+    //The message has now been Huffman encoded. Display the
+    // binaryEncodedData in Hexadecimal format, 48 
+    // characters per line.
+    System.out.println(
+            "\nBinary Encoded Data in Hexadecimal Format");
+    hexDisplay48(binaryEncodedData);
+    System.out.println();
+    
+    //Now continue the demonstration by decoding the
+    // Huffman-encoded message.
+
+    //Instantiate a Huffman decoder object.
+    HuffmanDecoder decoder = new HuffmanDecoder();
+    
+    //Pass the encoded message to the decode method of the
+    // HuffmanDecoder object.  Also pass a reference
+    // to the  data structure containing encoding 
+    // particulars to the decode method.  Also pass the
+    // length of the original message so that extraneous
+    // characters on the end of the decoded message can be
+    // eliminated.
+    String decodedData = decoder.decode(binaryEncodedData,
+                                        huffEncodeTable,
+                                        rawDataLen);
+
+    //Display the decoded results, 48 characters to the
+    // line
+    System.out.println("\nDecoded Data");
+    display48(decodedData);
+
+  }//end main
+  //-----------------------------------------------------//
+  
+  //Utility method to display a String 48 characters to
+  // the line.
+  static void display48(String data){
+    for(int cnt = 0;cnt &lt; data.length();cnt += 48){
+      if((cnt + 48) &lt; data.length()){
+        //Display 48 characters.
+        System.out.println(data.substring(cnt,cnt+48));
+      }else{
+        //Display the final line, which may be short.
+        System.out.println(data.substring(cnt));
+      }//end else
+    }//end for loop
+  }//end display48
+  //-----------------------------------------------------//
+  
+  //Utility method to display hex data 48 characters to
+  // the line
+  static void hexDisplay48(
+                        ArrayList&lt;Byte&gt; binaryEncodedData){
+    int charCnt = 0;
+    for(Byte element : binaryEncodedData){
+      System.out.print(
+               Integer.toHexString((int)element & 0X00FF));
+      charCnt++;
+      if(charCnt%24 == 0){
+        System.out.println();//new line
+        charCnt = 0;
+      }//end if
+    }//end for-each
+  }//end hexDisplay48
+  //-----------------------------------------------------//
+}//end class Huffman01
+//=======================================================//
+
+//An object of this class can be used to encode a raw text
+// message using the Huffman encoding methodology.
+class HuffmanEncoder{
+  String rawData;  
+  TreeSet &lt;HuffTree&gt;theTree = new TreeSet&lt;HuffTree&gt;();
+  ArrayList &lt;Byte&gt;binaryEncodedData = 
+                                     new ArrayList&lt;Byte&gt;();
+  Hashtable &lt;Character,Integer&gt;frequencyData = 
+                        new Hashtable&lt;Character,Integer&gt;();
+  StringBuffer code = new StringBuffer();
+  Hashtable &lt;Character,String&gt;huffEncodeTable;
+  String stringEncodedData;
+  Hashtable &lt;String,Byte&gt;encodingBitMap = 
+                              new Hashtable&lt;String,Byte&gt;();
+  //-----------------------------------------------------//
+  
+  //This method encodes an incoming String message using
+  // the Huffman encoding methodology.  The method also
+  // receives a reference to an empty data structure.
+  // This data structures is populated with encoding 
+  // particulars required later by the decode method 
+  // to decode and transform the encoded message back 
+  // into the original String message.  Note that in
+  // order to keep this method simple, pad characters may
+  // be appended onto the end of the original
+  // message when it is encoded.  This is done to cause the
+  // number of bits in the encoded message to be a multiple
+  // of eight, thus causing the length of the encoded
+  // message to be an integral number of bytes.  Additional
+  // code would be required to avoid this at this point. 
+  // However, it is easy to eliminate the extraneous
+  // characters during decoding if the length of the
+  // original message is known.
+  ArrayList&lt;Byte&gt; encode(
+              String rawData,
+              Hashtable &lt;Character,String&gt;huffEncodeTable){
+    //Save the incoming parameters.
+    this.rawData = rawData;
+    this.huffEncodeTable = huffEncodeTable;
+    
+    //For illustration purposes only, enable the following
+    // two statements to display the original message as a 
+    // stream of bits.  This can be visually compared with
+    // a similar display for the encoded  message later to
+    // illustrate the amount of compression provided by
+    // the encoding process.
+/*
+    System.out.println("\nRaw Data as Bits");
+    displayRawDataAsBits();
+*/
+    //Create a frequency chart that identifies each of the
+    // individual characters in the original message and
+    // the number of times (frequency) that each character
+    // appeared in the message.
+    createFreqData();
+    
+    //For illustration purposes only, enable the following
+    // statement to display the contents of the frequency
+    // chart created above.
+/*
+    displayFreqData();
+*/
+    //Create a HuffLeaf object for each character
+    // identified in the frequency chart.  Store the
+    // HuffLeaf objects in a TreeSet object.  Each HuffLeaf
+    // object encapsulates the character as well as the
+    // number of times that the character appeared in the
+    // original message (the frequency).
+    createLeaves();
+    
+    //Assemble the HuffLeaf objects into  a Huffman tree
+    // (a HuffTree object). A Huffman tree is a special
+    // form of a binary tree  consisting of properly linked
+    // HuffNode objects and HuffLeaf objects.
+    //When the following method returns, the HuffTree
+    // object remains as the only object stored in the
+    // TreeSet object that previously contained all of the
+    // HuffLeaf objects.  This is because all of the
+    // HuffLeaf objects have been combined with HuffNode
+    // objects to form the tree.
+    createHuffTree();
+    
+    //Use the Huffman tree in a recursive manner to create
+    // a bit code for each character in the message.  The
+    // bit codes are different lengths with the shorter
+    // codes corresponding to the characters with a high
+    // frequency value and the longer codes corresponding
+    // to the characters with the lower frequency values.
+    //Note that the method call extracts the reference to
+    // the Huffman tree from the TreeSet object and passes
+    // that reference to the method.  This is necessary
+    // because the method is recursive and cannot
+    // conveniently work with the TreeSet object.
+    //This method populates the data structure that is
+    // required later to decode the encoded message.
+    createBitCodes(theTree.first());
+
+    //For purposes of illustration only, enable the 
+    // following two statements to display a table showing
+    // the relationship between the characters in the
+    // original message and the bitcodes that will replace
+    // those characters to produce the Huffman-encoded
+    // message.
+/*
+    System.out.println();
+    displayBitCodes();
+*/
+    //Encode the message into a String representation
+    // of the bits that will make up the final encoded
+    // message.  Also,the following method may optionally
+    // display the String showing the bit values that will
+    // appear in the final Huffman-encoded message.  This
+    // is useful for comparing back against the bits in
+    // the original message for purposes of evaluating the
+    // amount of compression provided by encoding the
+    // message.
+    encodeToString();
+    
+    //Populate a lookup table that relates eight bits
+    // represented as a String to every possible combinaion
+    // of eight actual bits.
+    buildEncodingBitMap();
+    
+    //Encode the String representation of the bits that
+    // make up the encoded message to the actual bits
+    // that make up the encoded message.
+    //Note that this method doesn't handle the end of the
+    // message very gracefully for those cases where the
+    // number of required bits is not a multiple of 8.  It
+    // simply adds enough "0" characters to the end to
+    // cause the length to be a multiple of 8.  This may
+    // result in extraneous characters at the end of the
+    // decoded message later.
+    //For illustration purposes only, this method may also
+    // display the extended version of the String
+    // representation of the bits for comparison with the
+    // non-extended version.
+    encodeStringToBits();
+    
+    //Return the encoded message.
+    return binaryEncodedData;
+  }//end encode method
+  //-----------------------------------------------------//
+  
+  //This method displays a message string as a series of
+  // characters each having a value of 1 or 0.
+  void displayRawDataAsBits(){
+    for(int cnt = 0,charCnt = 0;cnt &lt; rawData.length();
+                                          cnt++,charCnt++){
+      char theCharacter = rawData.charAt(cnt);
+      String binaryString = Integer.toBinaryString(
+                                             theCharacter);
+      //Append leading zeros as necessary to show eight
+      // bits per character.
+      while(binaryString.length() &lt; 8){
+        binaryString = "0" + binaryString;
+      }//end while loop
+      if(charCnt%6 == 0){
+        //Display 48 bits per line.
+        charCnt = 0;
+        System.out.println();//new line
+      }//end if
+      System.out.print(binaryString);
+    }//end for loop
+    System.out.println();
+  }//end displayRawDataAsBits
+  //-----------------------------------------------------//
+
+  //This method creates a frequency chart that identifies
+  // each of the individual characters in the original
+  // message and the number of times that each character
+  // appeared in the message.  The results are stored in
+  // a Hashtable with the characters being the keys and the
+  // usage frequency of each character being the
+  // corresponding Hashtable value for that key.  
+  void createFreqData(){
+    for(int cnt = 0;cnt &lt; rawData.length();cnt++){
+      char key = rawData.charAt(cnt);
+      if(frequencyData.containsKey(key)){
+        int value = frequencyData.get(key);
+        value += 1;
+        frequencyData.put(key,value);
+      }else{
+        frequencyData.put(key,1);
+      }//end else
+    }//end for loop
+  }//end createFreqData
+  //-----------------------------------------------------//
+  
+  //This method displays the contents of the frequency
+  // chart created by the method named createFreqData.
+  void displayFreqData(){
+    System.out.println("\nFrequency Data");
+    Enumeration &lt;Character&gt;enumerator = 
+                                      frequencyData.keys();
+    while(enumerator.hasMoreElements()){
+      Character nextKey = enumerator.nextElement();
+      System.out.println(
+               nextKey + " " + frequencyData.get(nextKey));
+    }//end while
+  }//end displayFreqData
+  //-----------------------------------------------------//
+  
+  //This method creates a HuffLeaf object for each char
+  // identified in the frequency chart.  The HuffLeaf
+  // objects are stored in a TreeSet object.  Each HuffLeaf
+  // object encapsulates the character as well as the
+  // number of times that the character appeared in the
+  // original message.
+  void createLeaves(){
+    Enumeration &lt;Character&gt;enumerator = 
+                                      frequencyData.keys();
+    while(enumerator.hasMoreElements()){
+      Character nextKey = enumerator.nextElement();
+      theTree.add(new HuffLeaf(
+                      nextKey,frequencyData.get(nextKey)));
+    }//end while
+  }//end createLeaves
+  //-----------------------------------------------------//
+
+  //This inner class is used to construct a leaf object in
+  // the Huffman tree.
+  class HuffLeaf extends HuffTree{
+    
+    private int value;
+    
+    //HuffLeaf constructor
+    public HuffLeaf(int value, int frequency){
+      this.value = value;
+      //Note that frequency is inherited from HuffTree
+      this.frequency = frequency;
+    }//end HuffLeaf constructor
+    
+    public int getValue(){
+      return value;
+    }//end getValue
+  
+  }//End HuffLeaf class
+  //=====================================================//
+  
+  //Assemble the HuffLeaf objects into a HuffTree object.
+  // A HuffTree object is a special form of a binary tree
+  // consisting of properly linked HuffNode objects and
+  // HuffLeaf objects.
+  //When the method terminates, the HuffTree object
+  // remains as the only object stored in the TreeSet
+  // object that previously contained all of the HuffLeaf
+  // objects.  This is because all of the HuffLeaf
+  // objects have been removed from the TreeSet object
+  // and combined with HuffNode objects to form the
+  // Huffman tree (as represented by the single HuffTree
+  // object).
+  //The method contains two sections of code that can be
+  // enabled to display:
+  // 1. The contents of the original TreeSet object.
+  // 2. The contents of the TreeSet object for each
+  //    iteration during which HuffLeaf objects are being
+  //    combined with HuffNode objects to form the final
+  //    HuffTree object.
+  // This display is very useful for understanding how the
+  // Huffman tree is constructed.  However, this code
+  // should be enabled only for small trees because it
+  // generates a very large amount of output.
+  
+  //The HuffTree object is constructed by:
+  // 1. Extracting pairs of HuffLeaf or HuffNode objects
+  //    from the TreeSet object in ascending order based
+  //    on their frequency value. 
+  // 2. Using the pair of extracted objects to construct
+  //    a new HuffNode object where the two extracted
+  //    objects become children of the new HuffNode
+  //    object, and where the frequency value stored in
+  //    the new HuffNode object is the sum of the
+  //    frequency values in the two child objects.
+  // 3. Removing the two original HuffLeaf or HuffNode
+  //    objects from the TreeSet and adding the new
+  //    HuffNode object to the TreeSet object.  The
+  //    position of the new HuffNode object in the Treeset
+  //    object is determined by its frequency value 
+  //    relative to the other HuffNode or HuffLeaf objects
+  //    in the collection. The new HuffNode object will 
+  //    eventually become a child of another new HuffNode 
+  //    object unless it ends up as the root of the 
+  //    HuffTree object.
+  // 4. Continuing this process until the TreeSet object
+  //    contains a single object of type HuffTree.
+  void createHuffTree(){
+    
+    //Enable the following statements to see the original
+    // contents of the TreeSet object. Do this only for
+    // small trees because it generates lots of output.
+/*     
+    System.out.println("\n\nDisplay Original TreeSet");
+    Iterator &lt;HuffTree&gt; originalIter = theTree.iterator();
+    while(originalIter.hasNext()){
+      System.out.println(
+                      "\nHuffNode, HuffLeaf, or HuffTree");
+      displayHuffTree(originalIter.next(),0);
+    }//end while loop
+    //End code to display the TreeSet
+*/
+    //Iterate on the size of the TreeSet object until all
+    // of the elements have been combined into a single
+    // element of type HuffTree
+    while(theTree.size() &gt; 1){
+      //Get, save, and remove the first two elements.
+      HuffTree left = theTree.first();
+      theTree.remove(left);
+      HuffTree right = theTree.first();
+      theTree.remove(right);
+      
+      //Combine the two saved elements into a new element
+      // of type HuffNode and add it to the TreeSet
+      // object.
+      HuffNode tempNode = new HuffNode(left.getFrequency() 
+                        + right.getFrequency(),left,right);
+      theTree.add(tempNode);
+
+      //Enable the following statements to see the HuffTree
+      // being created from HuffNode and HuffLeaf objects.
+      // Do this only for small trees because it will
+      // generate a lot of output.
+/*      
+      System.out.println("\n\nDisplay Working TreeSet");
+      Iterator &lt;HuffTree&gt; workingIter = theTree.iterator();
+      while(workingIter.hasNext()){
+        System.out.println(
+                      "\nHuffNode, HuffLeaf, or HuffTree");
+        displayHuffTree(workingIter.next(),0);
+      }//end while loop
+      //End code to display the TreeSet
+*/    
+    }//end while
+  }//end createHuffTree
+  //-----------------------------------------------------//
+  
+  //Recursive method to display a HufTree object.  The
+  // first call to this method should pass a value of 0
+  // for recurLevel.
+  void displayHuffTree(HuffTree tree,int recurLevel){
+    recurLevel++;
+    if(tree instanceof HuffNode){
+      // This is a node, not a leaf.  Process it as a node.
+
+      //Cast to type HuffNode.
+      HuffNode node = (HuffNode)tree;
+      // Get and save the left and right branches
+      HuffTree left = node.getLeft();
+      HuffTree right = node.getRight();
+      
+      //Display information that traces out the recursive
+      // traversal of the tree in order to display the
+      // contents of the leaves.
+      System.out.print("  Left to " + recurLevel + " ");
+      //Make a recursive call.
+      displayHuffTree(left,recurLevel);
+      
+      System.out.print("  Right to " + recurLevel + " ");
+      //Make a recursive call.
+      displayHuffTree(right,recurLevel);
+      
+    }else{
+      //This is a leaf.  Process it as such.
+      //Cast the object to type HuffLeaf.
+      HuffLeaf leaf = (HuffLeaf)tree;
+      System.out.println(
+                        "  Leaf:" + (char)leaf.getValue());
+    }//end else
+    
+    System.out.print("  Back ");
+
+  }//end displayHuffTree
+  //-----------------------------------------------------//
+  //This inner class is used to construct a node object in
+  // the Huffman tree.
+  class HuffNode extends HuffTree{
+  
+    private HuffTree left;
+    private HuffTree right;
+  
+    //HuffNode constructor
+    public HuffNode(
+               int frequency,HuffTree left,HuffTree right){
+      this.frequency = frequency;
+      this.left = left;
+      this.right = right;
+    }//end HuffNode constructor
+  
+    public HuffTree getLeft(){
+      return left;
+    }//end getLeft
+  
+    public HuffTree getRight(){
+      return right;
+    }//end getRight
+  
+  }//end HuffNode class
+  //=====================================================//
+
+  //This method uses the Huffman tree in a recursive manner
+  // to create a bitcode for each character in the message.
+  // The bitcodes are different lengths with the shorter
+  // bitcodes corresponding to the characters with a high
+  // usage frequency value and the longer bitcodes
+  // corresponding to the characters with the lower
+  // frequency values.
+  //Note that this method receives a reference to the
+  // Huffman tree that was earlier contained as the only
+  // object in the TreeSet object.  (Because this method is
+  // recursive, it cannot conveniently work with the
+  // TreeSet object.
+  
+  //This method creates a Huffman encoding table as a
+  // Hashtable object that relates the variable length
+  // bitcodes to the characters in the original message.
+  // The bitcodes are constructed as objects of type
+  // StringBuffer consisting of sequences of the characters
+  // 1 and 0.
+  //Each bitcode describes the traversal path from the root
+  // of the Huffman tree to a leaf on that tree.  Each time
+  // the path turns to the left, a 0 character is appended
+  // onto the StringBuffer object and becomes part of the
+  // resulting bitcode.  Each time the path turns to the
+  // right, a 1 character is appended onto the
+  // StringBuffer object.  When a leaf is reached, the
+  // character stored in that leaf is retrieved and put
+  // into the Hashtable object as a key.  A String
+  // representation of the StringBuffer object is used as
+  // the value for that key in the Hashtable.
+  //At completion,the Hashtable object contains a series of
+  // keys consisting of the original characters in the
+  // message and a series of values as String objects
+  // (consisting only of 1 and 0 characters) representing
+  // the bitcodes that will eventually be used to encode
+  // the original message.
+  //Note that theHashtable object that is populated by this
+  // method is the data structure that is required later
+  // to decode the encoded message.
+  void createBitCodes(HuffTree tree){
+    if(tree instanceof HuffNode){
+      // This is a node, not a leaf.  Process it as a node.
+
+      //Cast to type HuffNode.
+      HuffNode node = (HuffNode)tree;
+      // Get and save the left and right branches
+      HuffTree left = node.getLeft();
+      HuffTree right = node.getRight();
+      
+      //Append a 0 onto the StringBuffer object.  Then make
+      // a recursive call to this method passing a
+      // reference to the left child as a parameter.  This
+      // recursive call will work its way all the way down
+      // to a leaf before returning.  Then it will be time
+      // to process the right path.
+      code.append("0");
+      createBitCodes(left);
+      
+      //Return to here from recursive call on left child.
+
+      //Delete the 0 from the end of the StringBuffer
+      // object to restore the contents of that object to
+      // the same state that it had before appending the 0
+      // and making the recursive call on the left branch.
+      //Now we will make a right turn.  Append a 1 to the
+      // StringBuffer object and make a recursive call to
+      // this method passing a reference to the right child
+      // as a parameter.  Once again, this recursive call
+      // will work its way all the  way down to a leaf
+      // before returning.
+      code.deleteCharAt(code.length() - 1);//Delete the 0.
+      code.append("1");
+      createBitCodes(right);
+      
+      //Return to here from recursive call on right child.
+
+      //Delete the character most recently appended to the
+      // StringBuffer object and return from this recursive
+      // call to the method.  The character is deleted
+      // because control is being transferred back one
+      // level in the recursive process and the
+      // StringBuffer object must be restored to the same
+      // state that it had when this recursive call was
+      // made.
+      code.deleteCharAt(code.length() - 1);
+    }else{
+      //This is a leaf.  Process it as such.
+      //Cast the object to type HuffLeaf.
+      HuffLeaf leaf = (HuffLeaf)tree;
+      
+      //Put an entry into the Hashtable.  The Hashtable
+      // key consists of the character value stored in the
+      // leaf. The value in the Hashtable consists of the
+      // contents of the StringBuffer object representing
+      // the path from the root of the tree to the leaf.
+      // This is the bitcode and is stored in the Hashtable
+      // as a String consisting of only 1 and 0 characters.
+      huffEncodeTable.put((char)(
+                         leaf.getValue()),code.toString());
+    }//end else
+
+  }//end createBitCodes
+  //-----------------------------------------------------//
+  
+  //This method displays a table showing the relationship
+  // between the characters in the original message and the
+  // bitcodes that will ultimately replace each of those
+  // characters to produce the Huffman-encoded message.
+  void displayBitCodes(){
+    System.out.println(
+           "\nMessage Characters versus Huffman BitCodes");
+    Enumeration &lt;Character&gt;enumerator = 
+                                    huffEncodeTable.keys();
+    while(enumerator.hasMoreElements()){
+      Character nextKey = enumerator.nextElement();
+      System.out.println(
+             nextKey + " " + huffEncodeTable.get(nextKey));
+    }//end while
+  }//end displayBitCodes
+  //-----------------------------------------------------//
+  
+  //This method encodes the message into a String
+  // representation of the bits that will make up the final
+  // encoded message.  The String consists of only 1 and 0
+  // characters where each character represents the state
+  // of one of the bits in the Huffman-encoded message.
+  //Also for illustration purposes, this method optionally
+  // displays the String showing the bit values that will
+  // appear in the Huffman-encoded message.
+  void encodeToString(){
+    StringBuffer tempEncoding = new StringBuffer();
+    for(int cnt = 0;cnt &lt; rawData.length();cnt++){
+      //Do a table lookup to get the substring that
+      // represents the bitcode for each message character.
+      // Append those substrings to the string that
+      // represents the Huffman-encoded message.
+      tempEncoding.append(huffEncodeTable.get(
+                                     rawData.charAt(cnt)));
+    }//end for loop
+    
+    //Convert the StringBuffer object to a String object.
+    stringEncodedData = tempEncoding.toString();
+
+    //For illustration purposes, enable the following two
+    // statements to display the String showing the bit
+    // values that will appear in the Huffman-encoded
+    // message.  Display 48 bits to the line except for
+    // the last line, which may be shorter, and which may
+    // not be a multiple of 8 bits.
+/*
+    System.out.println("\nString Encoded Data");
+    display48(stringEncodedData);
+*/
+  }//end encodeToString
+  //-----------------------------------------------------//
+
+  //This method populates a lookup table that relates eight
+  // bits represented as a String to eight actual bits for
+  // all possible combinations of eight bits.
+  void buildEncodingBitMap(){
+
+    for(int cnt = 0; cnt &lt;= 255;cnt++){
+      StringBuffer workingBuf = new StringBuffer();
+      if((cnt & 128) &gt; 0){workingBuf.append("1");
+        }else{workingBuf.append("0");};
+      if((cnt & 64) &gt; 0){workingBuf.append("1");
+        }else {workingBuf.append("0");};
+      if((cnt & 32) &gt; 0){workingBuf.append("1");
+        }else {workingBuf.append("0");};
+      if((cnt & 16) &gt; 0){workingBuf.append("1");
+        }else {workingBuf.append("0");};
+      if((cnt & 8) &gt; 0){workingBuf.append("1");
+        }else {workingBuf.append("0");};
+      if((cnt & 4) &gt; 0){workingBuf.append("1");
+        }else {workingBuf.append("0");};
+      if((cnt & 2) &gt; 0){workingBuf.append("1");
+        }else {workingBuf.append("0");};
+      if((cnt & 1) &gt; 0){workingBuf.append("1");
+        }else {workingBuf.append("0");};
+      encodingBitMap.put(workingBuf.toString(),
+                                              (byte)(cnt));
+    }//end for loop
+  }//end buildEncodingBitMap
+  //-----------------------------------------------------//
+  
+  //The purpose of this method is to create actual bit data
+  // that matches the 1 and 0 characters in the 
+  // stringEncodedData that represents bits with the 1 and
+  // 0 characters.
+  //Note that this method doesn't handle the end of the
+  // data very gracefully for those cases where the number
+  // of required bits is not a multiple of 8.  It simply
+  // adds enough "0" characters to the end to cause the
+  // length to be a multiple of 8.  This may result in
+  // extraneous characters at the end of the decoded
+  // message later. However, it isn't difficult to remove
+  // the extraneous characters at decode time as long as
+  // the length of the original message is known.
+  //For illustration purposes, this method may optionally
+  // display the extended version of the stringEncodedData
+  // for comparison with the non-extended version.
+  //Note that the binary Huffman-encoded data produced by
+  // this method is stored in a data structure of type
+  // ArrayList &lt;Byte&gt;.
+  void encodeStringToBits(){
+    //Extend the length of the stringEncodedData to cause
+    // it to be a multiple of 8.
+    int remainder = stringEncodedData.length()%8;
+    for(int cnt = 0;cnt &lt; (8 - remainder);cnt++){
+      stringEncodedData += "0";
+    }//end for loop
+    
+    //For illustration purposes only, enable the following
+    // two statements to display the extended 
+    // stringEncodedData in the same format as the 
+    // original stringEncodedData.
+/*
+    System.out.println("\nExtended String Encoded Data");
+    display48(stringEncodedData);
+*/
+    //Extract the String representations of the required
+    // eight bits.  Generate eight actual matching bits by
+    // looking the bit combination up in a table.
+    for(int cnt = 0;cnt &lt; stringEncodedData.length();
+                                                 cnt += 8){
+      String strBits  = stringEncodedData.substring(
+                                                cnt,cnt+8);
+      byte realBits = encodingBitMap.get(strBits);
+      binaryEncodedData.add(realBits);
+    }//end for loop
+  }//end encodeStringToBits
+  //-----------------------------------------------------//
+  
+  //Method to display a String 48 characters to the line.
+  void display48(String data){
+    for(int cnt = 0;cnt &lt; data.length();cnt += 48){
+      if((cnt + 48) &lt; data.length()){
+        //Display 48 characters.
+        System.out.println(data.substring(cnt,cnt+48));
+      }else{
+        //Display the final line, which may be short.
+        System.out.println(data.substring(cnt));
+      }//end else
+    }//end for loop
+  }//end display48
+  //-----------------------------------------------------//
+  
+}//end HuffmanEncoder class
+//=======================================================//
+
+
+//An object of this class can be used to decode a
+// Huffman-encoded message given the encoded message, 
+// a data structure containing particulars as to how the
+// original message was encoded, and the length of the
+// original message..
+class HuffmanDecoder{
+  Hashtable &lt;String,Character&gt;huffDecodeTable = 
+                         new Hashtable&lt;String,Character&gt;();
+  String stringDecodedData;
+  String decodedData = "";
+  Hashtable &lt;Byte,String&gt;decodingBitMap = 
+                              new Hashtable&lt;Byte,String&gt;();
+  ArrayList &lt;Byte&gt;binaryEncodedData;
+  
+  //The following structure contains particulars as to how
+  // the original message was encoded, and must be received
+  // as an incoming parameter to the decode method along
+  // with the encoded message and the length of the
+  // original message.
+  Hashtable &lt;Character,String&gt;huffEncodeTable;
+  //Used to eliminate the extraneous characters on the end.
+  int rawDataLen;
+  //-----------------------------------------------------//
+  
+  //This method receives a Huffman-encoded message along
+  // with a data structure containing particulars as to how
+  // the original message was encoded and the length of the
+  // original message.  It decodes the original message and
+  // returns the decoded version as a String object.
+  String decode(ArrayList &lt;Byte&gt;binaryEncodedData,
+               Hashtable &lt;Character,String&gt;huffEncodeTable,
+               int rawDataLen){
+    //Save the incoming parameters.
+    this.binaryEncodedData = binaryEncodedData;
+    this.huffEncodeTable = huffEncodeTable;
+    this.rawDataLen = rawDataLen;
+    
+    //Create a decoding bit map, which is essentially the
+    // reverse of the encoding bit map that was used to
+    // encode the original message.
+    buildDecodingBitMap();
+    
+    //Decode the encoded message from a binary
+    // representation to a String of 1 and 0 characters
+    // that represent the actual bits in the encoded
+    // message.  Also, for illustration purposes only,
+    // this method may optionally display the String.
+    decodeToBitsAsString();
+    
+    //Create a Huffman decoding table by swapping the keys
+    // and values from the Huffman encoding table received
+    // as an incoming parameter by the decode method.
+    buildHuffDecodingTable();
+    
+    //Decode the String containing only 1 and 0 characters
+    // that represent the bits in the encoded message. This
+    // produces a replica of the original message that was
+    // subjected to Huffman encoding.  Write the resulting
+    // decoded message into a String object referred to by
+    // decoded data.
+    decodeStringBitsToCharacters();
+    
+    //Return the decoded message.  Eliminate the extraneous
+    // characters from the end of the message on the basis
+    // of the known length of the original message.
+    return decodedData.substring(0,rawDataLen);    
+  }//end decode method
+  //-----------------------------------------------------//
+
+  //This method populates a lookup table that relates eight
+  // bits represented as a String to eight actual bits for
+  // all possible combinations of eight bits.  This is
+  // essentially a reverse lookup table relative to the
+  // encodingBitMap table that is used to encode the
+  // message.  The only difference between the two is a
+  // reversal of the key and the value in the Hashtable
+  // that contains the table.
+  
+  void buildDecodingBitMap(){
+    for(int cnt = 0; cnt &lt;= 255;cnt++){
+      StringBuffer workingBuf = new StringBuffer();
+      if((cnt & 128) &gt; 0){workingBuf.append("1");
+        }else {workingBuf.append("0");};
+      if((cnt & 64) &gt; 0){workingBuf.append("1");
+        }else {workingBuf.append("0");};
+      if((cnt & 32) &gt; 0){workingBuf.append("1");
+        }else {workingBuf.append("0");};
+      if((cnt & 16) &gt; 0){workingBuf.append("1");
+        }else {workingBuf.append("0");};
+      if((cnt & 8) &gt; 0){workingBuf.append("1");
+        }else {workingBuf.append("0");};
+      if((cnt & 4) &gt; 0){workingBuf.append("1");
+        }else {workingBuf.append("0");};
+      if((cnt & 2) &gt; 0){workingBuf.append("1");
+        }else {workingBuf.append("0");};
+      if((cnt & 1) &gt; 0){workingBuf.append("1");
+        }else {workingBuf.append("0");};
+      decodingBitMap.put((byte)(cnt),workingBuf.
+                                               toString());
+    }//end for loop
+  }//end buildDecodingBitMap()
+  //-----------------------------------------------------//
+  
+  //This method decodes the encoded message from a binary
+  // representation to a String of 1 and 0 characters that
+  // represent the actual bits in the encoded message.
+  // Also, for illustration purposes only, this method
+  // may optionally display that String.
+  void decodeToBitsAsString(){
+    StringBuffer workingBuf = new StringBuffer();
+
+    for(Byte element : binaryEncodedData){
+      byte wholeByte = element;
+      workingBuf.append(decodingBitMap.get(wholeByte));
+    }//end for-each
+    
+    //Convert from StringBuffer to String
+    stringDecodedData = workingBuf.toString();
+    
+    //For illustration purposes only, enable the following
+    // two statements to display the String containing 1
+    // and 0 characters that represent the bits in the
+    // encoded message.
+/*
+    System.out.println("\nString Decoded Data");
+    display48(stringDecodedData);
+*/
+  }//end decodeToBitsAsString
+  //-----------------------------------------------------//
+  
+  //This method creates a Huffman decoding table by
+  // swapping the keys and the values from the Huffman
+  // encoding table received as an incoming parameter by
+  // the decode method.
+  void buildHuffDecodingTable(){
+    Enumeration &lt;Character&gt;enumerator = 
+                                    huffEncodeTable.keys();
+    while(enumerator.hasMoreElements()){
+      Character nextKey = enumerator.nextElement();
+      String nextString = huffEncodeTable.get(nextKey);
+      huffDecodeTable.put(nextString,nextKey);
+    }//end while
+  }//end buildHuffDecodingTable()
+  //-----------------------------------------------------//
+
+  //The method begins with an empty StringBuffer object
+  // referred to by the variable named workBuf and another
+  // empty StringBuffer object referred to by the variable
+  // named output.  The StringBuffer object referred to by
+  // output is used to construct the decoded message.  The
+  // StringBuffer object referred to by workBuf is used as
+  // a temporary holding area for substring data.
+  //The method reads the String containing only 1 and 0
+  // characters that represent the bits in the encoded
+  // message (stringDecodedData).  The characters are read
+  // from this string one character at a time.  As each new
+  // character is read, it is appended to the StringBuffer
+  // object referred to by workBuf.
+  //As each new character is appended to the StringBuffer
+  // object, a test is performed to determine if the
+  // current contents of the StringBuffer object match one
+  // of the keys in a lookup table that relates strings
+  // representing Huffman bitcodes to characters in the
+  // original message.
+  //When a match is found, the value  associated with that
+  // key is extracted and appended to the StringBuffer
+  // object referred to by output.  Thus, the output text
+  // is built up one character at a time.
+  //Having processed the matching key, A new empty
+  // StringBuffer object is instantiated, referred to by
+  // workBuf, and the process of reading, appending, and
+  // testing for a match is repeated until all of the
+  // characters in the string that represents the bits in
+  // the encoded message have been processed.  At that
+  // point, the StringBuffer object referred to by output
+  // contains the entire decoded message.  It is converted
+  // to type String and written into the object referred to
+  // by decodedData.  Then the method returns with the task
+  // of decoding the encoded message having been completed.
+  void decodeStringBitsToCharacters(){
+    StringBuffer output = new StringBuffer();
+    StringBuffer workBuf = new StringBuffer();
+
+    for(int cnt = 0;cnt &lt; stringDecodedData.length();
+                                                    cnt++){
+      workBuf.append(stringDecodedData.charAt(cnt));
+      if(huffDecodeTable.containsKey(workBuf.toString())){
+        output.append(
+                  huffDecodeTable.get(workBuf.toString()));
+        workBuf = new StringBuffer();
+      }//end if
+    }//end for loop
+    
+    decodedData = output.toString();
+  }//End decodeStringBitsToCharacters();
+  //-----------------------------------------------------//
+  
+  //Method to display a String 48 characters to the line.
+  void display48(String data){
+    for(int cnt = 0;cnt &lt; data.length();cnt += 48){
+      if((cnt + 48) &lt; data.length()){
+        //Display 48 characters.
+        System.out.println(data.substring(cnt,cnt+48));
+      }else{
+        //Display the final line, which may be short.
+        System.out.println(data.substring(cnt));
+      }//end else
+    }//end for loop
+  }//end display48
+  //-----------------------------------------------------//
+
+}//end HuffmanDecoder class
+//=======================================================//
+
+//This class is the abstract superclass of the
+// HuffNode and HuffLeaf classes.  Objects instantiated
+// from HuffNode and HuffLeaf are populated and used to
+// create a Huffman tree.
+abstract class HuffTree implements Comparable{
+
+  int frequency;
+  
+  public int getFrequency(){
+    return frequency;
+  }//end getFrequency
+
+  //This method compares this object to an object whose
+  // reference is received as an incoming parameter.
+  // The method guarantees that sorting processes that
+  // depend on this method, such as TreeSet objects, will
+  // sort the objects into a definitive order.
+  
+  // If the frequency values of the two objects are
+  // different, the sort is based on the frequency values.
+  // If the frequency values are equal, the objects are
+  // sorted based on their relative hashCode values. 
+  // Thus, if the same two objects with the same frequency
+  // value are compared two or more times during the
+  // execution of the program, those two objects will
+  // always be sorted into the same order.  There is no
+  // chance of an ambiguous tie as to which object
+  // should be first except for the case where an object
+  // is compared to itself using two references to the
+  // same object.
+  public int compareTo(Object obj){
+    HuffTree theTree = (HuffTree)obj;
+    if (frequency == theTree.frequency){
+      //The objects are in a tie based on the frequency
+      // value.  Return a tiebreaker value based on the
+      // relative hashCode values of the two objects.
+      return (hashCode() - theTree.hashCode());
+    }else{
+      //Return negative or positive as this frequency is
+      // less than or greater than the frequency value of
+      // the object referred to by the parameter.
+      return frequency - theTree.frequency;
+    }//end else
+  }//end compareTo
+
+}//end HuffTree class
+//=======================================================//<br><br><b><font face="Courier New,Courier">Listing 45</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<p>&nbsp;</p>
+<hr align="center" size="3" width="100%">
+<p>Copyright 2006, Richard G. Baldwin.&nbsp; Reproduction in whole or in part in any 
+form or medium without express written permission from Richard Baldwin is 
+prohibited. </p>
+<h4>About the author</h4>
+<b><a href="mailto:Baldwin@DickBaldwin.com">Richard Baldwin</a></b><i> is a 
+college professor (at Austin Community College in Austin, TX) and private 
+consultant whose primary focus is a combination of Java, C#, and XML. In 
+addition to the many platform and/or language independent benefits of Java and 
+C# applications, he believes that a combination of Java, C#, and XML will become 
+the primary driving force in the delivery of structured information on the Web.</i>    
+<p><i>Richard has participated in numerous consulting projects and he 
+frequently provides onsite training at the high-tech companies located in and 
+around Austin, Texas.&nbsp; He is the author of Baldwin's Programming
+<a href="http://www.dickbaldwin.com">Tutorials</a>, which have gained a 
+worldwide following among experienced and aspiring programmers. He has also 
+published articles in JavaPro magazine.</i> </p>
+<p><i>In addition to his programming expertise, Richard has many years of 
+practical experience in Digital Signal Processing (DSP).&nbsp; His first job after he 
+earned his Bachelor's degree was doing DSP in the Seismic Research Department of 
+Texas Instruments.&nbsp; (TI is still a world leader in DSP.)&nbsp; In the following 
+years, he applied his programming and DSP expertise to other interesting areas 
+including sonar and underwater acoustics.</i> </p>
+<p><i>Richard holds an MSEE degree from Southern Methodist University and has 
+many years of experience in the application of computer technology to real-world 
+problems.</i> </p>
+<p><i><a href="mailto:baldwin@dickbaldwin.com">Baldwin@DickBaldwin.com</a></i>
+</p>
+<p><b>Keywords</b><br>
+java Huffman Lempel Ziv LZ77 lossless compression algorithm&nbsp; LZW LZSS DEFLATE 
+tuple&nbsp; </p>
+<p>-end- </p>
+<p>&nbsp;</p>
+<p> <br>
+&nbsp; </p>
+<br>
+<br>
+<br>
+<br>
+</body>
+</html>

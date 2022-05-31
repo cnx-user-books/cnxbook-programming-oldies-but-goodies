@@ -1,0 +1,688 @@
+<html><head>
+   <meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
+   <meta name="generator" content="mozilla/4.04 [en] (win95; i) [netscape]">
+   <meta name="author" content="richard g. baldwin">
+   <title>... in Java by Richard G Baldwin</title></head><body><!--start-->
+
+<center><h3><b><i>Richard G Baldwin (512) 223-4758, <a href="mailto:baldwin@austin.cc.tx.us">baldwin@austin.cc.tx.us</a>,
+<a href="http://www2.austin.cc.tx.us/baldwin/">http://www2.austin.cc.tx.us/baldwin/</a></i></b></h3></center>
+
+<center><h2><b><!--title-->The AWT Package, Graphics - Animation and Double Buffering<!--endtitle--></b></h2></center>
+Java Programming, Lecture Notes # 172, Revised 02/19/98.
+<ul><li><a href="#preface">Preface</a></li>
+
+<li><a href="#introduction">Introduction</a></li>
+
+<li><a href="#sample program">Sample Program</a></li>
+
+<ul><li><a href="#interesting code fragments">Interesting Code Fragments</a></li>
+
+<li><a href="#program listing">Program Listing</a></li></ul></ul>
+
+<hr width="100%"><center><h2><a name="preface"></a><b><font color="#ff0000">Preface</font></b></h2></center>
+Students in Prof. Baldwin's <b>Advanced Java Programming</b> classes at
+ACC are responsible for knowing and understanding all of the material in
+this lesson.
+
+<p>The material in this lesson is extremely important. However, there is
+simply too much material to be covered in detail during lecture periods.
+Therefore, students in Prof. Baldwin's <b>Advanced Java Programming</b>
+classes at ACC will be responsible for studying this material on their
+own, and bringing any questions regarding the material to class for discussion.
+
+<p>This lesson was originally written on November 30, 1997 using the software
+and documentation in the JDK 1.1.3 download package.
+<center><h2><a name="introduction"></a><font color="#ff0000">Introduction</font></h2></center>
+A previous lesson introduced you to many aspects of working with images
+in Java. In this lesson, we will extend what you know into a classical
+graphics problem - <i>animation</i>. In order to improve the illusion of
+of motion in our animation, we will also introduce you to the use of <i>double
+buffering</i> in Java.
+
+<p>Animation normally consists of the rendering of many images in succession
+with each image differing incrementally from the previous image. If the
+images are rendered fast enough, and the incremental changes are small
+enough, we are fooled into believing we are seeing true motion.
+
+<p>If not done properly, we see flashing and flicker that destroys the
+illusion.
+
+<p>This lesson will develop an animation program that can be viewed <u>either
+with or without double buffering</u> so that you can easily see the difference
+that double buffering makes to the animation process.
+
+<p>We will introduce and discuss a number of new concepts as we view interesting
+code fragments from the program. A complete listing of the program is provided
+at the end of the lesson.
+<center><h2><a name="sample program"></a><font color="#ff0000">Sample Program</font></h2></center>
+This program illustrates animation with or without double buffering. It
+requires access to an image file named <b>"logomain.gif"</b> in the current
+directory on the hard disk.
+
+<p>Just about any image file should do, but it needs to be large enough
+that you can see some of the details when it is displayed at its normal
+size. An image file that covers about one-eighth to one-fourth of your
+screen should be about right.
+
+<p>Java JDK 1.1.3 only supports image files in the <b>gif</b> or <b>jpg</b>
+formats. You should be able to find hundreds of <b>gif </b>or <b>jpg </b>files
+in the cache directory of your browser. You will need to rename the file
+to the name given above and copy it into the current directory on your
+hard disk.
+
+<p>For simplicity, the name of the graphics file is hard-coded into the
+program. You could modify the source code to accommodate a different file
+name, or you could provide additional code in <b>main</b> which requests
+a file name from the standard input device and uses that name for the image
+file.
+
+<p>If the program is unable to load the image file within ten seconds,
+it will abort with an error message. If your file is large, or is being
+loaded from a web server, it may be necessary for you to modify the source
+code and increase the timeout interval.
+
+<p>To run the program in double-buffer mode, enter the following at the
+command line:
+<br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td><pre>java image04</pre></td></tr></table>
+To run the program with double buffering disabled, enter the following
+at the command line (note the command-line parameter <b>x</b>):
+<br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td><pre>java image04 <b>x</b></pre></td></tr></table>
+Actually, entering any command-line argument disables double-buffer mode
+and causes the program to draw directly to the screen.
+
+<p>The animation is performed in a <b>Frame </b>object as the container.
+The size of the <b>Frame </b>is automatically adjusted to accommodate the
+size of the image.
+
+<p>Once started, the program will continue to animate the image until you
+press the close button on the <b>Frame </b>object.
+
+<p>This program causes a series of images of successively increasing or
+decreasing size to be scaled and rendered on the screen.
+
+<p>The series of images are scaled in such a way as to make it appear that
+the base image is moving into and out of the screen like a yo-yo. The image
+is pinned at its upper left corner, so all size changes are relative to
+that point.
+
+<p>This causes the image to appear to enter the <b>Frame</b> in the upper
+left corner and move toward you with a slight left-to-right angle. When
+the size of the animated image is almost as large as the <b>Frame</b> object,
+it reverses direction and retreats back into the upper left-hand corner.
+Then it starts the process all over again.
+
+<p>In order to simulate a more realistic animation task, scaling is performed
+as the image is being drawn either onto the screen or onto the graphics
+context of the buffer area. (In other words, prescaled images are not used.)
+The scaling is performed on-the-fly in the <b>paint()</b> method.
+
+<p>The <b>paint()</b> method is invoked approximately 20 times per second
+which is sufficiently fast to provide a good illusion of animation. Once
+the image becomes large, however, it appears that the repetition rate slows
+down noticeably due to the time required to render the larger images (on
+a 133mhz Pentium processor).
+
+<p>Actually, the <b>paint()</b> method is invoked again approximately 50
+milliseconds after it exits. Thus, the time interval between repetitions
+is 50 milliseconds plus the time required to render the image in the <b>paint()</b>
+method. A better approach would be to develop a clock signal that is independent
+of the time required to render the images and use that signal to invoke
+the <b>paint() </b>method each time. This would eliminate (or reduce) the
+apparent slowdown for large images until the point where the actual rendering
+consumes the full interval between invocations. However, repetition control
+is a subject for a different lesson. This lesson is primarily concerned
+with the graphics aspects of animation.
+
+<p>The screen image is modified once each time that the <b>paint()</b>
+method is invoked.
+
+<p>When in double-buffer mode, the contents of the buffer are transferred
+to the screen upon entry into the <b>paint()</b> method. Then the next
+version of the image is drawn into the buffer area (to be transferred to
+the screen at the beginning of the next repetition) and the <b>paint()</b>
+method exits.
+
+<p>When not in double-buffer mode, the image is drawn directly to the screen
+upon entry into the <b>paint()</b> method and then the <b>paint()</b> method
+exits.
+
+<p>In Jave, we actually invoke the <b>repaint()</b> method to cause the
+screen to be painted. Perhaps you have wondered what happens when you invoke
+the <b>repaint()</b> method. One thing that happens is that the <b>update()
+</b>method is invoked which in turn invokes the <b>paint()</b> method.
+The <b>update()</b> method normally erases the entire screen each time
+<b>repaint()</b> is invoked. After erasing the screen, it invokes the <b>paint()</b>
+method.
+
+<p>Normally, we don't override the <b>update()</b> method except in special
+circumstances. This is one of those special circumstances. In this program,
+the <b>update()</b> method is overridden to eliminate unnecessary erasing
+of the screen because unnecessary erasing of the screen causes an undesirable
+flashing in an animation program.
+
+<p>Because the <b>update()</b> method no longer erases the screen, each
+time <b>paint()</b> is entered (when not in double-buffer mode) it is necessary
+to erase a small area of the screen before drawing a new image in order
+to eliminate any residue from the previous image.
+
+<p>It is not necessary to erase the screen in double-buffer mode because
+an entire screen image is copied at relatively high speed from the buffer
+area to the screen each time the <b>paint()</b> method is invoked. However,
+it is necessary to erase a small portion of the buffer area each time before
+drawing a new image in it so as to eliminate any residue from the previous
+image drawn into the buffer area.
+
+<p>When this program is run in non-buffer mode, there is a lot of flicker
+and the animation illusion isn't very good. This flicker is apparently
+the result of drawing each successive image in full view of the user.
+
+<p>In other words, even though the drawing is accomplished very quickly,
+the viewer can still see each image being drawn on the screen after its
+area of the screen has been erased and this results in a flicker effect.
+(Weren't movies called flickers or flicks in the early days?)
+
+<p>The flicker in this program is eliminated in double-buffer mode and
+the illusion of motion is pretty good. In the double-buffer case, the actual
+drawing of the individual images takes place out of sight of the viewer,
+and once drawn, the entire image is blasted to the screen very quickly.
+
+<p>Be aware, however, that even in double-buffer mode, the scaling of the
+images may be less than perfect and you may see fuzz growing on your image
+as it changes in size from small to large and back to small again. This
+is because the pixel representation of the image is not particularly good
+at any size, and the pixel representation at one size is different from
+the pixel representation at a slightly different size. This is especially
+noticible in areas with a high degree of detail such as in areas containing
+text.
+
+<p>This program was tested using JDK 1.1.3 under Win95.
+<center><h3><a name="interesting code fragments"></a><font color="#ff0000">Interesting
+Code Fragments</font></h3></center>
+The first interesting code fragment contains the set of instance variables
+used to implement the behavior of the program. Of particular interest is
+the reference variable of type <b>Image</b> named <b>rawImage</b> that
+points to the raw image loaded from the disk file.
+
+<p>Also of interest are the <b>Image</b> variable named <b>offScreenImage</b>
+and the <b>Graphics</b> variable named <b>offScreenContext</b>. The first
+is a reference to an object of type <b>Image</b> that is used to contain
+the offscreen version of the image during the buffering process. The second
+is the <u>graphics context</u> for that object. (Recall that you cannot
+draw on an <b>Image</b> object. Rather, you must obtain the graphics context
+for the <b>Image</b> object and draw on the graphics context.)
+<br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td><pre>&nbsp; <b>Image rawImage</b>;//ref to raw image file fetched from disk
+&nbsp; int rawWidth;
+&nbsp; int rawHeight;
+&nbsp;&nbsp;
+&nbsp; //Width and height values for a particular&nbsp;
+&nbsp; // animation frame&nbsp;
+&nbsp; int newWidth;
+&nbsp; int newHeight;
+&nbsp;&nbsp;
+&nbsp; //Inset values for the container object
+&nbsp; int inTop;
+&nbsp; int inLeft;
+&nbsp;&nbsp;
+&nbsp; //References to objects used for double buffering
+<b>&nbsp; Image offScreenImage;
+&nbsp; Graphics offScreenContext;
+</b>&nbsp;&nbsp;
+&nbsp; //To double buffer or not double buffer
+&nbsp; boolean doubleBuf = true;</pre></td></tr></table>
+We will see numerous references to these instance variables throughout
+this discussion.
+
+<p>The next interesting code fragment is the code in <b>main</b> that checks
+to see if the user entered any command-line arguments, and if so sets a
+flag that causes the program to operated in a non-buffered mode (buffered
+mode is the default).
+
+<p>Code in the <b>paint()</b> method checks the state of the <b>boolean</b>
+instance variable named <b>doubleBuf</b> to determine whether to implement
+double buffering or not.
+<br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td><pre>&nbsp;&nbsp;&nbsp; if(args.length == 0){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; obj.<b>doubleBuf = true</b>;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Double buffer mode");
+&nbsp;&nbsp;&nbsp; }//end if
+&nbsp;&nbsp;&nbsp; else{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; obj.<b>doubleBuf = false</b>;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Not double buffer mode");
+&nbsp;&nbsp;&nbsp; }//end else</pre></td></tr></table>
+This brings us to the actual animation loop that is implemented inside
+<b>main</b>. The code in <b>main</b> enters an endless loop which includes
+a 50-millisecond sleep interval. Once each iteration, it performs some
+calculations to establish the size for the next rendering of the image
+and then invokes the <b>repaint()</b> method.
+
+<p>According to <u>Just Java 1.1 and Beyond</u> by Peter van der Linden,
+(page 446) this is what happens when you invoke <b>repaint()</b>.
+<br>&nbsp;
+<table border bgcolor="#80ffff" ><tr><td>repaint() calls update() which calls clear() and then calls paint()</td></tr></table>
+In fact, van der Linden tells us (page 469) that the <b>update()</b> method
+looks like this:
+<br>&nbsp;
+<table border bgcolor="#80ffff" ><tr><td><pre>public void <b>update</b>(Graphics g){
+&nbsp; g.<b>setColor</b>(getBackground());
+&nbsp; g.<b>fillRect</b>(0,0,width,height);
+&nbsp; g.<b>setColor</b>(getForeground());
+&nbsp; <b>paint</b>(g);
+}</pre></td></tr></table>
+The effect of <b>update()</b> (as far as we are concerned here) is to redraw
+the image in the solid background color (on the graphics context) and then
+invoke the <b>paint()</b> method to render that graphics context to the
+screen.. Later in this program, we will override the <b>update()</b> method
+to eliminate the first three statements so that it will simply cause <b>repaint()</b>
+to invoke <b>paint()</b>.
+
+<p>So why don't we just invoke <b>paint()</b> in the first place if we
+don't want <b>update()</b> to erase the screen (fill it with the background
+color)? Because <b>paint()</b> requires a parameter that we don't normally
+have access to: the <b>Graphics</b> context of the object for which <b>paint()</b>
+is being overridden. In fact, one of the three ways that we gain access
+to the <b>Graphics</b> context is by overriding either <b>paint()</b> or
+<b>update()</b>.
+
+<p>Now let's get back to the fact that the code in <b>main</b> enters an
+endless loop which includes a 50-millisecond sleep interval. Once each
+iteration, it performs some calculations to establish the size for the
+next rendering of the image and then invokes the <b>repaint()</b> method.
+
+<p>The calculations (and the associated tests) are pretty straightforward.
+The code simply decides whether the image should be growing or shrinking
+(or has hit a limit and should change direction) and then uses a scale
+factor to calculate the new size of the image to be displayed. The horizontal
+and vertical sizes are assigned to two of the instance variables that we
+saw at the beginning of the class definition and the scale factor is changed
+for use in the next iteration..
+
+<p>After invoking <b>repaint()</b>, the code goes to sleep for 50 milliseconds,
+wakes up and executes another iteration. When the user clicks the <i>close</i>
+button on the <b>Frame</b> object, a Window event will be processed to
+terminate the program.
+<br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td><pre>&nbsp;&nbsp;&nbsp; //Loop in animated mode until close button is clicked
+&nbsp;&nbsp;&nbsp; while(true){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Reverse direction of motion if necessary
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(scale >= 0.999) delta = -0.005;//move into screen
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(scale &lt;= 0.015) delta = 0.005;//move out of screen
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Establish width and height for this rendering
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // of the image.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; obj.newWidth = (int)(scale*obj.rawWidth);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; obj.newHeight = (int)(scale*obj.rawHeight);&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; obj.repaint();//render the image
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; scale += delta;//update scale for next rendering
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Sleep for awhile. Animate at approximately 20
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // frames per second.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Thread.currentThread().sleep(50);&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }catch(InterruptedException e){System.out.println(e);}
+&nbsp;&nbsp;&nbsp; }//end while loop
+&nbsp;&nbsp; }//end main</pre></td></tr></table>
+Now we come to the constructor. The first interesting code fragment in
+the constructor is the statement that "gets" the image contained in the
+specified file. We have seen statements like this in earlier lessons where
+the <b>getImage()</b> method is invoked on an object of the <b>Toolkit</b>
+class to read a disk file and assign the contents of the file to a reference
+variable of type <b>Image</b>.
+<br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td><pre>&nbsp;&nbsp;&nbsp; rawImage =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Toolkit.getDefaultToolkit().<b>getImage</b>("logomain.gif");</pre></td></tr></table>
+We don't really want to try creating scaled versions of the image until
+is is fully loaded, so we instantiate and use a <b>MediaTracker</b> object
+to track the loading status of the image file as shown in the next code
+fragment..
+
+<p>Once we instantiate the object, we invoke the <b>addImage()</b> method
+to add this image to the list of images to be tracked by the object. In
+the process, we establish the identification value "1" for this image.
+This identification can be used to request a variety of different types
+of tracking information about the image from the tracker object.
+
+<p>The tracker object can also be asked to block until the identified image
+is fully loaded, or until the passage of a specified amount of time.
+
+<p>In this case, we use the <b>waitForId()</b> method to ask the tracker
+object to block until the image is loaded, or ten seconds elapses, whichever
+comes first. The method returns <b>true</b> if the image is successfully
+loaded during the ten-second interval, and <b>false</b> otherwise. If <b>false</b>,
+we display an error message and terminate the program.
+<br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td><pre>&nbsp;&nbsp;&nbsp; //Use a MediaTracker object to block until the image
+&nbsp;&nbsp;&nbsp; // is loaded or ten seconds has elapsed.
+&nbsp;&nbsp;&nbsp; MediaTracker tracker = new <b>MediaTracker</b>(this);
+&nbsp;&nbsp;&nbsp; tracker.<b>addImage</b>(rawImage,<b>1</b>);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(!tracker.<b>waitForID</b>(1,10000)){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Load error.");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.exit(1);&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end if
+&nbsp;&nbsp;&nbsp; }catch(InterruptedException e){System.out.println(e);}</pre></td></tr></table>
+You should also note that the <b>waitForID()</b> method throws a <b>InterruptedException</b>
+object which is a <i>checked</i> exception. Therefore, we must either declare
+this fact in our method signature, or include the call to <b>waitForID()</b>
+in a <i>try/catch</i> block.
+
+<p>We attempted to make this program compatible with a wide variety of
+image files. As a result, we will see later that the size of the <b>Frame</b>
+object that serves as the container is automatically adjusted to the size
+of the raw image.
+
+<p>The next interesting code fragment extracts the width and height of
+the raw image and assigns them to two of the instance variables that we
+saw at the beginning of the class definition. This makes the information
+available later for the process of adjusting the size of the <b>Frame</b>
+object to make it match the size of the raw image.
+<br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td><pre>&nbsp;&nbsp;&nbsp; rawWidth = rawImage.<b>getWidth</b>(this);
+&nbsp;&nbsp;&nbsp; rawHeight = rawImage.<b>getHeight</b>(this);</pre></td></tr></table>
+Inset information for the <b>Frame</b> object is also needed in the automatic
+sizing of that object to fit the image. The next step is to make the <b>Frame</b>
+object visible and then get the inset information which we assign to two
+of the instance variables. Note that the insets information is not available
+until you associate the <b>Frame </b>with a peer object. <b>setVisible()</b>
+is one way to do that.
+<br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td><pre>&nbsp;&nbsp;&nbsp; this.<b>setVisible</b>(true);//make the Frame visible
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; inTop = this.<b>getInsets().top;
+</b>&nbsp;&nbsp;&nbsp; inLeft = this.<b>getInsets().left</b>;</pre></td></tr></table>
+The next code fragment makes use of the information about the image and
+container gathered thus far and uses that information to establish the
+size of the <b>Frame</b> object to match the size of the raw image.
+<br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td><pre>&nbsp;&nbsp;&nbsp; this.<b>setSize</b>(inLeft+rawWidth,inTop+rawHeight);</pre></td></tr></table>
+The next code fragment is completely new to this lesson. You haven't seen
+it in any of my previous lessons (unless I update some of them after this
+writing).
+
+<p>In this code fragment, we use the <b>createImage()</b> method to get
+an <b>Image</b> object of the specified size that we can use for our offscreen
+buffer area. Recall, however that you cannot draw directly on an <b>Image</b>
+object. Rather, you must get a graphics context for the object and actually
+draw on the graphics context.
+
+<p>We use the <b>getGraphics()</b> method to get that graphics context.
+This is one of the three ways that you can gain access to a graphics context
+of type <b>Graphics</b>. The other two ways are to overload the <b>update()</b>
+and <b>paint()</b> methods which receive a graphics context as a parameter.
+<br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td><pre>&nbsp;&nbsp;&nbsp; offScreenImage = this.<b>createImage</b>(rawWidth,rawHeight);
+&nbsp;&nbsp;&nbsp; offScreenContext = offScreenImage.<b>getGraphics</b>();</pre></td></tr></table>
+That concludes the discussion of code fragments in the constructor. The
+next interesting code fragment is the overridden <b>update()</b> method.
+As you may recall, we overrode this method to prevent it from erasing the
+screen before invoking the <b>paint()</b> method as described earlier.
+As you can see, we have eliminated all but one of the statements in the
+<b>update()</b> method that you saw earlier.
+<br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td><pre>&nbsp; public void <b>update</b>(Graphics g){
+&nbsp;&nbsp;&nbsp; <b>paint</b>(g);&nbsp;&nbsp;
+&nbsp; }//end overridden update() method</pre></td></tr></table>
+Next we turn our attention to the overridden <b>paint() </b>method where
+we do all of our drawing. We will discuss this method in two parts.
+
+<p>In the first part we will highlight the code that is executed when the
+user selects the default <u>double-buffer mode</u>.
+
+<p>In the second part we will highlight the code that is executed when
+the user selects the <u>non-buffered mode</u>.
+
+<p>Recall that this method receives the graphics context for the <b>Frame</b>
+object (the class for which it is being overridden). This graphics context
+is known locally as <b>g</b>. The method also has access to the graphics
+context for the offscreen image which is named <b>offScreenContext</b>.
+
+<p>Each time this method is invoked in the double-buffer mode, it draws
+a new image and leaves it in the offscreen graphics context.
+
+<p>We begin the method by accessing the image from the offscreen graphics
+context and rendering it to the screen. We use the <b>drawImage()</b> method
+of the <b>Frame's</b> graphics context to do this, passing the <b>offScreenImage</b>
+as a parameter. This causes the <b>offScreenImage</b> to be drawn on the
+screen at the location specified by the second and third parameters. Note
+that this is a non-scaling version of the <b>drawImage()</b> method which
+executes very rapidly.
+<br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td><pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; g.<b>drawImage</b>(<b>offScreenImage</b>,inLeft,inTop,this);&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; offScreenContext.<b>clearRect</b>(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0,0,rawWidth,rawHeight);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; offScreenContext.<b>drawImage</b>(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; rawImage,0,0,newWidth,newHeight,this);</pre></td></tr></table>
+Then we need to draw a new offscreen image based on the values of the <b>newWidth</b>
+and <b>newHeight</b> instance variables.
+
+<p>First, however, we use <b>clearRect()</b> to clear a rectangular area
+in the offscreen graphics context the size of the raw image, beginning
+at the upper left hand corner.
+
+<p>Then we use a <u>scaling version</u> of the <b>drawImage()</b> method
+to draw our new image to the offscreen graphics context and scale it to
+the new desired size in the process. The scaling version executes much
+more slowly than the non-scaling version. However, this isn't a problem
+because we are doing this drawing out of sight of the user. (Of course,
+if it is too slow, we will never be able to keep up with the overall animation
+objective.)
+
+<p>Then we exit the <b>paint()</b> method, leaving the new image to be
+rendered to the screen the next time the method in invoked.
+
+<p>That concludes our discussion for the double-buffered mode. The other
+possibility is that the user has selected the <u>non-buffered mode</u>.
+This is illustrated in the next code fragment.
+
+<p>First we invoke the <b>clearRect()</b> method on the screen's graphics
+context to clear a rectangular area the size of the raw image.
+
+<p>Then we use a <u>scaling version</u> of the <b>drawImage()</b> method
+to draw the new image on the screen, scaling it in the process.
+
+<p>As mentioned earlier, this scaling and drawing are performed in full
+view of the user which results in an annoying flicker, and in some cases
+renders the process useless.
+<br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td><pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; g.<b>clearRect</b>(inLeft,inTop,rawWidth,rawHeight);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; g.<b>drawImage</b>(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; rawImage,inLeft,inTop,newWidth,newHeight,this);</pre></td></tr></table>
+Note that in both the buffered and the non-buffered cases, we used the
+overloaded <b>drawImage()</b> method to actually draw the image on the
+screen. The major difference, however, is that in the non-buffered case,
+we used a version of the method that is required to scale the image as
+it is being drawn. This causes it to be significantly slower than the other
+version that simply transfers a previously scaled image directly to the
+screen with no significant processing along the way.
+<center><h3><a name="program listing"></a><font color="#ff0000">Program Listing</font></h3></center>
+A complete listing of this program follows. Some of the interesting code
+fragments are highlighted in <b>boldface</b>. A description of the operational
+features of the program was provided earlier.
+<br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td><pre>/*File Image04.java
+Copyright 1997, R.G.Baldwin
+
+This program illustrates animation with or without double&nbsp;
+buffering. It requires access to an image file named
+"logomain.gif" in the current directory on the hard disk.
+
+To run the program in double-buffer mode, enter the
+following at the command line:
+&nbsp;&nbsp;
+java image04
+
+To run the program without double buffering, enter the
+following at the command line:
+&nbsp;&nbsp;
+java image04 x
+
+The program will continue to animate the image until you
+press the close button on the Frame object.&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+This program was tested using JDK 1.1.3 under Win95.
+
+**********************************************************/
+import java.awt.*;
+import java.awt.event.*;
+
+class Image04 extends Frame{ //controlling class
+&nbsp; Image rawImage;//ref to raw image file fetched from disk
+&nbsp; int rawWidth;
+&nbsp; int rawHeight;
+&nbsp;&nbsp;
+&nbsp; //Width and height values for a particular&nbsp;
+&nbsp; // animation frame&nbsp;
+&nbsp; int newWidth;
+&nbsp; int newHeight;
+&nbsp;&nbsp;
+&nbsp; //Inset values for the container object
+&nbsp; int inTop;
+&nbsp; int inLeft;
+&nbsp;&nbsp;
+&nbsp; //References to objects used for double buffering
+&nbsp; Image offScreenImage;
+&nbsp; Graphics offScreenContext;
+&nbsp;&nbsp;
+&nbsp; //To double buffer or not double buffer
+&nbsp; boolean doubleBuf = true;
+
+&nbsp; //=====================================================//
+
+&nbsp; public static void <b>main</b>(String[] args){
+&nbsp;&nbsp;&nbsp; Image04 obj = new Image04();//instantiate this object
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Declare some local variables
+&nbsp;&nbsp;&nbsp; double delta = 0;
+&nbsp;&nbsp;&nbsp; double scale = 0;
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Set for double buffering or not based on command-
+&nbsp;&nbsp;&nbsp; // line args.&nbsp; Default is double buffering.&nbsp; Enter any
+&nbsp;&nbsp;&nbsp; // command-line argument to disable double buffering.
+&nbsp;&nbsp;&nbsp; if(args.length == 0){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; obj.doubleBuf = true;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Double buffer mode");
+&nbsp;&nbsp;&nbsp; }//end if
+&nbsp;&nbsp;&nbsp; else{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; obj.doubleBuf = false;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Not double buffer mode");
+&nbsp;&nbsp;&nbsp; }//end else
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Loop in animated mode until close button is clicked
+&nbsp;&nbsp;&nbsp; while(true){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Reverse direction of motion if necessary
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(scale >= 0.999) delta = -0.005;//move into screen
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(scale &lt;= 0.015) delta = 0.005;//move out of screen
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Establish width and height for this rendering
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // of the image.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; obj.newWidth = (int)(scale*obj.rawWidth);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; obj.newHeight = (int)(scale*obj.rawHeight);&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; obj.repaint();//render the image
+</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; scale += delta;//update scale for next rendering
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Sleep for awhile. Animate at approximately 20
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // frames per second.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Thread.currentThread().<b>sleep</b>(50);&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }catch(InterruptedException e){System.out.println(e);}
+&nbsp;&nbsp;&nbsp; }//end while loop
+&nbsp;&nbsp; }//end main
+
+&nbsp; //=====================================================//
+&nbsp;&nbsp;
+&nbsp; public <b>Image04</b>(){//constructor
+&nbsp;&nbsp;&nbsp; //Get an image from the specified file in the current
+&nbsp;&nbsp;&nbsp; // directory on the local hard disk.
+&nbsp;&nbsp;&nbsp; rawImage =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Toolkit.getDefaultToolkit().<b>getImage</b>("logomain.gif");
+&nbsp;
+&nbsp;&nbsp;&nbsp; //Use a MediaTracker object to block until the image
+&nbsp;&nbsp;&nbsp; // is loaded or ten seconds has elapsed.
+&nbsp;&nbsp;&nbsp; MediaTracker tracker = <b>new MediaTracker</b>(this);
+&nbsp;&nbsp;&nbsp; tracker.<b>addImage</b>(rawImage,1);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(!tracker.<b>waitForID</b>(1,10000)){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Load error.");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.exit(1);&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end if
+&nbsp;&nbsp;&nbsp; }catch(InterruptedException e){System.out.println(e);}
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Raw image has been loaded.&nbsp; Establish width and&nbsp;
+&nbsp;&nbsp;&nbsp; // height of the raw image.
+&nbsp;&nbsp;&nbsp; rawWidth = rawImage.<b>getWidth</b>(this);
+&nbsp;&nbsp;&nbsp; rawHeight = rawImage.<b>getHeight</b>(this);
+
+&nbsp;&nbsp;&nbsp; this.setVisible(true);//make the Frame visible
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Get and store inset data for the Frame object so&nbsp;
+&nbsp;&nbsp;&nbsp; // that it can be easily avoided.
+&nbsp;&nbsp;&nbsp; inTop = this.<b>getInsets</b>().top;
+&nbsp;&nbsp;&nbsp; inLeft = this.<b>getInsets</b>().left;
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Use the insets and the size of the raw image to
+&nbsp;&nbsp;&nbsp; // establish the overall size of the Frame object.
+&nbsp;&nbsp;&nbsp; this.<b>setSize</b>(inLeft+rawWidth,inTop+rawHeight);
+&nbsp;&nbsp;&nbsp; this.setTitle("Copyright 1997, Baldwin");
+&nbsp;&nbsp;&nbsp; this.setBackground(Color.yellow);&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Get an offscreen image object to draw on.&nbsp; Then get
+&nbsp;&nbsp;&nbsp; // the graphics context for that offscreen image so
+&nbsp;&nbsp;&nbsp; // that it can be drawn on.
+&nbsp;&nbsp;&nbsp; offScreenImage = this.<b>createImage</b>(rawWidth,rawHeight);
+&nbsp;&nbsp;&nbsp; offScreenContext = offScreenImage.<b>getGraphics</b>();
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Anonymous inner-class listener to terminate program
+&nbsp;&nbsp;&nbsp; this.addWindowListener(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new WindowAdapter(){//anonymous class definition
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; public void windowClosing(WindowEvent e){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.exit(0);//terminate the program
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end windowClosing()
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end WindowAdapter
+&nbsp;&nbsp;&nbsp; );//end addWindowListener
+&nbsp; }//end constructor&nbsp;&nbsp;
+//=======================================================//
+&nbsp;&nbsp;
+&nbsp; //Override the update() method to eliminate unnecessary
+&nbsp; // erasing of the screen and the flashing caused by
+&nbsp; // such unnecessary erasing.&nbsp; This requires screen
+&nbsp; // erasure to be handled in the overridden paint()
+&nbsp; // method.&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp; public void <b>update</b>(Graphics g){
+&nbsp;&nbsp;&nbsp; <b>paint</b>(g);&nbsp;&nbsp;
+&nbsp; }//end overridden update() method
+&nbsp; //=====================================================//
+&nbsp;&nbsp;
+&nbsp; //Override the paint method
+&nbsp; public void <b>paint</b>(Graphics g){
+&nbsp;&nbsp;&nbsp; if(doubleBuf){//use double buffering
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Render (to the screen) the image previously&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // created in the offscreen image
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; g.<b>drawImage</b>(<b>offScreenImage</b>,inLeft,inTop,this);&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Scale and draw the next image in the offscreen&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // area using the instance variables named newWidth&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // and newHeight to establish the size.&nbsp; It will be&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // rendered to the screen the next time paint() is
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // invoked.&nbsp; Note that the maximum drawing size is
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // limited to the size of the raw image.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; offScreenContext.<b>clearRect</b>(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0,0,rawWidth,rawHeight);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>offScreenContext</b>.<b>drawImage</b>(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; rawImage,0,0,newWidth,newHeight,this);
+&nbsp;&nbsp;&nbsp; }//end if&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; else{ //don't use double buffering
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; g.<b>clearRect</b>(inLeft,inTop,rawWidth,rawHeight);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; g.<b>drawImage</b>(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>rawImage</b>,inLeft,inTop,newWidth,newHeight,this);
+&nbsp;&nbsp;&nbsp; }//end else
+&nbsp; }//end paint()
+}//end Image04 class
+//=======================================================//</pre></td></tr></table>
+-end-<!--end--></body></html>

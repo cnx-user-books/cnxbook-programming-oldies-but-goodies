@@ -1,0 +1,2957 @@
+<!DOCTYPE doctype PUBLIC "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+  <meta http-equiv="Content-Type"
+ content="text/html; charset=iso-8859-1">
+  <title>... in Java by Richard G Baldwin</title>
+</head>
+<body link="#0000ff" vlink="#666666" alink="#ff0000" lang="EN-US">
+<h2 align="center">Adaptive Identification and Inverse Filtering using Java </h2>
+<i>Learn how to write a Java program that illustrates 
+adaptive identification filtering and adaptive inverse filtering.&nbsp; Exercise 
+the program 
+for different scenarios.</i><p><b>Published:</b>&nbsp; February 7, 2006<br>
+<b>by <a href="mailto:Baldwin@DickBaldwin.com">Richard G. Baldwin</a></b>
+</p>
+<p>Java Programming Notes # 2358</p>
+<ul>
+  <li> <a href="#Preface">Preface</a></li>
+  <li> <a href="#General%20Background%20Information">General
+Background Information</a></li>
+  <li> <a href="#Preview">Preview</a></li>
+	<li> <a href="#Experimental_Results">Experimental Results</a></li>
+  <li> <a href="#Discussion%20and%20Sample%20Programs">Discussion and
+Sample Code</a></li>
+  <li> <a href="#Run%20the%20program">Run the Program</a></li>
+  <li> <a href="#Summary">Summary</a></li>
+  <li> <a href="#Whats%20Next">What's Next?</a></li>
+	<li> <a href="#References">References</a></li>
+  <li> <a href="#Complete%20Program%20Listings">Complete Program
+Listings</a></li>
+</ul>
+<hr size="3" width="100%" >
+
+<h2 align="center"> <a name="Preface"></a>Preface</h2>
+
+<p align="left"><font color="#ff0000"><b>DSP and adaptive filtering</b></font></p>
+
+<p align="left">With the decrease in cost and the increase in speed of digital 
+devices, Digital Signal Processing <i>(<a href="http://www.dickbaldwin.com/tocdsp.htm">DSP</a>)</i> 
+is showing up in everything from cell phones to hearing aids to rock concerts.&nbsp; 
+Many applications of DSP are static.&nbsp; That is, the characteristics of the 
+digital processor don't change with time or circumstances.&nbsp; However, a 
+particularly interesting branch of DSP is <i>adaptive filtering.</i>&nbsp; This is a 
+scenario where the characteristics of the digital processor change with time, 
+circumstances, or both.</p>
+
+<p align="left"><font color="#FF0000"><b>Fifth</b></font><font color="#ff0000"><b> 
+in a series</b></font></p>
+
+<p align="left">This is the fifth lesson in a series designed to teach you 
+about adaptive filtering in Java.&nbsp; The first lesson, entitled
+<a href="http://www.developer.com/java/other/article.php/3549991">Adaptive 
+Filtering in Java, Getting Started</a>, introduced you to the topic by showing 
+you how to write a Java program to adaptively design a time-delay convolution 
+filter with a flat amplitude response and a linear phase response using an 
+<a href="http://cnx.rice.edu/content/m11829/latest/">LMS</a> 
+adaptive algorithm.</p>
+<p align="left"><font color="#FF0000"><b>A general-purpose adaptive engine</b></font></p>
+<p align="left">The third lesson in the series, entitled 
+<a href="http://www.developer.com/java/other/article.php/3566951">A 
+General-Purpose LMS Adaptive Engine in Java</a>, presented and explained a general-purpose
+<a href="http://cnx.rice.edu/content/m11829/latest/">LMS</a> adaptive engine 
+written in Java.&nbsp; That engine can be used to solve a wide variety of 
+adaptive problems.</p>
+<p align="left"><font color="#FF0000"><b>An adaptive line tracker</b></font></p>
+<p align="left">The previous lesson entitled 
+<a href="http://www.developer.com/java/other/article.php/3576061">An Adaptive 
+Line Tracker in Java</a> showed you how to use the general-purpose
+<a href="http://cnx.rice.edu/content/m11829/latest/">LMS</a> adaptive engine to 
+develop an adaptive spectral line tracker in Java.&nbsp; At the end of that 
+lesson, I promised that future lessons would teach you about the following four 
+general topics in adaptive filtering:</p>
+<ul>
+	<li>System Identification</li>
+	<li>Inverse System Identification</li>
+	<li>Noise Cancellation</li>
+	<li>Prediction</li>
+</ul>
+<p>This lesson presents and explains a program named <b>Adapt07</b>, which 
+demonstrates the use of adaptive filtering for <i>System Identification</i> and
+<i>Inverse System Identification</i>.&nbsp; Future lessons will deal with the 
+other two items in the above list.</p>
+
+<p> <b><font color="#ff0000">Viewing tip</font></b> </p>
+<p>You may find it useful to open another copy of this lesson in a
+separate browser window.&nbsp; That will make it easier for you to
+scroll back
+and forth among the different listings and figures while you are
+reading
+about them.</p>
+<p><b><font color="#ff0000">Supplementary material</font></b> </p>
+<p>I recommend that you also study the other lessons in my extensive
+collection of online Java tutorials.&nbsp; You will find those lessons
+published
+at <a href="http://softwaredev.earthweb.com/java">Gamelan.com</a>.&nbsp;
+However, as of the date of this writing, Gamelan doesn't maintain a
+consolidated index of my Java tutorial lessons, and sometimes they are
+difficult to locate there.&nbsp; You will find a consolidated index at <font
+ color="#000000"> <a href="http://www.dickbaldwin.com/">www.DickBaldwin.com</a>.</font></p>
+<p>In preparation for understanding the material in this lesson, 
+I recommend that you also study the lessons identified in the <a href="#References">
+References</a> section of this document.
+</p>
+<h2 align="center" ><font color="#000000"> <a
+ name="General Background Information">General Background Information</a></font></h2>
+<p><font color="#FF0000"><b>What is s<i>ystem identification</i> and <i>system 
+inversion</i>?</b></font></p>
+<p>Let me try to explain these terms using an example with which most of us are familiar.&nbsp; 
+At some time in your life, you have probably attended a gathering in a venue 
+such as a stadium or an auditorium and you came away with the general conclusion 
+that <i>the acoustics were bad</i>.</p>
+<p><font color="#FF0000"><b>What is meant by <i>the acoustics are bad</i>?</b></font></p>
+<p>When you are located in different seats in such a venue, the acoustics may be 
+good or <span lang="en-us"></span>they may be bad depending on where you are seated.&nbsp; For example, 
+in some seats, you may be able to understand the announcer very clearly.&nbsp; 
+In other seats, echoes, absorption, and other acoustic problems may make the 
+announcer's voice very difficult to understand.</p>
+<blockquote>
+	<p><i>(Or, it may be that the electronic audio system is of poor quality causing the acoustics to 
+	be bad in all the seats.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>An acoustic system</b></font></p>
+<p>We can think of the acoustic and electronic path between the announcer's 
+vocal chords and your ears as an acoustic system.&nbsp; That system can be 
+characterized by a complex frequency response and a corresponding impulse 
+response.</p>
+<p><font color="#FF0000"><b>A hypothetical measuring device</b></font></p>
+<p>Assume for example that you have a portable device on which you can record 
+two tracks of electronic data.&nbsp; Assume that you move this device around the 
+auditorium recording what you hear at different locations.&nbsp; Assume that on 
+one track you record the electronic signal produced by the announcer's 
+microphone.&nbsp; Assume that on the other track you record the electronic 
+output produced by a portable microphone that you carry with you.</p>
+<p><font color="#FF0000"><b>The system transfer function</b></font></p>
+<p>There are a variety of techniques available for analyzing the two recorded 
+electronic signals in order to determine the complex transfer function resulting 
+from the many electronic and physical components between those two points in the 
+system.</p>
+<p><font color="#FF0000"><b>Electronic transfer problems</b></font></p>
+<p>For example, the amplifier and the loud speakers up on the stage may or may not produce a 
+high-quality representation of the electronic output from the announcer's microphone.&nbsp; 
+For example, the amplitude response of the amplifier and the speakers may not be flat across 
+the desired range of frequencies.&nbsp; In addition, they may introduce phase 
+distortion at certain frequencies causing words to sound distorted.&nbsp; </p>
+<p><font color="#FF0000"><b>Physical transfer problems</b></font></p>
+<p>Items such as drapes and carpets in the auditorium may absorb acoustic energy 
+at certain audio frequencies preventing the acoustic energy at those frequencies 
+from reaching your ears.</p>
+<p>Various surfaces in the auditorium may produce echoes causing you to hear the 
+same thing more than once.&nbsp; Interference patterns produced by the 
+intersecting waves of acoustic echo energy may cause acoustic energy at certain 
+frequencies and certain locations to interact constructively or destructively.&nbsp; 
+This can cause the sound at some frequencies to be too loud and the sound at 
+other frequencies to be too soft.</p>
+<p><font color="#FF0000"><b>The overall system transfer function</b></font></p>
+<p>All of these factors taken together result in a complex transfer function 
+between the electronic signal produced by the announcer's microphone and the 
+electronic signal produced by your portable microphone in a different location 
+in the auditorium.&nbsp; One way to characterize this transfer function is 
+through the development of an <i>adaptive identification filter</i>.</p>
+<p><font color="#FF0000"><b>An inverse filter</b></font></p>
+<p>Once you have characterized the system transfer function, it may be possible 
+to design an <i>inverse</i> digital filter than will compensate for many of the 
+problems in the system transfer function, causing the combined response of the 
+system transfer function and the inverse filter to have a nearly flat amplitude 
+response and a nearly flat <i>(or at least linear)</i> phase response.</p>
+<p>Adaptive filter design provides one approach to designing such an inverse 
+filter.&nbsp; <i>(There are other approaches available as well.)</i>&nbsp; When adaptive filter design is used to design the inverse filter, 
+it is not necessary to first characterize the transfer function and then to 
+design an inverse filter as two separate operations.&nbsp; Rather, those two 
+steps can be combined to produce a single result, which is the <i>adaptive 
+inverse filter</i>.</p>
+<p><font color="#FF0000"><b>Applicable to many different areas</b></font></p>
+<p>Although I have described this process using only one scenario, these 
+techniques are applicable to a variety of different technical areas ranging from 
+telephone line equalization to rock concerts.</p>
+<p><font color="#FF0000"><b>Other references</b></font></p>
+<p>There are many good references to adaptive filtering available on the web, 
+which you can locate using <a href="http://www.google.com/">Google</a>.&nbsp; Two 
+of the references that I recommend are located
+<a href="http://www.eee.strath.ac.uk/r.w.stewart/adaptivejava/begin.htm#Contents">
+here</a> and
+<a href="http://www.mathworks.com/access/helpdesk/help/toolbox/filterdesign/adaptiv2.html#5512">
+here</a>.&nbsp; I will be referring to some of the images contained on those web 
+pages in the discussion that follows.</p>
+<h2 align="center" ><font color="#000000"><a name="Preview">Preview</a></font></h2>
+<p><font color="#FF0000"><b>The program named Adapt07</b></font></p>
+<p>The purpose of this program is to illustrate adaptive <i>identification</i> and 
+adaptive <i>inverse</i> filtering.</p>
+<p>This program requires the following classes:</p>
+<ul>
+	<li><b>Adapt07.class</b></li>
+	<li><b>AdaptEngine02.class</b> <i>(new to this lesson)</i></li>
+	<li>AdaptiveResult.class</li>
+	<li>ForwardRealToComplex01.class</li>
+	<li>PlotALot01.class</li>
+	<li>PlotALot03.class</li>
+	<li>PlotALot05.class</li>
+</ul>
+<p>With the exception of the first two items in the above list, I have presented 
+and explained the source code 
+for each of the classes in the above list in previous lessons.&nbsp; You will 
+find references to those earlier lessons in the <a href="#References">
+References</a> section of this document.</p>
+<p>The source code for the class named <b>Adapt07</b> can be viewed in its 
+entirety in Listing 17.&nbsp; The source code for 
+the class named <b>AdaptEngine02</b> can be viewed in Listing 18.</p>
+<p><font color="#FF0000"><b>The class named AdaptEngine02</b></font></p>
+<p>This program uses the adaptive engine named <b>AdaptEngine02</b> to 
+adaptively develop a filter.&nbsp; Depending on user input, the resulting filter is 
+designed to be either 
+an <i>identification</i> filter or an <i>inverse</i> filter.</p>
+<p>The class named <b>
+AdaptEngine02</b> is a simple upgrade to the class named <b>AdaptEngine01</b> that was 
+explained in earlier programs.&nbsp; This upgrade makes it possible for the user to 
+pass a boolean parameter to the <b>adapt</b> method of the engine to either enable or 
+disable the adaptive update of the filter coefficients.&nbsp; Because of the 
+similarity of the two classes, I won't provide a detailed explanation of the 
+class named <font color="#FF0000"><b>AdaptEngine02</b></font> in this lesson.</p>
+<p><font color="#FF0000"><b>User options</b></font></p>
+<p>When the user opts for an <i>identification</i> filter, the adaptive process 
+attempts to replicate the impulse response of a path through which wideband test 
+data are flowing.&nbsp; When the user opts for an <i>inverse</i> filter, the 
+adaptive process attempts to develop a filter that is the inverse of the impulse 
+response of a path through which wideband test data are flowing.</p>
+<p><font color="#FF0000"><b>Test cases</b></font></p>
+<p>User-selectable test cases are provided for six different path scenarios.&nbsp; 
+The user may develop an <i>identification</i> filter or an <i>inverse</i> filter for any of 
+the six cases.</p>
+<p><font color="#FF0000"><b>Graphic output</b></font></p>
+<p>If the user opts for an <i>identification</i> filter, five separate graphs are 
+produced.&nbsp; If the user opts for an <i>inverse</i> filter, six separate graphs are 
+produced.&nbsp; The graphs appear on the screen in two rows with three graphs in 
+each row as shown in <a name="Figure_1">Figure 1</a>.</p>
+<table bgcolor="#ccffff" border="1" cols="1" >
+	<tr>
+		<td>
+		<pre><img border="0" src="java2358a.jpg" width="450" height="338">
+</pre>
+		<pre><b>Figure 1</b></pre>
+		</td>
+	</tr>
+</table>
+&nbsp;</p>
+<p><font color="#FF0000"><b>Description of the graphs</b></font></p>
+<p>The following is a brief description of each of the six graphs, working from 
+left to right, top to bottom.</p>
+<ol>
+	<li>The impulse response of the path through which the wideband data 
+are flowing.</li>
+	<li>The amplitude and phase response of the path through which the 
+wideband data are flowing.</li>
+	<li>Four time series that illustrate the time behavior of the adaptive 
+	process.</li>
+	<li>The amplitude and phase response of the adaptive filter at the end of every 
+400th iteration.</li>
+	<li>The impulse response of the adaptive filter at the end of every 400th 
+	adaptive iteration.</li>
+	<li>The amplitude and phase spectrum of the time series produced by convolving the final adaptive filter with the impulse response 
+of the path.&nbsp; <i>(This graph is produced only when the user opts for an 
+inverse filter.&nbsp; This amplitude and phase spectrum illustrates the extent to which 
+the inverse filter is able to compensate for the path characteristics.&nbsp; Ideally the 
+amplitude spectrum is flat and the phase spectrum is either flat or 
+linear, indicating a time delay).</i></li>
+</ol>
+<p><font color="#FF0000"><b>Graphs with multiple pages</b></font></p>
+<p>Graphs 3, 4, and 5 consist of multiple pages 
+stacked on top of one another.&nbsp; You can move the pages on the top of the stack to view the 
+pages further down.&nbsp; The pages on the top of the stack represent the results 
+produced early in the adaptive process while those further down represent the 
+results produced later in the adaptive process.</p>
+<p><font color="#FF0000"><b>The time series</b></font></p>
+<p>The four time series that are 
+plotted in the third graph in the top row are, from top to bottom in the colors indicated:</p>
+<ol>
+	<li>Input to the adaptive 
+filter <i>(black)</i>.</li>
+	<li>Target for the adaptive process <i>(red)</i>.</li>
+	<li>Output from the 
+adaptive filter <i>(blue)</i>.</li>
+	<li>Error computed within the adaptive process <i>(green)</i>.</li>
+</ol>
+<p>Near 
+the end of the run, the adaptive update process is disabled.&nbsp; The input data is set 
+to zero for the remainder of the run except that on two subsequent occasions, 
+an impulse is inserted into the data.&nbsp; This causes several interesting 
+impulse responses to appear on the last page of the time-series plot.</p>
+<p><font color="#FF0000"><b>The impulse responses</b></font></p>
+<p>By running the same path twice, once in 
+<i>identification filter </i> mode and once in <i>inverse filter</i> mode, the insertion 
+of these impulses makes it possible to 
+see:</p>
+<ol>
+	<li>The impulse response of the path.</li>
+	<li>The impulse response of the final adaptive <i>identification</i> filter.</li>
+	<li>The extent to which the impulse response of the <i>identification</i> filter 
+	replicates the impulse response of the path.</li>
+	<li>The impulse 
+response of the final <i>inverse</i> filter.</li>
+	<li>The extent to which the convolution of 
+the final <i>inverse</i> filter with the impulse response of the path compensates for the 
+characteristics of the path and produces the ideal output consisting of a single 
+impulse.</li>
+</ol>
+<p><font color="#FF0000"><b>Wideband test data</b></font></p>
+<p>In operation, the program generates wideband test data produced by a 
+random number generator and convolves it with a specified path impulse response 
+to simulate the effect of the path on the test data.&nbsp; The original wideband 
+test data and the path output data are both presented to the adaptive engine.&nbsp; 
+The order in which the two are presented to the adaptive engine determines 
+whether the adaptive engine will develop an <i>identification</i> filter or an
+<i>inverse</i> filter.</p>
+<p><font color="#FF0000"><b><a name="The_identification_filter">The identification filter</a></b></font></p>
+<p>When 
+the original <i>wideband test data</i> is presented as the <i>data to be filtered</i> within 
+the adaptive engine and the path output is presented as the adaptive <i>target</i>, the adaptive process attempts to develop an adaptive filter that replicates the 
+impulse response of the path.&nbsp; To help explain this, I am going to refer to 
+the
+<a href="http://www.mathworks.com/access/helpdesk/help/toolbox/filterdesign/adaptiv5.html#5547">
+picture</a> that you will find at The
+<a href="http://www.mathworks.com/access/helpdesk/help/toolbox/filterdesign/filterdesign.html">
+MathWorks</a> web site. </p>
+<blockquote>
+	<p><i>(While you are
+	<a href="http://www.mathworks.com/access/helpdesk/help/toolbox/filterdesign/adaptiv2.html#5512">
+	there</a>, it would also be a good idea for you to read what they have to say about 
+	adaptive filtering.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Correspondence between my terms and the </b></font>
+<b>
+<a href="http://www.mathworks.com/access/helpdesk/help/toolbox/filterdesign/adaptiv5.html#5547">
+<font color="#FF0000">picture</font></a></b></p>
+<p>The following paragraphs explain the correspondence between the terms that I 
+use in this lesson and the terms used by the author of the
+<a href="http://www.mathworks.com/access/helpdesk/help/toolbox/filterdesign/adaptiv5.html#5547">
+picture</a>.&nbsp; These relationships apply to the development of an <i>identification
+</i>filter.&nbsp; <i>(I will address the relationships for an inverse 
+filter a little later.)</i>&nbsp; </p>
+<p>The box labeled <i>Unknown System </i>in the
+<a href="http://www.mathworks.com/access/helpdesk/help/toolbox/filterdesign/adaptiv5.html#5547">
+picture</a> is what I will refer 
+to in this lesson as the <i>path</i>.&nbsp; The signal that the 
+<a href="http://www.mathworks.com/access/helpdesk/help/toolbox/filterdesign/adaptiv5.html#5547">
+picture</a> refers 
+to as <b><i>x(k)</i></b>, <i>(which feeds both the adaptive filter and the path)</i> 
+is what I will refer to as <i>wideband test data</i>.</p>
+<p>The signal that the 
+<a href="http://www.mathworks.com/access/helpdesk/help/toolbox/filterdesign/adaptiv5.html#5547">
+picture</a> refers to as <b><i>d(k)</i> </b>is what I will 
+refer to as the <i>target</i>.&nbsp; The signal that the 
+<a href="http://www.mathworks.com/access/helpdesk/help/toolbox/filterdesign/adaptiv5.html#5547">
+picture</a> refers to as <b>
+<i>e(k)</i></b> is what I will refer to as the <i>error</i>.&nbsp; </p>
+<p>Finally, everything inside the gray box in the 
+<a href="http://www.mathworks.com/access/helpdesk/help/toolbox/filterdesign/adaptiv5.html#5547">
+picture</a> corresponds to the <i>
+adaptive engine</i> in this lesson.&nbsp; The box labeled <i>Adaptive Filter</i> 
+in the
+<a href="http://www.mathworks.com/access/helpdesk/help/toolbox/filterdesign/adaptiv5.html#5547">
+picture</a>  
+is what I will also refer to as the <i>adaptive filter</i>.&nbsp; It resides 
+inside the adaptive engine.</p>
+<p><font color="#FF0000"><b>Adaptive Filter and Unknown System are in parallel</b></font></p>
+<p>As you can see from the 
+<a href="http://www.mathworks.com/access/helpdesk/help/toolbox/filterdesign/adaptiv5.html#5547">
+picture</a>, the <i>wideband test data</i>, or <i><b>x(k)</b></i> 
+feeds into both the <i>adaptive filter</i> and the <i>path</i>.&nbsp; The <i>
+target </i>or <i><b>d(k)</b></i> feeds into the adaptive engine where it is 
+combined algebraically with the output from the adaptive filter to produce the
+<i>error</i> or <i><b>e(k)</b></i>.</p>
+<blockquote>
+	<p><i>(At this point, I have a small quarrel with the 
+<a href="http://www.mathworks.com/access/helpdesk/help/toolbox/filterdesign/adaptiv5.html#5547">
+picture</a>.&nbsp; The 
+	error should be processed through a multiplicative gain factor, <b>
+	feedbackGain</b>, and used to adjust the filter coefficients.&nbsp; That 
+	isn't as obvious as it could be in the 
+<a href="http://www.mathworks.com/access/helpdesk/help/toolbox/filterdesign/adaptiv5.html#5547">
+picture</a>.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Attempts to drive the error to zero</b></font></p>
+<p>In any event, an LMS adaptive algorithm is used to adjust the coefficients in 
+the adaptive filter in an attempt to drive the error to zero.&nbsp; When this is 
+accomplished, the characteristics of the adaptive filter match the 
+characteristics of the path.&nbsp; The adaptive filter then becomes an <i>
+identification</i> filter in that it <i>identifies</i> the characteristics of 
+the <i>Unknown System</i> or the <i>path</i>.</p>
+<p><font color="#FF0000"><a name="The_inverse_filter_"><b>The inverse filter</b></a></font><a name="The_inverse_filter_">
+</a> </p>
+<p>When the two input time series that feed the adaptive engine are reversed, 
+such that the path output is fed to the adaptive filter and the wideband test 
+data is fed as the target, the adaptive process 
+attempts to develop an adaptive filter that is the <i>inverse</i> of the impulse response 
+of the <i>path</i>.&nbsp; To help explain this, I am going to refer to 
+<a href="http://www.mathworks.com/access/helpdesk/help/toolbox/filterdesign/adaptiv6.html#5557">another
+picture</a> that you will find at The
+<a href="http://www.mathworks.com/access/helpdesk/help/toolbox/filterdesign/filterdesign.html">
+MathWorks</a> web site.</p>
+<p><b><font color="#FF0000">Correspondence between my terms and the other </font>
+<a href="http://www.mathworks.com/access/helpdesk/help/toolbox/filterdesign/adaptiv6.html#5557">
+<font color="#FF0000">picture</font></a></b></p>
+<p>The following paragraphs explain the correspondence between the terms that I 
+will use in this lesson and the terms used by the author of the
+<a href="http://www.mathworks.com/access/helpdesk/help/toolbox/filterdesign/adaptiv6.html#5557">
+picture</a>.&nbsp; These relationships apply to the development of an <i>inverse </i>filter 
+in this lesson.</p>
+<p>As before, the box in the 
+<a href="http://www.mathworks.com/access/helpdesk/help/toolbox/filterdesign/adaptiv6.html#5557">
+picture</a> labeled <i>Unknown System </i>is what I will refer to as the <i>path</i>.&nbsp; 
+Everything inside the gray box in the 
+<a href="http://www.mathworks.com/access/helpdesk/help/toolbox/filterdesign/adaptiv6.html#5557">
+picture</a> is what I will refer to as the <i>
+adaptive engine</i>.</p>
+<p>The 
+signal that is referred to as <b><i>s(k)</i></b> in the
+<a href="http://www.mathworks.com/access/helpdesk/help/toolbox/filterdesign/adaptiv6.html#5557">
+picture</a> is what I will 
+refer to in this lesson as <i>wideband test data</i>.&nbsp; As you can see, 
+after an appropriate delay, this signal also feeds the adaptive engine as the <i>
+target</i> or <b><i>d(k)</i></b>.</p>
+<p>As you can also see in the 
+<a href="http://www.mathworks.com/access/helpdesk/help/toolbox/filterdesign/adaptiv6.html#5557">
+picture</a>, the path output or <b><i>x(k)</i></b> 
+feeds the adaptive filter in the adaptive engine.&nbsp; The output from the 
+adaptive filter, <b><i>y(k)</i></b> is used to form the error <b><i>e(k)</i></b>.&nbsp; 
+In this 
+<a href="http://www.mathworks.com/access/helpdesk/help/toolbox/filterdesign/adaptiv6.html#5557">
+picture</a>, it is clear that the error is fed back and used to adjust the 
+coefficients in the adaptive filter.&nbsp; </p>
+<blockquote>
+	<p><i>(However, even this picture is 
+missing the <b>feedbackGain</b> factor.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>The path and the adaptive filter are in series</b></font></p>
+<p>As in the previous case, the LMS adaptive algorithm adjusts the values of the 
+filter coefficients in an attempt to drive the error to zero.&nbsp; When this is 
+accomplished, the output from the adaptive filter replicates the wideband test 
+data.</p>
+<p>The only way that this can happen is for the characteristics of the 
+adaptive filter to compensate for <i>(cancel out)</i> the characteristics of the
+<i>path</i> or the <i>Unknown System</i>.&nbsp; When one filter can be placed in 
+series with another filter causing the combination of the two filters to be as 
+if there were no filter in the system at all, one of those filters is known as the <i>
+inverse</i> of the other.&nbsp; This is sort of like the following arithmetic expression 
+where <b>1/4</b> is the inverse of <b>4</b>.</p>
+<p><pre><b><font size="3">15 * (4 * (1/4)) = 15</font></b></pre></p>
+<p>Multiplying a value by 4 and then multiplying again by 1/4 is just like not 
+multiplying at all <i>(or multiplying by 1)</i>.</p>
+<p><font color="#FF0000"><b>User input</b></font></p>
+<p>User input is provided by five command-line parameters.&nbsp; If no 
+command-line parameters are provided, default parameters are used.&nbsp; The 
+command-line parameters are:</p>
+<ol>
+	<li><b>feedbackGain</b>: The gain factor that is used in the 
+feedback loop to adjust the coefficient values in the 
+adaptive filter.&nbsp; If this value is too large, the system will become 
+	unstable.&nbsp; If too small, it will take a long time for the system to 
+	converge to a solution.</li>
+	<li><b>numberIterations</b>: This is the number of iterations that 
+the program executes before stopping and displaying all of the graphic 
+results.</li>
+	<li><b>filterLength</b>: This is the number of coefficients in the adaptive 
+filter.&nbsp; This value must be at least 26 <i>(to satisfy certain plotting 
+	alignment issues)</i>.</li>
+	<li><b>testCase</b>: An integer from 1 to 6 that specifies the path 
+	characteristics.</li>
+	<li><b>identification</b>: Input is T or F.&nbsp; T specifies that 
+the adaptive process is to develop an <i>identification</i> filter.&nbsp; F specifies that the 
+adaptive process is to develop an <i>inverse</i> filter.</li>
+</ol>
+<p><font color="#FF0000"><b>The minimum filter length</b></font></p>
+<p>The minimum filter length of 26 
+has to do with plotting alignment issues and has nothing to do with the 
+adaptive process.&nbsp; <i>(See a description of the alignment issues in earlier lessons 
+referred to in the <a href="#References">References</a> section of this 
+document).</i></p>
+<p><font color="#FF0000"><b><a name="The_path_scenarios">The path scenarios</a></b></font></p>
+<p>Six path scenarios are built into the code.&nbsp; The 
+six path scenarios can be generally described as follows:</p>
+<ol>
+	<li>A low-pass filter of 
+the sort that might be realized with a passive RC network.</li>
+	<li>Another low-pass 
+filter that might be realized with a passive RC network but with a much longer 
+time constant than scenario 1.</li>
+	<li>A high-pass filter of the sort that might be realized with a passive RLC network having the same long time constant as scenario 
+2.</li>
+	<li>A mid-band filter of the sort that might be realized with a passive RLC 
+network having the same long time constant as scenarios 2 and 3.</li>
+	<li>A filter that 
+might represent an acoustic signal containing multiple echoes.</li>
+	<li>A boxcar digital 
+filter with a peak at half the Nyquist folding frequency.</li>
+</ol>
+<p><font color="#FF0000"><b>Program testing</b></font></p>
+<p>The program was tested using J2SE 5.0 
+and WinXP.&nbsp; J2SE 5.0 or later is required.</p>
+<h2 align="center"><font color="#000000"><a name="Experimental_Results">
+Experimental Results</a></font></h2>
+<p>Before getting into the program details, I'm going to show you some 
+experimental results for three of the six path scenarios that are built into 
+the program.</p>
+<p><font color="#FF0000"><b>A low-pass filter with a short time constant</b></font></p>
+<p>I will begin with the first scenario in the above list.&nbsp; I will also 
+begin by developing an <i>identification</i> filter for this path scenario.</p>
+<blockquote>
+	<p><i>(This is the default case if you run the program without providing 
+	command-line parameters.)</i></p>
+</blockquote>
+<p>The input parameters for this case are shown in <a name="Figure_2">Figure 2</a>.</p>
+<table bgcolor="#ccffff" border="1" cols="1" width="482">
+	<tr>
+		<td>
+		<pre>Input values were not provided.
+Using following default values:
+feedbackGain: 1.0E-4
+numberIterations: 2001
+filterLength: 26
+testCase: 1
+identification: true
+</pre>
+		<pre><b>Figure 2</b></pre>
+		</td>
+	</tr>
+</table>
+</p>
+<p><font color="#FF0000"><b>The path characteristics</b></font></p>
+<p>Let's begin by characterizing the path for this case.&nbsp; As you will see 
+later when we examine the code, the coefficients in the impulse response that 
+characterize this path are shown in <a name="Figure_3">Figure 3</a>.</p>
+<table bgcolor="#ccffff" border="1" cols="1" width="482">
+	<tr>
+		<td>
+		<pre>    double[] pathA = {1.0,
+                      0.5,
+                      0.25,
+                      0.125,
+                      0.0625,
+                      0.03125,
+                      0.015625,
+                      0.0};
+</pre>
+		<pre><b>Figure 3</b></pre>
+		</td>
+	</tr>
+</table>
+</p>
+<p>Those of you who are familiar with such things will recognize this as an 
+impulse response with an inverse exponential decay, truncated to zero 
+after seven filter coefficients.</p>
+<p><font color="#FF0000"><b>The impulse and frequency response of the path</b></font></p>
+<p>This impulse response of the path is shown in graphic format in the left panel of 
+<a name="Figure_4">Figure 4</a>.</p>
+<table bgcolor="#ccffff" border="1">
+	<tr>
+		<td><img border="0" src="java2358b1.jpg" width="113" height="149"></td>
+		<td><img border="0" src="java2358b2.jpg" width="265" height="149"></td>
+	</tr>
+	<tr>
+		<td colspan="2">
+		<pre><b>Figure 4</b></pre>
+		</td>
+	</tr>
+</table>
+<p>The right panel of <a href="#Figure_4">Figure 4</a> shows the amplitude and phase response of this 
+impulse response from zero to the Nyquist folding frequency.&nbsp; The black 
+curve at the top of the panel is the amplitude response.&nbsp; The red line in 
+the bottom of the panel is the phase response.</p>
+<p><font color="#FF0000"><b>A low-pass filter</b></font></p>
+<p>As you can see, this path characteristic tends to pass low-frequency signals 
+and to suppress high-frequency signals.</p>
+<blockquote>
+	<p><i>(As I recall from my early days in the analog world, this is the 
+	digital equivalent of the response of a passive RC filter with an 
+	attenuation rate of six decibels per octave to the right of the corner 
+	frequency.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>The adaptive time series</b></font></p>
+<p>The top panel in <a name="Figure_5">Figure 5</a> shows the adaptive time series at the beginning of 
+the run.&nbsp; The bottom panel shows the time series at the end of the run.</p>
+<table bgcolor="#ccffff" border="1" cols="1">
+	<tr>
+		<td><img border="0" src="java2358b3.jpg" width="469" height="149"></td>
+	</tr>
+	<tr>
+		<td><img border="0" src="java2358b4.jpg" width="469" height="149"></td>
+	</tr>
+	<tr>
+		<td>
+		<pre><b>Figure 5</b></pre>
+		</td>
+	</tr>
+</table>
+<p><font color="#FF0000"><b>Description of the traces</b></font></p>
+<p>The top <i>(black)</i> trace shows the wideband test data that is fed into 
+the adaptive filter.&nbsp; The second <i>(red)</i> trace shows the path output 
+data, which forms the adaptive target for the development of the <i>identification</i> 
+filter.&nbsp; In other words, the red trace shows the result of applying the 
+path impulse response shown in <a href="#Figure_4">Figure 4</a> to the wideband test data shown by the 
+black trace in <a href="#Figure_5">Figure 5</a>.</p>
+<blockquote>
+	<p><i>(A practiced eye can discern that the red trace is 
+	richer in low-frequency energy and leaner in high-frequency energy than the black trace.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>The adaptive filter output</b></font></p>
+<p>The blue trace is the output from the adaptive filter.&nbsp; Initially, the 
+output from the filter is zero because all of the coefficients are initialized 
+to values of zero.&nbsp; However as time progresses from left to right in the 
+top panel of <a href="#Figure_5">Figure 5</a>, we start to see some output from the adaptive filter.</p>
+<p><font color="#FF0000"><b>The error trace</b></font></p>
+<p>The error, shown by the green trace in <a href="#Figure_5">Figure 5</a>, is the difference between the 
+red target trace and the blue adaptive filter output trace.&nbsp; Initially the 
+error looks just like the red target trace in the top panel of <a href="#Figure_5">Figure 5</a>.&nbsp; 
+However, as time progresses from left to right, the blue output trace begins to 
+gain strength and the error trace begins to be reduced in amplitude.</p>
+<p><font color="#FF0000"><b>Somewhat later in time</b></font></p>
+<p>Finally, after about 2000 adaptive iterations <i>(see the <b>numberIterations</b> 
+parameter in <a href="#Figure_2">Figure 2</a>)</i> we arrive 
+at the bottom panel in <a href="#Figure_5">Figure 5</a>.&nbsp; By this point in time, the adaptive filter 
+coefficients have been adjusted to drive the green error trace to zero.&nbsp; 
+This was accomplished by causing the blue adaptive filter output trace to 
+replicate the red target trace.&nbsp; At this point, the adaptive filter is a 
+replica of the path, and the unknown characteristics of the path have been 
+<i>identified</i>.&nbsp; Stated differently, those characteristics have been 
+captured in a digital filter than can be easily analyzed.</p>
+<p><font color="#FF0000"><b>Some impulse responses</b></font></p>
+<p>As I explained earlier, near the end of the run, the adaptive update process 
+is disabled and a single impulse is inserted into the wideband test data shown by 
+the black trace in <a href="#Figure_5">Figure 5</a>.</p>
+<blockquote>
+	<p><i>(An impulse in a sampled-data system 
+is a single non-zero value surrounded by values of zero.)</i></p>
+</blockquote>
+<p>This impulse is filtered by the path characteristics, producing the output 
+shown by the red trace, and is also filtered by the adaptive filter, producing 
+the output shown by the blue trace.&nbsp; As you can see, the adaptive filter 
+has been adjusted such that the impulse response of the adaptive filter is a very 
+good replica of the impulse response of the path.&nbsp; Both impulse responses 
+match the impulse 
+response shown in <a href="#Figure_4">Figure 4</a>.</p>
+<p><font color="#FF0000"><b>Adaptive progression</b></font></p>
+<p>The left and right panels in <a href="#Figure_6">Figure 6</a> show the progression of the 
+adaptive filter as it seeks a solution.&nbsp; <i>(Time increases from top to 
+bottom in <a name="Figure_6">Figure 6</a>.)</i></p>
+<table bgcolor="#ccffff" border="1">
+	<tr>
+		<td><img border="0" src="java2358b6.jpg" width="113" height="488"></td>
+		<td><img border="0" src="java2358b5.jpg" width="265" height="488"></td>
+	</tr>
+	<tr>
+		<td colspan="2">
+		<pre><b>Figure 6</b></pre>
+		</td>
+	</tr>
+</table>
+<p><font color="#FF0000"><b>The developing impulse response</b></font></p>
+<p>The left panel in <a href="#Figure_6">Figure 6</a> shows the impulse response at the beginning of the 
+run and at 
+the end of every 400th adaptive iteration.&nbsp; The objective is for the 
+impulse response to match the impulse response for the path shown in the left 
+panel of <a href="#Figure_4">Figure 4</a>.&nbsp; The match appears to be quite good after about 1200 
+adaptive iterations.</p>
+<p><font color="#FF0000"><b>The developing frequency response</b></font></p>
+<p>The right panel in <a href="#Figure_6">Figure 6</a> shows the amplitude and phase response of the 
+adaptive filter at the beginning of the run and at the end of every 400th iteration.&nbsp; The objective here is 
+for the amplitude and phase response of the filter to match that of the path 
+shown in the right panel of <a href="#Figure_4">Figure 4</a>.&nbsp; Once again, the match appears to be 
+pretty good after about 1200 adaptive iterations.</p>
+<p><font color="#FF0000"><b>A corresponding inverse filter</b></font></p>
+<p>Now let's take a look at the adaptive development of an inverse filter to 
+compensate for, or cancel out the path characteristics shown in <a href="#Figure_4">Figure 4</a>.</p>
+<p>To begin with, the input parameters for this run are shown in 
+<a name="Figure_7">Figure 7</a>.</p>
+<table bgcolor="#ccffff" border="1" cols="1" width="482">
+	<tr>
+		<td>
+		<pre>Input values were provided.
+Using following values:
+feedbackGain: 1.0E-4
+numberIterations: 2001
+filterLength: 26
+testCase: 1
+identification: false
+</pre>
+		<pre><b>Figure 7</b></pre>
+		</td>
+	</tr>
+</table>
+<p>As you can see, the input parameters match those in <a href="#Figure_2">Figure 2</a> with the 
+exception of the last item, which specifies an <i>identification</i> filter in 
+<a href="#Figure_2">Figure 2</a> and an <i>inverse</i> filter in <a href="#Figure_7">Figure 7</a>.</p>
+<p><font color="#FF0000"><b>The path characteristics</b></font></p>
+<p>The path characteristics haven't changed, so the impulse response and the 
+frequency response shown in <a href="#Figure_4">Figure 4</a> still describe the path.</p>
+<p><font color="#FF0000"><b>The adaptive time series</b></font></p>
+<p>Let's begin the discussion with the adaptive time series shown in 
+<a name="Figure_8">Figure 8</a>.</p>
+<table bgcolor="#ccffff" border="1" cols="1">
+	<tr>
+		<td><img border="0" src="java2358c1.jpg" width="469" height="149"></td>
+	</tr>
+	<tr>
+		<td><img border="0" src="java2358c2.jpg" width="469" height="149"></td>
+	</tr>
+	<tr>
+		<td>
+		<pre><b>Figure 8</b></pre>
+		</td>
+	</tr>
+</table>
+<p><font color="#FF0000"><b>Interpretation of the traces</b></font></p>
+<p>Regardless of whether the user has opted for an <i>identification</i> filter 
+or an <i>inverse</i> filter, the four traces shown in <a href="#Figure_8">Figure 8</a> have the same relationship to the 
+adaptive engine.</p>
+<ul>
+	<li>The black trace is the input to the adaptive filter.</li>
+	<li>The red trace is the target.</li>
+	<li>The blue trace is the output from the 
+adaptive filter.</li>
+	<li>The green trace is the error.</li>
+</ul>
+<p>However, depending on whether the user has opted for an <i>identification</i> 
+filter or an <i>inverse</i> filter, the specific time series that are fed to the 
+adaptive engine for the first two roles in the above list are different.</p>
+<p>For an <i>identification</i> filter, the wideband test data is fed to the 
+adaptive engine as the input to the adaptive filter and the path output data is 
+fed to the adaptive engine as the target.&nbsp; See the
+<a href="http://www.mathworks.com/access/helpdesk/help/toolbox/filterdesign/adaptiv5.html#5547">
+picture</a> at The
+<a href="http://www.mathworks.com/access/helpdesk/help/toolbox/filterdesign/filterdesign.html">
+MathWorks</a> web site. </p>
+<p>For an <i>inverse</i> filter, the path output data is fed to the adaptive 
+engine as the input to the adaptive filter, and the wideband data is fed to the 
+adaptive engine as the target.&nbsp; See the
+<a href="http://www.mathworks.com/access/helpdesk/help/toolbox/filterdesign/adaptiv6.html#5557">
+other picture</a> at The
+<a href="http://www.mathworks.com/access/helpdesk/help/toolbox/filterdesign/filterdesign.html">
+MathWorks</a> web site. </p>
+<p><font color="#FF0000"><b>The top two traces are switched</b></font></p>
+<p>In summary, the top two traces in graphs having the format of <a href="#Figure_8">Figure 8</a> are 
+switched depending on whether the user has opted for an <i>identification</i> filter or 
+an <i>inverse</i> filter.</p>
+<p><font color="#FF0000"><b>The data traces for <a href="#Figure_8">
+<font color="#FF0000">Figure 8</font></a></b></font></p>
+<p>Because <a href="#Figure_8">Figure 8</a> shows the time series involved in the development of an 
+<i>inverse</i> filter, the black top trace in <a href="#Figure_8">Figure 8</a> is the path output data.&nbsp; The 
+wideband test data is shown by the red trace.&nbsp; As always, the adaptive 
+filter output is shown by the blue trace, and the error is shown by the green 
+trace.</p>
+<p>The top panel in <a href="#Figure_8">Figure 8</a> shows these traces at the beginning of the run and 
+the bottom panel shows these traces at the end of the run.</p>
+<p>As you can see in the bottom panel of <a href="#Figure_8">Figure 8</a>, the blue filter output trace matches the red 
+target trace.&nbsp; The green error trace, which is the difference between the 
+adaptive filter output and the target, has been 
+driven to zero.</p>
+<p><font color="#FF0000"><b>Impulse responses</b></font></p>
+<p>The bottom panel in <a href="#Figure_8">Figure 8</a> shows two sets of impulses or wavelets, one 
+following the other in time.&nbsp; The left-most set of wavelets in <a href="#Figure_8">Figure 8</a> has 
+the same meaning as in <a href="#Figure_5">Figure 5</a>, except for the reversal of the top two traces.&nbsp; 
+In this case, the impulse that is inserted in the wideband data is shown in the 
+red trace.&nbsp; The impulse response of the path is shown in the black trace, 
+and it matches the impulse response shown in <a href="#Figure_4">Figure 4</a> as before.</p>
+<p><font color="#FF0000"><b>Now for something a little different</b></font></p>
+<p>The leftmost wavelet on the blue 
+trace in <a href="#Figure_8">Figure 8</a> shows the result of applying the adaptive filter, which is now an <i>
+inverse</i> filter instead of an <i>identification</i> filter to the path output 
+data.&nbsp; In this 
+case, the inverse filter has acted on the wavelet shown in the black path output trace and 
+has transformed it back into a single impulse that matches the 
+impulse in the wideband test data shown by the red trace.&nbsp; That is the 
+desired result.&nbsp; The inverse filter has compensated for, or cancelled out, 
+the characteristics of the path, producing an output that matches the input to 
+the path.</p>
+<p><font color="#FF0000"><b>The rightmost wavelets</b></font></p>
+<p>Now consider the rightmost set of wavelets in the bottom panel in <a href="#Figure_8">Figure 8</a>.&nbsp; 
+At the time of the rightmost set of wavelets, an impulse was inserted into the 
+black path output data.&nbsp; This 
+impulse propagated through the adaptive filter, <i>(for which the state had been 
+frozen by disabling adaptive updates)</i> producing the impulse response 
+of the adaptive filter shown by the rightmost wavelet on the blue trace.</p>
+<p><font color="#FF0000"><b>What does this all mean?</b></font></p>
+<p>One way to think of this is as follows.&nbsp; The red impulse in the wideband 
+test data was 
+convolved with the impulse response of the path producing the output shown by 
+the leftmost black wavelet.&nbsp; This wavelet was convolved with the impulse 
+response of the adaptive filter <i>(shown by the rightmost blue wavelet)</i> 
+producing the leftmost blue wavelet.&nbsp; For an inverse filter, the leftmost blue wavelet is an 
+impulse that matches <i>(or tries to match)</i> the original input to the path shown by the red trace.</p>
+<blockquote>
+	<p><i>(The wavelet on the green error trace in <a href="#Figure_8">Figure 8</a> is an artifact that 
+	has no meaning in this discussion of impulse responses.&nbsp; Just ignore 
+	it.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>The impulse and frequency response of the adaptive filter</b></font></p>
+<p>Now let's take a look at the impulse and frequency response of the adaptive filter as shown in <a href="#Figure_9">Figure 9</a>.</p>
+<p>The impulse response of the adaptive filter is shown in the left panel of 
+<a href="#Figure_9">Figure 9</a>, progressing from the beginning to the end of the run.&nbsp; You should 
+recognize the impulse response at the bottom of the left panel in 
+<a name="Figure_9">Figure 9</a> as 
+the same impulse response that you saw as the rightmost blue wavelet in 
+<a href="#Figure_8">Figure 
+8</a>.</p>
+<table bgcolor="#ccffff" border="1">
+	<tr>
+		<td><img border="0" src="java2358c4.jpg" width="113" height="488"></td>
+		<td><img border="0" src="java2358c3.jpg" width="265" height="488"></td>
+	</tr>
+	<tr>
+		<td colspan="2">
+		<pre><b>Figure 9</b></pre>
+		</td>
+	</tr>
+</table>
+<p><font color="#FF0000"><b>The frequency response of the adaptive filter</b></font></p>
+<p>The amplitude and phase response of the adaptive filter is shown in the right 
+panel of <a href="#Figure_9">Figure 9</a> with time progressing down the page.&nbsp; As before, the phase response 
+<i>(shown in red)</i> is flat.&nbsp; This makes us happy.</p>
+<p>Note the shape of the black amplitude response at the bottom of the right 
+panel.&nbsp; Compare it with 
+the amplitude response of the path shown in <a href="#Figure_4">Figure 4</a>.&nbsp; As you can see, the 
+amplitude response of the adaptive filter is the inverse of the amplitude 
+response of the path.</p>
+<p>At low frequencies where the amplitude response of 
+the path is high, the amplitude response of the inverse adaptive filter is low.&nbsp; At 
+high frequencies where the amplitude response of the path is low, the amplitude 
+response of the inverse filter is high.&nbsp; The result is that the product of 
+these two frequency responses <i>(on a frequency by frequency basis)</i> produces an 
+overall response that is very flat across the frequency spectrum from zero to the 
+Nyquist folding frequency.</p>
+<p><font color="#FF0000"><b>More evidence</b></font></p>
+<p>This is borne out by the graph shown in <a href="#Figure_10">Figure 10</a>.&nbsp; <a name="Figure_10">Figure 10</a> shows the 
+amplitude and phase response of a wavelet produced by convolving the impulse 
+response of the path with the impulse response of the inverse filter.</p>
+<table bgcolor="#ccffff" border="1" cols="1">
+	<tr>
+		<td>
+		<pre><img border="0" src="java2358c5.jpg" width="265" height="138">
+</pre>
+		<pre><b>Figure 10</b></pre>
+		</td>
+	</tr>
+</table>
+<p>Essentially, <a href="#Figure_10">Figure 10</a> shows the amplitude and phase response of a wavelet 
+that matches the leftmost blue wavelet in <a href="#Figure_8">Figure 8</a>.&nbsp; Because this wavelet 
+is an impulse, the amplitude response is flat across all frequencies and the 
+phase response is zero across all frequencies.</p>
+<p><font color="#FF0000"><b>We already knew that the amplitude response of an 
+impulse was flat</b></font></p>
+<p>I'm showing you the 
+graph in <a href="#Figure_10">Figure 10</a> at this point in the discussion 
+mainly to prepare you for corresponding graphs 
+for other path scenarios.&nbsp; As you will see later, some of the corresponding 
+graphs for other path scenarios aren't nearly as ideal as this one.</p>
+<p><font color="#FF0000"><b>Where do we go from here?</b></font></p>
+<p>I don't plan to show you nearly this much detail for all six path scenarios 
+that are built into the program.&nbsp; You can run all of the scenarios and view 
+the details for yourself.&nbsp; However, I will show you the highlights for a 
+couple of additional path scenarios.</p>
+<p><font color="#FF0000"><b>A path with multiple echoes</b></font></p>
+<p>At this point, I am going to skip ahead to the path scenario identified as 
+test case number 5.&nbsp; The parameters for this run are shown in <a href="#Figure_11">Figure 11</a>.&nbsp; 
+As you can see from <a name="Figure_11">Figure 11</a>, this run is intended to develop an <i>
+identification</i> filter.</p>
+<table bgcolor="#ccffff" border="1" cols="1" width="482">
+	<tr>
+		<td>
+		<pre>Input values were provided.
+Using following values:
+feedbackGain: 1.0E-4
+numberIterations: 2001
+filterLength: 26
+testCase: 5
+identification: true
+</pre>
+		<pre><b>Figure 11</b></pre>
+		</td>
+	</tr>
+</table>
+<p><font color="#FF0000"><b>The path characteristics</b></font></p>
+<p>Let's begin with the path characteristics shown in <a name="Figure_12">Figure 12</a>.</p>
+<table bgcolor="#ccffff" border="1">
+	<tr>
+		<td><img border="0" src="java2358d1.jpg" width="113" height="149"></td>
+		<td><img border="0" src="java2358d2.jpg" width="265" height="149"></td>
+	</tr>
+	<tr>
+		<td colspan="2">
+		<pre><b>Figure 12</b></pre>
+		</td>
+	</tr>
+</table>
+<p>The impulse response of the path is shown in the left panel of <a href="#Figure_12">Figure 12</a>.&nbsp; 
+The amplitude and phase response of the path is shown in the right panel of 
+<a href="#Figure_12">Figure 12</a>.</p>
+<p><font color="#FF0000"><b>Multiple echoes</b></font></p>
+<p>If by now you have developed an understanding of the convolution process, you 
+may recognize that the impulse response shown in <a href="#Figure_12">Figure 12</a> causes the path 
+output to consist of the sum of four attenuated versions of the input, each 
+delayed relative to the previous one.&nbsp; This is generally what we would hear 
+in an acoustic echo situation.</p>
+<p><font size="4">Hello</font><br>
+Hello<br>
+<font size="2">Hello</font><br>
+<font size="1">Hello</font></p>
+<p><font color="#FF0000"><b>The amplitude response</b></font></p>
+<p>This results in a path amplitude response that is definitely not flat as shown by 
+the right panel of <a href="#Figure_12">Figure 12</a>.&nbsp; In fact, this results in a situation where 
+destructive interference causes <i>(almost)</i> total suppression of the signal at one frequency.</p>
+<blockquote>
+	<p><i>(Note that the phase also goes through a little nonlinearity at the frequency 
+where the amplitude response goes to near zero.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>The adaptive time series</b></font></p>
+<p><a name="Figure_13">Figure 13</a> shows the beginning and the ending time series for this run.&nbsp; 
+As you can see, by the end of the run, the green error has been driven to zero 
+and the impulse response of the adaptive filter shown by the blue wavelet 
+matches the impulse response of the path shown in red.&nbsp; Thus, the unknown 
+characteristics of the path have been faithfully captured in the adaptive filter.&nbsp;
+<i>(The unknown characteristics of the path have been identified.)</i></p>
+<table bgcolor="#ccffff" border="1" cols="1">
+	<tr>
+		<td><img border="0" src="java2358d3.jpg" width="469" height="149"></td>
+	</tr>
+	<tr>
+		<td><img border="0" src="java2358d4.jpg" width="469" height="149"></td>
+	</tr>
+	<tr>
+		<td>
+		<pre><b>Figure 13</b></pre>
+		</td>
+	</tr>
+</table>
+<p>If you run this case and view the amplitude and phase response for the 
+adaptive filter, you will see that they are also a good match for the amplitude 
+and phase response for the path shown in <a href="#Figure_12">Figure 12</a>.</p>
+<p><font color="#FF0000"><b>Inverse filter for path with multiple echoes</b></font></p>
+<p>Now let's develop the inverse filter for the same path with multiple 
+echoes.&nbsp; The input parameters for this case are shown in 
+<a name="Figure_14">Figure 14</a>.</p>
+<table bgcolor="#ccffff" border="1" cols="1" width="482">
+	<tr>
+		<td>
+		<pre>Input values were provided.
+Using following values:
+feedbackGain: 1.0E-4
+numberIterations: 2001
+filterLength: 26
+testCase: 5
+identification: false
+</pre>
+		<pre><b>Figure 14</b></pre>
+		</td>
+	</tr>
+</table>
+<p><font color="#FF0000"><b>The time series for the inverse adaptive filter</b></font></p>
+<p>The beginning and ending time series for the run are shown in 
+<a name="Figure_15">Figure 15</a>.</p>
+<table bgcolor="#ccffff" border="1" cols="1">
+	<tr>
+		<td><img border="0" src="java2358e1.jpg" width="469" height="149"></td>
+	</tr>
+	<tr>
+		<td><img border="0" src="java2358e2.jpg" width="469" height="149"></td>
+	</tr>
+	<tr>
+		<td>
+		<pre><b>Figure 15</b></pre>
+		</td>
+	</tr>
+</table>
+<p><font color="#FF0000"><b>This is a little different</b></font></p>
+<p>Note that in <a href="#Figure_15">Figure 15</a>, unlike for the previous path scenario, the green error 
+trace was not 
+driven completely to zero.</p>
+<p>Perhaps the most striking thing about <a href="#Figure_15">Figure 15</a> 
+is that the impulse response of the adaptive filter <i>(shown as the rightmost 
+blue wavelet)</i> did not succeed in fully compensating for the path 
+characteristics.&nbsp; This is evidenced by the fact that the leftmost blue 
+wavelet is not a clean impulse.&nbsp; Rather, there is some noise to the right 
+of the main body of that wavelet.</p>
+<p><font color="#FF0000"><b>How do we explain this anomaly?</b></font></p>
+<p>I will begin the explanation by taking a look at the impulse and frequency response of the adaptive filter shown in 
+<a name="Figure_16">Figure 16</a> 
+and comparing it with the frequency response of the path shown earlier 
+in <a href="#Figure_12">Figure 12</a>.</p>
+<table bgcolor="#ccffff" border="1">
+	<tr>
+		<td><img border="0" src="java2358e4.jpg" width="113" height="488"></td>
+		<td><img border="0" src="java2358e3.jpg" width="265" height="488"></td>
+	</tr>
+	<tr>
+		<td colspan="2">
+		<pre><b>Figure 16</b></pre>
+		</td>
+	</tr>
+</table>
+<p><font color="#FF0000"><b>Reality sets in</b></font></p>
+<p>The reality is that it is not possible to develop a perfect inverse filter 
+for this path.&nbsp; There is a frequency <i>(see <a href="#Figure_12">Figure 12</a>)
+</i>at which the frequency response of the 
+path totally suppresses <i>(or at least almost totally suppresses)</i> the 
+energy propagating through the path.&nbsp; Once that energy is gone, there is 
+nothing that an inverse filter can do to recover it.</p>
+<p><font color="#FF0000"><b>A peak in the amplitude response</b></font></p>
+<p>If you look at the 
+bottom amplitude response shown in <a href="#Figure_16">Figure 16</a>, there is a peak in the amplitude 
+response at that frequency.&nbsp; However, for that peak to function as the 
+inverse of the notch in the frequency response of the path <i>(see
+<a href="#Figure_12">Figure 12</a>)</i> at that frequency, 
+the peak would have to be infinite in height <i>(or at least very large)</i>, which it clearly isn't.</p>
+<p><font color="#FF0000"><b>Very little energy in the output at that frequency</b></font></p>
+<p>Continuing with the explanation as to why the inverse filter doesn't totally 
+compensate for the path characteristics, <a name="Figure_17">Figure 17</a> shows the amplitude and phase 
+response for the wavelet produced by convolving the impulse response of the path 
+with the impulse response of the adaptive filter <i>(the leftmost blue wavelet 
+in <a href="#Figure_15">Figure 15</a>)</i>.</p>
+<table bgcolor="#ccffff" border="1" cols="1">
+	<tr>
+		<td>
+		<pre><img border="0" src="java2358e5.jpg" width="265" height="138">
+</pre>
+		<pre><b>Figure 17</b></pre>
+		</td>
+	</tr>
+</table>
+<p>Unlike the previous case shown in <a href="#Figure_10">Figure 10</a>, this amplitude response is not completely flat.&nbsp; 
+Rather, it has a notch at the frequency where the amplitude response of the path 
+goes through zero.</p>
+<p>Again, once the characteristics of the path have 
+suppressed most of the energy at that frequency, there is nothing that 
+the inverse filter can do to recreate that energy.</p>
+<p><font color="#FF0000"><b>A path with four notches</b></font></p>
+<p>If you run case 6, you will see that it exhibits similar behavior but even 
+worse.&nbsp; I purposely designed this case such that the amplitude response of 
+the path has four points where the amplitude response goes through zero, as 
+shown in <a name="Figure_18">Figure 18</a>.</p>
+<table bgcolor="#ccffff" border="1" cols="1">
+	<tr>
+		<td>
+		<pre><img border="0" src="java2358f1.jpg" width="265" height="149">
+</pre>
+		<pre><b>Figure 18</b></pre>
+		</td>
+	</tr>
+</table>
+<p><font color="#FF0000"><b>The output time series</b></font></p>
+<p>This results in the time series shown in <a href="#Figure_19">Figure 19</a>.&nbsp; As you can see, the 
+adaptive inverse filter <i>(the rightmost blue wavelet in <a href="#Figure_19">Figure 19</a>)</i> does 
+not succeed in totally compensating for the path characteristics.&nbsp; There is 
+quite a bit of noise following the main body of the leftmost blue wavelet in 
+<a name="Figure_19">Figure 19</a>.</p>
+<table bgcolor="#ccffff" border="1" cols="1">
+	<tr>
+		<td>
+		<pre><img border="0" src="java2358f2.jpg" width="469" height="149">
+</pre>
+		<pre><b>Figure 19</b></pre>
+		</td>
+	</tr>
+</table>
+<p>Also, the green error trace has not been driven to zero in <a href="#Figure_19">Figure 19</a>.</p>
+<p><font color="#FF0000"><b>The overall frequency response</b></font></p>
+<p>The amplitude and phase spectrum of the leftmost blue wavelet in <a href="#Figure_19">Figure 19</a> is shown in 
+<a name="Figure_20">Figure 20</a>.&nbsp; As you can see, there are four notches in the spectrum at the 
+same frequencies as the points where the amplitude response of the path <i>
+(shown in <a href="#Figure_18">Figure 18</a>)</i> goes through zero.&nbsp; Also, there are nonlinearities 
+in the phase response at those frequencies.</p>
+<table bgcolor="#ccffff" border="1" cols="1">
+	<tr>
+		<td>
+		<pre><img border="0" src="java2358f3.jpg" width="265" height="138">
+</pre>
+		<pre><b>Figure 20</b></pre>
+		</td>
+	</tr>
+</table>
+<p><font color="#FF0000"><b>The input parameters</b></font></p>
+<p>For the record, the input parameters for this run are shown in 
+<a name="Figure_21">Figure 21</a>.</p>
+<table bgcolor="#ccffff" border="1" cols="1" width="482">
+	<tr>
+		<td>
+		<pre>Input values were provided.
+Using following values:
+feedbackGain: 1.0E-4
+numberIterations: 2001
+filterLength: 26
+testCase: 6
+identification: false
+</pre>
+		<pre><b>Figure 21</b></pre>
+		</td>
+	</tr>
+</table>
+<p><font color="#FF0000"><b>Brief summary of adaptive inverse filtering</b></font></p>
+<p>In summary, inverse filtering can do a lot to compensate for path characters 
+and to restore a signal to the form that it had before propagating through the 
+path.&nbsp; Inverse filtering can amplify energy that has been attenuated by the 
+path, and can often correct for phase distortion.&nbsp; However, inverse 
+filtering cannot work miracles.&nbsp; It cannot recreate signal energy that has 
+been totally eliminated by the path.&nbsp; Fortunately most real-world paths are 
+probably closer to the situation illustrated by case number 1 than by cases 5 
+and 6.</p>
+<p>Now let's see some code. </p>
+
+<h2 align="center"> <a name="Discussion and Sample Programs"></a><font color="#000000">Discussion
+and Sample Code</font></h2>
+
+<p><font color="#FF0000"><b>The class named Adapt07</b></font></p>
+<p>Listing 1 contains the beginning of the class named <b>Adapt07</b> and the 
+entire <b>main</b> method.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="482">
+	<tr>
+		<td>
+		<pre>class <b>Adapt07</b>{
+  public static void <b>main</b>(String[] args){
+    //Default parameter values
+    double feedbackGain = 0.0001;
+    int numberIterations = 2001;
+    int filterLength = 26;//Must be &gt;= 26 for plotting.
+    //Six test cases, numbered 1 through 6 are defined
+    // later.
+    int testCase = 1;
+    //A value of true for the following variable causes the
+    // adaptive process to attempt to develop an
+    // identification filter. A value of false causes the
+    // adaptive process to attempt to develop an inverse
+    // filter for the path impulse response.
+    boolean identification = true;
+    
+    //The following scale factor is applied to the
+    // wideband test data.  This is not an input
+    // parameter.
+    double wbTestDataScale = 10;
+    
+    //Process command-line arguments.  Note that because of
+    // plotting alignment issues discussed in earlier
+    // lessons, the filter length must be at least 26.
+    if(args.length != 5){
+      System.out.println(
+               "Usage with all parameters following the " +
+               "program name:\n" +
+               "java Adapt07\n" +
+               "feedbackGain\n" + 
+               "numberIterations\n" + 
+               "filterLength &gt;= 26\n" +
+               "testCase, 1 to 9\n" +
+               "identification, T or F\n");
+               
+      System.out.println(
+          "Input values were not provided.\n"+
+          "Using following default values:\n" +
+          "feedbackGain: " + feedbackGain +
+          "\nnumberIterations: " + numberIterations +
+          "\nfilterLength: " + filterLength +
+          "\ntestCase: " + testCase +
+          "\nidentification: " + identification);
+    }else{//Command line params were provided.
+      feedbackGain = Double.parseDouble(args[0]);
+      numberIterations = Integer.parseInt(args[1]);
+      filterLength = Integer.parseInt(args[2]);
+      //FilterLength must be 26 or greater to avoid
+      // plotting alignment problems.
+      if(filterLength &lt; 26){
+        System.out.println(
+                   "\nfilterLength must be 26 or greater");
+        System.out.println("Termnating program");
+        System.exit(0);
+      }//end if
+      testCase = Integer.parseInt(args[3]);
+      if(args[4].toUpperCase().equals("T")){
+        identification = true;
+      }else{
+        identification = false;
+      }//end else
+    
+      System.out.println(
+          "Input values were provided.\n"+
+          "Using following values:\n" +
+          "feedbackGain: " + feedbackGain +
+          "\nnumberIterations: " + numberIterations +
+          "\nfilterLength: " + filterLength +
+          "\ntestCase: " + testCase +
+          "\nidentification: " + identification);
+    }//end else
+
+    //Instantiate a new object of the <span lang="en-us"></span>Adapt07 class
+    // and invoke the method named process on that object.
+    new Adapt07().process(feedbackGain,
+                          numberIterations,
+                          filterLength,
+                          wbTestDataScale,
+                          testCase,
+                          identification);
+  }//end main
+
+<b><font face="Courier New,Courier">Listing 1</font></b></pre>
+		</td>
+	</tr>
+</table>
+<p>The code in Listing 1 is completely straightforward and shouldn't require any 
+explanation beyond the comments contained in the code.</p>
+<p>Note that the <b>main</b> method instantiates an object of the <b>Adapt07</b> 
+class and invokes the instance method named <b>process</b> on that object.</p>
+<p><font color="#FF0000"><b>The process method</b></font></p>
+<p>Listing 2 shows the beginning of the method named <b>process</b>.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="482">
+	<tr>
+		<td>
+		<pre>  void <b>process</b>(double feedbackGain,
+               int numberIterations,
+               int filterLength,
+               double wbTestDataScale,
+               int testCase,
+               boolean identification){
+
+    //The following array will be populated with the
+    // adaptive filter for display purposes.
+    double[] filter = null;
+
+<b><font face="Courier New,Courier">Listing 2</font></b></pre>
+		</td>
+	</tr>
+</table>
+<p>The code in Listing 2 is also completely straightforward.</p>
+<p><font color="#FF0000"><b>Six built in path scenarios</b></font></p>
+<p>Things begin to get interesting in <a name="Listing_3">Listing 3</a>.&nbsp; The code in Listing 3 
+instantiates and initializes six array objects to contain the coefficient values 
+for the six path scenarios described <a href="#The_path_scenarios">earlier</a>.&nbsp; 
+Each array object contains the coefficient values for the impulse response of a 
+particular path scenario.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="482">
+	<tr>
+		<td>
+		<pre>    //Define several test cases for the path impulse
+    // response.
+
+    //Low-pass filter with short time constant.
+    double[] pathA = {1.0,
+                      0.5,
+                      0.25,
+                      0.125,
+                      0.0625,
+                      0.03125,
+                      0.015625,
+                      0.0};
+
+    //Low-pass filter with long time constant.
+    double[] pathB = {1.0,
+                      0.8,
+                      0.64,
+                      0.512,
+                      0.4096,
+                      0.32768,
+                      0.262144,
+                      0.2097152,
+                      0.1677721,
+                      0.1342176,
+                      0.1073740,
+                      0.0858992,
+                      0.0687193,
+                      0.0549754,
+                      0.0439803,
+                      0.0351842,
+                      0.0};
+
+    //High-pass filter with long time constant.
+    double[] pathC = {1.0,
+                     -0.8,
+                      0.64,
+                     -0.512,
+                      0.4096,
+                     -0.32768,
+                      0.262144,
+                     -0.2097152,
+                      0.1677721,
+                     -0.1342176,
+                      0.1073740,
+                     -0.0858992,
+                      0.0687193,
+                     -0.0549754,
+                      0.0439803,
+                     -0.0351842,
+                      0.0};
+                        
+    //Mid-pass filter with long time constant.
+    double[] pathD = {1.0,
+                      0.0,
+                     -0.64,
+                      0.0,
+                      0.4096,
+                      0.0,
+                     -0.262144,
+                      0.0,
+                      0.1677721,
+                      0.0,
+                     -0.1073740,
+                      0.0,
+                      0.0687193,
+                      0.0,
+                     -0.0439803,
+                      0.0};
+                      
+    //Simulation of an acoustic signal with echoes.
+    double[] pathE = {1.0,
+                      0.0,
+                      0.64,
+                      0.0,
+                      0.0,
+                      0.32768,
+                      0.0,
+                      0.0,
+                      0.0,
+                      0.1342176,
+                      0.0,
+                      0.0,
+                      0.0,
+                      0.0,
+                      0.0439803,
+                      0.0};
+    
+    //Digital boxcar filter with peak at half the folding
+    // frequency.
+    double[] pathF = {1.0,
+                      0.0,
+                     -1.0,
+                      0.0,
+                      1.0,
+                      0.0,
+                     -1.0};
+
+<b><font face="Courier New,Courier">Listing 3</font></b></pre>
+		</td>
+	</tr>
+</table>
+<p><font color="#FF0000"><b>Selection of a path scenario</b></font></p>
+<p>The code in Listing 4 uses the command-line parameter named <b>testCase</b> 
+to select one of the six path scenarios for the run.&nbsp; This code is 
+straightforward.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="482">
+	<tr>
+		<td>
+		<pre>    //A reference to the selected path operator will be
+    // stored here.
+    double[] pathOperator = null;
+    
+    if(testCase == 1){
+      pathOperator = pathA;
+    }else if(testCase == 2){
+      pathOperator = pathB;
+    }else if(testCase == 3){
+      pathOperator = pathC;
+    }else if(testCase == 4){
+      pathOperator = pathD;
+    }else if(testCase == 5){
+      pathOperator = pathE;
+    }else if(testCase == 6){
+      pathOperator = pathF;
+    }else{
+      System.out.println("Invalid testCase");
+      System.out.println("Terminating program");
+      System.exit(0);
+    }//end else
+
+<b><font face="Courier New,Courier">Listing 4</font></b></pre>
+		</td>
+	</tr>
+</table>
+<p><font color="#FF0000"><b>You are encouraged to experiment</b></font></p>
+<p>Three of the path scenarios defined in Listing 3 and selected in Listing 4 
+were described or partially described in the earlier section entitled
+<a href="#Experimental_Results">Experimental Results</a>.&nbsp; You are 
+encouraged to run the program for all six of the scenarios <i>(by specifying the 
+appropriate command-line parameters)</i> and to examine the results.&nbsp; See 
+if you can explain the results for each of the six scenarios.</p>
+<p>You are also encouraged to modify the coefficient values in one or more of 
+the array objects in Listing 3 to create your own path scenarios.&nbsp; Then 
+recompile and run the program for your scenarios.&nbsp; See if you can explain 
+the results.</p>
+<p>See if you can create path scenarios for which either the <i>identification</i> 
+filter or the <i>inverse</i> filter fails to converge to a solution.&nbsp; If 
+so, see if you can explain why the LMS adaptive algorithm won't converge for 
+that path scenario.</p>
+<p><font color="#FF0000"><b>Display the pathOperator and its frequency response</b></font></p>
+<p>The code in Listing 5 uses capabilities previously described in earlier 
+lessons referred to in the <a href="#References">References</a> section to 
+display the impulse response and the frequency response of the path as shown in 
+<a href="#Figure_4">Figure 4</a> and <a href="#Figure_12">Figure 12</a>.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="482">
+	<tr>
+		<td>
+		<pre>    //Display the pathOperator
+    //First instantiate a plotting object.
+    PlotALot01 pathOperatorObj = new PlotALot01("Path",
+               (pathOperator.length * 4) + 8,148,70,4,0,0);
+
+    //Feed the data to the plotting object.
+    for(int cnt = 0;cnt &lt; pathOperator.length;cnt++){
+      pathOperatorObj.feedData(40*pathOperator[cnt]);
+    }//end for loop
+    
+    //Cause the graph to be displayed on the computer
+    // screen in the upper left corner.
+    pathOperatorObj.plotData(0,0);
+    
+    //Now compute and plot the frequency response of the
+    // selected path
+    
+    //Instantiate a plotting object for two channels of
+    // frequency response data.  One channel is for
+    // the amplitude and the other channel is the phase.
+    PlotALot03 pathFreqPlotObj = 
+                   new PlotALot03("Path",264,148,35,2,0,0);
+                   
+    //Compute the frequency response and feed the results
+    // to the plotting object.
+    displayFreqResponse(pathOperator,pathFreqPlotObj,
+                                                    128,0);
+                       
+    //Cause the frequency response data stored in the
+    // plotting object to be displayed on the screen in
+    // the top row of images.
+    pathFreqPlotObj.plotData(112,0);
+
+<b><font face="Courier New,Courier">Listing 5</font></b></pre>
+		</td>
+	</tr>
+</table>
+<p>If you have been studying the code in the earlier lessons in this series <i>
+(see <a href="#References">References</a>)</i> the code in Listing 5 should not 
+require further explanation.</p>
+<p><font color="#FF0000"><b>Instantiate an adaptive engine object</b></font></p>
+<p>Listing 6 instantiates an object of the <b>AdaptEngine02</b> class to handle 
+the adaptive behavior of the program.&nbsp; The use of the class named <b>AdaptEngine02</b> is new to this lesson.&nbsp; You can view a complete 
+listing of the class named <b>AdaptEngine02</b> in Listing 18 near the end of 
+the lesson.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="482">
+	<tr>
+		<td>
+		<pre>    AdaptEngine02 adapter = new <b>AdaptEngine02</b>(
+                                filterLength,feedbackGain);
+
+<b><font face="Courier New,Courier">Listing 6</font></b></pre>
+		</td>
+	</tr>
+</table>
+<p>Although the class named <b>AdaptEngine02</b> is new to this lesson, it is 
+very similar to the class named <b>AdaptEngine01</b> that has been used and 
+explained in several of the earlier lessons referred to in the
+<a href="#References">References</a> section.&nbsp; The only thing new in the <b>
+AdaptEngine02</b> class is the ability to temporarily enable or disable the 
+updating of the adaptive filter coefficients for each adaptive iteration by 
+passing a <b>boolean</b> parameter to the <b>adapt</b> method.&nbsp; Therefore, 
+I won't provide a further explanation of the <b>AdaptEngine02</b> class in this 
+lesson.</p>
+<p><font color="#FF0000"><b>Declare working objects and variables</b></font></p>
+<p>Listing 7 declares and initializes some working objects and working variables 
+that will be used later in the program.&nbsp; This code is straightforward and 
+should not require further explanation</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="482">
+	<tr>
+		<td>
+		<pre>    //Instantiate an array object that will be used as a
+    // delay line for the wideband test data.
+    double[] rawData = new double[pathOperator.length];
+    
+    //Instantiate a plotting object for four channels of
+    // time-serie data.
+    PlotALot05 timePlotObj = 
+                   new PlotALot05("Time",468,148,25,2,0,0);
+
+    //Instantiate a plotting object for two channels of
+    // filter frequency response data.  One channel is for
+    // the amplitude and the other channel is for the
+    // phase.
+    PlotALot03 freqPlotObj = 
+                   new PlotALot03("Freq",264,487,35,2,0,0);
+
+    //Instantiate a plotting object to display the filter
+    // impulse response at specific time intervals during
+    // the adaptive process.
+    PlotALot01 filterPlotObj = new PlotALot01("Filter",
+                     (filterLength * 4) + 8,487,70,4,0,0);
+
+    //Declare and initialize working variables.
+    double output = 0;
+    double err = 0;
+    double target = 0;
+    double input = 0;
+    double wbTestData = 0;
+    boolean adaptOn;
+
+<b><font face="Courier New,Courier">Listing 7</font></b></pre>
+		</td>
+	</tr>
+</table>
+<p><font color="#FF0000"><b>Execute adaptive iterations</b></font></p>
+<p>Listing 8 shows the beginning of a <b>for</b> loop that causes the program to 
+execute the specified number of adaptive iterations.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="482">
+	<tr>
+		<td>
+		<pre>    for(int cnt = 0;cnt &lt; numberIterations;cnt++){
+
+      adaptOn = true;
+
+<b><font face="Courier New,Courier">Listing 8</font></b></pre>
+		</td>
+	</tr>
+</table>
+<p><font color="#FF0000"><b>Enabling and disabling adaptive coefficient updates</b></font></p>
+<p>The variable named <b>adaptOn</b>, which is set to <b>true</b> in Listing 8, 
+is used to enable and disable the adaptive filter coefficient update process in 
+the <b>adapt</b> method of the adaptive engine.&nbsp; As you will see later, 
+this variable is passed as the third parameter to the <b>adapt</b> method.</p>
+<p>When the value of that parameter is true, the <b>adapt</b> method uses the 
+adaptive error to update the coefficient values in the adaptive filter.&nbsp; 
+When that parameter is false, the coefficient values are not updated during that 
+call to the <b>adapt</b> method.</p>
+<p><font color="#FF0000"><b>Adaptive updates are disabled near the end of the 
+run</b></font></p>
+<p>The value of <b>adaptOn</b> is allowed to remain true during most of the 
+adaptive iterations in this program.&nbsp; However, near the end of the run, 
+this value is set to <b>false</b> to disable the adaptive update and to freeze 
+the adaptive filter in its current state.&nbsp; Then two different impulses are 
+inserted into the test data to produce the impulse responses shown in <a href="#Figure_5">Figure 5</a>, 
+<a href="#Figure_8">Figure 8</a>, <a href="#Figure_13">Figure 13</a>, <a href="#Figure_15">Figure 15</a>, and <a href="#Figure_19">Figure 19</a>.</p>
+<p>As with the use of the class named <b>AdaptEngine02</b>, this feature is new 
+to this program, and I will explain how it is accomplished in more detail later.</p>
+<p><font color="#FF0000"><b>Get wideband test data</b></font></p>
+<p>Listing 9 gets and scales the next sample of wideband test data from a random number generator.&nbsp; Before scaling by
+<b>wbTestDataScale</b>, the values are uniformly distributed from -1.0 to 1.0.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="482">
+	<tr>
+		<td>
+		<pre>      wbTestData = 
+                 wbTestDataScale*(2*(Math.random() - 0.5));
+
+<b><font face="Courier New,Courier">Listing 9</font></b></pre>
+		</td>
+	</tr>
+</table>
+<p><font color="#FF0000"><b>Insert an impulse in the wideband test data</b></font></p>
+<p><a name="Listing_10">Listing 10</a> sets the wideband input values near the end of the run to zero and turns adaptation off 
+by setting the value of <b>adaptOn</b> to false.&nbsp; Listing 10 also inserts an impulse 
+into the wideband test data near the end of the run.</p>
+<p>That impulse, which is shown on the red trace in the leftmost set of wavelets 
+in <a href="#Figure_19">Figure 19</a>, produces the leftmost wavelets that appear in the other traces in 
+<a href="#Figure_19">Figure 19</a>.&nbsp; Among other things, this causes the impulse response of the path to be visible 
+as the leftmost wavelet in the black trace in <a href="#Figure_19">Figure 19</a>.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="482">
+	<tr>
+		<td>
+		<pre>      //Set wideband test data to zero
+      if(cnt &gt; (numberIterations - 5*filterLength)){
+        wbTestData = 0;
+        adaptOn = false;
+      }//end if
+
+      //Now insert an impulse at one specific location in
+      // the wideband test data.
+      if(cnt == numberIterations - 3*filterLength){
+        wbTestData = 2 * wbTestDataScale;
+      }//end if
+
+<b><font face="Courier New,Courier">Listing 10</font></b></pre>
+		</td>
+	</tr>
+</table>
+<p><font color="#FF0000"><b>Apply the path operator to the wideband test data</b></font></p>
+<p>Listing 11 inserts the wideband test data into the <b>rawData</b> delay line 
+and then invokes the <b>reverseDotProduct</b> method to perform one step in the 
+convolution of the raw data with the path operator.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="482">
+	<tr>
+		<td>
+		<pre>      //Insert the wideband test data into the raw data
+      // delay line.
+      flowLine(rawData,wbTestData);
+    
+      //Apply the path operator to the wideband test data.
+      // Note the use of the method named
+      // reverseDotProduct, which is new to this lesson.
+      // This method provides the time reversal that is
+      // necessary for true convolution.
+      double pathData = 
+                   reverseDotProduct(rawData,pathOperator);
+
+<b><font face="Courier New,Courier">Listing 11</font></b></pre>
+		</td>
+	</tr>
+</table>
+<p><font color="#FF0000"><b>The method named reverseDotProduct</b></font></p>
+<p>Note that the method named <b>reverseDotProduct</b> is new to this lesson.&nbsp;
+<i>(You can view the lesson in its entirety in Listing 17.)</i>&nbsp; However, it is 
+very similar to the method named <b>dotProduct</b>, which has been used in 
+various previous lessons referred to in the section entitled
+<a href="#References">References</a>.&nbsp; The only significant difference 
+between this new version of the method named <b>reverseDotProduct</b> and the 
+earlier version named <b>dotProduct</b> is that this new version reverses the 
+time order of the operator coefficients before computing the vector dot product.&nbsp; 
+This is consistent with the requirement to reverse the time order of the 
+operator coefficients before performing a convolution operation.</p>
+<p>Because of the similarity of the new version of the method with the version 
+that was used and explained in earlier lessons, I won't discuss the method named
+<b>reverseDotProduct</b> further in this lesson.</p>
+<p><font color="#FF0000"><b>Declare another working variable</b></font></p>
+<p>Listing 12 declares a variable of the <b>AdaptiveResult</b> class, which will 
+receive a reference from the <b>adapt</b> method containing various results of 
+the adaptive process.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="482">
+	<tr>
+		<td>
+		<pre>      AdaptiveResult result = null;
+
+<b><font face="Courier New,Courier">Listing 12</font></b></pre>
+		</td>
+	</tr>
+</table>
+<p><font color="#FF0000"><b>Develop an <i>identification</i> filter</b></font></p>
+<p>Listing 13 shows the beginning of an <b>if</b> statement that:</p>
+<ul>
+	<li>Selects between the development of an <i>identification</i> filter and 
+	an <i>inverse</i> filter based on a command-line parameter.</li>
+	<li>Establishes the appropriate input values to cause the adaptive engine to 
+	develop an <i>identification</i> filter.&nbsp; <i>(See
+	<a href="#The_identification_filter">The Identification Filter</a>.&nbsp; 
+	Values for an inverse filter are established later in the <b>else</b> clause of 
+	the statement)</i>.</li>
+	<li>Invokes the <b>adapt</b> method on the adaptive engine to perform one 
+	complete adaptive operation, returning the adaptive results in an object of 
+	type <b>AdaptiveResult</b>.</li>
+</ul>
+<table bgcolor="#ffff00" border="1" cols="1" width="482">
+	<tr>
+		<td>
+		<pre>      if(identification){//Develop an identification filter
+        //Establish input values.
+        input = wbTestData;
+        target = pathData;
+        //Do the adaptive processing.
+        result = adapter.adapt(input,target,adaptOn);
+
+<b><font face="Courier New,Courier">Listing 13</font></b></pre>
+		</td>
+	</tr>
+</table>
+<p><font color="#FF0000"><b>Develop an <i>inverse</i> filter</b></font></p>
+<p>Listing 14 shows the <b>else</b> clause of the <b>if</b> statement that began 
+in Listing 13.&nbsp; The <b>else</b> clause:</p>
+<ul>
+	<li>Establishes the appropriate input values to cause the adaptive engine to 
+	develop an <i>inverse</i> filter.&nbsp; <i>(See
+	<a href="#The_inverse_filter_">The Inverse Filter</a>.&nbsp; Values for an 
+	identification filter were established in Listing 13)</i>.</li>
+	<li>Inserts an impulse in the path output data near the end of the run.</li>
+	<li>Invokes the <b>adapt</b> method on the adaptive engine to perform one 
+	complete adaptive operation, returning the adaptive results in an object of 
+	type <b>AdaptiveResult</b>.</li>
+</ul>
+<table bgcolor="#ffff00" border="1" cols="1" width="482">
+	<tr>
+		<td>
+		<pre>      }else{//Develop an inverse filter.
+        //Establish input values.
+        input = pathData;
+        target = wbTestData;
+
+        //Insert an impulse into the pathData.
+        if(cnt == numberIterations - filterLength){
+          input = 2 * wbTestDataScale;
+        }//end if
+
+        //Do the adaptive processing
+        result = adapter.adapt(input,target,adaptOn);
+      }//end else
+
+<b><font face="Courier New,Courier">Listing 14</font></b></pre>
+		</td>
+	</tr>
+</table>
+<p><font color="#FF0000"><b>Inserting the impulse</b></font></p>
+<p>When the run is nearly complete adaptive updates are disabled and the wideband input data values are set to zero 
+by the code in <a href="#Listing_10">Listing 10</a>.&nbsp; That code also 
+inserts an impulse in the wideband test data.</p>
+<p>Listing 14 inserts an impulse into the path output data 
+values.&nbsp; <i>(This happens later than the point in time where the impulse was inserted into the wideband test data 
+by the code in <a href="#Listing_10">Listing 10</a>.)</i>&nbsp; 
+This impulse is shown in the black trace in the rightmost set of wavelets in 
+<a href="#Figure_19">Figure 19</a>.&nbsp; The existence of the impulse in the input to the adaptive 
+filter causes the impulse response of the adaptive filter to be displayed as the 
+rightmost wavelet in the blue trace in <a href="#Figure_19">Figure 19</a>.</p>
+<p><font color="#FF0000"><b>Plot adaptive results, etc.</b></font></p>
+<p>The code in Listing 15:</p>
+<ul>
+	<li>Gets and saves the adaptive results for plotting and spectral analysis.</li>
+	<li>Feeds the time series data to the plotting object.&nbsp; This eventually 
+	results in graphs of the type shown in <a href="#Figure_5">Figure 5</a> being plotted.</li>
+	<li>Computes and feeds summary results to the plotting objects every 400th 
+	iteration.&nbsp; This eventually results in graphs of the type shown in 
+	<a href="#Figure_6">Figure 6</a> being plotted.</li>
+	<li>Causes the data saved in the plotting objects to be plotted.</li>
+</ul>
+<table bgcolor="#ffff00" border="1" cols="1" width="482">
+	<tr>
+		<td>
+		<pre>      //Get and save adaptive results for plotting and
+      // spectral analysis
+      output = result.output;
+      err = result.err;
+      filter = result.filterArray;
+    
+      //Feed the time series data to the plotting object.
+      timePlotObj.feedData(input,target,output,-err);
+    
+      //Compute and plot summary results at the end of
+      // every 400th iteration.
+      if(cnt%400 == 0){
+        displayFreqResponse(filter,freqPlotObj,
+                                    128,filter.length - 1);
+
+        //Display the filter impulse response coefficient
+        // values.  The adaptive engine returns the filter
+        // with the time axis reversed relative to the
+        // conventional display of an impulse response.
+        // Therefore, it is necessary to display it in
+        // reverse order.
+        for(int ctr = 0;ctr &lt; filter.length;ctr++){
+          filterPlotObj.feedData(
+                       40*filter[filter.length - 1 - ctr]);
+        }//end for loop
+      }//End display of frequency response and filter
+    }//End for loop,
+    
+    //Cause the data stored in the plotting objects to be
+    // plotted.
+    timePlotObj.plotData(376,0);//Top of screen
+    freqPlotObj.plotData(0,148);//Left side of screen
+    filterPlotObj.plotData(265,148);
+
+<b><font face="Courier New,Courier">Listing 15</font></b></pre>
+		</td>
+	</tr>
+</table>
+<p>If you have been studying the earlier lessons in this series referred to in 
+the <a href="#References">References</a> section, you will find the code in 
+Listing 15 to be very familiar and straightforward.</p>
+<p><font color="#FF0000"><b>Convolve adaptive filter with the path operator</b></font></p>
+<p>For the case of an <i>inverse</i> filter only, the code in Listing 16 
+convolves the adaptive filter with the impulse response of the path to determine the extent to which the filter is able to compensate for the characteristics of the path.</p>
+<p>This determination is made by computing the amplitude and phase spectrum of 
+the wavelet that is produced by the convolution, and displaying that 
+frequency-domain information in the format shown in <a href="#Figure_20">Figure 20</a>.&nbsp; If the 
+filter is a true inverse filter for the path, the amplitude spectrum will be 
+flat and the phase will be either zero or linear <i>(indicating a time delay)</i>.&nbsp; 
+Deviations such as those shown in <a href="#Figure_20">Figure 20</a> indicate that the inverse filter 
+has some shortcomings.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="482">
+	<tr>
+		<td>
+		<pre>    if(!identification){
+      //Copy the filter into another array with zeros on
+      // both ends to account for end effects in the
+      // convolution process.
+      double[] convInput = new double[
+                    filter.length + 2*pathOperator.length];
+      for(int cnt = 0;cnt &lt; filter.length;cnt++){
+        convInput[cnt + pathOperator.length] = filter[cnt];
+      }//end for loop
+      
+      //Create an array to receive the convolution output.
+      double[] convOutput = 
+           new double[filter.length + pathOperator.length];
+
+      //Call the method named convolve01 to perform the
+      // convolution.
+      convolve01(convInput,pathOperator,convOutput);
+
+      //Now compute and plot the frequency spectrum of the
+      // time series that results from convolving the final
+      // adaptive filter with the path impulse response.
+      // Ideally, the amplitude response will be flat from
+      // zero to the folding frequency and the phase
+      // response will be flat, or possibly linear
+      // (indicating a time delay).
+      
+      //Instantiate a plotting object for two channels of
+      // frequency response data.  One channel is for
+      // the amplitude and the other channel is the phase.
+      PlotALot03 finalFreqPlotObj = 
+                  new PlotALot03("Final",264,137,35,2,0,0);
+                     
+      //Compute the frequency response and feed the results
+      // to the plotting object.
+      displayFreqResponse(convOutput,finalFreqPlotObj,
+                                128,convOutput.length - 1);
+                         
+      //Cause the frequency response data stored in the
+      // plotting object to be displayed on the screen.
+      finalFreqPlotObj.plotData(
+                           265 + filterLength * 4 + 8,148);
+    }//end if
+
+  }//end process method
+
+<b><font face="Courier New,Courier">Listing 16</font></b></pre>
+		</td>
+	</tr>
+</table>
+<p>Although the code in Listing 16 is rather long, with one exception it is 
+straightforward and uses capabilities explained in earlier lessons in this 
+series.&nbsp; <i>(See the section entitled <a href="#References">References</a>.)</i>&nbsp; 
+Therefore, I won't explain the code in Listing 16 further in this lesson.</p>
+<p><font color="#FF0000"><b>The convolve01 method</b></font></p>
+<p>The one exception has to do with the use of the method named <b>convolve01</b>.&nbsp; 
+This method is very similar to a method that I presented and explained in an 
+earlier lesson entitled
+<a href="http://www.developer.com/java/other/article.php/3484591">Convolution 
+and Frequency Filtering in Java</a>, so I won't repeat that explanation here.&nbsp; 
+You can view the code for the method named <b>convolve01</b> in Listing 17 near 
+the end of the lesson.</p>
+
+<h2 align="center"><a name="Run the program"></a>Run the Program</h2>
+
+<p>I encourage you to copy the code from the classes in the section entitled
+<a href="#Complete Program Listings">Complete Program Listings</a>.&nbsp; 
+Compile and execute the programs.&nbsp; Experiment with the code.&nbsp; Make changes to the code, recompile, execute, 
+and observe the results of your changes.</p>
+<p>Run all six of the built-in cases and see if you can explain the results.</p>
+<p>After running the built-in cases, you might want to modify the filter 
+coefficients for one of the path operators shown in <a href="#Listing_3">Listing 3</a>.&nbsp; Then 
+recompile and run the program and observe the results.&nbsp; Did your change 
+cause the results to be different?&nbsp; If so, how were they different?&nbsp; 
+See if you can explain why they were different.</p>
+<p>You might also try to come up with a set of path coefficients for which the 
+adaptive process fails to converge, both for an <i>identification</i> filter and 
+for an <i>inverse</i> filter.&nbsp; If your changes cause either or both 
+processes to fail to converge, see if you can explain the reasons why?</p>
+<p>While you are at it, experiment with different values for <b>feedBackGain</b>.&nbsp; What happens if you use a large value for <b>feedbackGain</b>?&nbsp; 
+What happens if you use a very small value for <b>feedbackGain</b>?&nbsp; What 
+happens if you use a negative value for <b>feedbackGain</b>?&nbsp; Can you 
+explain the results that you experience?</p>
+<p>While experimenting with the <b>feedbackGain</b>, you might also want to 
+experiment with the command-line parameter named <b>numberIterations</b>.&nbsp; 
+See if you can explain the results for small, medium, and large values for this 
+parameter.</p>
+<p><font color="#FF0000"><b>Other classes required</b></font></p>
+<p>In addition to the classes named <b>Adapt07</b>, <b>AdaptEngine02</b>, and <b>
+AdaptiveResult</b> <i>(for which the 
+source code is provided in this lesson),</i> you will need access to the 
+following classes.&nbsp; The source code for these classes can be found in the 
+lessons indicated.</p>
+<ul>
+	<li>ForwardRealToComplex01:&nbsp;
+	<a href="http://www.developer.com/java/other/article.php/3380031">Spectrum 
+	Analysis using Java, Sampling Frequency, Folding Frequency, and the FFT 
+	Algorithm</a></li>
+	<li>PlotALot01:&nbsp;
+	<a href="http://www.developer.com/java/data/article.php/3529186">Plotting 
+	Large Quantities of Data using Java</a></li>
+	<li>PlotALot03:&nbsp;
+	<a href="http://www.developer.com/java/data/article.php/3529186">Plotting 
+	Large Quantities of Data using Java</a></li>
+	<li>PlotALot05:&nbsp;
+	<a href="http://www.developer.com/java/other/article.php/3549991">Adaptive 
+	Filtering in Java, Getting Started</a> </li>
+</ul>
+<h2 align="center" ><a name="Summary">Summary</a></h2>
+<p>In this lesson, I showed you how to use a general-purpose 
+<a href="http://cnx.rice.edu/content/m11829/latest/">LMS</a> 
+adaptive engine to write a Java program that illustrates 
+adaptive <i>identification</i> filtering and adaptive <i>inverse</i> filtering 
+for different path scenarios.</p>
+<h2 align="center" ><a name="Whats Next">What's Next?</a></h2>
+<p>Adaptive filtering is commonly used for the following four scenarios:</p>
+<ul>
+	<li>System Identification</li>
+	<li>Inverse System Identification</li>
+	<li>Noise Cancellation</li>
+	<li>Prediction</li>
+</ul>
+<p>This lesson explains how to write Java programs to work in the first two 
+scenarios in the list.&nbsp; I plan to 
+publish lessons that explain and provide examples of the remaining two scenarios 
+in future lessons.</p>
+<h2 align="center"><a name="References">References</a></h2>
+<p>In preparation for understanding the material in this lesson, I recommend 
+that you study the material in the following previously-published lessons:</p>
+<ul>
+	<li><a href="http://www.dickbaldwin.com/dsp/Dsp00100.htm">100</a>&nbsp;&nbsp; Periodic 
+	Motion and Sinusoids</li>
+	<li><a href="http://www.dickbaldwin.com/dsp/Dsp00104.htm">104</a>&nbsp;&nbsp; Sampled 
+	Time Series</li>
+	<li><a href="http://www.dickbaldwin.com/dsp/Dsp00108.htm">108</a>&nbsp;&nbsp; 
+	Averaging Time Series</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3374611">1478</a> 
+	Fun with Java, How and Why Spectral Analysis Works</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3380031">1482</a> 
+	Spectrum Analysis using Java, Sampling Frequency, Folding Frequency, and the 
+	FFT Algorithm</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3392871">1483</a> 
+	Spectrum Analysis using Java, Frequency Resolution versus Data Length</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3411041">1484</a> 
+	Spectrum Analysis using Java, Complex Spectrum and Phase Angle</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3436341">1485</a> 
+	Spectrum Analysis using Java, Forward and Inverse Transforms, Filtering in 
+	the Frequency Domain</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3484591">1487</a> 
+	Convolution and Frequency Filtering in Java</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3487996">1488</a> 
+	Convolution and Matched Filtering in Java</li>
+	<li><a href="http://www.developer.com/java/data/article.php/3529186">1492</a> 
+	Plotting Large Quantities of Data using Java</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3549991">2350</a> 
+	Adaptive Filtering in Java, Getting Started</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3560501">2352</a> 
+	An Adaptive Whitening Filter in Java</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3566951">2354</a> 
+	A General-Purpose LMS Adaptive Engine in Java</li>
+	<li><a href="An%20Adaptive%20Line%20Tracker%20in%20Java">2356</a> An Adaptive Line Tracker in Java</li>
+</ul>
+
+<h2 align="center"> <a name="Complete Program Listings"></a>Complete Program Listings</h2>
+
+<p>Complete listings of the classes discussed in this lesson are shown in the 
+listings below.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="482">
+	<tr>
+		<td>
+		<pre>/*File Adapt07.java.java
+Copyright 2005, R.G.Baldwin
+
+The purpose of this program is to illustrate adaptive 
+identification and inverse identification.
+
+Further information on these two topics can be found at the
+following three web sites:
+
+www.eee.strath.ac.uk/r.w.stewart/adaptivejava/begin.htm
+
+www.mathworks.com/access/helpdesk/help/toolbox/
+filterdesign/adaptiv5.html#5547
+
+www.mathworks.com/access/helpdesk/help/toolbox/
+filterdesign/adaptiv6.html#5557
+
+This program requires the following classes:
+Adapt07.class
+AdaptEngine02.class (new to this lesson)
+AdaptiveResult.class
+ForwardRealToComplex01.class
+PlotALot01.class
+PlotALot03.class
+PlotALot05.class
+
+This program uses the adaptive engine named AdaptEngine02 
+to adaptively develop a filter.  Depending on user input, 
+the filter is either an identification filter or an inverse
+filter.
+
+The class named AdaptEngine02 is an upgrade to the class 
+named AdaptEngine01 that was used in earlier programs.  
+This upgrade makes it possible for the user to pass a 
+boolean parameter to the adapt method of the engine to 
+either enable or disable the adaptive update of the filter 
+coefficients.
+
+When the filter is an identification filter, the adaptive 
+process attempts to replicate the impulse response of a 
+path through which wideband test data are flowing.
+
+When the filter is an inverse filter, the adaptive process 
+attempts to develop a filter that is the inverse of the 
+impulse response of a path through which wideband test
+data are flowing.
+
+User-selectable test cases are provided for six different 
+path scenarios. The user may develop an identification 
+filter or an inverse filter for any of the six cases.
+
+If the user opts for an identification filter, five 
+separate graphs are produced. If the user opts for an
+inverse filter, six separate graphs are produced.  The 
+graphs appear on the screen in two rows with three graphs 
+in each row.
+
+The following is a brief description of each of the six 
+graphs, working from left to right across the top row and 
+then working from left to right across the second row.
+
+1.  The impulse response of the path through which the wide
+band data are flowing.
+2.  The amplitude and phase response of the path through 
+which the wideband data are flowing.
+3.  Four time series that illustrate the time behavior of 
+the adaptive process.  The adaptive behavior is disabled
+and impulses are appended onto the ends of the input time 
+series to cause the impulse response of various filters to 
+be displayed at the ends of the time series in this graph.
+4.  The amplitude and phase response of the adaptive filter
+at the end of every 400th iteration.
+5.  The impulse response of the adaptive filter at the end 
+of every 400th adaptive iteration.
+6.  The amplitude and phase spectrum of the time series 
+produced by convolving the final adaptive filter with the
+impulse response of the path.  This graph is produced only 
+when the filter being developed is an inverse filter.  This
+amplitude and phase spectrum illustrates the extent to 
+which the inverse filter is able to compensate for the path
+characteristics.  Ideally the amplitude spectrum is flat 
+and the phase spectrum is either flat or linear 
+(indicating a time delay).
+
+Graphs 3, 4, and 5 consist of multiple pages stacked on top
+of one another.  Move the pages on the top of the stack to 
+view the pages further down.  The pages on the top of the 
+stack represent the results produced early in the adaptive 
+process while those further down represent the results 
+produced later in the adaptive process.
+
+The four time series that are plotted are, from top to
+bottom in the colors indicated:
+1.  Input to the adaptive filter (black).
+2.  Target for the adaptive process (red).
+3.  Output from the adaptive filter (blue).
+4.  Error computed within the adaptive process (green).
+
+Near the end of the run, the adaptive update process is 
+disabled.  The input data is set to zero for the remainder 
+of the run except that on two subsequent occasions, an 
+impulse is inserted into the data.  By running the same 
+path twice, once in identification mode and once in inverse
+filter mode, this makes it possible to see:
+
+1. The impulse response of the path.
+2. The impulse response of the final adaptive 
+identification filter.
+3. The extent to which the impulse response of the 
+identification filter matches the impulse response of the 
+path.
+4. The impulse response of the final inverse filter.
+5  The extent to which the convolution of the inverse 
+filter with the impulse response of the path compensates 
+for the characteristics of the path and produces the ideal 
+output consisting of a single impulse.
+
+In operation, the program generates wideband test data 
+produced by a random number generator and convolves it with
+a specified path impulse response to simulate the impact of
+the path on the wideband test data.  The original 
+wideband test data and the path output data are both 
+presented to the adaptive engine.
+
+When the original wideband test data is presented as the 
+data to be filtered within the adaptive engine and the 
+path output is presented as the target, the adaptive 
+process attempts to develop an adaptive filter that 
+replicates the impulse response of the path.
+
+When the two are reversed, the adaptive process attempts to
+develop an adaptive filter that is the inverse of the 
+impulse response of the path.
+
+User input is provided by five command-line parameters.  If
+no command-line parameters are provided, default parameters
+are used.
+
+The command-line parameters are:
+
+feedbackGain: The gain factor that is used in the feedback 
+loop to adjust the coefficient values in the adaptive 
+filter.
+
+numberIterations: This is the number of iterations that the
+program executes before stopping and displaying all of the 
+graphic results.
+
+filterLength: This is the number of coefficients in the 
+adaptive filter.  Must be at least 26.
+
+testCase:  An integer from 1 to 9 that specifies the 
+simulated path scenario.
+
+identification:  Input is T or F.  T specifies that the 
+adaptive process is to develop an identification filter.  
+F specifies that the adaptive process is to develop an 
+inverse filter.
+
+The minimum filter length of 26 has to do with plotting
+alignment issues and has nothing to do with the adaptive
+process.  See a description of the alignment issues in
+earlier lessons.
+
+The six path scenarios can be generally described as 
+follows:
+
+1.  A low-pass filter of the sort that might be realized 
+with a passive RC network.
+2,  Another low-pass filter that might be realized with a 
+passive RC network but with a much longer time constant 
+than scenario 1.
+3.  A high-pass filter of the sort that might be realized 
+with a passive RLC network having the same long time 
+constant as scenario 2.
+4,  A mid-band filter of the sort that might be realized 
+with a passive RLC network having the same long time 
+constant as scenarios 2 and 3.
+5.  A filter that might represent an acoustic signal in 
+the presence of echoes.
+6.  A boxcar digital filter with a peak at half the 
+Nyquist folding frequency.
+
+Tested using J2SE 5.0 and WinXP.  J2SE 5.0 or later is 
+required.
+**********************************************************/
+import static java.lang.Math.*;//J2SE 5.0 req
+
+class Adapt07{
+  public static void main(String[] args){
+    //Default parameter values
+    double feedbackGain = 0.0001;
+    int numberIterations = 2001;
+    int filterLength = 26;//Must be &gt;= 26 for plotting.
+    //Six test cases, numbered 1 through 6 are defined
+    // later.
+    int testCase = 1;
+    //A value of true for the following variable causes the
+    // adaptive process to attempt to develop an
+    // identification filter. A value of false causes the
+    // adaptive process to attempt to develop an inverse
+    // filter for the path impulse response.
+    boolean identification = true;
+    
+    //The following scale factor is applied to the
+    // wideband test data.  This is not an input
+    // parameter.
+    double wbTestDataScale = 10;
+    
+    //Process command-line arguments.  Note that because of
+    // plotting alignment issues discussed in earlier
+    // lessons, the filter length must be at least 26.
+    if(args.length != 5){
+      System.out.println(
+               "Usage with all parameters following the " +
+               "program name:\n" +
+               "java Adapt07\n" +
+               "feedbackGain\n" + 
+               "numberIterations\n" + 
+               "filterLength &gt;= 26\n" +
+               "testCase, 1 to 9\n" +
+               "identification, T or F\n");
+               
+      System.out.println(
+          "Input values were not provided.\n"+
+          "Using following default values:\n" +
+          "feedbackGain: " + feedbackGain +
+          "\nnumberIterations: " + numberIterations +
+          "\nfilterLength: " + filterLength +
+          "\ntestCase: " + testCase +
+          "\nidentification: " + identification);
+    }else{//Command line params were provided.
+      feedbackGain = Double.parseDouble(args[0]);
+      numberIterations = Integer.parseInt(args[1]);
+      filterLength = Integer.parseInt(args[2]);
+      //FilterLength must be 26 or greater to avoid
+      // plotting alignment problems.
+      if(filterLength &lt; 26){
+        System.out.println(
+                   "\nfilterLength must be 26 or greater");
+        System.out.println("Termnating program");
+        System.exit(0);
+      }//end if
+      testCase = Integer.parseInt(args[3]);
+      if(args[4].toUpperCase().equals("T")){
+        identification = true;
+      }else{
+        identification = false;
+      }//end else
+    
+      System.out.println(
+          "Input values were provided.\n"+
+          "Using following values:\n" +
+          "feedbackGain: " + feedbackGain +
+          "\nnumberIterations: " + numberIterations +
+          "\nfilterLength: " + filterLength +
+          "\ntestCase: " + testCase +
+          "\nidentification: " + identification);
+    }//end else
+
+    //Instantiate a new object of the <span lang="en-us"></span>Adapt07 class
+    // and invoke the method named process on that object.
+    new Adapt07().process(feedbackGain,
+                          numberIterations,
+                          filterLength,
+                          wbTestDataScale,
+                          testCase,
+                          identification);
+  }//end main
+  //-----------------------------------------------------//
+  
+  //This is the primary adaptive processing and plotting
+  // method for the program.
+  void process(double feedbackGain,
+               int numberIterations,
+               int filterLength,
+               double wbTestDataScale,
+               int testCase,
+               boolean identification){
+
+    //The following array will be populated with the
+    // adaptive filter for display purposes.
+    double[] filter = null;
+    
+    //Define several test cases for the path impulse
+    // response.
+
+    //Low-pass filter with short time constant.
+    double[] pathA = {1.0,
+                      0.5,
+                      0.25,
+                      0.125,
+                      0.0625,
+                      0.03125,
+                      0.015625,
+                      0.0};
+
+    //Low-pass filter with long time constant.
+    double[] pathB = {1.0,
+                      0.8,
+                      0.64,
+                      0.512,
+                      0.4096,
+                      0.32768,
+                      0.262144,
+                      0.2097152,
+                      0.1677721,
+                      0.1342176,
+                      0.1073740,
+                      0.0858992,
+                      0.0687193,
+                      0.0549754,
+                      0.0439803,
+                      0.0351842,
+                      0.0};
+
+    //High-pass filter with long time constant.
+    double[] pathC = {1.0,
+                     -0.8,
+                      0.64,
+                     -0.512,
+                      0.4096,
+                     -0.32768,
+                      0.262144,
+                     -0.2097152,
+                      0.1677721,
+                     -0.1342176,
+                      0.1073740,
+                     -0.0858992,
+                      0.0687193,
+                     -0.0549754,
+                      0.0439803,
+                     -0.0351842,
+                      0.0};
+                        
+    //Mid-pass filter with long time constant.
+    double[] pathD = {1.0,
+                      0.0,
+                     -0.64,
+                      0.0,
+                      0.4096,
+                      0.0,
+                     -0.262144,
+                      0.0,
+                      0.1677721,
+                      0.0,
+                     -0.1073740,
+                      0.0,
+                      0.0687193,
+                      0.0,
+                     -0.0439803,
+                      0.0};
+                      
+    //Simulation of an acoustic signal with echoes.
+    double[] pathE = {1.0,
+                      0.0,
+                      0.64,
+                      0.0,
+                      0.0,
+                      0.32768,
+                      0.0,
+                      0.0,
+                      0.0,
+                      0.1342176,
+                      0.0,
+                      0.0,
+                      0.0,
+                      0.0,
+                      0.0439803,
+                      0.0};
+    
+    //Digital boxcar filter with peak at half the folding
+    // frequency.
+    double[] pathF = {1.0,
+                      0.0,
+                     -1.0,
+                      0.0,
+                      1.0,
+                      0.0,
+                     -1.0};
+
+    //A reference to the selected path operator will be
+    // stored here.
+    double[] pathOperator = null;
+    
+    if(testCase == 1){
+      pathOperator = pathA;
+    }else if(testCase == 2){
+      pathOperator = pathB;
+    }else if(testCase == 3){
+      pathOperator = pathC;
+    }else if(testCase == 4){
+      pathOperator = pathD;
+    }else if(testCase == 5){
+      pathOperator = pathE;
+    }else if(testCase == 6){
+      pathOperator = pathF;
+    }else{
+      System.out.println("Invalid testCase");
+      System.out.println("Terminating program");
+      System.exit(0);
+    }//end else
+    
+    //Display the pathOperator
+    //First instantiate a plotting object.
+    PlotALot01 pathOperatorObj = new PlotALot01("Path",
+               (pathOperator.length * 4) + 8,148,70,4,0,0);
+
+    //Feed the data to the plotting object.
+    for(int cnt = 0;cnt &lt; pathOperator.length;cnt++){
+      pathOperatorObj.feedData(40*pathOperator[cnt]);
+    }//end for loop
+    
+    //Cause the graph to be displayed on the computer
+    // screen in the upper left corner.
+    pathOperatorObj.plotData(0,0);
+    
+    //Now compute and plot the frequency response of the
+    // selected path
+    
+    //Instantiate a plotting object for two channels of
+    // frequency response data.  One channel is for
+    // the amplitude and the other channel is the phase.
+    PlotALot03 pathFreqPlotObj = 
+                   new PlotALot03("Path",264,148,35,2,0,0);
+                   
+    //Compute the frequency response and feed the results
+    // to the plotting object.
+    displayFreqResponse(pathOperator,pathFreqPlotObj,
+                                                    128,0);
+                       
+    //Cause the frequency response data stored in the
+    // plotting object to be displayed on the screen in
+    // the top row of images.
+    pathFreqPlotObj.plotData(112,0);
+    
+    //Instantiate an object to handle the adaptive behavior
+    // of the program.  The use of the class named 
+    // AdaptEngine02 is new to this lesson.
+    AdaptEngine02 adapter = new AdaptEngine02(
+                                filterLength,feedbackGain);
+
+    //Instantiate an array object that will be used as a
+    // delay line for the wideband test data.
+    double[] rawData = new double[pathOperator.length];
+    
+    //Instantiate a plotting object for four channels of
+    // time-serie data.
+    PlotALot05 timePlotObj = 
+                   new PlotALot05("Time",468,148,25,2,0,0);
+
+    //Instantiate a plotting object for two channels of
+    // filter frequency response data.  One channel is for
+    // the amplitude and the other channel is for the
+    // phase.
+    PlotALot03 freqPlotObj = 
+                   new PlotALot03("Freq",264,487,35,2,0,0);
+
+    //Instantiate a plotting object to display the filter
+    // impulse response at specific time intervals during
+    // the adaptive process.
+    PlotALot01 filterPlotObj = new PlotALot01("Filter",
+                     (filterLength * 4) + 8,487,70,4,0,0);
+
+    //Declare and initialize working variables.
+    double output = 0;
+    double err = 0;
+    double target = 0;
+    double input = 0;
+    double wbTestData = 0;
+    boolean adaptOn;
+
+    //Perform the specified number of iterations.
+    for(int cnt = 0;cnt &lt; numberIterations;cnt++){
+      //The following variable is used to control whether
+      // or not the adapt method of the adaptive engine
+      // updates the filter coefficients when it is called.
+      // The filters are updated when this variable is
+      // true and are not updated when this variable is
+      // false.
+      adaptOn = true;
+      
+      //Get and scale the next sample of wideband test
+      // data from a random number generator.  Before
+      // scaling by wbTestDataScale, the values are
+      // uniformly distributed from -1.0 to 1.0.
+      wbTestData = 
+                 wbTestDataScale*(2*(Math.random() - 0.5));
+      
+      //Set wideband input values near the end of the run
+      // to zero and turn adaptation off.  Insert an
+      // impulse near the end that will produce several
+      // interesting impulse responses.  Among other
+      // things, this will cause the impulse response of
+      // the path to be visible in the graphs.
+      //Set values to zero.
+      if(cnt &gt; (numberIterations - 5*filterLength)){
+        wbTestData = 0;
+        adaptOn = false;
+      }//end if
+      //Now insert an impulse at one specific location in
+      // the time series.
+      if(cnt == numberIterations - 3*filterLength){
+        wbTestData = 2 * wbTestDataScale;
+      }//end if
+
+      //Insert the wideband test data into the raw data
+      // delay line.
+      flowLine(rawData,wbTestData);
+    
+      //Apply the path operator to the wideband test data.
+      // Note the use of the method named
+      // reverseDotProduct, which is new to this lesson.
+      // This method provides the time reversal that is
+      // necessary for true convolution.
+      double pathData = 
+                   reverseDotProduct(rawData,pathOperator);
+
+      //Declare a variable that will be populated with the
+      // results returned by the adapt method of the
+      // adaptive engine.
+      AdaptiveResult result = null;
+      
+      //Decide which type of filter to develop and do the
+      // adaptive work.
+      if(identification){//Develop an identification filter
+        //Establish input values for the adaptive engine
+        // that are appropriate for the development of
+        // an identification filter.
+        input = wbTestData;
+        target = pathData;
+        //Do the adaptive processing.
+        result = adapter.adapt(input,target,adaptOn);
+      }else{//Develop an inverse filter.
+        //Establish input values for the adaptive engine
+        // that are appropriate for the development of
+        // an inverse filter.  Note that the input values
+        // are reversed relative to an identification
+        // filter.
+        input = pathData;
+        target = wbTestData;
+
+        //When the run is nearly over and the wideband
+        // input data values are zero, insert an impulse
+        // into the pathData.  This happens later than the
+        // point in time where the impulse was inserted
+        // into the wideband test data. Note that
+        // adaptation is still turned off at this point in
+        // time.  Among other things, this makes it
+        // possible to view the impulse response of the
+        // inverse filter in the time series that are
+        // displayed.
+        if(cnt == numberIterations - filterLength){
+          input = 2 * wbTestDataScale;
+        }//end if
+
+        //Do the adaptive processing
+        result = adapter.adapt(input,target,adaptOn);
+      }//end else
+    
+      //Get and save adaptive results for plotting and
+      // spectral analysis
+      output = result.output;
+      err = result.err;
+      filter = result.filterArray;
+    
+      //Feed the time series data to the plotting object.
+      timePlotObj.feedData(input,target,output,-err);
+    
+      //Compute and plot summary results at the end of
+      // every 400th iteration.
+      if(cnt%400 == 0){
+        displayFreqResponse(filter,freqPlotObj,
+                                    128,filter.length - 1);
+
+        //Display the filter impulse response coefficient
+        // values.  The adaptive engine returns the filter
+        // with the time axis reversed relative to the
+        // conventional display of an impulse response.
+        // Therefore, it is necessary to display it in
+        // reverse order.
+        for(int ctr = 0;ctr &lt; filter.length;ctr++){
+          filterPlotObj.feedData(
+                       40*filter[filter.length - 1 - ctr]);
+        }//end for loop
+      }//End display of frequency response and filter
+    }//End for loop,
+    
+    //Cause the data stored in the plotting objects to be
+    // plotted.
+    timePlotObj.plotData(376,0);//Top of screen
+    freqPlotObj.plotData(0,148);//Left side of screen
+    filterPlotObj.plotData(265,148);
+    
+    //For the case of an inverse filter, convolve the
+    // filter with the impulse response of the path to 
+    // determine the extent to which the filter is able to
+    // compensate for the characteristics of the path.
+    if(!identification){
+      //Copy the filter into another array with zeros on
+      // both ends to account for end effects in the
+      // convolution process.
+      double[] convInput = new double[
+                    filter.length + 2*pathOperator.length];
+      for(int cnt = 0;cnt &lt; filter.length;cnt++){
+        convInput[cnt + pathOperator.length] = filter[cnt];
+      }//end for loop
+      
+      //Create an array to receive the convolution output.
+      double[] convOutput = 
+           new double[filter.length + pathOperator.length];
+
+      //Call the method named convolve01 to perform the
+      // convolution.
+      convolve01(convInput,pathOperator,convOutput);
+
+      //Now compute and plot the frequency spectrum of the
+      // time series that results from convolving the final
+      // adaptive filter with the path impulse response.
+      // Ideally, the amplitude response will be flat from
+      // zero to the folding frequency and the phase
+      // response will be flat, or possibly linear
+      // (indicating a time delay).
+      
+      //Instantiate a plotting object for two channels of
+      // frequency response data.  One channel is for
+      // the amplitude and the other channel is the phase.
+      PlotALot03 finalFreqPlotObj = 
+                  new PlotALot03("Final",264,137,35,2,0,0);
+                     
+      //Compute the frequency response and feed the results
+      // to the plotting object.
+      displayFreqResponse(convOutput,finalFreqPlotObj,
+                                128,convOutput.length - 1);
+                         
+      //Cause the frequency response data stored in the
+      // plotting object to be displayed on the screen.
+      finalFreqPlotObj.plotData(
+                           265 + filterLength * 4 + 8,148);
+    }//end if
+
+  }//end process method
+  //-----------------------------------------------------//
+  
+  //This method simulates a tapped delay line. It receives
+  // a reference to an array and a value.  It discards the
+  // value at index 0 of the array, moves all the other
+  // values by one element toward 0, and inserts the new
+  // value at the top of the array.
+  void flowLine(double[] line,double val){
+    for(int cnt = 0;cnt &lt; (line.length - 1);cnt++){
+      line[cnt] = line[cnt+1];
+    }//end for loop
+    line[line.length - 1] = val;
+  }//end flowLine
+  //-----------------------------------------------------//
+ 
+  void displayFreqResponse(
+     double[] filter,PlotALot03 plot,int len,int zeroTime){
+
+    //Create the arrays required by the Fourier Transform.
+    double[] timeDataIn = new double[len];
+    double[] realSpect = new double[len];
+    double[] imagSpect = new double[len];
+    double[] angle = new double[len];
+    double[] magnitude = new double[len];
+    
+    //Copy the filter into the timeDataIn array
+    System.arraycopy(filter,0,timeDataIn,0,filter.length);
+
+    //Compute DFT of the filter from zero to the folding
+    // frequency and save it in the output arrays.
+    ForwardRealToComplex01.transform(timeDataIn,
+                                     realSpect,
+                                     imagSpect,
+                                     angle,
+                                     magnitude,
+                                     zeroTime,
+                                     0.0,
+                                     0.5);
+
+    //Note that the conversion to decibels has been
+    // disabled.  You can re-enable the conversion by
+    // removing the comment indicators.
+/*    
+    //Display the magnitude data. Convert to normalized
+    // decibels first.
+    //Eliminate or change any values that are incompatible
+    // with log10 method.
+    for(int cnt = 0;cnt &lt; magnitude.length;cnt++){
+      if((magnitude[cnt] == Double.NaN) || 
+                                    (magnitude[cnt] &lt;= 0)){
+        //Replace the magnitude by a very small positive
+        // value.
+        magnitude[cnt] = 0.0000001;
+      }else if(magnitude[cnt] == Double.POSITIVE_INFINITY){
+        //Replace the magnitude by a very large positive
+        // value.
+        magnitude[cnt] = 9999999999.0;
+      }//end else if
+    }//end for loop
+    
+    //Now convert magnitude data to log base 10
+    for(int cnt = 0;cnt &lt; magnitude.length;cnt++){
+      magnitude[cnt] = log10(magnitude[cnt]);
+    }//end for loop
+*/
+    //Find the absolute peak value.  Begin with a negative
+    // peak value with a large magnitude and replace it
+    // with the largest magnitude value.
+    double peak = -9999999999.0;
+    for(int cnt = 0;cnt &lt; magnitude.length;cnt++){
+      if(peak &lt; abs(magnitude[cnt])){
+        peak = abs(magnitude[cnt]);
+      }//end if
+    }//end for loop
+
+    //Normalize to 20 times the peak value
+    for(int cnt = 0;cnt &lt; magnitude.length;cnt++){
+      magnitude[cnt] = 20*magnitude[cnt]/peak;
+    }//end for loop
+
+    //Now feed the normalized data to the plotting
+    // object.
+    for(int cnt = 0;cnt &lt; magnitude.length;cnt++){
+      plot.feedData(magnitude[cnt],angle[cnt]/20);
+    }//end for loop
+    
+  }//end displayFreqResponse
+  //-----------------------------------------------------//
+  
+  //This method receives two arrays and treats each array
+  // as a vector. The two arrays must have the same length.
+  // The program reverses the order of one of the vectors
+  // and returns the vector dot product of the two vectors.
+  double reverseDotProduct(double[] v1,double[] v2){
+    if(v1.length != v2.length){
+      System.out.println("reverseDotProduct");
+      System.out.println("Vectors must be same length.");
+      System.out.println("Terminating program");
+      System.exit(0);
+    }//end if
+    
+    double result = 0;
+    
+    for(int cnt = 0;cnt &lt; v1.length;cnt++){
+      result += v1[cnt] * v2[v1.length - cnt - 1];
+    }//end for loop
+
+    return result;
+  }//end reverseDotProduct
+  //-----------------------------------------------------//
+  
+  //This method applies an incoming convolution operator to
+  // an incoming set of data and deposits the filtered data
+  // in an output array whose reference is received as an
+  // incoming parameter.
+  public void convolve01(double[] data,//input data array
+                         double[] operator,//operator array
+                         double[] output//output data array
+                         ){
+    //Apply the operator to the data, dealing with the
+    // index reversal required by convolution.
+    int dataLen = data.length;
+    int operatorLen = operator.length;
+    for(int i=0;i &lt; dataLen-operatorLen;i++){
+      output[i] = 0;
+      for(int j=operatorLen-1;j&gt;=0;j--){
+        output[i] += data[i+j]*operator[j];
+      }//end inner loop
+    }//end outer loop
+  }//end convolve01 method
+  //-----------------------------------------------------//
+}//end class Adapt07
+
+<b><font face="Courier New,Courier">Listing 17</font></b></pre>
+		</td>
+	</tr>
+</table>
+</p>
+<p>&nbsp;</p>
+
+<table bgcolor="#ffff00" border="1" cols="1" width="482">
+	<tr>
+		<td>
+		<pre>/*File AdaptEngine02.java
+Copyright 2005, R.G.Baldwin
+
+General purpose LMS adaptive algorithm.
+
+This is an upgrade of the class named AdaptEngine01.  This
+version allows the user to pass a boolean parameter to
+the adapt method to turn the adaptive process on or off.
+Otherwise, the behavior of the class is the same as the
+behavior of the class named AdaptEngine01.
+
+An object of this class is a general purpose adaptive 
+engine that implements the classical LMS adaptive 
+algorithm.
+
+The adaptive algorithm is implemented by the instance 
+method belonging to the object named adapt.
+
+Each time the adapt method is called, it receives one 
+sample from each of two different time series.  One time 
+series is considered to be the data that is to be filtered.
+The other time series is considered to be a target.
+
+The purpose of the adapt method is to adaptively create a 
+convolution filter which, when applied to the data time 
+series, will transform it into the target time series.
+
+Each time the method is called, it performs a dot product 
+between the current version of the filter and the contents 
+of a delay line in which historical data samples have been 
+saved. The result of that dot product is compared with the 
+target sample to produce an error value. The error value is
+produced by subtracting the value of the target sample from
+the result of the dot product. The error value is then used
+in a classical LMS adaptive algorithm to adjust the filter 
+coefficients.
+
+The objective is to produce a set of filter coefficients 
+that will drive the error to zero over time.
+
+This adaptive engine can be used as the solution to a 
+variety of different signal processing problems, depending 
+on the selection of time series that are provided as data 
+and target.
+
+The constructor for the class receives two parameters:
+filterLength
+feedbackGain
+
+The filter length is used to construct two arrays.  One 
+array is used later to contain the filter coefficients.
+
+The other array is used later as a tapped delay line to 
+contain the historical data samples and to precess them by
+one element each time the method is called.
+
+The feedback gain is used in the LMS adaptive algorithm to
+compute the new filter coefficients.
+
+Tested using J2SE 5.0 and WinXP.
+**********************************************************/
+
+class AdaptEngine02{
+  
+  double[] filterArray;//filter coefficients stored here
+  double[] dataArray;//historical data is stored here
+  double feedbackGain;//used in LMS adaptive algorithm
+  
+  //Constructor
+  public AdaptEngine02(int filterLength,
+                       double feedbackGain){
+    //Construct the two arrays and save the feedback gain.
+    filterArray = new double[filterLength];
+    dataArray = new double[filterLength];
+    this.feedbackGain = feedbackGain;
+  }//end constructor
+  //-----------------------------------------------------//
+  
+  //This method implements a classical LMS adaptive
+  // algorithm to create and to apply a convolution filter.
+  // The filter output, the error, and a reference to the
+  // array containing the filter coefficients are 
+  // encapsulated in an object of type AdaptiveResult and
+  // returned to the calling method.  The adaptive update
+  // process is disabled when the parameter named adaptOn
+  // is false.
+  AdaptiveResult adapt(double rawData,
+                       double target,
+                       boolean adaptOn){
+                        
+    //Insert the incoming data value into the data delay
+    // line.
+    flowLine(dataArray,rawData);
+  
+    //Apply the current filter coefficients to the data.
+    double output = dotProduct(filterArray,dataArray);
+    //Compute the error.
+    double err = output - target;
+
+    //Only update the coefficients when adaptOn is true.
+    if(adaptOn){
+      //Use the error to update the filter coefficients.
+      for(int ctr = 0;ctr &lt; filterArray.length;ctr++){
+        filterArray[ctr] -= 
+                           err*dataArray[ctr]*feedbackGain;
+      }//end for loop.
+    }//end if
+
+    //Construct and return an object containing the filter
+    // output, the error, and a reference to the array
+    // object containing the current filter coefficients.
+    return new AdaptiveResult(filterArray,output,err);
+  }//end adapt
+  //-----------------------------------------------------//
+  
+  //This method simulates a tapped delay line. It receives
+  // a reference to an array and a value.  It discards the
+  // value at index 0 of the array, moves all the other
+  // values by one element toward 0, and inserts the new
+  // value at the top of the array.
+  void flowLine(double[] line,double val){
+    for(int cnt = 0;cnt &lt; (line.length - 1);cnt++){
+      line[cnt] = line[cnt+1];
+    }//end for loop
+    line[line.length - 1] = val;
+  }//end flowLine
+  //-----------------------------------------------------//
+  
+  //This method receives two arrays and treats the first N 
+  // elements in each of the two arrays as a pair of
+  // vectors.  It computes and returns the vector dot
+  // product of the two vectors.  If the length of one
+  // array is greater than the length of the other array,
+  // it considers the number of dimensions of the vectors
+  // to be equal to the length of the smaller array.
+  double dotProduct(double[] v1,double[] v2){
+    double result = 0;
+    if((v1.length) &lt;= (v2.length)){
+      for(int cnt = 0;cnt &lt; v1.length;cnt++){
+        result += v1[cnt]*v2[cnt];
+      }//emd for loop
+      return result;
+    }else{
+      for(int cnt = 0;cnt &lt; v2.length;cnt++){
+        result += v1[cnt]*v2[cnt];
+      }//emd for loop
+      return result;
+    }//end else
+  }//end dotProduct
+  //-----------------------------------------------------//
+}//end class AdaptEngine02
+//=======================================================//
+
+//This class is used to encapsulate the adaptive results
+// into an object for return to the calling method.
+class AdaptiveResult{
+  public double[] filterArray;
+  public double output;
+  public double err;
+  
+  //Constructor
+  public AdaptiveResult(double[] filterArray,
+                        double output,
+                        double err){
+    this.filterArray = filterArray;
+    this.output = output;
+    this.err = err;
+  }//end constructor
+}//end class AdaptiveResult
+//=======================================================//
+
+<b><font face="Courier New,Courier">Listing 18</font></b></pre>
+		</td>
+	</tr>
+</table>
+&nbsp;</p>
+
+<hr  size="3" width="100%">
+<p>Copyright 2006, Richard G. Baldwin.&nbsp; Reproduction in whole or in part in any 
+form or medium without express written permission from Richard Baldwin is 
+prohibited. </p>
+<h4>About the author</h4>
+<b><a href="mailto:Baldwin@DickBaldwin.com">Richard Baldwin</a></b><i> is a 
+college professor (at Austin Community College in Austin, TX) and private 
+consultant whose primary focus is a combination of Java, C#, and XML. In 
+addition to the many platform and/or language independent benefits of Java and 
+C# applications, he believes that a combination of Java, C#, and XML will become 
+the primary driving force in the delivery of structured information on the Web.</i>    
+<p><i>Richard has participated in numerous consulting projects and he 
+frequently provides onsite training at the high-tech companies located in and 
+around Austin, Texas.&nbsp; He is the author of Baldwin's Programming
+<a href="http://www.dickbaldwin.com">Tutorials</a>, which have gained a 
+worldwide following among experienced and aspiring programmers. He has also 
+published articles in JavaPro magazine.</i> </p>
+<p><i>In addition to his programming expertise, Richard has many years of 
+practical experience in Digital Signal Processing (DSP).&nbsp; His first job after he 
+earned his Bachelor's degree was doing DSP in the Seismic Research Department of 
+Texas Instruments.&nbsp; (TI is still a world leader in DSP.)&nbsp; In the following 
+years, he applied his programming and DSP expertise to other interesting areas 
+including sonar and underwater acoustics.</i> </p>
+<p><i>Richard holds an MSEE degree from Southern Methodist University and has 
+many years of experience in the application of computer technology to real-world 
+problems.</i> </p>
+<p><i><a href="mailto:baldwin@dickbaldwin.com">Baldwin@DickBaldwin.com</a></i>
+</p>
+<p><b>Keywords</b><br>
+Java adaptive filtering convolution filter frequency spectrum LMS amplitude 
+phase time-delay linear DSP impulse decibel log10 DFT transform bandwidth signal 
+noise real-time dot-product vector time-series prediction identification inverse</p>
+<p>-end- </p>
+<p>&nbsp;</p>
+<p> <br>
+&nbsp; </p>
+<br>
+<br>
+<br>
+<br>
+<table border="0" cellpadding="0" cellspacing="0" width="16" height="23">
+	<!-- MSTableType="layout" -->
+	<tr>
+		<td valign="top" colspan="3" height="3">
+		<!-- MSCellType="ContentHead" -->
+		&nbsp;</td>
+	</tr>
+	<tr>
+		<td valign="top" width="6">
+		<!-- MSCellType="NavBody" -->
+		&nbsp;</td>
+		<td valign="top" width="5">
+		<!-- MSCellType="ContentBody" -->
+		&nbsp;</td>
+		<td valign="top" height="18" width="5">
+		<!-- MSCellType="NavBody2" -->
+		&nbsp;</td>
+	</tr>
+	<tr>
+		<td valign="top" colspan="3" height="2">
+		<!-- MSCellType="ContentFoot" -->
+		&nbsp;</td>
+	</tr>
+</table>
+</body>
+</html>

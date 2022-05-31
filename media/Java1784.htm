@@ -1,0 +1,1453 @@
+<!doctype html public "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+   <meta name="GENERATOR" content="Microsoft FrontPage 5.0">
+   <title>... in Java by Richard G Baldwin</title>
+</head>
+<body link="#DD0000" vlink="#0000FF" alink="#FF0000" lang="EN-US">
+<h2>Processing Stack Trace Data in Java</h2>
+<i>Baldwin teaches</i> <i>you how to get, interpret, and process stack
+trace data under program control using new features of release 1.4.</i>
+<p><b>Published:</b>&nbsp; September 17, 2002
+<br><b>By <a href="mailto:baldwin@DickBaldwin.com">Richard G. Baldwin</a></b>
+<p>Java Programming Notes # 1784
+<ul >
+<li>
+<a href="#Preface">Preface</a></li>
+
+<li>
+<a href="#Discussion and Sample Programs">Discussion and Sample Code</a></li>
+
+<li>
+<a href="#Run the program">Run the Program</a></li>
+
+<li>
+<a href="#Complete Program Listings">Complete Program Listing</a></li>
+</ul>
+
+<hr size=3 width="100%" align=center>
+<center>
+<h2>
+<a NAME="Preface"></a>Preface</h2></center>
+The recently released Java<sup>TM</sup> 2 SDK, Standard Edition Version 1.4 contains a number of new features.&nbsp; This article explains how
+to use some of those new features to get, interpret, and process stack
+trace data.
+<p>Prior to release 1.4, stack trace information was available only in
+the printed format produced by the <b>printStackTrace</b> method.&nbsp;
+With the advent of the <b>StackTraceElement</b> class, and the <b>getStackTrace</b>
+method of the <b>Throwable</b> class, stack trace information is now available
+through programmatic access.
+<p>As a result, you can write logic into your programs to analyze and make
+decisions on the basis of stack trace information.&nbsp; In addition, you
+can encapsulate that information into objects.&nbsp; This makes it possible
+for you to serialize and write stack trace data to a disk file, send it
+out over a network, or perform any other action that is appropriate for
+information encapsulated in an object.
+<p><b><font color="#FF0000">Viewing tip</font></b>
+<p>You may find it useful to open another copy of this lesson in a separate
+browser window.&nbsp; That will make it easier for you to scroll back and
+forth among the different listings and figures while you are reading about
+them.
+<p><b><font color="#FF0000">Supplementary material</font></b>
+<p>I recommend that you also study the other lessons in my extensive collection
+of online Java tutorials.&nbsp; You will find those lessons published at
+<a href="http://softwaredev.earthweb.com/java">Gamelan.com</a>.&nbsp;
+However, as of the date of this writing, Gamelan doesn't maintain a consolidated
+index of my Java tutorial lessons, and sometimes they are difficult to
+locate there.&nbsp; You will find a consolidated index at <font color="#000000">
+<a href="http://www.DickBaldwin.com">www.DickBaldwin.com</a>.</font>
+<center>
+<h2>
+<a NAME="Discussion and Sample Programs"></a><font color="#000000">Discussion
+and Sample Code</font></h2></center>
+I'm going to jump right into a sample program that illustrates the programmatic
+handling of stack trace data without a lot of preliminary discussion.&nbsp;
+Along the way, I will also illustrate Java's new <i>cause</i> or <i>exception
+chaining</i> facility.&nbsp; <i>(An earlier article entitled
+<a href="http://softwaredev.earthweb.com/java/article/0,,12082_1431531_1,00.html">Chained
+Exceptions in Java</a> discusses this facility in detail.)</i>
+<p><b><font color="#FF0000">The program named StackTr01</font></b>
+<p>A complete listing of the program named <b>StackTr01</b> is provided
+in Listing 21 near the end of the lesson.&nbsp; I will discuss the program
+in fragments.&nbsp; However, before getting into the fragments, I will
+provide an overview of the operation of the program.
+<p><b><font color="#FF0000">Five classes</font></b>
+<p>The program consists of the following five classes:
+<ul>
+<li>
+<b>StackTr01</b></li>
+
+<li>
+<b>Class01</b></li>
+
+<li>
+<b>NewEx01</b></li>
+
+<li>
+<b>NewEx02</b></li>
+
+<li>
+<b>NewEx03</b></li>
+</ul>
+The controlling class is named <b>StackTr01</b>.&nbsp; Most of the work
+gets done in the class named <b>Class01</b>.
+<p>There are three new exception classes named <b>NewEx01</b>, <b>NewEx02</b>,
+and <b>NewEx03</b>.&nbsp; These classes are used to instantiate exception
+objects, which are thrown by the methods in <b>Class01</b>.&nbsp; Each
+of these three classes extends <b>Exception</b>.
+<p><b><font color="#FF0000">The main method of the controlling class</font></b>
+<p>The controlling class consists solely of the <b>main</b> method.&nbsp;
+Code in the <b>main</b> method instantiates an object of type <b>Class01</b>
+and invokes a method named <b>meth01</b> on that object's reference.
+<p><b><font color="#FF0000">Methods in Class01</font></b>
+<p>The class named <b>Class01</b> defines the following methods:
+<ul>
+<li>
+<b>meth01</b></li>
+
+<li>
+<b>meth02</b></li>
+
+<li>
+<b>meth03</b></li>
+
+<li>
+<b>meth04</b></li>
+
+<li>
+<b>encapsulate</b> - encapsulate stack trace data in a <b>Vector</b> object</li>
+
+<li>
+<b>writeSer</b> - write a serialized <b>Vector</b> object to a disk file</li>
+
+<li>
+<b>readSer</b> - read a serialized <b>Vector</b> object from a disk file</li>
+
+<li>
+<b>display</b> - display the stack trace data in a <b>Vector</b> object</li>
+</ul>
+The first four methods in the list are used to create a chain of exceptions.&nbsp;
+The remaining four methods in the list provide the behavior indicated in
+the text.
+<p><b><font color="#FF0000">Method invocation sequence</font></b>
+<p>As mentioned above, the method named <b>meth01</b> is invoked by the
+<b>main</b>
+method in the controlling class.
+<p>The method named <b>meth01</b> invokes <b>meth02</b>.&nbsp; The method
+named <b>meth02</b> invokes <b>meth03</b>, and the method named <b>meth03</b>
+invokes <b>meth04</b>.&nbsp; Each of these method invocations is contained
+in a <b>try</b> block, followed by a <b>catch</b> block of type
+<b>Exception</b>.
+<p><b><font color="#FF0000">Throw an exception</font></b>
+<p>The method named <b>meth04</b> at the end of the invocation chain throws
+an exception of type <b>NewEx03</b>.&nbsp; This exception is caught by
+the <b>catch</b> block in <b>meth03</b>.
+<p>The code in the <b>catch</b> block in <b>meth03</b> encapsulates the
+incoming object's reference as the <i>cause</i> in a new exception object
+of type
+<b>NewEx02</b>, and throws that new exception object.
+<p>Similarly, the exception thrown by <b>meth03</b> is caught by <b>meth02</b>.&nbsp;
+The code in the <b>catch</b> block of <b>meth02</b> encapsulates its incoming
+exception as the <i>cause</i> in a new exception object of type <b>NewEx01</b>
+and throws it.&nbsp; As you can see, this code creates a chain of exceptions
+as control moves back up the call stack.
+<p><b><font color="#FF0000">Here is where things get interesting</font></b>
+<p>Finally, the exception thrown by <b>meth02</b> is caught by <b>meth01</b>.&nbsp;
+Most of the interesting code is contained in the <b>catch</b> block for
+<b>meth01</b>,
+which is designed to illustrate the programmatic handling of stack trace
+data.
+<p><b><font color="#FF0000">Print the stack trace</font></b>
+<p>The <b>catch</b> block in <b>meth01</b> receives an incoming exception
+parameter of type <b>NewEx01</b>.&nbsp; The <b>printStackTrace</b> method
+is invoked on that object's reference to give us a baseline for comparison.
+<p><b><font color="#FF0000">Encapsulate stack trace data in a Vector object</font></b>
+<p>Then the stack trace data is extracted from the incoming exception object
+and encapsulated in an object of type <b>Vector</b>.&nbsp; The <b>Vector</b>
+object is serialized and written to a disk file to illustrate one form
+of programmatic handling of stack trace data.&nbsp; This <b>Vector</b>
+object contains the entire chain of exceptions, and the stack trace data
+associated with each exception in the chain.
+<p><b><font color="#FF0000">Read and display the serialized stack tract
+data</font></b>
+<p>Then the serialized data is read from the disk file, and a <b>Vector</b>
+object containing the original stack trace data is reconstructed.&nbsp;
+The reconstructed object is passed to a custom print method, which extracts
+the information from the<b> Vector</b> object and displays it in a format
+similar to the standard format produced by the <b>printStackTrace</b> method.
+<p><b><font color="#FF0000">Encapsulating stack trace data in an object</font></b>
+<p>These operations illustrate that you now have the ability to extract
+stack trace data and encapsulate it in an object.&nbsp; Then, you can do
+just about anything with the stack trace data that you can do with any
+other kind of data encapsulated in an object.&nbsp; As a result, stack
+trace data is now available for programmatic access and handling.
+<p><b><font color="#FF0000">The custom exception classes</font></b>
+<p>Listing 1 shows the three custom exception classes.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>class <b>NewEx01</b> extends <b>Exception</b>{
+&nbsp; public NewEx01(<b>String message,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Throwable throwable</b>){
+&nbsp;&nbsp;&nbsp; <b>super</b>(message, throwable);}
+}//end NewEx01
+//===================================//
+class <b>NewEx02</b> extends <b>Exception</b>{
+&nbsp; public NewEx02(<b>String message,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Throwable throwable</b>){
+&nbsp;&nbsp;&nbsp; <b>super</b>(message, throwable);}
+}//end NewEx02
+//===================================//
+class <b>NewEx03</b> extends <b>Exception</b>{
+&nbsp; public NewEx03(<b>String message</b>){
+&nbsp;&nbsp;&nbsp; <b>super</b>(message);}
+}//end NewEx03
+
+<b><font face="Courier New,Courier">Listing 1</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">Overloaded constructors</font></b>
+<p>Some comments are in order regarding these exception class definitions.&nbsp;
+Subsequent to release 1.4, whenever you define a new exception class,
+you should provide four overloaded constructors having argument lists that
+match the following four constructors of the <b>Throwable</b> class:
+<ul>
+<li>
+Throwable()</li>
+
+<li>
+Throwable(String message)</li>
+
+<li>
+Throwable(String message, Throwable cause)</li>
+
+<li>
+Throwable(Throwable cause)</li>
+</ul>
+By making the argument lists of your constructors match those of the <b>Throwable</b>
+class, objects instantiated from your new classes will be capable of supporting
+the new <i>cause</i> or <i>chained exception</i> facility in release 1.4.
+<p><b><font color="#FF0000">Did not provide four overloaded constructors</font></b>
+<p>However, for purposes of this sample program, I knew that I would not
+need all four constructors in each class.&nbsp; For brevity, I included
+only the constructor that I would need in each of the new exception classes.
+<blockquote><i>(Note that the argument list for <b>NewEx03</b> is different
+from the argument lists for the other two.&nbsp; That is because the program
+does not encapsulate a cause when it instantiates and throws an object
+of type <b>NewEx03</b>.)</i></blockquote>
+<b><font color="#FF0000">Pass parameters to superclass constructor</font></b>
+<p>The code in each of the constructors is very simple.&nbsp; In each case,
+the parameters received by the constructor are passed to the constructor
+for the superclass.&nbsp; This causes the parameter information to be saved
+in instance variables of the <b>Throwable</b> class, and makes it possible
+later to successfully invoke the methods of the <b>Throwable</b> class
+on objects instantiated from these classes.
+<p><b><font color="#FF0000">Traversing the call stack</font></b>
+<p>The overview that I provided earlier explains that there is a sequence
+of method calls, which place several methods on the stack.&nbsp; In other
+words, a chain of method calls is created on the runtime stack.
+<p>Then a method at the end of the chain named <b>meth04</b> throws an
+exception.&nbsp; That exception is caught by the method named <b>meth03</b>,
+which was the method that called <b>meth04</b>.&nbsp; The method named
+<b>meth03</b>
+encapsulates the incoming exception as a <i>cause</i> in another exception
+of a different type and throws the new exception.
+<p>Each time a new exception is thrown, one method is popped off the stack.&nbsp;
+This catch and throw process continues until a method near the top of the
+stack, named <b>meth01</b>, provides code to handle the exception without
+throwing a new exception.
+<p><b><font color="#FF0000">Begin discussion where the exception is thrown</font></b>
+<p>I'm going to begin the discussion with the method named <b>meth04</b>
+that throws the first exception.&nbsp; Then I will continue back through
+the call stack discussing each method in sequence.
+<p>Listing 2 shows <b>meth04</b>, which throws the first exception.&nbsp;
+This triggers the chain of exceptions being thrown as control progresses
+back through the call stack.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp; void <b>meth04</b>() throws NewEx03{
+&nbsp;&nbsp;&nbsp; <b>throw new NewEx03</b>(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Thrown from meth04");
+&nbsp; }//end meth04
+
+<b><font face="Courier New,Courier">Listing 2</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>The method named <b>meth04</b> in Listing 2 constructs and throws an
+exception object of type <b>NewEx03</b>.&nbsp; Note that this exception
+object does not encapsulate a <i>cause.</i>
+<p><b><font color="#FF0000">Catch and throw</font></b>
+<p>The exception object of type <b>NewEx03</b> is caught by the <b>catch</b>
+block of type <b>Exception</b> in <b>meth03</b>, shown in Listing 3.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp; void <b>meth03</b>() throws NewEx02{
+&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; meth04();
+&nbsp;&nbsp;&nbsp; }catch(Exception e){&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>throw new NewEx02(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Thrown from meth03",e);
+</b>&nbsp;&nbsp;&nbsp; }//end catch
+&nbsp; }//end meth03
+
+<b><font face="Courier New,Courier">Listing 3</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>The most important thing to note about Listing 3 is the instantiation
+and throwing of a new exception object of type <b>NewEx02</b>.&nbsp; This
+code uses a constructor for <b>NewEx02 </b>that encapsulates the incoming object reference
+of type <b>NewEx03</b> as the <i>cause</i> in the new object.
+<blockquote><i>(Note that the declared type of the <b>catch</b> block in
+<b>meth03</b>
+is <b>Exception</b>.&nbsp; This catch block can catch objects instantiated
+from the class <b>Exception</b> or any of its subclasses. <b>NewEx03</b>
+is a subclass of <b>Exception</b>.)</i></blockquote>
+<b><font color="#FF0000">Catch and throw again</font></b>
+<p>The exception object thrown by <b>meth03</b> in Listing 3 is caught
+by the method named <b>meth02</b> in Listing 4.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp; void <b>meth02</b>() throws NewEx01{
+&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; meth03();
+&nbsp;&nbsp;&nbsp; }catch(Exception e){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>throw new NewEx01(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Thrown from meth02",e);
+</b>&nbsp;&nbsp;&nbsp; }//end catch
+&nbsp; }//end meth02
+
+<b><font face="Courier New,Courier">Listing 4</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>The code in listing 4 is very similar to that in Listing 3.&nbsp; The
+code in <b>meth02</b> instantiates and throws a new object of type <b>NewEx01</b>,
+with the incoming object of type <b>NewEx02</b> encapsulated as the <i>cause</i>
+in that object.
+<p><b><font color="#FF0000">Handling the exception</font></b>
+<p>The exception thrown by <b>meth02</b> in Listing 4 is caught and processed
+by the method named <b>meth01</b>, which begins in Listing 5.&nbsp; The
+code in <b>meth01</b> does not instantiate and throw a new exception object.&nbsp;
+Rather, it completely handles the incoming exception in its <b>catch</b>
+block, thus breaking the chain of exceptions.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp; void <b>meth01</b>(){
+&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; meth02();//call meth02
+&nbsp;&nbsp;&nbsp; }<b>catch</b>(Exception e){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Print StackTrace");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>e.printStackTrace();
+
+<font face="Courier New,Courier">Listing 5</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">Print the stack trace</font></b>
+<p>The code in Listing 5 begins by invoking the <b>printStackTrace</b>
+method on the incoming parameter to cause the stack trace to be printed
+in the standard format on the standard error stream.&nbsp; The output is
+shown in Figure 1 <i>(we will need this later for comparison purposes).</i>
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Print StackTrace
+NewEx01: Thrown from meth02
+&nbsp;at Class01.meth02(StackTr01.java:92)
+&nbsp;at Class01.meth01(StackTr01.java:60)
+&nbsp;at StackTr01.main(StackTr01.java:52)
+Caused by: NewEx02: Thrown from meth03
+&nbsp;at Class01.meth03(StackTr01.java:102)
+&nbsp;at Class01.meth02(StackTr01.java:85)
+&nbsp;... 2 more
+Caused by: NewEx03: Thrown from meth04
+&nbsp;at Class01.meth04(StackTr01.java:112)
+&nbsp;at Class01.meth03(StackTr01.java:100)
+&nbsp;... 3 more
+
+<b>Figure 1</b></pre>
+</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">The print format</font></b>
+<p>A word about the format of the data in Figure 1 may be in order.&nbsp;
+Those lines that read <b>... 2 more</b> and <b>... 3 more</b> indicate
+that the specified number of lines were omitted for brevity.&nbsp; As far
+as I know, this is the standard output format of the <b>printStackTrace</b>
+method over which we have no control.&nbsp; <i>(We will see later that
+these lines were not omitted from my custom print format for the same stack
+tract data.)</i>
+<p><b><font color="#FF0000">Encapsulate stack trace data in a Vector object</font></b>
+<p>Continuing with the catch block in <b>meth01</b>, the statement in Listing 6 invokes the
+<b>encapsulate</b>
+method to cause the stack trace data to be extracted from the incoming
+exception object and encapsulated in a <b>Vector</b> object.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Vector vecOuter = <b>encapsulate</b>(e);
+
+<b><font face="Courier New,Courier">Listing 6</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">The encapsulate method</font></b>
+<p>At this point, I'm going to set the method named <b>meth01</b> aside
+for the moment and discuss the method named <b>encapsulate</b><i>, (which
+is a method of my own design).</i>&nbsp; The beginning of the <b>encapsulate</b>
+method is shown in Listing 7.&nbsp; This is a rather long method, so I
+will discuss it in fragments.&nbsp; Before getting into the details of
+the method, however, I will provide some background information.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp; Vector <b>encapsulate</b>(Throwable e){
+&nbsp;&nbsp;&nbsp; Vector vecOuter = new Vector();
+&nbsp;&nbsp;&nbsp; Throwable cause = e;
+
+<b><font face="Courier New,Courier">Listing 7</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">Contents of the incoming Throwable object</font></b>
+<p>The <b>encapsulate</b> method receives a reference to a <b>Throwable</b>
+object as an incoming parameter.&nbsp; In this case, it is the <b>Throwable</b>
+object of type <b>NewEx01</b> caught by the method named <b>meth01</b>.
+<p><b><font color="#FF0000">The end of a chain of exceptions</font></b>
+<p>Recall that this <b>Throwable</b> object was the result of a chain of
+operations involving methods catching objects of one type, encapsulating
+the incoming object as the <i>cause</i> in an object of another type, and
+then throwing the object of the new type.
+<p><b><font color="#FF0000">Encapsulates the history of the call stack</font></b>
+<p>As a result, this incoming object contains a lot of information about
+the history of the call stack from the point where the original exception
+was thrown to the end of the chain of exceptions.&nbsp; In other words,
+the incoming <b>Throwable</b> object contains a <b>Throwable</b> <i>cause,
+</i>which
+contains a <b>Throwable</b> <i>cause,</i> which contains a <b>Throwable
+cause</b><i>,</i> etc.
+<p>We will process the incoming <b>Throwable</b> object in order to extract
+all of that information.
+<p><b><font color="#FF0000">What does a Throwable object contain?</font></b>
+<p>According to Sun:
+<blockquote><i>"A throwable contains a snapshot of the execution stack
+of its thread at the time it was created. It can also contain a message
+string that gives more information about the error. Finally, it can contain
+a cause: another throwable that caused this throwable to get thrown. The
+cause facility is new in release 1.4. It is also known as the chained exception
+facility, as the cause can, itself, have a cause, and so on, leading to
+a "chain" of exceptions, each caused by another."</i></blockquote>
+<b><font color="#FF0000">Assumes a <i>chain of exceptions</i></font></b>
+<p>The procedure that I will use assumes that at each point along the sequence
+of exceptions being caught and thrown, a reference to the incoming <b>Throwable</b>
+object was encapsulated as a <i>cause</i> in the new object.
+<blockquote><i>(This is what constitutes a chain of exceptions.&nbsp; If
+the chain is broken by a failure of a <b>catch</b> block somewhere along
+the way to encapsulate its incoming exception as a cause, neither the <b>printStackTrace</b>
+method, nor this procedure can obtain information about what happened beyond
+the break in the chain.)</i></blockquote>
+<b><font color="#FF0000">No <i>cause</i> in the original object</font></b>
+<p>The original object that was thrown did not encapsulate a <b>Throwable</b>
+as a cause.&nbsp; Therefore, when we reach the point where the <i>cause</i>
+encapsulated in the <b>Throwable</b> object equals <b>null</b>, we will
+conclude that we have reached the end of the chain.
+<p><b><font color="#FF0000">Save stack trace data along the way</font></b>
+<p>This algorithm will drill down, getting and processing <b>Throwable
+(cause</b><i>)</i> objects, until it reaches the point where the
+<b>getCause</b>
+method returns <b>null</b>.&nbsp; At each step along the way, it will get
+and save the stack trace information encapsulated in that particular <b>Throwable</b>
+object.&nbsp; Each set of stack trace data will be saved in a <b>Vector</b>
+object.
+<p><b><font color="#FF0000">Save the Vector objects in a Vector object</font></b>
+<p>The set of <b>Vector</b> objects so produced will be saved in another
+<b>Vector</b>
+object.&nbsp; Thus, we will end up with a <b>Vector</b> object containing
+references to other
+<b>Vector</b> objects.&nbsp; Each of the secondary
+<b>Vector</b>
+objects will contain the stack trace data encapsulated in one of the <b>Throwable</b>
+objects encountered along the way.
+<p><b><font color="#FF0000">Create the outer Vector object</font></b>
+<p>The code in Listing 7 instantiates a new <b>Vector</b> object and saves
+it in a reference variable named <b>vecOuter</b>.&nbsp; This <b>Vector</b>
+object will be populated with references to other <b>Vector</b> objects
+as the algorithm progresses.
+<p><b><font color="#FF0000">Save incoming reference in variable named cause</font></b>
+<p>The code in Listing 7 also saves the incoming reference in a reference
+variable having the descriptive name <b>cause</b>.&nbsp; This reference
+variable is used in the conditional clause of the <b>while</b> loop that
+follows.
+<p><b><font color="#FF0000">Begin a while loop</font></b>
+<p>Listing 8 shows the beginning of a <b>while</b> loop.&nbsp; This loop
+controls the process of drilling down to the point where a <b>Throwable
+(cause</b><i>)</i> object is encountered with a <i>cause</i> value of <b>null
+(the</b><i> end of the chain of exceptions).</i>
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp; while(cause != null){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>StackTraceElement[]</b> trace&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = cause.<b>getStackTrace()</b>;
+
+<b><font face="Courier New,Courier">Listing 8</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">Get and save array of StackTraceElement objects</font></b>
+<p>The code in Listing 8 invokes the <b>getStackTrace</b> method to get
+and save an array of references to <b>StackTraceElement</b> objects.&nbsp;
+These objects represent the stack trace information encapsulated in the
+<b>Throwable</b><i>(cause)</i>
+object being processed during this iteration of the <b>while</b> loop.
+<p><b><font color="#FF0000">What is a StackTraceElement object?</font></b>
+<p>Here is what Sun has to say about an object of type <b>StackTraceElement</b>:
+<blockquote><i>"An element in a stack trace ... Each element represents
+a single stack frame. All stack frames except for the one at the top of
+the stack represent a method invocation. The frame at the top of the stack
+represents the execution point at which the stack trace was generated.
+Typically, this is the point at which the throwable corresponding to the
+stack trace was created."</i></blockquote>
+Thus, each <b>StackTraceElement</b> in the array represents one stack frame,
+and the collection of <b>StackTraceElement</b> objects in the array represents
+the entire stack trace.
+<p>We will be able to correlate the information in each <b>StackTraceElement</b>
+object with source code line numbers when we examine the stack trace data
+later.
+<p><b><font color="#FF0000">So, now we have an array of StackTraceElement
+objects</font></b>
+<p>At this point, we have an array object containing references to <b>StackTraceElement</b>
+objects.&nbsp; Each <b>StackTraceElement</b> object represents one stack
+frame, beginning at the point where the exception represented by this <b>Throwable</b>
+object was thrown, and ending at the bottom of the stack.
+<p><b><font color="#FF0000">Encapsulate the data in a Vector</font></b>
+<p>For convenient handling later, we will encapsulate the information in
+this array object in a <b>Vector</b> object, and encapsulate that <b>Vector</b>
+object, along with other <b>Vector</b> objects in another <b>Vector</b>
+object.
+<p>In addition, we will also encapsulate the type of the <b>Throwable</b>
+object, along with the message encapsulated in the <b>Throwable</b> object
+in our <b>Vector</b> object.
+<p>The code in Listing 9 instantiates a new <b>Vector</b> object to contain
+the data.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Vector vec = <b>new Vector()</b>;
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; vec.<b>add</b>("Cause"&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + <b>cause.toString()</b>);
+
+<b><font face="Courier New,Courier">Listing 9</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">Type of Throwable and message</font></b>
+<p>The code in Listing 9 also invokes the <b>toString</b> method on the
+<b>Throwable</b>
+object and concatenates the resulting string with the word <i>"Cause".</i>&nbsp;
+The string that results from the concatenation is added to in the <b>Vector</b>
+object.&nbsp; We will use the word <i>"Cause" </i>later to identify the
+string containing the type of the <b>Throwable</b> object along with the
+message encapsulated in the
+<b>Throwable</b> object.
+<blockquote><i>"The <b>getMessage</b> method is also available to get the
+message.&nbsp; However, in this case, the <b>toString</b> method was preferable
+because it returned both the type of the object and the text of the message."</i></blockquote>
+<b><font color="#FF0000">Get and save information about each stack frame</font></b>
+<p>Each element in the array of <b>StackTraceElement</b> objects contains
+information about one frame of the stack.&nbsp; The following four methods
+of the <b>StackTraceElement</b> class are available to access four different
+pieces of information describing each stack frame:
+<ul>
+<li>
+<b>getClassName</b> - Returns a <b>String</b>, which is the name of the
+class containing the execution point represented by this stack trace element.</li>
+
+<li>
+<b>getMethodName</b> - Returns a <b>String</b>, which is the name of the
+method containing the execution point represented by this stack trace element.</li>
+
+<li>
+<b>getFileName</b> - Returns a <b>String</b>, which is the name of the
+source file containing the execution point represented by this stack trace
+element.</li>
+
+<li>
+<b>getLineNumber</b> - Returns an <b>int</b>, which is the line number
+of the source line containing the execution point represented by this stack
+trace element.</li>
+</ul>
+<b><font color="#FF0000">Iterate on the array object with a for loop</font></b>
+<p>The <b>for</b> loop in Listing 10 iterates on the array object, extracting
+and saving each of the four pieces of information for each element in the
+array <i>(for each frame in the stack).</i>
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for(int i=0;i&lt;trace.length;i++){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; vec.add("Class" + trace[i].
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; getClassName());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; vec.add("Method" + trace[i].
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; getMethodName());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; vec.add("File" + trace[i].
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; getFileName());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; vec.add("Line" + trace[i].
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; getLineNumber());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end for loop
+
+<b><font face="Courier New,Courier">Listing 10</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">Concatenate with a descriptive word</font></b>
+<p>For convenient handling later on, each of the four pieces of information
+is concatenated to a word that describes the type of information.
+<blockquote><i>(Note that this concatenation process causes the <b>int</b>
+line number value to be converted to a string.)</i></blockquote>
+<b><font color="#FF0000">Contents of the Vector object</font></b>
+<p>Each of the four strings <i>(each containing information about a single
+stack frame)</i> is added to the <b>Vector</b> object during each iteration
+of the <b>for</b> loop.
+<p>Thus, when the entire array object has been processed, the <b>Vector</b>
+object contains one <b>String</b> object describing the type of <b>Throwable</b>
+being processed and the message encapsulated in that <b>Throwable</b> object.&nbsp;
+In addition, the <b>Vector</b> object contains four <b>String</b> objects
+representing each stack frame that existed at the point in time that the
+exception was thrown.
+<blockquote><i>(For example, if the stack contained three frames, the <b>Vector</b>
+object would contain thirteen elements, four elements representing each
+stack frame plus one element representing the <b>Throwable</b> object.)</i></blockquote>
+<b><font color="#FF0000">Add the populated inner Vector to the outer Vector</font></b>
+<p>This <b>Vector</b> object is now fully populated.&nbsp; The single statement
+in Listing 11 adds it to the <i>outer</i> <b>Vector</b> object that serves
+as a container for the individual <b>Vector</b> objects being produced
+by this process.&nbsp; <i>(Note that the statement in Listing 11 is outside
+the <b>for</b> loop.)</i>
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; vecOuter.add(vec);
+
+<b><font face="Courier New,Courier">Listing 11</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">Get the encapsulated Throwable and do it again</font></b>
+<p>Each <b>Throwable</b> object may encapsulate another throwable object
+known as the <i>cause.</i>
+<p>One <b>Throwable</b> object is processed during each iteration of the
+current <b>while</b> loop.
+<p>The code in Listing 12 invokes the <b>getCause</b> method on the current
+<b>Throwable</b>
+object to get a reference to the <b>Throwable</b> object
+<i>(if any)</i>
+that it encapsulates.&nbsp; If this <b>Throwable</b> object doesn't encapsulate
+another throwable object, the <b>getCause</b> method returns <b>null</b>.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>cause = cause.getCause();</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; }//end while loop
+
+&nbsp;&nbsp;&nbsp; <b>return vecOuter;
+</b>&nbsp; }//end encapsulate
+
+<b><font face="Courier New,Courier">Listing 12</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">Go back to the top of the while loop</font></b>
+<p>Then control returns to the top of the <b>while</b> loop where the new
+value of <b>cause</b> is tested for <b>null</b>.&nbsp; If the value of
+<b>cause</b>
+is not <b>null, </b><i>(meaning that there is another <b>Throwable</b>
+object to be processed),</i> another iteration of the <b>while</b> loop
+is executed to process that <b>Throwable</b> object.
+<p>If the value of <b>cause</b> is <b>null</b>, control exits the <b>while</b>
+loop, causing the <b>return</b> statement in Listing 12 to be executed.&nbsp;
+This return statement returns a reference to the outer <b>Vector</b> object,
+which has been populated with <b>Vector</b> objects.&nbsp; Each of the
+<b>Vector</b>
+objects contained in the outer <b>Vector</b> object contains stack trace
+information encapsulated by one of the <b>Throwable</b> objects involved
+in the series of chained exceptions.
+<p><b><font color="#FF0000">Back to meth01</font></b>
+<p>The <b>return</b> statement returns control to the method named <b>meth01</b>,
+as shown in Listing 13.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>//continuing in meth01
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>writeSer</b>(vecOuter,"junk");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Vector vecIn =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (Vector)<b>readSer</b>("junk");
+
+<b><font face="Courier New,Courier">Listing 13</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">Stack trace data is encapsulated in a Vector
+object</font></b>
+<p>At this point, the full set of stack trace data for the set of chained
+exceptions has been encapsulated in an object of the class <b>Vector</b>.&nbsp;
+Once we have the stack trace data in this form, we can do whatever we want
+with it.&nbsp; For example, we could serialize the <b>Vector</b> object
+and write it in a disk file or send it across the network.
+<p><b><font color="#FF0000">Demonstrate object serialization</font></b>
+<p>The code in Listing 13 demonstrates this by first serializing the <b>Vector</b>
+object to a disk file, and then reading that disk file and reconstructing
+the <b>Vector</b> object in its original state.&nbsp; This is accomplished
+by sequentially invoking two methods that I wrote named <b>writeSer</b>
+and <b>readSer</b>.
+<p>Once again, I will set the method named <b>meth01</b> aside temporarily
+and discuss the two methods mentioned above.
+<p><b><font color="#FF0000">The writeSer method</font></b>
+<p>The method named <b>writeSer</b> is shown in Listing 14.&nbsp; This
+method will serialize an incoming object and write the byte stream produced
+by serialization into a file whose name is specified by an incoming parameter
+of type <b>String</b>.&nbsp; I'm not going to explain this code in detail
+<i>(I
+have previously published lessons on object serialization on my
+<a href="http://www.DickBaldwin.com">web
+site</a>).</i>
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp; void <b>writeSer</b>(Object obj,&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; String name){
+&nbsp;&nbsp;&nbsp; try{//to serialize the Vector obj
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ObjectOutputStream&nbsp; outStream&nbsp; =
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new&nbsp; ObjectOutputStream(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new FileOutputStream(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; name));
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; outStream.<b>writeObject(obj);
+</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; outStream.flush();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; outStream.close();
+&nbsp;&nbsp;&nbsp; }catch(Exception excp){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(excp);
+&nbsp;&nbsp;&nbsp; }//end catch
+&nbsp; }//end writeSer
+
+<b><font face="Courier New,Courier">Listing 14</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>The key statement in Listing 14 is the invocation of the <b>writeObject</b>
+method, which performs the serialization of the <b>Vector</b> object and
+causes the byte stream to be written into a disk file.
+<p><b><font color="#FF0000">The readSer method</font></b>
+<p>The method named <b>readSer</b>, shown in Listing 15, will read the
+file containing the serialized object, reconstruct the original object,
+and return a reference to the reconstructed object as type <b>Object</b>.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp; Object <b>readSer</b>(String name){
+&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ObjectInputStream inStream =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new ObjectInputStream(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new FileInputStream(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; name));
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; return inStream.<b>readObject()</b>;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; }catch(Exception excp){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(excp);
+&nbsp;&nbsp;&nbsp; }//end catch
+&nbsp;&nbsp;&nbsp; //required to satisfy compiler
+&nbsp;&nbsp;&nbsp; return null;
+&nbsp; }//end readSer
+
+<b><font face="Courier New,Courier">Listing 15</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>The key statement in Listing 15 is the invocation of the <b>readObject</b>
+method.&nbsp; This method performs the reconstruction of the original <b>Vector</b>
+object using a stream of bytes as input.
+<p><b><font color="#FF0000">Back to meth01 again</font></b>
+<p>The <b>return</b> statement in Listing 15 returns control to <b>meth01</b>,
+as shown in Listing 16.&nbsp; Listing 16 shows the remainder of <b>meth01</b>.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>//continuing in meth01
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>display(vecIn);
+</b>&nbsp;&nbsp;&nbsp; }//end catch&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp; }//end meth01
+
+<b><font face="Courier New,Courier">Listing 16</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">Display the stack trace data</font></b>
+<p>The code in Listing 16 invokes a method named <b>display</b> that I
+wrote to display the stack trace data encapsulated in the <b>Vector</b>
+object.&nbsp; This data is displayed in a custom format of my own design.
+<p>Obviously, at this point, you could display the stack trace data in
+any format that you choose.&nbsp; I chose to display it in a format that
+resembles the standard format produced by the <b>printStackTrace</b> method.&nbsp;
+This makes it easy to confirm the validity of the stack trace data encapsulated
+in the <b>Vector</b> object by comparing the two displays.
+<p><b><font color="#FF0000">The display method</font></b>
+<p>The <b>display</b> method begins in Listing 17.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp; void <b>display</b>(Vector vecOuter){
+&nbsp;&nbsp;&nbsp; Enumeration enumOuter =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; vecOuter.<b>elements</b>();
+&nbsp;&nbsp;&nbsp; while(enumOuter.<b>hasMoreElements()</b>){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Vector <b>vecInner</b> = (Vector)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; enumOuter.<b>nextElement()</b>;
+
+<b><font face="Courier New,Courier">Listing 17</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">Nested Vector objects</font></b>
+<p>Recall that the stack trace data is now contained in <i>nested</i> <b>Vector</b>
+objects.&nbsp; That is to say, one <b>Vector</b> object serves as an <i>outer</i>
+container for several other <b>Vector</b> objects.&nbsp; Each of the <i>inner
+</i><b>Vector</b>
+objects contains stack trace information pertaining to one of the <b>Throwable</b>
+objects produced by the chain of exceptions and encapsulated in the final
+<b>Throwable</b>
+object.
+<p><b><font color="#FF0000">Nested enumerations</font></b>
+<p>I needed to display the data encapsulated in each of the <i>inner Vector</i>
+objects.&nbsp; This led to a solution based on nested enumerations.&nbsp;
+An outer loop enumerates on the <i>outer</i> <b>Vector</b> object, to extract
+each of the <i>inner</i> vector objects in sequence.
+<p>An inner loop enumerates on each of the <i>inner</i> <b>Vector</b> objects
+to extract, format, and display the data encapsulated in each of the <i>inner
+Vector</i> objects.
+<p>I don't plan to discuss enumeration in detail.&nbsp; I have previously
+published tutorial lessons explaining the enumeration process on my
+<a href="http://www.DickBaldwin.com">web
+site</a>.
+<p><b><font color="#FF0000">The outer enumeration loop</font></b>
+<p>The code in Listing 17 sets up the outer enumerator loop.&nbsp; This
+loop gets a reference to one element contained in the outer <b>Vector</b>
+object during each iteration of the loop.&nbsp; These elements are also
+<b>Vector</b>
+objects, and each of them is referred to as <b>vecInner</b>.
+<p>The <b>Vector</b> object accessed during each iteration of the outer
+loop contains <b>String</b> data describing stack trace data originally
+encapsulated in a <b>Throwable</b> object <i>(in the chain of throwable
+objects).</i>
+<p><b><font color="#FF0000">The inner enumeration loop</font></b>
+<p>The code in Listing 18 sets up an inner enumeration loop.&nbsp; This
+loop gets a reference to one <b>String</b> element contained in the inner
+<b>Vector</b>
+object during each iteration of the loop.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Enumeration enumInner =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; vecInner.<b>elements</b>();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; while(enumInner.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>hasMoreElements(</b>)){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; String str = (String)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; enumInner.<b>nextElement()</b>;
+
+<b><font face="Courier New,Courier">Listing 18</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">String identifiers</font></b>
+<p>Recall that each of the <b>String</b> objects in the <b>Vector</b> object
+begins with one of the following words:
+<ul>
+<li>
+Cause</li>
+
+<li>
+Class</li>
+
+<li>
+Method</li>
+
+<li>
+File</li>
+
+<li>
+Line</li>
+</ul>
+There should be only one <b>String</b> object beginning with the word <b>Cause</b>
+in each <b>Vector</b> object.&nbsp; Then there should be one <b>String</b>
+object beginning with each of the other four words for each frame that
+existed on the stack at the point in time that the <b>Throwable</b> object
+was constructed and thrown.
+<p><b><font color="#FF0000">A decision tree</font></b>
+<p>Although it looks complicated, the code in Listing 19 is simply a big
+decision tree that tests the <b>String</b> object to determine which of
+the five types of data it represents.&nbsp; Then the code in Listing 19
+formats the data appropriately and displays it on the screen.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(str.startsWith("<b>Cause</b>")){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.print(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; str.substring("Cause".
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; length()));
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }else if(str.startsWith(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "<b>Class</b>")){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.print("&nbsp; "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + str.substring("Class".
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; length()));
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }else if(str.startsWith(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "<b>Method</b>")){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.print("."&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + str.substring("Method".
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; length()));
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }else if(str.startsWith(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "<b>File</b>")){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.print("("&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + str.substring("File".
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; length()));
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }else if(str.startsWith(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "<b>Line</b>")){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.print(":"&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + str.substring("Line".
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; length()) + ")");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end else
+
+<b><font face="Courier New,Courier">Listing 19</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">An example output</font></b>
+<p>For example, the first five passes through the inner enumeration loop
+on an individual <b>Vector</b> object might produce something like that
+shown in Figure 2.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>NewEx01: Thrown from meth02
+&nbsp; Class01.meth02(StackTr01.java:92)
+
+<b>Figure 2</b></pre>
+</td>
+</tr>
+</table>
+
+<p>The first line in Figure 2 results from the <b>String</b> object that
+begins with the word <b>Cause</b>.&nbsp; The second line is a composite
+of the information extracted from four <b>String</b> objects beginning
+with the words <b>Class</b>, <b>Method</b>, <b>File</b>, and <b>Line</b>.
+<p><b><font color="#FF0000">What does the output represent?</font></b>
+<p>The first line of output represents the type of one <b>Throwable</b>
+object, and the message encapsulated in that object.
+<p>The second line of output represents one stack frame that existed at
+the point in time that the <b>Throwable</b> object was created and thrown.&nbsp;
+If the stack contained more than one frame, other lines similar to the
+second line would be produced, one for each stack frame.
+<p><b><font color="#FF0000">Wrap up the display method</font></b>
+<p>Listing 20 shown the remaining code in the <b>display</b> method, including
+the ends of the inner and outer enumeration loops.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end inner while loop
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println();//blank line
+&nbsp;&nbsp;&nbsp; }//end outer while loop
+&nbsp; }//end display
+
+<b><font face="Courier New,Courier">Listing 20</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">The full output</font></b>
+<p>Figure 3 shows the full output produced by the <b>display</b> method
+in this program.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>NewEx01: Thrown from meth02
+&nbsp; Class01.meth02(StackTr01.java:92)
+&nbsp; Class01.meth01(StackTr01.java:60)
+&nbsp; StackTr01.main(StackTr01.java:52)
+NewEx02: Thrown from meth03
+&nbsp; Class01.meth03(StackTr01.java:102)
+&nbsp; Class01.meth02(StackTr01.java:85)
+&nbsp; Class01.meth01(StackTr01.java:60)
+&nbsp; StackTr01.main(StackTr01.java:52)
+<b>NewEx03: Thrown from meth04
+&nbsp; Class01.meth04(StackTr01.java:112)
+&nbsp; Class01.meth03(StackTr01.java:100)
+&nbsp; Class01.meth02(StackTr01.java:85)
+&nbsp; Class01.meth01(StackTr01.java:60)
+&nbsp; StackTr01.main(StackTr01.java:52)
+
+Figure 3</b></pre>
+</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">Throwable objects in the chain of exceptions</font></b>
+<p>From this output, we can see that three separate <b>Throwable</b> objects
+were thrown in the chain of exceptions.&nbsp; The first object that was
+thrown and the state of the stack at the time it was created and thrown
+are identified by the boldface text at the bottom of Figure 3.
+<p>As shown by the top boldface line of text, the first object that was
+thrown was of type <b>NewEx03</b>.&nbsp; The message reads: <i>"Thrown
+from meth04".</i>
+<p><b><font color="#FF0000">Five frames on the stack</font></b>
+<p>There were five frames on the stack at the time the object was thrown.&nbsp;
+According to Sun:
+<blockquote><i>"All stack frames except for the one at the top of the stack
+represent a method invocation. The frame at the top of the stack represents
+the execution point at which the stack trace was generated. Typically,
+this is the point at which the throwable corresponding to the stack trace
+was created."</i></blockquote>
+The frame at the bottom of the stack represents the <b>main</b> method
+of the <b>StackTr01</b> class.
+<p>The frame at the top of the stack represents the method named <b>meth04</b>
+of the class named <b>Class01</b>.&nbsp; This is the method that threw
+the first exception.&nbsp; The line number of <b>112</b> <i>"represents
+the execution point at which the stack trace was generated."</i>
+<p><b><font color="#FF0000">When was the Throwable object created?</font></b>
+<p>The stack trace data indicates that the object was created at line 112
+in the source code for the program.&nbsp; Lines 112 and 113 in the source
+code read as shown in Figure 4.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre><b>112 throw new NewEx03(
+113&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Thrown from meth04");
+
+Figure 4</b></pre>
+</td>
+</tr>
+</table>
+
+<blockquote><i>(Although the statement that created the <b>Throwable</b>
+object is spread across two lines, it begins on line 112.)</i></blockquote>
+<b><font color="#FF0000">Method invocations</font></b>
+<p>As indicated in the earlier quotation from Sun, the remaining line numbers
+in the boldface text represent method invocations in the methods and classes
+indicated.
+<p>For example, the statements corresponding to the line numbers in the
+last four lines in Figure 3 are shown in Figure 5.&nbsp; As you can see,
+each of these statements is a method invocation.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre><b>100&nbsp; meth04();//in meth03
+&nbsp;85&nbsp; meth03();//in meth02
+&nbsp;60&nbsp; meth02();//in meth01
+&nbsp;52&nbsp; new Class01().meth01();//in main
+
+Figure 5</b></pre>
+</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">Compare with printed stack trace data</font></b>
+<p>At this point, I recommend that you compare Figure 3 with Figure 1.&nbsp;
+Figure 1 shows the output from the <b>printStackTrace</b> method for this
+program.&nbsp; Figure 3 shows my programmatic formatting of stack trace
+data for the same program.&nbsp; Except for the fact that some of the data
+is missing in Figure 1, you should be able to match up each of the data
+elements in Figure 3 with the corresponding data elements in Figure 1.
+<p><b><font color="#FF0000">Programmatic handling of stack trace data</font></b>
+<p>Now you know how to get stack trace information and encapsulate it in
+an object suitable for processing under program control.&nbsp; You know
+how to serialize that data so that it can be written in a disk file or
+transmitted across a network.&nbsp; You know how to read the serialized
+byte stream and reconstruct the original object containing the stack trace
+data.
+<p>Equally important, you also know how to interpret the stack trace data
+that is available in this fashion.&nbsp; Obviously, you can't write code
+to process the stack trace data, and make decisions on the basis of that
+data, unless you know how to interpret it.
+<center>
+<h2>
+<a NAME="Run the program"></a>Run the Program</h2></center>
+If you haven't already done so, I encourage you to copy the code from Listing
+21 into your text editor, compile it, and execute it.&nbsp; Experiment
+with it, making changes, and observing the results of your changes.
+<p>Remember, however, that you must be running Java version 1.4 or later
+to compile and execute this program.
+<center>
+<h2>
+<a NAME="Complete Program Listings"></a>Complete Program Listing</h2></center>
+A complete listing of the program discussed in this lesson is shown in
+Listing 21.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>/*File StackTr01.java&nbsp;&nbsp;
+Copyright 2002, R. G. Baldwin
+Illustrates programmatic handling of
+stack trace data for the case where
+the stack trace includes causal&nbsp;
+information.
+
+Tested using JDK 1.4.0 under Win2000
+
+The output produced by the program is
+similar to the following:
+
+Print StackTrace
+NewEx01: Thrown from meth02
+&nbsp;at Class01.meth02(StackTr01.java:92)
+&nbsp;at Class01.meth01(StackTr01.java:60)
+&nbsp;at StackTr01.main(StackTr01.java:52)
+Caused by: NewEx02: Thrown from meth03
+&nbsp;at Class01.meth03(StackTr01.java:102)
+&nbsp;at Class01.meth02(StackTr01.java:85)
+&nbsp;... 2 more
+Caused by: NewEx03: Thrown from meth04
+&nbsp;at Class01.meth04(StackTr01.java:112)
+&nbsp;at Class01.meth03(StackTr01.java:100)
+&nbsp;... 3 more
+NewEx01: Thrown from meth02
+&nbsp; Class01.meth02(StackTr01.java:92)
+&nbsp; Class01.meth01(StackTr01.java:60)
+&nbsp; StackTr01.main(StackTr01.java:52)
+NewEx02: Thrown from meth03
+&nbsp; Class01.meth03(StackTr01.java:102)
+&nbsp; Class01.meth02(StackTr01.java:85)
+&nbsp; Class01.meth01(StackTr01.java:60)
+&nbsp; StackTr01.main(StackTr01.java:52)
+NewEx03: Thrown from meth04
+&nbsp; Class01.meth04(StackTr01.java:112)
+&nbsp; Class01.meth03(StackTr01.java:100)
+&nbsp; Class01.meth02(StackTr01.java:85)
+&nbsp; Class01.meth01(StackTr01.java:60)
+&nbsp; StackTr01.main(StackTr01.java:52)
+**************************************/
+
+import java.io.*;
+import java.util.*;
+import java.util.logging.*;
+
+class StackTr01{
+&nbsp; public static void main(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; String[] args){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new Class01().meth01();
+&nbsp; }//end main
+}//end StackTr01
+//===================================//
+
+class Class01{
+&nbsp; void meth01(){
+&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; meth02();//call meth02
+&nbsp;&nbsp;&nbsp; }catch(Exception e){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Print StackTrace");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; e.printStackTrace();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Encapsulate stack information
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // in a Vector
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Vector vecOuter = encapsulate(e);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Write the Vector to disk as a
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // serialized object for demo
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; writeSer(vecOuter,"junk");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Read the serialized data and
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // reconstruct the Vector object
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Vector vecIn =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (Vector)readSer("junk");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Display the stack trace data
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // in the Vector object
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; display(vecIn);
+&nbsp;&nbsp;&nbsp; }//end catch&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp; }//end meth01
+&nbsp; //---------------------------------//
+&nbsp;&nbsp;
+&nbsp; void meth02() throws NewEx01{
+&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; meth03();
+&nbsp;&nbsp;&nbsp; }catch(Exception e){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Construct and throw a new
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // exception object with the
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // exception caught by this
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // method encapsulated as the
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // cause
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; throw new NewEx01(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Thrown from meth02",e);
+&nbsp;&nbsp;&nbsp; }//end catch
+&nbsp; }//end meth02
+&nbsp; //---------------------------------//
+&nbsp;&nbsp;
+&nbsp; void meth03() throws NewEx02{
+&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; meth04();
+&nbsp;&nbsp;&nbsp; }catch(Exception e){&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; throw new NewEx02(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Thrown from meth03",e);
+&nbsp;&nbsp;&nbsp; }//end catch
+&nbsp; }//end meth03
+&nbsp; //---------------------------------//
+&nbsp;&nbsp;
+&nbsp; void meth04() throws NewEx03{
+&nbsp;&nbsp;&nbsp; //Construct and unconditionally
+&nbsp;&nbsp;&nbsp; // throw a new exception object
+&nbsp;&nbsp;&nbsp; // with no encapsulated cause
+&nbsp;&nbsp;&nbsp; throw new NewEx03(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Thrown from meth04");
+&nbsp; }//end meth04
+&nbsp; //---------------------------------//
+&nbsp;&nbsp;
+&nbsp; //Method to encapsulate stack&nbsp;
+&nbsp; // information in a Vector&nbsp;
+&nbsp; // containing refs to other Vector&nbsp;
+&nbsp; // objects
+&nbsp; Vector encapsulate(Throwable e){
+&nbsp;&nbsp;&nbsp; Vector vecOuter = new Vector();
+&nbsp;&nbsp;&nbsp; //Treat the incoming Throwable
+&nbsp;&nbsp;&nbsp; // as a cause
+&nbsp;&nbsp;&nbsp; Throwable cause = e;
+&nbsp;&nbsp;&nbsp; //Drill down to the point where
+&nbsp;&nbsp;&nbsp; // there is no cause encapsulated
+&nbsp;&nbsp;&nbsp; // in the cause
+&nbsp;&nbsp;&nbsp; while(cause != null){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Get the StackTraceElement for
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // this cause
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; StackTraceElement[] trace&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = cause.getStackTrace();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Create a Vector to contain
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // data from this
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // StackTraceElement
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Vector vec = new Vector();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Include high-level information
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // about this cause in the vector
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; vec.add("Cause"&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + cause.toString());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Loop, get, and save four pieces
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // of data for each item in the
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // StackTraceElememt.&nbsp; Each piece
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // of data is saved as a String
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // with an identifier prepended.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for(int i=0;i&lt;trace.length;i++){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; vec.add("Class" + trace[i].
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; getClassName());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; vec.add("Method" + trace[i].
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; getMethodName());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; vec.add("File" + trace[i].
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; getFileName());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; vec.add("Line" + trace[i].
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; getLineNumber());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end for loop
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Add this Vector object to the
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // outer enclosing vector
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; vecOuter.add(vec);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Continue drilling down. Get the
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // cause encapsulated in this
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // cause and start over.&nbsp; Exit
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // the loop when getCause returns
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // null
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cause = cause.getCause();&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; }//end while loop
+&nbsp;&nbsp;&nbsp; return vecOuter;
+&nbsp; }//end encapsulate
+&nbsp; //---------------------------------//
+&nbsp;&nbsp;
+&nbsp; //Method to serialize the Vector and
+&nbsp; // write it to a disk file.
+&nbsp; void writeSer(Object obj,&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; String name){
+&nbsp;&nbsp;&nbsp; try{//to serialize the Vector obj
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ObjectOutputStream&nbsp; outStream&nbsp; =
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new&nbsp; ObjectOutputStream(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new FileOutputStream(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; name));
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; outStream.writeObject(obj);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; outStream.flush();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; outStream.close();
+&nbsp;&nbsp;&nbsp; }catch(Exception excp){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(excp);
+&nbsp;&nbsp;&nbsp; }//end catch
+&nbsp; }//end writeSer
+&nbsp; //---------------------------------//
+&nbsp;&nbsp;
+&nbsp; //Method to read the serialized data,
+&nbsp; // reconstruct, and return the Vector
+&nbsp; // object
+&nbsp; Object readSer(String name){
+&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ObjectInputStream inStream =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new ObjectInputStream(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new FileInputStream(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; name));
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; return inStream.readObject();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; }catch(Exception excp){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(excp);
+&nbsp;&nbsp;&nbsp; }//end catch
+&nbsp;&nbsp;&nbsp; //required to satisfy compiler
+&nbsp;&nbsp;&nbsp; return null;
+&nbsp; }//end readSer
+&nbsp; //---------------------------------//
+&nbsp;&nbsp;
+&nbsp; //Method to display the stack trace
+&nbsp; // data encapsulated in the Vector
+&nbsp; // in a specific format
+&nbsp; void display(Vector vecOuter){
+&nbsp;&nbsp;&nbsp; Enumeration enumOuter =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; vecOuter.elements();
+&nbsp;&nbsp;&nbsp; while(enumOuter.hasMoreElements()){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Vector vecInner = (Vector)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; enumOuter.nextElement();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Enumeration enumInner =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; vecInner.elements();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; while(enumInner.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; hasMoreElements()){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; String str = (String)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; enumInner.nextElement();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(str.startsWith("Cause")){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.print(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; str.substring("Cause".
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; length()));
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }else if(str.startsWith(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Class")){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.print("&nbsp; "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + str.substring("Class".
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; length()));
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }else if(str.startsWith(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Method")){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.print("."&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + str.substring("Method".
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; length()));
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }else if(str.startsWith(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "File")){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.print("("&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + str.substring("File".
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; length()));
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }else if(str.startsWith(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Line")){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.print(":"&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + str.substring("Line".
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; length()) + ")");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end else
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end while loop
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println();
+&nbsp;&nbsp;&nbsp; }//end while loop
+&nbsp; }//end display
+&nbsp; //---------------------------------//
+}//end Class01
+//===================================//
+
+//Note:&nbsp; For brevity, I included only
+// the required constructors in these
+// new exception classes.
+//This is a new exception class
+class NewEx01 extends Exception{
+&nbsp; public NewEx01(String message,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Throwable throwable){
+&nbsp;&nbsp;&nbsp; super(message, throwable);
+&nbsp; }
+}//end NewEx01
+//===================================//
+
+//This is a new exception class
+class NewEx02 extends Exception{
+&nbsp; public NewEx02(String message,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Throwable throwable){
+&nbsp;&nbsp;&nbsp; super(message, throwable);
+&nbsp; }
+}//end NewEx02
+//===================================//
+
+//This is a new exception class
+class NewEx03 extends Exception{
+&nbsp; public NewEx03(String message){
+&nbsp;&nbsp;&nbsp; super(message);
+&nbsp; }
+}//end NewEx03
+
+<b><font face="Courier New,Courier">Listing 21</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>
+<hr size=3 width="100%" align=center>
+<p>Copyright 2002, Richard G. Baldwin.&nbsp; Reproduction in whole or in
+part in any form or medium without express written permission from Richard
+Baldwin is prohibited.
+<h4>
+<a NAME="About the author"></a>About the author</h4>
+<b><a href="mailto:baldwin@DickBaldwin.com">Richard G. Baldwin</a></b><i>
+is a college professor (at Austin Community College in Austin, TX) and
+private consultant whose primary focus is a combination of Java, C#, and
+XML. In addition to the many platform and/or language independent benefits
+of Java and C# applications, he believes that a combination of Java, C#,
+and XML will become the primary driving force in the delivery of structured
+information on the Web.</i>
+<p><i>Richard has participated in numerous consulting projects, and he
+frequently provides onsite training at the high-tech companies located
+in and around Austin, Texas.&nbsp; He is the author of Baldwin's Programming
+<a href="http://www.DickBaldwin.com">Tutorials</a>,
+which has gained a worldwide following among experienced and aspiring programmers.
+He has also published articles in JavaPro magazine.</i>
+<p><i>Richard holds an MSEE degree from Southern Methodist University and
+has many years of experience in the application of computer technology
+to real-world problems.</i>
+<p><i><a href="mailto:baldwin@DickBaldwin.com">baldwin@DickBaldwin.com</a></i>
+<p>-end-
+<br>&nbsp;
+</body>
+</html>

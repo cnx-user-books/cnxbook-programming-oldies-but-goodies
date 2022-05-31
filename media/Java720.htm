@@ -1,0 +1,926 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>... in Java by Richard G Baldwin</TITLE>
+<META NAME="Template" CONTENT="C:\PROGRAM FILES\MICROSOFT OFFICE\OFFICE\html.dot">
+</HEAD>
+<BODY LINK="#0000ff" VLINK="#800080" BGCOLOR="#ffffff">
+
+<P><!--start--></P>
+<I><H3 ALIGN="CENTER">Richard G Baldwin (512) 223-4758, </I><A HREF="mailto:baldwin@austin.cc.tx.us"><I>baldwin@austin.cc.tx.us</I></A><I>, </I><A HREF="http://www2.austin.cc.tx.us/baldwin/"><I>http://www2.austin.cc.tx.us/baldwin/</I></A></H3>
+<H2 ALIGN="CENTER"><!--title-->Security, Introduction to Key Pairs and Digital Signatures <!--endtitle--></H2>
+<P>Java Programming, Lecture Notes # 720, Revised 4/18/99. </P>
+
+<UL>
+<LI><A HREF="#Preface">Preface</A> </LI>
+<LI><A HREF="#Disclaimer">Disclaimer</A> </LI>
+<LI><A HREF="#Introduction">Introduction</A> </LI>
+<LI><A HREF="#Discussion">Discussion</A> </LI>
+<LI><A HREF="#ProgramSecurity05A">Program Security05A</A> </LI>
+
+<UL>
+<LI><A HREF="#Security05ACodeFragments">Security05A Code Fragments</A></LI></UL>
+
+<LI><A HREF="#ProgramSecurity05B">Program Security05B</A> </LI>
+
+<UL>
+<LI><A HREF="#Security05BCodeFragments">Security05B Code Fragments</A></LI></UL>
+
+<LI><A HREF="#ProgramSecurity05C">Program Security05C</A> </LI>
+
+<UL>
+<LI><A HREF="#Security05CCodeFragments">Security05C Code Fragments</A></LI></UL>
+
+<LI><A HREF="#program_listing">Program Listings </A></LI></UL>
+
+<P><HR></P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Preface">Preface</A></H2>
+</FONT><P>Students in Prof. Baldwin's <B><U>Advanced Java Programming</B></U> classes at ACC will be responsible for knowing and understanding all of the material in this lesson beginning with the spring semester of 1999. </P>
+<P>This lesson was originally written on April 13, 1999 and has been updated several times since. </P>
+<P>The programs in this lesson were tested using JDK 1.2 under Win95</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Disclaimer">Disclaimer</A></H2>
+</FONT><P>I claim absolutely no expertise in the area of security. I am simply a college professor attempting to gather information about Java on one hand and present it to my students on the other. I disclaim any responsibility for any security problems that may occur as a result of anyone using any of the material in any of my tutorial lessons.</P>
+<P>You are responsible for your own actions. With regard to security, you should study not only the material that I will present, but also material provided by others who possess expertise in the security area. Hopefully my material will be useful in getting you started in that direction.</P>
+<P>Two good books on security published by O'Reilly &amp; Associates are:</P>
+
+<UL>
+<U><LI>Java Security</U> by Scott Oaks </LI>
+<U><LI>Java Cryptography</U> by Jonathan Knudsen</LI></UL>
+
+<P>I highly recommend both of these books.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Introduction">Introduction</A></H2>
+<B><P>Public keys, private keys, and digital signatures</P>
+</B></FONT><P>This lesson introduces you to the topic of public and private keys, and the creation and use of digital signatures based on those keys. Three sample programs are presented. </P>
+<B><FONT COLOR="#ff0000"><P>Creating a KeyPair object</P>
+</B></FONT><P>The first sample program shows you how to create a <B>KeyPair</B> object containing public and private key components. It also shows you how to extract those components and write them into disk files.</P>
+<B><FONT COLOR="#ff0000"><P>Creating a digital signature</P>
+</B></FONT><P>The second program shows you how to extract the private key from the disk file and use it to create a digital signature representing a text document. It also shows you how to write the digital signature into a disk file.</P>
+<B><FONT COLOR="#ff0000"><P>Verifying against the digital signature</P>
+</B></FONT><P>The third program shows you how to extract the public key and the digital signature from their disk files. It also shows you how to use them in conjunction with the text file to determine if the text file has become corrupted since the digital signature for that file was created.</P>
+<B><FONT COLOR="#ff0000"><P>Mechanics versus procedures</P>
+</B></FONT><P>There are two major aspects of Java and security on the Internet:</P>
+
+<UL>
+<LI>The mechanics of using Java tools and the Java API. </LI>
+<LI>Overall security procedures that make use of the Java tools and the Java API.</LI></UL>
+
+<P>What do I mean by overall security procedures? One obvious example is that you should not allow your secret cryptographic keys to be compromised to the enemy (hackers, crackers, virus writers, etc.). However, there are other more subtle operational procedures that are very important to overall security. These procedures require a great deal of thought about who can do what to whom and how can they do it (probably bad grammar). </P>
+<P>For the most part, my tutorial lessons will concentrate on the mechanics of using the Java tools and the Java API. I won't attempt to give advice on overall security procedures. Rather, I will leave that to others who have given a great deal of thought to the topic of who can do what to you and how can they do it.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Discussion">Discussion</A></H2>
+<B><P>The three legs of the security stool</P>
+</B></FONT><P>An earlier lesson suggested that when exchanging data electronically, the parties to the communication might be interested in the following three aspects of that communication:</P>
+
+<UL>
+<B><LI>Authentication</B>: Confirming the identities of the parties involved. </LI>
+<B><LI>Confidentiality</B>: Making certain that only authorized parties can understand the communication, even if it is intercepted by unauthorized persons. </LI>
+<B><LI>Integrity</B>: Confirming that the content of the communication wasn't modified during transmission.</LI></UL>
+
+<P>This lesson deals with an area of security where only the first and third items are of concern. The content of the data being exchanged doesn't contain trade secrets, so confidentiality is not an issue. However, both parties are very interested in <I>authentication</I> and <I>integrity</I>.</P>
+<B><FONT COLOR="#ff0000"><P>A hypothetical example</P>
+</B></FONT><P>The following is a hypothetical example of such a situation. There are two companies involved in an ongoing series of electronic transactions:</P>
+
+<UL>
+<LI>NewCompany, Incorporated </LI>
+<LI>OldCompany, Incorporated</LI></UL>
+
+<P>NewCompany is a new company that has the greatest idea ever for a new product for the Internet and only about 20 employees. However, they expect to grow very rapidly.</P>
+<P>OldCompany sells office furniture. OldCompany will be the supplier for the office furniture needed by NewCompany. They also expect NewCompany to grow very rapidly, and even though they are currently small, over the next few years, they are expected to become an excellent customer for office furniture.</P>
+<B><FONT COLOR="#ff0000"><P>Electronic purchase orders</P>
+</B></FONT><P>Being concerned about saving trees and not wasting paper, NewCompany has decided to submit purchase orders electronically to all of their vendors including OldCompany. The fact that they are purchasing ten new file cabinets is not particularly secret, so they don't have a concern about confidentiality. </P>
+<B><FONT COLOR="#ff0000"><P>Integrity is very important</P>
+</B></FONT><P>However, they do want to make certain that some hacker doesn't intercept and modify their purchase order before it reaches OldCompany. They don't relish the idea of a truck showing up at their receiving dock and unloading 100 new file cabinets. Similarly, OldCompany doesn't relish the idea of delivering 100 file cabinets when only ten were really needed. They are not likely to get paid for the extra ninety file cabinets and will likely incur the shipping expense both ways for the extras.</P>
+<P>Thus, both companies would like to be able to confirm the <I>integrity</I> of the information contained in the electronic purchase order.</P>
+<B><FONT COLOR="#ff0000"><P>Authentication is also very important</P>
+</B></FONT><P>In addition, OldCompany is interested in knowing for sure that the electronic purchase order that they received was really from NewCompany. Thus, they have a very strong interest in <I>authentication</I>. They don't want to ship ten new file cabinets to NewCompany only to learn later that the purchase order was really sent by a hacker as an act of electronic vandalism.</P>
+<B><FONT COLOR="#ff0000"><P>Agree on a plan to use digital signatures</P>
+</B></FONT><P>The two companies agree to use a pair of <I>public</I> and <I>private</I> keys along <I>with digital signatures</I> on the purchase order documents to accomplish authentication and integrity. (It is expected that a long-term business relationship will exist covering many orders for more office furniture so the procedure being established should persist over a long period of time).</P>
+<B><FONT COLOR="#ff0000"><P>A key management plan is developed</P>
+</B></FONT><P>The secure management and distribution of keys is probably one of the most complex aspects of secure Internet communications. To make things simple in this case, the person responsible for the Purchasing department at NewCompany generates a pair of public and private keys and writes the two keys onto two separate diskettes. </P>
+<B><FONT COLOR="#ff0000"><P>Keep the private key under lock and key</P>
+</B></FONT><P>The individual diskettes containing the public and private keys are kept under lock and key at NewCompany along with other sensitive business information. </P>
+<B><FONT COLOR="#ff0000"><P>Send the public key to the supplier</P>
+</B></FONT><P>In this case, distribution of the public key is relatively straightforward. A copy of the diskette containing the public key is mailed to the responsible party at OldCompany using registered mail and a letter of transmittal on the letterhead of NewCompany. A couple of supplemental telephone conversations causes the responsible people at OldCompany to be satisfied that the public key that they received in the mail really does belong to NewCompany.</P>
+<B><FONT COLOR="#ff0000"><P>Authenticating the source of a document</P>
+</B></FONT><P>From this point forward, whenever OldCompany uses the public key to successfully verify the digital signature of an electronic purchase order created by NewCompany using the corresponding private key, they can be confident of the source of the document. This <I>authenticates</I> the source of the document.</P>
+<B><FONT COLOR="#ff0000"><P>Verifying the integrity of a document</P>
+</B></FONT><P>Also, if the document verifies properly, both parties can be confident that the purchase order wasn't tampered with after the digital signature was generated. Thus, verification serves both objectives: the <I>authentication</I> of the source and the <I>integrity</I> of the purchase order.</P>
+<B><FONT COLOR="#ff0000"><P>The three sample programs</P>
+</B></FONT><P>The three sample programs in the following sections correspond roughly to the three steps described above:</P>
+
+<UL>
+<LI>Generation of public and private keys. </LI>
+<LI>Signing of the purchase order document using the private key. </LI>
+<LI>Verification of the purchase order document using the digital signature and the public key</LI></UL>
+
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="ProgramSecurity05A">Program Security05A</H2>
+<B><P></A>Generates and saves public and private keys</P>
+</B></FONT><P>This program demonstrates the generation of public and private keys and saves those keys in an <I>external format</I> in disk files.</P>
+<P>The program is the first in a group of three programs designed to demonstrate the use of signed documents. The group consists of:</P>
+
+<UL>
+<LI>Security05A.java </LI>
+<LI>Security05B.java </LI>
+<LI>Security05C.java</LI></UL>
+
+<P>A discussion of the other two programs is provided in later sections of this tutorial.</P>
+<P>All three programs were tested using JDK 1.2 and Win95.</P>
+<FONT COLOR="#ff0000"><H3 ALIGN="CENTER"><A NAME="Security05ACodeFragments">Security05A Code Fragments</A></H3>
+<B><P>The first fragment shows </P>
+
+<UL>
+</B></FONT><LI>The beginning of the controlling class. </LI>
+<LI>The declaration and initialization of variables containing file names. </LI>
+<LI>The beginning of a <B>try</B> block that surrounds the entire program.</LI></UL>
+
+<P>This is pretty standard stuff and is included here only for completeness.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>class Security05A {
+
+  public static void <B>main</B>(String[] args) {
+  &#9;String publicKeyFile = "Security05.pubKey";
+  &#9;String privateKeyFile = "Security05.priKey";
+    try{</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>The alphabet soup</P>
+</B></FONT><P>Unless you plan to become an expert in Java security and cryptography (and the alphabet soup used in that technology area), there are many things that you will simply have to accept on faith. For example, in <U>Java Cryptography</U> by Jonathan Knudsen, the author states the following regarding the DSA algorithm:</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<P>"DSA stands for Digital Signature Algorithm. It was developed by the NSA and released as a standard by the NIST. It is actually a combination of DSA and SHA-1. You can use any key size from 512 to 1024 bits, in 64-bit increments. The signature size depends on the key size."</TD>
+</TR>
+</TABLE>
+
+<P>Do I doubt that any of the above is true? No. </P>
+<P>Can I prove that any of the above is true? No. </P>
+<P>Does this concern me? Not particularly, as long as I can find several published references from reliable publishers (such as O'Reilly) recommending that I use the DSA algorithm for signing documents.</P>
+<B><FONT COLOR="#ff0000"><P>Creating a KeyPairGenerator object</P>
+</B></FONT><P>Along this line, the following fragment creates a <B>KeyPairGenerator</B> object implementing the DSA algorithm as provided by SUN.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      KeyPairGenerator keyPairGenerator = 
+              KeyPairGenerator.<B>getInstance</B>("DSA", "SUN");</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>The provider concept</P>
+</B></FONT><P>What do I mean, "as supplied by SUN?" The structure of the Java security and cryptography classes makes it possible to install class libraries from different <I>providers</I> for the cryptographic algorithms. </P>
+<P>Execution of the cryptographic algorithms is very resource intensive. For example, the execution of this small program on my machine requires a noticeable amount of time. Possibly an algorithm supplied by one provider might execute more efficiently than the same algorithm supplied by a different provider.</P>
+<B><FONT COLOR="#ff0000"><P>The default provider is SUN</P>
+</B></FONT><P>For many of the algorithms, a default implementation is available and is identified as the <B>SUN</B> implementation in those cases where the identification of the provider is required.</P>
+<B><FONT COLOR="#ff0000"><P>A factory method</P>
+</B></FONT><P>The <B>KeyPairGenerator</B> object created above will be required later in the creation of a <B>KeyPair</B> object containing the public and private key components.</P>
+<P>The <B>getInstance()</B> method used above is commonly known as a <I>factory method</I>. There are many classes throughout the security and cryptography APIs that cannot be instantiated directly using the <B>new</B> operator. In those cases, factory methods are provided that return objects, or instances of those classes.</P>
+<B><FONT COLOR="#ff0000"><P>More alphabet soup</P>
+</B></FONT><P>The term PRNG is alphabet soup for pseudo-random number generator. Here is what Knudsen has to say about the SHA-1 algorithm that will be referenced in the next code fragment. </P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<P>"SHA-1 stands for Secure Hash algorithm. It was developed by the NIST (National Institute of Standards and Technology) in conjunction with NSA. ..."</TD>
+</TR>
+</TABLE>
+
+<P>The term NSA stands for National Security Agency, an agency of the United States Federal government, described in at least one TV program as an agency that is very interested the electronic communications of others. (I knew that all those hours spent watching the <I>Discovery</I> channel and <I>The Learning Channel</I> on cable TV would pay off someday.)</P>
+<P>Knudsen goes on to discuss the pros and cons of the algorithm in terms of other alphabet soup such as MD5, MD4, SHA, and SHA-0.</P>
+<B><FONT COLOR="#ff0000"><P>Using random numbers</P>
+</B></FONT><P>The next fragment deals with random numbers. Why do we care about random numbers anyway? Assume that you were to use a simple character substitution algorithm (based on a secret code ring from a cereal box) to encode a large amount of U.S. English text. A code breaker could take advantage of the known probability of occurrence of the various characters in English text to help in breaking the code. In other words, the non-uniform statistical distribution of the use of the various characters in English text make certain aspects of the encoded message predictable (more knowledge gained from watching cable TV). In cryptography, <U>predictability is bad news</U>.</P>
+<P>In order to avoid predictability (and probably for other good reasons as well) many cryptographic algorithms make use of random number generators when encrypting data. Knudsen describes the <B>java.security.SecureRandom</B> class as "A cryptographically strong random number engine."</P>
+<B><FONT COLOR="#ff0000"><P>An object of the SecureRandom class</P>
+</B></FONT><P>The next fragment creates an object of the <B>SecureRandom</B> class for the SHA1PRNG algorithm from the SUN provider.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      SecureRandom secureRandom = 
+             SecureRandom.<B>getInstance</B>("SHA1PRNG", "SUN");</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Initializing the KeyPairGenerator object</P>
+</B></FONT><P>The <B>KeyPairGenerator</B> class is used to create pairs of public and private keys for signing or encryption. The generator needs to be initialized. One of the two available methods for initializing the generator is shown in the next fragment. After initialization, when the generator is used to create of pair of keys, they will be created for the given <I>strength</I> (first parameter) using the supplied source of random bits (second parameter).</P>
+<P>This fragment initializes the key pair generator with strength of 512 using the <B>SecureRandom</B> object created above as the source of random bits.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      keyPairGenerator.<B>initialize</B>(512, secureRandom);</PRE></TD>
+</TR>
+</TABLE>
+
+<P>According to Knudsen</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<P>"Although the strength of a key almost always refers to its bit length, the interpretation of the strength parameter is algorithm dependent."</TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Generating the KeyPair object</P>
+</B></FONT><P>According to Knudsen, </P>
+<BLOCKQUOTE>"The JDK includes a class, <B>java.security.KeyPair</B>, that encapsulates a matched public and private key. It's a very simple class." </BLOCKQUOTE>
+<P>Having taken care of all of the preliminary requirements, the following code fragment generates the actual <B>KeyPair</B> object containing the <I>public</I> and <I>private</I> key components. </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      KeyPair keyPair = 
+                      keyPairGenerator.<B>generateKeyPair</B>();</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Getting the individual key objects</P>
+</B></FONT><P>The <B>KeyPair</B> class has two methods for returning references to the public and private key objects as shown in the following fragment.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      PrivateKey privateKey = keyPair.<B>getPrivate</B>();
+      PublicKey publicKey = keyPair.<B>getPublic</B>();</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Saving the public and private keys</P>
+</B></FONT><P>At this point, the public and private keys are available and ready for use. However, our objective is not to use them in this program, but rather to provide them for use in another program. One way to save them for use in another program is by putting them in an object of the class <B>KeyStore</B>. That will be the topic for a subsequent lesson.</P>
+<P>Another way to make them available to another program would be to write them onto the disk as serialized objects. It would even be possible to encrypt them on the way to the disk if they need to be protected to that extent. I will demonstrate how to save objects using object serialization in a subsequent lesson.</P>
+<B><FONT COLOR="#ff0000"><P>Saving the public key in external encoded form</P>
+</B></FONT><P>In this lesson, I will use even a different alternative for providing the keys to another program. I will encode each key into an external encoded form commonly used when a standard representation of the key is needed outside the JVM. Then I will write the encoded form of each key into a disk file.</P>
+<P>The following fragment encodes the public key as described above.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      byte[] pubKey = publicKey.<B>getEncoded</B>();</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The next fragment saves the encoded public key in a file named <B>Security05.pubKey.</P></B>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      FileOutputStream publicKeyStream = 
+                     new FileOutputStream(publicKeyFile);
+      publicKeyStream.write(pubKey);
+      publicKeyStream.close();</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Saving the private key in external encoded form</P>
+</B></FONT><P>Similarly, the following fragment encodes the private key and saves it in a file named <B>Security05.priKey</B>.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      byte[] privKey = privateKey.<B>getEncoded</B>();
+      //Save the encoded private key in a file
+      FileOutputStream privateKeyStream = 
+                    new FileOutputStream(privateKeyFile);
+      privateKeyStream.write(privKey);
+      privateKeyStream.close();</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Program recap</P>
+</B></FONT><P>That completes the discussion of the interesting code in this program. A complete listing of the program is provided near the end of the lesson.</P>
+<P>To recap, the steps involved in creating a matched pair of public and private keys and saving them in two separate disk files are as follows (the algorithms and parameters listed are those used above, but other possibilities exist as well):</P>
+<OL>
+
+<I><LI>Create</I> a <B>KeyPairGenerator</B> object implementing the <I>DSA</I> algorithm.</LI>
+<I><LI>Create</I> a <B>SecureRandom</B> object for the <I>SHA1PRNG</I> algorithm.</LI>
+<I><LI>Initialize</I> the <B>KeyPairGenerator</B> object for strength of <I>512</I> using the <B>SecureRandom</B> object.</LI>
+<I><LI>Generate the pair of keys</I> and encapsulate them in an object of type <B>KeyPair</B> by using the initialized <B>KeyPairGenerator</B> object.</LI>
+<I><LI>Get references</I> to the <B>PublicKey</B> and <B>PrivateKey</B> components encapsulated in the <B>KeyPair</B> object.</LI>
+<I><LI>Encode the keys</I> into an encoded form (commonly used for transmission of the key to another party) using the references to the public and private key objects.</LI>
+<I><LI>Write</I> the encoded versions of the public and private keys into disk files.</LI></OL>
+
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="ProgramSecurity05B">Program Security05B</A></H2>
+<B><P>Using a private key to sign a document</P>
+</B></FONT><P>This program demonstrates the use of a <I>private</I> key to digitally sign a document. </P>
+<P>In a different lesson, I will show how to create <I>message digests</I>. A digest takes an arbitrary amount of input data and produces a fixed-length message that represents data. The fixed-length version is commonly referred to as a <I>digest</I> or a <I>fingerprint</I>. Although it is not guaranteed that the digests for two different documents will be different, the probability that two different documents will produce the same digest is extremely small.</P>
+<B><FONT COLOR="#ff0000"><P>Overall procedure</P>
+</B></FONT><P>In reality, the procedure for digitally signing a document is very similar to the process of:</P>
+
+<UL>
+<LI>Creating a digest for the document. </LI>
+<LI>Encrypting the digest using a private key. </LI>
+<LI>Sending the document and the encrypted digest to a party that has knowledge of the corresponding public key.</LI></UL>
+
+<P>The party receiving the document and the encrypted digest can:</P>
+
+<UL>
+<LI>Decrypt the digest using the corresponding public key. </LI>
+<LI>Create a digest for the document as received. </LI>
+<LI>Verify that the digest that was received matches the digest just created.</LI></UL>
+
+<P>If the two digests match, and if the public key is known to be the public key of the legitimate source of the data, this confirms that the document has not been modified since the original digest was created. Assuming proper control of the keys, it also authenticates the source of the document.</P>
+<P>Features of the API make it possible for us to sign documents with a little less work than would be required using the procedures described above. In this lesson, we will do it the easy way.</P>
+<FONT COLOR="#ff0000"><H3 ALIGN="CENTER"><A NAME="Security05BCodeFragments">Security05B Code Fragments</A></H3>
+<B><P>Doing it the easy way</P>
+</B></FONT><P>The first fragment shows the beginning of the controlling class, the beginning of the <B>main()</B> method, and the beginning of a <B>try</B> block that wraps the entire program. This is all pretty standard stuff.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>class Security05B {
+
+  public static void main(String[] args) {
+  &#9;String dataFile = "Security05.txt";
+  &#9;String signatureFile = "Security05.sig";
+  &#9;String privateKeyFile = "Security05.priKey";
+
+    try{</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Getting the private key</P>
+</B></FONT><P>The next fragment gets the private key from the disk file where it was deposited by the previous program. The private key is stored in a <B>byte</B> array named <B>privateKeyBytes</B>.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      FileInputStream privateKeyStream = 
+                    new FileInputStream(privateKeyFile);
+      byte[] <B>privateKeyBytes</B> = 
+                 new byte[privateKeyStream.available()];  
+      privateKeyStream.read(privateKeyBytes);
+      privateKeyStream.close();</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Importing the private key</P>
+</B></FONT><P>We have now read a series of bytes from a disk file that represents the private key. These bytes were written to the disk file in an external format by the previous program. Now we are getting ready to <I>import</I> the private key using the array of bytes as input. This is a fairly obscure process. This is one of those places where, unless you are an expert in cryptography, you simply need to follow the rules and have faith that they do the job.</P>
+<B><FONT COLOR="#ff0000"><P>The KeyFactory class</P>
+</B></FONT><P>First consider the <B>KeyFactory</B> class. A <I>key factory</I> is an <I>engine</I> class capable of <U>translating</U> between (public and private) key objects and their <U>external formats</U>. Keys may be <I>imported</I> or <I>exported</I> using key factories. (I will have more to say about <I>engine</I> classes in a subsequent lesson.)</P>
+<B><FONT COLOR="#ff0000"><P>Key specifications</P>
+</B></FONT><P>Key factories operate using key specifications. Keys are imported by invoking the <B>generatePublic()</B> and <B>generatePrivate()</B> methods passing a key specification as a parameter. </P>
+<P>(Although we won't be using the export capability here, keys are exported by invoking the <B>getKeySpec()</B> method.)</P>
+<P>In order to <I>import</I> the private key, we need a key specification for the key.</P>
+<B><FONT COLOR="#ff0000"><P>The PKCS8EncodedKeySpec class</P>
+</B></FONT><P>The next fragment makes use of a class named <B>PKCS8EncodedKeySpec</B>, which extends the class named <B>EncodedKeySpec</B>. Here is what Knudsen has to say about these two classes:</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<P><B>EncodedKeySpec</B>: "This class is used to translate between keys and their external encoded format. The encoded format is always simply a series of bytes, but the format of the encoding of the key information into those bytes may vary depending on the algorithm used to generate the key."</P>
+<B><P>PKCS8EncodedKeySpec</B>: "This class represents the PKCS#8 encoding of a private key; the key is encoded in DER format. This is the class that is typically used when dealing with DSA private keys in a key factory."</P>
+<B><P>DER</B>: "There are a few different ways that ASN.1 data structures can be reduced to a byte stream, and DER (Distinguished Encoding Rules) is one of those methods."</P>
+<B><P>ASN.1</B>: An <I>Abstract Syntax Notation</I> language.</TD>
+</TR>
+</TABLE>
+
+<U><P>Java Security</U> by Scott Oaks, while discussing the <B>EncodedKeySpec</B> class states, </P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<P>"An encoded key specification holds the encoded data for a key and is defined by the <B>EncodedKeySpec</B> class."</P>
+<P>"The <I>PCKS8</I> encoded key specification is used for DSA <I>private</I> keys and the <I>X509</I> encoded key specification is used for DSA <I>public</I> keys."</TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Getting a PKCS8EncodedKeySpec object</P>
+</B></FONT><P>The next fragment creates a new <B>PKCS8EncodedKeySpec</B> object to "hold" the encoded data bytes for the private key read from the disk file in the previous code.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      PKCS8EncodedKeySpec privateKeySpec = 
+                new <B>PKCS8EncodedKeySpec</B>(<B>privateKeyBytes</B>);</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Getting a KeyFactory object</P>
+</B></FONT><P>Next I need to create a <B>KeyFactory</B> object for the DSA algorithm from the SUN provider.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      KeyFactory keyFactory = 
+                    KeyFactory.getInstance("DSA", "SUN");</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Do the import operation</P>
+</B></FONT><P>Now that I have the key specification that is holding the encoded key data for the <I>private</I> key, and I have a <B>KeyFactory</B> object for the correct algorithm, I can combine them to <I>import</I> the <I>private</I> key by invoking the <B>generatePrivate()</B> method and passing the specification as a parameter. </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      PrivateKey privateKey = 
+              keyFactory.<B>generatePrivate</B>(<B>privateKeySpec</B>);</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Recap the steps</P>
+</B></FONT><P>At this point, I have the <I>private</I> key in an internal format that I can use to create the desired signature. However, before going further, it might be useful to recap the steps involved in importing the <I>private</I> key from the disk file.</P>
+<OL>
+
+<LI>Read the disk file containing the (externally) encoded key into an array of bytes.</LI>
+<LI>Instantiate a <B>new</B> object of type <B>PKCS8EncodedKeySpec</B> passing the array of bytes to the constructor (Use <B>X509EncodedKeySpec</B> for a <I>public</I> key).</LI>
+<LI>Get a <B>KeyFactory</B> object for the correct algorithm and the correct provider.</LI>
+<LI>Invoke the <B>generatePrivate()</B> method on the factory object passing the specification object as a parameter (use <B>generatePublic()</B> for a <I>public</I> key).</LI></OL>
+
+<B><FONT COLOR="#ff0000"><P>Create a Signature object</P>
+</B></FONT><P>The next fragment creates an object of type <B>Signature</B> implementing the <I>SHA1withDSA</I> algorithm(s) as provided by SUN. </P>
+<P>This object is ultimately used to create and then encrypt a digest of a document as described earlier. Two algorithms must be specified, </P>
+
+<UL>
+<LI>One for creating the digest and </LI>
+<LI>One for performing the encryption. </LI></UL>
+
+<B><FONT COLOR="#ff0000"><P>Why specify SHA-1withDSA?</P>
+</B></FONT><P>SHA-1 is an algorithm commonly used to create digests. </P>
+<P>DSA is an algorithm commonly used for encryption. </P>
+<P>We can probably conclude that the parameter format <I>"SHA1withDSA"</I> means digest using the SHA-1 algorithm and encrypt using the DSA algorithm.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      Signature signatureObj = 
+             Signature.getInstance("SHA1withDSA", "SUN"); </PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>What is the Signature object used for?</P>
+</B></FONT><P>A <B>Signature</B> object can be used to either </P>
+
+<UL>
+<LI>Sign a document or </LI>
+<LI>Verify an existing signature.</LI></UL>
+
+<B><FONT COLOR="#ff0000"><P>Initializing the Signature object</P>
+</B></FONT><P>It must be initialized for the intended purpose. The <B>initSign()</B> method is used to initialize it for signing a document, and the <B>initVerify()</B> method is used to initialize it for verification of a signature.</P>
+<P>In both cases, the key to be used in the encryption (or decryption) must be passed as a parameter. Pass a <I>private</I> key for signing and pass a <I>public</I> key for verification. </P>
+<P>The next fragment initializes the <B>Signature</B> object for signing using the <I>private</I> key imported above.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      signatureObj.<B>initSign</B>(privateKey);</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Feeding a hungry Signature object</P>
+</B></FONT><P>There are two more steps involved in creating the signature. The first step is to feed all of the data comprising the document into the <B>Signature</B> object by invoking its <B>update()</B> method repeatedly. This is probably analogous to the process of creating the digest. However, the digest itself is not accessible.</P>
+<B><FONT COLOR="#ff0000"><P>Using sign() to finish the task</P>
+</B></FONT><P>After all of the data has been fed into the signature object, the next step is to create the encrypted signature by invoking the <B>sign()</B> method on the <B>Signature</B> object. This is probably analogous to the process of encrypting the digest. </P>
+<B><FONT COLOR="#ff0000"><P>Get ready to read the raw document from the disk</P>
+</B></FONT><P>The next fragment performs the preliminary work in getting ready to read the document from its disk file in order to feed it to the <B>Signature</B> object. This is plain-vanilla Java I/O material.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      FileInputStream dataStream = 
+                           new FileInputStream(dataFile);
+      BufferedInputStream bufDataStream = 
+                     new BufferedInputStream(dataStream);</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Feeding the Signature object using the update() method</P>
+</B></FONT><P>The next fragment</P>
+
+<UL>
+<LI>Creates an input buffer array 1024 bytes in length. </LI>
+<LI>Declares a variable named <B>len</B> used to keep track of the number of bytes read from the input. </LI>
+<LI>Uses a <B>while</B> loop to feed the incoming data into the <B>update()</B> method until the input data is exhausted.</LI></UL>
+
+<P>The data is fed into the <B>update()</B> method in chunks of 1024 bytes each except that the last chunk may be less than 1024 bytes. Each time <B>update()</B> is called, <B>len</B> bytes beginning with element <B>zero</B> in the input array named <B>buffer </B>are fed into the method.</P>
+<P>Then the input stream is closed.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      byte[] buffer = new byte[1024];&nbsp;
+      int len;
+
+      while (bufDataStream.available() != 0){
+        len = bufDataStream.read(buffer);
+        signatureObj.<B>update</B>(buffer,0,len);
+      }//end while
+
+      bufDataStream.<B>close</B>();</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Finishing the job with the sign() method</P>
+</B></FONT><P>Finally, the next fragment performs the final step in creating the encrypted signature by invoking the <B>sign()</B> method on the <B>Signature</B> object which now contains the digest. This method call returns the encrypted signature as an array of bytes.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      byte[] theSignature = signatureObj.<B>sign</B>();</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Saving the encrypted signature</P>
+</B></FONT><P>The objective is to produce an encrypted signature that can be provided to a different program. The next fragment uses standard I/O techniques to write the encrypted signature into a disk file.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      FileOutputStream sigStream = 
+                     new FileOutputStream(signatureFile);
+      sigStream.write(theSignature);
+      sigStream.close();</PRE></TD>
+</TR>
+</TABLE>
+
+<P>That is the end of the interesting code. The remaining code can be viewed in the complete listing of the program near the end of the lesson.</P>
+<B><FONT COLOR="#ff0000"><P>Another recap</P>
+</B></FONT><P>To recap, the following steps are involved in <U>creating the digital signature</U> for a document and <U>writing it into an output file</U>:</P>
+<OL>
+
+<LI>Get a <B>Signature</B> object that implements the correct algorithms for creating the digest and for encrypting the digest.</LI>
+<LI>Initialize the <B>Signature</B> object for signing using the <I>private</I> key.</LI>
+<LI>Feed all of the bytes of the document being signed to the <B>update()</B> method of the <B>Signature</B> object to produce the digest of the document.</LI>
+<LI>Invoke the <B>sign()</B> method on the <B>Signature</B> object to encrypt the digest and return the encrypted version as an array of bytes.</LI>
+<LI>Write the array of bytes into a disk file.</LI></OL>
+
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="ProgramSecurity05C">Program Security05C</A></H2>
+<B><P>Verifying a signed document with a public key and a signature</P>
+</B></FONT><P>This program demonstrates the use of a <I>public</I> key and a digital signature to <I>verify</I> a signed document.</P>
+<P>This process is similar to the process of</P>
+
+<UL>
+<LI>Decrypting an encrypted digest of the document. </LI>
+<LI>Creating a new digest for the document as received. </LI>
+<LI>Comparing the two digests to verify that the document has not been modified since an original digest was created and encrypted.</LI></UL>
+
+<P>However, the API provides classes and methods to make it possible to accomplish this with less work than would be the case were we to implement the above procedure.</P>
+<FONT COLOR="#ff0000"><H3 ALIGN="CENTER"><A NAME="Security05CCodeFragments">Security05C Code Fragments</A></H3>
+<B><P>Doing it the easy way again</P>
+</B></FONT><P>The first code fragment shows the typical beginning of everything. Nothing new or exciting here.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>class Security05C {
+
+  public static void main(String[] args) {
+    String pubKeyFile = "Security05.pubKey";
+    String signatureFile = "Security05.sig";
+    String dataFile = "Security05.txt";
+
+    try{</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Importing the public key</P>
+</B></FONT><P>As with the previous program, a major part of the program involves importing the <I>public</I> key from the disk file and converting it into an internal key format suitable for use.</P>
+<P>You will note that this code is <U>almost identical</U> to the code in the previous program that imported the <I>private</I> key. The differences are highlighted in boldface in the following code fragment. </P>
+<B><FONT COLOR="#ff0000"><P>The differences</P>
+</B></FONT><P>The differences are:</P>
+
+<UL>
+<LI>Use of the <B>X509EncodedKeySpec</B> class instead of the <B>PKCS8EncodedKeySpec </B>class to instantiate the specification object. </LI>
+<LI>Use of the <B>generatePublic()</B> method instead of the <B>generatePrivate()</B> method.</LI></UL>
+
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>&nbsp;     //Get the encoded public key from a file
+      FileInputStream keyStream = 
+                         new FileInputStream(pubKeyFile);
+      byte[] keyBytes = new byte[keyStream.available()];  
+      keyStream.read(keyBytes);
+      keyStream.close();
+
+      //Create a new X509EncodedKeySpec with the 
+      // encoded key.
+      X509EncodedKeySpec pubKeySpec = 
+                        new <B>X509EncodedKeySpec</B>(keyBytes);
+      
+      //Create a KeyFactory object for the DSA algorithm
+      // from the SUN provider.
+      KeyFactory keyFactory = 
+                    KeyFactory.getInstance("DSA", "SUN");
+      //Generate a public key object from the key
+      // specification
+      PublicKey pubKey = 
+                   keyFactory.<B>generatePublic</B>(pubKeySpec);</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Now I have a public key</P>
+</B></FONT><P>At this point, I have the <I>public</I> key imported and converted to internal format, ready for use.</P>
+<B><FONT COLOR="#ff0000"><P>Read the encrypted digital signature</P>
+</B></FONT><P>The next step is to read the digital signature being used for verification from the disk file into an array of bytes. This process uses standard I/O procedures as shown in the next fragment. </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      FileInputStream sigStream = 
+                      new FileInputStream(signatureFile);
+      byte[] signature = new byte[sigStream.available()]; 
+      sigStream.read(signature );
+      sigStream.close();</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>I need a Signature object</P>
+</B></FONT><P>As in the previous program, I need a <B>Signature</B> object that implements the <I>SHA1withDSA</I> algorithms for creating a digest of the document being verified and for decrypting the signature.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      Signature sigObj = 
+             Signature.getInstance("SHA1withDSA", "SUN");</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Initialize for verification using a public key</P>
+</B></FONT><P>This time, I will initialize the <B>Signature</B> object for <I>verification</I> using the <I>public</I> key (as opposed to initialization for <I>signing</I> using the <I>private</I> key as in the previous program).</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      sigObj.<B>initVerify</B>(<B>pubKey</B>);</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Two more steps required</P>
+</B></FONT><P>There are two more steps required to produce a digest of the document being verified and to compare it with a decrypted version of the signature that was received:</P>
+
+<UL>
+<LI>Feed the document being verified to the <B>Signature</B> object by (repeatedly) invoking the <B>update()</B> method on the <B>Signature</B> object. </LI>
+<LI>Invoke the <B>verify()</B> method on the <B>Signature</B> object (instead of the <B>sign()</B> method). </LI></UL>
+
+<B><FONT COLOR="#ff0000"><P>Feed the Signature object</P>
+</B></FONT><P>The next fragment accomplishes the first of these two steps by reading the document file from the disk and feeding it to the <B>update()</B> method in chunks of 1024 bytes each. This is essentially the same as in the previous program.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      FileInputStream dataStream = 
+                           new FileInputStream(dataFile);
+      BufferedInputStream bufDataStream = 
+                     new BufferedInputStream(dataStream);
+      byte[] buffer = new byte[1024];
+      int len;
+      while (bufDataStream.available() != 0) {
+        len = bufDataStream.read(buffer);
+        sigObj.<B>update</B>(buffer, 0, len);
+      }//end while
+
+      bufDataStream.close();</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Perform the verification</P>
+</B></FONT><P>The next fragment verifies a digest of the document against the digest produced by decrypting the signature using the <I>public</I> key. (The variable named <B>signature</B> that is passed to the <B>verify()</B> method is a reference to a byte array containing the encrypted signature.)</P>
+<P>If they match, the <B>verify()</B> method returns <I>true</I>. Otherwise it returns <I>false</I>. The result is saved in the boolean variable named <B>isVerified</B> for display later.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      boolean isVerified = sigObj.<B>verify</B>(signature);</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Displaying the results of the verification</P>
+</B></FONT><P>The last interesting fragment displays the result of the verification process. The remainder of the code can be viewed in the complete listing of the program presented near the end of the lesson.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      System.out.println(
+                      "Data is verified? " + <B>isVerified</B>);</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>What about the export laws, cryptography, and encrypted signature data</P>
+</B></FONT><P>It is my understanding that even though this process performs a hard encryption of the signature, the export of these techniques does not violate the U.S. export laws. Exporting the capability to encrypt the message itself apparently does violate those laws.</P>
+<P>Apparently the difference has to do with whether the encryption is being used to hide the contents of the message, or simply to authenticate the source and verify the contents of the message.</P>
+<B><FONT COLOR="#ff0000"><P>The final recap</P>
+</B></FONT><P>To recap, the process for verifying a document against an encrypted digital signature when the document, the signature, and the public key are provided as disk files involves the following steps:</P>
+<OL>
+
+<LI>Read the disk file containing the (externally) encoded <I>public </I>key into an array of bytes.</LI>
+<LI>Instantiate a <B>new</B> object of type <B>X509EncodedKeySpec</B> passing the array of bytes to the constructor.</LI>
+<LI>Get a <B>KeyFactory</B> object for the correct algorithm and the correct provider.</LI>
+<LI>Invoke the <B>generatePublic()</B> method on the factory object passing the specification object as a parameter.</LI>
+<LI>Read the digital signature from the disk file into an array of bytes.</LI>
+<LI>Get a <B>Signature</B> object that implements the correct algorithms for creating a new digest and for decrypting the signature into an old digest.</LI>
+<LI>Initialize the <B>Signature</B> object for verification using the <I>public</I> key.</LI>
+<LI>Feed all of the bytes of the document being verified to the <B>update()</B> method of the <B>Signature</B> object to produce a new digest of the document.</LI>
+<LI>Invoke the <B>verify()</B> method on the <B>Signature</B> object to decrypt the old signature into a digest and to compare the old digest with the new digest.</LI></OL>
+
+<P>Note that the division of labor between the <B>update()</B> and <B>verify()</B> methods may not be exactly as indicated here, but the net result is the same.</P>
+<FONT COLOR="#ff0000"><H3 ALIGN="CENTER"><A NAME="program_listing"></A>Program Listings</H3>
+</FONT><P>Complete listings of all three programs are contained in this section.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>&nbsp;/*File Security05A.java
+Rev 4/13/99
+Demonstrates the generation of public and private keys
+and the saving of those keys in an external format in
+disk files.
+
+First in a group of three programs designed to 
+demonstrate the use of signed documents. The group 
+consists of:
+Security05A.java
+Security05B.java
+Security05C.java
+
+Tested using JDK 1.2 and Win95.
+**********************************************************/
+
+import java.io.*;
+import java.security.*;
+import java.security.spec.*;
+
+class Security05A {
+
+  public static void main(String[] args) {
+  &#9;String publicKeyFile = "Security05.pubKey";
+  &#9;String privateKeyFile = "Security05.priKey";
+
+    try{
+
+      //Create a KeyPairGenerator object implementing
+      // the DSA algorithm, as supplied from SUN
+      KeyPairGenerator keyPairGenerator = 
+              KeyPairGenerator.getInstance("DSA", "SUN");
+      //Create a SecureRandom object for the SHA1PRNG 
+      // algorithm, as supplied from SUN
+      SecureRandom secureRandom = 
+             SecureRandom.getInstance("SHA1PRNG", "SUN");
+      //Initialize the key pair generator with a strength
+      // of 512, the SecureRandom object and a default
+      // parameter set.
+      keyPairGenerator.initialize(512, secureRandom);
+      //Generate a key pair object.
+      KeyPair keyPair = 
+                      keyPairGenerator.generateKeyPair();
+      //Get references to the private and public key
+      // components of the key pair object.
+      PrivateKey privateKey = keyPair.getPrivate();
+      PublicKey publicKey = keyPair.getPublic();
+
+
+      //Encode the public key into an external encoded 
+      // form used when a standard representation of the
+      // key is needed outside the Java Virtual Machine,
+      // as when transmitting the key to some other
+      // party.
+      byte[] pubKey = publicKey.getEncoded();
+      //Save the encoded public key in a file
+      FileOutputStream publicKeyStream = 
+                     new FileOutputStream(publicKeyFile);
+      publicKeyStream.write(pubKey);
+      publicKeyStream.close();
+      
+      //Encode the private key into an external encoded 
+      // form.
+      byte[] privKey = privateKey.getEncoded();
+      //Save the encoded private key in a file
+      FileOutputStream privateKeyStream = 
+                    new FileOutputStream(privateKeyFile);
+      privateKeyStream.write(privKey);
+      privateKeyStream.close();
+    }catch(Exception e){System.out.println(e);}
+  }//end main
+}//end class Security05A</PRE></TD>
+</TR>
+</TABLE>
+
+<P>.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>&nbsp;/*File Security05B.java
+Rev 4/13/99
+Demonstrates the use of a private key to sign a document.
+
+Second in a group of three programs designed to 
+demonstrate the use of signed documents. The group 
+consists of:
+Security05A.java
+Security05B.java
+Security05C.java
+
+Tested using JDK 1.2 and Win95.
+**********************************************************/
+
+import java.io.*;
+import java.security.*;
+import java.security.spec.*;
+
+class Security05B {
+
+  public static void main(String[] args) {
+  &#9;String dataFile = "Security05.txt";
+  &#9;String signatureFile = "Security05.sig";
+  &#9;String privateKeyFile = "Security05.priKey";
+
+    try{
+      //Get the private key from the disk file.
+      FileInputStream privateKeyStream = 
+                    new FileInputStream(privateKeyFile);
+      byte[] privateKeyBytes = 
+                 new byte[privateKeyStream.available()];  
+      privateKeyStream.read(privateKeyBytes);
+      privateKeyStream.close();
+      
+      //Create a new PKCS8EncodedKeySpec with the
+      // encoded key.
+      PKCS8EncodedKeySpec privateKeySpec = 
+                new PKCS8EncodedKeySpec(privateKeyBytes);
+
+      //Create a KeyFactory object for the DSA algorithm
+      // from the SUN provider.
+      KeyFactory keyFactory = 
+                    KeyFactory.getInstance("DSA", "SUN");
+      //Generate a private key object from the key 
+      // specification
+      PrivateKey privateKey = 
+              keyFactory.generatePrivate(privateKeySpec);
+
+      //Create a Signature object implementing the 
+      // SHA1withDSA algorithm, as supplied from SUN
+      Signature signatureObj = 
+             Signature.getInstance("SHA1withDSA", "SUN"); 
+      //Initialize the Signature object for signing based
+      // on the private key. 
+      signatureObj.initSign(privateKey);
+
+      //Get the data to be signed
+      FileInputStream dataStream = 
+                           new FileInputStream(dataFile);
+      BufferedInputStream bufDataStream = 
+                     new BufferedInputStream(dataStream);
+      byte[] buffer = new byte[1024];
+      int len;
+      while (bufDataStream.available() != 0){
+        len = bufDataStream.read(buffer);
+        //Update the data to be signed, using len
+        // elements from the specified array of bytes,
+        // starting at 0
+        signatureObj.update(buffer,0,len);
+      }//end while
+
+      bufDataStream.close();
+
+      //Get the signature of all the data that was
+      // updated.
+      byte[] theSignature = signatureObj.sign();
+    
+      //Save the signature in a file
+      FileOutputStream sigStream = 
+                     new FileOutputStream(signatureFile);
+      sigStream.write(theSignature);
+      sigStream.close();
+
+    } catch (Exception e) {System.err.println(e);}
+  }//end main
+}//end class Security05B</PRE></TD>
+</TR>
+</TABLE>
+
+<P>.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>&nbsp;/*File Security05C.java
+Rev 4/13/99
+Demonstrates the use of a public key and a digital 
+signature to verify a signed document.
+
+Third in a group of three programs designed to 
+demonstrate the use of signed documents. The group 
+consists of:
+Security05A.java
+Security05B.java
+Security05C.java
+
+Tested using JDK 1.2 and Win95.
+**********************************************************/
+
+import java.io.*;
+import java.security.*;
+import java.security.spec.*;
+
+class Security05C {
+
+  public static void main(String[] args) {
+    String pubKeyFile = "Security05.pubKey";
+    String signatureFile = "Security05.sig";
+    String dataFile = "Security05.txt";
+
+    try{
+      //Get the encoded public key from a file
+      FileInputStream keyStream = 
+                         new FileInputStream(pubKeyFile);
+      byte[] keyBytes = new byte[keyStream.available()];  
+      keyStream.read(keyBytes);
+      keyStream.close();
+
+      //Create a new X509EncodedKeySpec with the 
+      // encoded key.
+      X509EncodedKeySpec pubKeySpec = 
+                        new X509EncodedKeySpec(keyBytes);
+      
+      //Create a KeyFactory object for the DSA algorithm
+      // from the SUN provider.
+      KeyFactory keyFactory = 
+                    KeyFactory.getInstance("DSA", "SUN");
+      //Generate a public key object from the key
+      // specification
+      PublicKey pubKey = 
+                   keyFactory.generatePublic(pubKeySpec);
+
+      //Get the signature from a file
+      FileInputStream sigStream = 
+                      new FileInputStream(signatureFile);
+      byte[] signature = new byte[sigStream.available()]; 
+      sigStream.read(signature );
+      sigStream.close();
+
+      //Create a Signature object implementing 
+      // SHA1withDSA,as supplied from SUN
+      Signature sigObj = 
+             Signature.getInstance("SHA1withDSA", "SUN");
+      //Initialize the Signature object for verification
+      // with the public key
+      sigObj.initVerify(pubKey);
+
+      //Get the data file to which the signature applies
+      FileInputStream dataStream = 
+                           new FileInputStream(dataFile);
+      BufferedInputStream bufDataStream = 
+                     new BufferedInputStream(dataStream);
+      byte[] buffer = new byte[1024];
+      int len;
+      while (bufDataStream.available() != 0) {
+        len = bufDataStream.read(buffer);
+        //Update the data to be verified, using len
+        // elements from the specified array of bytes,
+        // starting at 0
+        sigObj.update(buffer, 0, len);
+      }//end while
+
+      bufDataStream.close();
+      
+      //Verify the data against the signature based on
+      // the public key that was used to initialize the
+      // signature object.  Result is true or false.
+      boolean isVerified = sigObj.verify(signature);
+
+      //Display results of verification.
+      System.out.println(
+                      "Data is verified? " + isVerified);
+
+    } catch (Exception e) {System.err.println("" + e);}
+
+  }//end main()
+}//end class Security05C</PRE></TD>
+</TR>
+</TABLE>
+
+<P>-end-<!--end--></P></BODY>
+</HTML>

@@ -1,0 +1,2826 @@
+<!DOCTYPE doctype PUBLIC "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+  <meta http-equiv="Content-Type"
+ content="text/html; charset=iso-8859-1">
+  <title>... in Java by Richard G Baldwin</title>
+</head>
+<body link="#0000ff" vlink="#666666" alink="#ff0000" lang="EN-US">
+<h2 align="center">An Adaptive Line Tracker in Java </h2>
+<i>Learn how to use a general-purpose LMS 
+adaptive engine to write an adaptive spectral line tracker in Java.</i><p><b>Published:</b>&nbsp; 
+December 27, 2005<br>
+<b>by <a href="mailto:Baldwin@DickBaldwin.com">Richard G. Baldwin</a></b>
+</p>
+<p>Java Programming Notes # 2356</p>
+<ul>
+  <li> <a href="#Preface">Preface</a></li>
+  <li> <a href="#General%20Background%20Information">General
+Background Information</a></li>
+  <li> <a href="#Preview">Preview</a></li>
+  <li> <a href="#Discussion%20and%20Sample%20Programs">Discussion and
+Sample Code</a></li>
+  <li> <a href="#Run%20the%20program">Run the Program</a></li>
+  <li> <a href="#Summary">Summary</a></li>
+  <li> <a href="#Whats%20Next">What's Next?</a></li>
+	<li> <a href="#References">References</a></li>
+  <li> <a href="#Complete%20Program%20Listings">Complete Program
+Listings</a></li>
+</ul>
+<hr size="3" width="100%" >
+
+<h2 align="center"> <a name="Preface"></a>Preface</h2>
+
+<p align="left"><font color="#ff0000"><b>DSP and adaptive filtering</b></font></p>
+
+<p align="left">With the decrease in cost and the increase in speed of digital 
+devices, Digital Signal Processing <i>(<a href="http://www.dickbaldwin.com/tocdsp.htm">DSP</a>)</i> 
+is showing up in everything from cell phones to hearing aids to rock concerts.&nbsp; 
+Many applications of DSP are static.&nbsp; That is, the characteristics of the 
+digital processor don't change with time or circumstances.&nbsp; However, a 
+particularly interesting branch of DSP is <i>adaptive filtering.</i>&nbsp; This is a 
+scenario where the characteristics of the digital processor change with time, 
+circumstances, or both.</p>
+
+<p align="left"><font color="#FF0000"><b>Fourth</b></font><font color="#ff0000"><b> 
+in a series</b></font></p>
+
+<p align="left">This is the fourth lesson in a series designed to teach you 
+about adaptive filtering in Java.&nbsp; The first lesson, entitled
+<a href="http://www.developer.com/java/other/article.php/3549991">Adaptive 
+Filtering in Java, Getting Started</a>, introduced you to the topic by showing 
+you how to write a Java program to adaptively design a time-delay convolution 
+filter with a flat amplitude response and a linear phase response using an 
+<a href="http://cnx.rice.edu/content/m11829/latest/">LMS</a> 
+adaptive algorithm.</p>
+
+<p align="left"><font color="#ff0000"><b>An adaptive whitening filter</b></font></p>
+
+<p align="left">The second lesson in the series, entitled 
+<a href="http://www.developer.com/java/other/article.php/3560501">An Adaptive 
+Whitening Filter in Java</a> showed you how to write an adaptive <i>whitening 
+filter</i> program in Java.</p>
+<p align="left">That lesson showed you how to use the whitening filter to 
+extract wide-band signal from a channel in which the signal was corrupted by one 
+or more components of narrow-band noise.&nbsp; The material in this lesson 
+extends what you learned in that lesson, using similar concepts for an entirely 
+different purpose.</p>
+<p align="left"><font color="#FF0000"><b>A general-purpose adaptive engine</b></font></p>
+<p align="left">The third lesson in the series, entitled 
+<a href="http://www.developer.com/java/other/article.php/3566951">A 
+General-Purpose LMS Adaptive Engine in Java</a>, backtracked a bit.&nbsp; The first two 
+lessons were primarily intended to gain your interest in the topic of adaptive 
+filtering.&nbsp; They provided some working 
+sample programs without getting too heavily involved in an explanation of the 
+adaptive process.&nbsp; As a result of that approach, it was a little difficult 
+to separate the adaptive behavior of those sample programs from the behavior 
+designed solely to manage the data and to display the results.</p>
+<p align="left">In the third lesson, I presented and explained a general-purpose
+<a href="http://cnx.rice.edu/content/m11829/latest/">LMS</a> adaptive engine 
+written in Java that can be used to solve a wide variety of adaptive problems.&nbsp; 
+I applied that engine to three different adaptive signal processing problems, 
+emphasizing the separation of the code that provides the adaptive behavior from 
+the code that is 
+used simply to manage data and to display results.</p>
+<p align="left"><font color="#FF0000"><b>An adaptive line tracker</b></font></p>
+<p align="left">In this lesson, I will use the general-purpose
+<a href="http://cnx.rice.edu/content/m11829/latest/">LMS</a> adaptive engine 
+to develop an adaptive spectral line tracker in Java.&nbsp; The line tracker will 
+adapt in the time domain and track spectral lines in the frequency domain.</p>
+
+<p> <b><font color="#ff0000">Viewing tip</font></b> </p>
+<p>You may find it useful to open another copy of this lesson in a
+separate browser window.&nbsp; That will make it easier for you to
+scroll back
+and forth among the different listings and figures while you are
+reading
+about them.</p>
+<p><b><font color="#ff0000">Supplementary material</font></b> </p>
+<p>I recommend that you also study the other lessons in my extensive
+collection of online Java tutorials.&nbsp; You will find those lessons
+published
+at <a href="http://softwaredev.earthweb.com/java">Gamelan.com</a>.&nbsp;
+However, as of the date of this writing, Gamelan doesn't maintain a
+consolidated index of my Java tutorial lessons, and sometimes they are
+difficult to locate there.&nbsp; You will find a consolidated index at <font
+ color="#000000"> <a href="http://www.dickbaldwin.com/">www.DickBaldwin.com</a>.</font></p>
+<p>In preparation for understanding the material in this lesson, 
+I recommend that you also study the lessons identified in the <a href="#References">
+References</a> section of this document.
+</p>
+<h2 align="center" ><font color="#000000"> <a
+ name="General Background Information">General Background Information</a></font></h2>
+<p><font color="#FF0000"><b>Why track spectral lines?</b></font></p>
+<p>At this point, you may be asking why a person would want to track spectral 
+lines.&nbsp; There are a variety of good reasons that a person involved in 
+signal processing would want to do such a thing, most of them fairly boring.&nbsp; 
+In an attempt to avoid putting you to sleep, I will justify the need 
+to track spectral lines by giving an explanation in the style of
+<a href="http://en.wikipedia.org/wiki/Tom_Clancy">Tom Clancy</a> and <i>
+<a href="http://www.kerzap.com/hfro/">The Hunt for Red October</a></i>.</p>
+<p><font color="#FF0000"><b>An underwater acoustics listening post</b></font></p>
+<p>Assume that you are stationed at an underwater acoustics listening post with 
+the task of listening for and identifying enemy submarines.&nbsp; At any point 
+in time, there may be hundreds or even thousands of vessels within range of your listening post, 
+each emitting acoustic energy into the water.&nbsp; Your task is to separate the 
+acoustic energy emitted by the enemy submarine from the acoustic energy emitted 
+by the other vessels in the area.</p>
+<p><font color="#FF0000"><b>An acoustic signature</b></font></p>
+<p>In order to separate the two, you must have some information about 
+the <i>signature</i> of the acoustic energy emitted by the submarine.&nbsp; This 
+information may have been gained from clandestine sources.</p>
+<p>Suppose you know, for example, that the particular submarine of interest has 
+a pump with a two-speed motor that is responsible for maintaining water pressure 
+in the system that provides water for the sailors to take personal showers.&nbsp; 
+When several showers are being used, the pump runs at a high speed to maintain 
+the required water pressure.&nbsp; When the showers are not being used, the pump 
+motor automatically switches to a lower speed to conserve energy.</p>
+<p>If you were to listen to the sound emitted by that pump, it might sound like 
+a high-frequency whine when running at high speed, and it might sound like a 
+low-frequency whine when running at low speed.&nbsp; <i>(At least, that is what 
+the two-speed pump on my swimming pool sounds like.)</i></p>
+<p><font color="#FF0000"><b>The spectral signature</b></font></p>
+<p>If you were to record the sound emitted by the pump and perform a spectral 
+analysis on the recorded data, there would be a peak in the spectrum at a high 
+frequency when the pump is running at high speed, and there would be a peak in 
+the spectrum at a low frequency when the pump is running at low speed.&nbsp; 
+Assuming that those two speeds are the only speeds at which the pump is capable 
+of running, knowledge of those two frequencies could be a small part of a useful 
+acoustic signature for the submarine.</p>
+<blockquote>
+	<p><i>(Most of the other vessels in the area 
+probably wouldn't have an onboard motor that runs at exactly those two speeds.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>A graphic output</b></font></p>
+<p>If you were to perform the spectral analysis at uniform time intervals and plot the spectral results one below the other, the plotted 
+output might look something like <a name="Figure_1">Figure 1</a>.</p>
+
+
+
+
+
+
+<p>
+<table border="1" cols="1" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><img border="0" src="java2356a.jpg" width="231" height="488"><br></pre>
+      <pre><b>Figure 1</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>The graphic format</b></font></p>
+<p>Figure 1 shows increasing time going down the page and increasing frequency 
+going across the page from left to right.&nbsp; Zero frequency is shown at the 
+extreme left.&nbsp; The frequency at the extreme right is one-half the sampling 
+frequency.</p>
+<p><font color="#FF0000"><b>Two spectral peaks</b></font></p>
+<p>The high-frequency peak in the top-half of Figure 1 represents the acoustic 
+energy emitted by the pump during the time interval when the pump is running at 
+high speed.&nbsp; The low-frequency peak in the bottom-half of Figure 1 
+represents the acoustic energy emitted by the pump during the time interval when 
+the pump is running at low speed.</p>
+<p><font color="#FF0000"><b>Just for the record</b></font></p>
+<p>Although it isn't important at this point in the discussion, the parameters shown in Figure 2 were used to produce the plot shown in 
+Figure 1.&nbsp; <i>(You can simply ignore Figure 2 for now.&nbsp; It will have 
+more meaning when you see the code that produced Figure 1.)</i></p>
+
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre>Using following values:
+feedbackGain: 1.0E-5
+numberIterations: 3375
+filterLength: 15
+wideBandNoiseScale: 20.0
+fmSignalScale: 20.0
+fmSignalCase: 2
+freqSlideConst: 4.0E-4
+freqShiftFactorLow: 0.5
+freqShiftFactorHigh: 1.5
+spectralWidth: 222
+lengthMultiplier: 2
+Conventional data length: 32<br></pre>
+      <pre><b>Figure 2</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Another scenario</b></font></p>
+<p>Now consider another scenario.&nbsp; Assume that the submarine, <i>(or some other 
+vessel in the vicinity)</i>, is running at a very low speed and that the screw is 
+turning very slowly.</p>
+<blockquote>
+	<p><i>(In this case, the screw would emit relatively narrow-band acoustic 
+	energy at a low frequency.)</i></p>
+</blockquote>
+<p>Assume that the skipper of that vessel decides to 
+accelerate in a very controlled manner by slowly increasing the rotational speed 
+of the screw.&nbsp; If the acoustic energy emitted by the propulsion system were 
+recorded and subjected to spectral analysis as before, the plotted results might 
+look something like <a name="Figure_3">Figure 3</a>. </p>
+<p>
+<table border="1" cols="1" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><img border="0" src="java2356b.jpg" width="231" height="488"><br></pre>
+      <pre><b>Figure 3</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Narrow-band acoustic energy</b></font></p>
+<p>Because the propulsion system that drives the screw is a rotating machine, it 
+could be expected to emit acoustic energy in a very narrow band of frequencies.&nbsp; 
+As the screw turns faster, the position of that narrow band of frequencies could 
+be expected to move toward the right <i>(higher)</i> in the spectrum of the 
+emitted acoustic energy.</p>
+<p>Figure 3 represents the spectrum of the acoustic energy emitted by the 
+propulsion system as the speed of the screw advances from a low speed to a high 
+speed at a uniform rate.&nbsp; Of course, any vessel in the area could do that, so there is little 
+or nothing in Figure 3 by itself that identifies the energy as being emitted by 
+the submarine.</p>
+<p><font color="#FF0000"><b>The program parameters</b></font></p>
+<p>For the record, the parameters in Figure 4 were used to produce the output 
+shown in Figure 3.</p>
+
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre>Using following values:
+feedbackGain: 1.0E-5
+numberIterations: 3375
+filterLength: 15
+wideBandNoiseScale: 20.0
+fmSignalScale: 20.0
+fmSignalCase: 1
+freqSlideConst: 4.0E-4
+freqShiftFactorLow: 0.5
+freqShiftFactorHigh: 1.5
+spectralWidth: 222
+lengthMultiplier: 2
+Conventional data length: 32<br></pre>
+      <pre><b>Figure 4</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>A third scenario</b></font></p>
+<p>Assume that during the period that 
+the submarine is moving very slowly, many of the sailors have been excused from 
+their duty stations.&nbsp; Many of those sailors decided to take advantage of the break 
+to get a much-needed shower.&nbsp; As a result, the shower pump is running at 
+high speed working to keep the pressure up in the shower system.</p>
+<p>Then the captain decides to perform a well-controlled acceleration of the 
+submarine to deal with some situation that has him concerned.&nbsp; At the same 
+time, he orders all of the sailors to report to their duty stations.&nbsp; Those 
+sailors who are in the showers exit quickly and no other sailors enter the 
+showers.&nbsp; As a result, the shower pump breathes a sigh of relief and 
+switches to low speed.</p>
+<p><font color="#FF0000"><b>A more complex acoustic signature</b></font></p>
+<p>If you were to record the acoustic emissions from the submarine during that 
+period and perform the same sort of spectral analysis on the recorded data as 
+before, the output might look something like <a name="Figure_5">Figure 5</a>.</p>
+<p>
+<table border="1" cols="1" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><img border="0" src="java2356c1.jpg" width="231" height="488"><br></pre>
+      <pre><b>Figure 5</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><b><font color="#FF0000">Aha! you say to yourself</font></b></p>
+<p>You have seen that signature 
+before.&nbsp; When the screw starts speeding up, the shower pump starts to loaf.&nbsp; 
+That might be the important piece of information that lets you conclude with a high degree of confidence 
+that you are looking at the signature of an enemy submarine and not the 
+signature of a fishing trawler.&nbsp; </p>
+<blockquote>
+	<p><i>(And, of course, you turn out to be the 
+hero of the novel who saves the world from destruction and marries the heroine.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>The parameters</b></font></p>
+<p>Once again, just for the record, the parameters shown in Figure 6 were used 
+to produce the output shown in Figure 5.</p>
+
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre>Using following values:
+feedbackGain: 1.0E-5
+numberIterations: 3375
+filterLength: 15
+wideBandNoiseScale: 20.0
+fmSignalScale: 20.0
+fmSignalCase: 3
+freqSlideConst: 4.0E-4
+freqShiftFactorLow: 0.5
+freqShiftFactorHigh: 1.5
+spectralWidth: 222
+lengthMultiplier: 2
+Conventional data length: 32<br></pre>
+      <pre><b>Figure 6</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>An important capability</b></font></p>
+<p>All joking aside, the capability to track moving spectral lines in wide-band 
+background noise is an important capability for many applications as far flung 
+as sonar and voice analysis.&nbsp; Furthermore, the ability to estimate 
+the actual frequency of the spectral lines to a high degree of accuracy is 
+usually very important.</p>
+<p><font color="#FF0000"><b>A side-by-side comparison</b></font></p>
+<p>Now I am going to show you a comparison between two different approaches to 
+tracking spectral lines.&nbsp; The approach you have been seeing so far is based 
+on adaptively developing and analyzing a whitening filter of the sort that you 
+learned about in the earlier 
+lesson entitled 
+<a href="http://www.developer.com/java/other/article.php/3560501">An Adaptive 
+Whitening Filter in Java</a>.&nbsp; The other approach involves the use of 
+conventional spectral analysis.</p>
+<p><a name="Figure_7">Figure 7</a> shows the results of applying both approaches to the same 
+scenario that 
+was shown in <a href="#Figure_5">Figure 5</a>.</p>
+
+
+
+<p>
+<table border="1" bgcolor="#ccffff">
+	<tr>
+		<td><img border="0" src="java2356c1.jpg" width="231" height="488"></td>
+		<td><img border="0" src="java2356c2.jpg" width="231" height="488"></td>
+	</tr>
+	<tr>
+	<td colspan="2" >
+<pre><b>Figure 7</b></b></pre></td>
+	</tr>
+</table>
+<p><font color="#FF0000"><b>The left panel</b></font></p>
+<p>The output in the left panel of Figure 7 was produced by:</p>
+<ul>
+	<li>Updating the coefficients in a whitening filter having 16 coefficients 
+	each time a new sample of signal plus noise is received.</li>
+	<li>Computing the frequency response of the whitening filter at the end of 
+	every 75th adaptive iteration.</li>
+	<li>Displaying the frequency response formatted in such a way that the 
+	notches <i>(nulls)</i> in the whitening filter are converted to peaks that provide an indication of the 
+	location of the spectral lines in the spectrum of signal plus noise.</li>
+</ul>
+<p>As you can see, the peaks in the left panel are relatively sharp and the 
+background noise is fairly low.</p>
+<p><font color="#FF0000"><b>The right panel</b></font></p>
+<p>The output in the right panel of Figure 7 was produced by:</p>
+<ul>
+	<li>Grabbing the 32 previous samples of signal plus noise at the end of 
+	every 75th adaptive iteration.</li>
+	<li>Performing a Fourier transform on those 32 samples to provide an 
+	estimate of the spectral content of the signal plus noise.</li>
+	<li>Displaying the amplitude spectrum in such a way that the peaks in the 
+	spectrum provide an indication of the location of the spectral lines in the 
+	spectrum of signal plus noise.</li>
+</ul>
+<p>As you can see, the peaks in the right panel are relatively broad, and the 
+background noise is relatively high.</p>
+<p><font color="#FF0000"><b>Computational requirements</b></font></p>
+<p>The panel on the left in <a href="#Figure_7">Figure 7</a> requires a modest computation for every sample of 
+signal plus noise.&nbsp; In addition, it performs a Fourier transform on the 16-coefficient 
+whitening filter at the end of every 75th iteration.</p>
+<p>The panel on the right doesn't require any computations until time comes 
+to perform the spectral analysis.&nbsp; Then it is required to perform a Fourier 
+transform on a time series having 32 samples <i>(as opposed to a whitening filter having on 
+only 16 
+coefficients)</i>.&nbsp; I elected to use twice as many samples for the conventional 
+approach as for the whitening approach in order to end up with roughly a 
+comparable amount of arithmetic required for both approaches.</p>
+<p><font color="#FF0000"><b>Resolution and background noise</b></font></p>
+<p>As you can see, the resolution of the conventional approach is much poorer 
+than the resolution of the adaptive whitening approach.&nbsp; In addition, there 
+is much more noise between the peaks for the conventional approach.</p>
+<p><font color="#FF0000"><b>Null processing</b></font></p>
+<p>The reason that the adaptive whitening approach provides better resolution 
+has to do with the fact that it depends on the nulls in the response of the 
+whitening filter to indicate the locations of the spectral lines rather than 
+depending on the peaks.&nbsp; In many signal processing areas, nulls are much sharper 
+than peaks and better resolution can be obtained through a process often 
+referred to as <i>&quot;null steering&quot;</i>.&nbsp; Of course, there are 
+always tradeoffs, but in this case the tradeoff appears to be advantageous.</p>
+<p><font color="#FF0000"><b>A radio direction finder</b></font></p>
+<p>I'm going to illustrate this point by describing a completely different, but 
+somewhat related technology.</p>
+<p>At one point in my career, I was responsible for using radio direction 
+finding <i>(RDF)</i> equipment to determine the location of radio 
+transmitters.&nbsp; Many types of equipment were available for this task.&nbsp; 
+The simplest was a van with a directional radio antenna mounted on the top.&nbsp; 
+The person inside the van could turn a knob to rotate the radio antenna.</p>
+<p><font color="#FF0000"><b>A directional response pattern</b></font></p>
+<p>The radio antenna had a directional response pattern that looked something 
+like a figure <b>8</b>.&nbsp; The lobes on the top and the bottom of the figure 8 were 
+approximately the same size, and nearly round.</p>
+<p><font color="#FF0000"><b>Operation</b></font></p>
+<p>In operation, the user would listen to a radio transmitter with a pair of headphones while manually rotating the antenna.&nbsp; He 
+would note the 
+two positions of the antenna that resulted in the strongest or loudest signal, and the 
+weakest signal.&nbsp; Having 
+calibrated the antenna, could then estimate the bearing <i>(direction)</i> 
+to the transmitter with an ambiguity of 180 degrees.</p>
+<p><font color="#FF0000"><b>The response pattern</b></font></p>
+<p>By directional response pattern, I mean the effectiveness with which the 
+antenna can successfully receive signals from a transmitter.&nbsp; For a 
+directional response pattern, this depends on the 
+direction to the transmitter relative to the rotational position of the antenna.&nbsp; </p>
+<p>Transmitters located on a line that intersects the figure 8 along its long 
+dimension <i>(the vertical dimension relative to this figure </i><b>8</b><i>)</i> 
+would be received the strongest.&nbsp; Transmitters located on a line that 
+intersects 
+the figure 8 along its narrow dimension <i>(the horizontal dimension relative to 
+this figure </i><b>8</b><i>)</i> would be poorly received if they are received at 
+all.&nbsp; This is because the directional response pattern has a null response 
+for radio signals received along the direction of the narrow dimension.</p>
+<p><font color="#FF0000"><b>How does the system work?</b></font></p>
+<p>Now envision what happens when the radio transmitter is fixed in a particular 
+location and the antenna <i>(and its response pattern)</i> is rotated.&nbsp; 
+When the antenna is rotated to the point where the long dimension of the figure 
+8 is aligned with the direction of the transmitter, the signal is strong.&nbsp; 
+When the antenna is rotated by ninety degrees in either direction, the signal 
+becomes weaker and weaker until it may no longer be discernable.&nbsp; At that 
+point, it can be concluded that the transmitter is somewhere along a line that 
+intersects the figure 8 along its narrow dimension.</p>
+<p>There is still an 
+ambiguity of 180 degrees because it isn't possible to determine which side of 
+the antenna the transmitter is on.&nbsp; However, that ambiguity can be resolved 
+by moving the van containing the antenna to a different location and taking 
+another directional reading on the same transmitter.</p>
+<p><font color="#FF0000"><b>The null is narrow</b></font></p>
+<p>As I mentioned above, the two lobes in the antenna response pattern are 
+nearly circular <i>(probably more so than the typographical figure </i><b>8</b><i> 
+that you see here)</i>. Thus, the angular width of the null is very narrow.&nbsp; 
+As a result, rotating the antenna by only a few degrees produces a significant 
+change in the <i>loudness</i> of the transmitter when the direction is near the 
+null.</p>
+<p>On the other hand, the main lobes of the figure 8 are very broad.&nbsp; 
+Rotating the antenna by the same number of degrees produces very little change 
+in the <i>loudness</i> of the signal when the direction is along the long 
+dimension of the figure 8.&nbsp; Consequently, a much more accurate estimate of 
+the bearing to the transmitter can be made by rotating the signal through the 
+null in the pattern than can be made by rotating the signal through the peak in 
+the pattern.</p>
+<p><font color="#FF0000"><b>This is null steering</b></font></p>
+<p>This well-known process is often referred to as null-steering.&nbsp; This is 
+the general principle by which the adaptive spectral line tracking approach 
+provides a more accurate estimate of the frequency of the line than does the 
+conventional spectral analysis approach.</p>
+<p>In effect, the null steering <i>(adaptive line tracking)</i> approach 
+sacrifices accuracy in the estimate of the strength of the spectral line for 
+better accuracy in the frequency of the line.&nbsp; <i>(As you will recall from 
+the earlier lesson entitled 
+<a href="http://www.developer.com/java/other/article.php/3560501">An Adaptive 
+Whitening Filter in Java</a>, the whitening filter used in the adaptive 
+line tracker places nulls at the locations of the lines in the spectrum.)</i></p>
+<p>In the case of radio direction finding, the null steering approach sacrifices 
+accuracy in the estimate of the strength of the transmitter for better accuracy 
+in the estimate of the direction to the transmitter.</p>
+<p><font color="#FF0000"><b>What about the signal-to-noise ratio?</b></font></p>
+<p>Although the adaptive approach provides better frequency resolution than the 
+conventional approach in <a href="#Figure_7">Figure 7</a>, the existence of the spectral lines 
+is 
+apparent in both displays.&nbsp; The peak-to-peak amplitude of each of the 
+narrow-band signals in <a href="#Figure_7">Figure 7</a> was equal to the peak-to-peak amplitude of the 
+wide-band noise.&nbsp; It is important to ask what happens when the 
+signal-to-noise ratio is reduced.</p>
+<p>Figure 8 shows the result of decreasing the signal-to-noise ratio by a factor 
+of three relative to that for <a href="#Figure_7">Figure 7</a>.&nbsp; In Figure 8, the peak-to-peak 
+amplitude of the wide-band noise is three times greater than the peak-to-peak 
+amplitude of each of the narrow-band <a name="Figure_8">signals</a>.</p>
+
+<p>
+<table border="1" bgcolor="#ccffff">
+	<tr>
+		<td><img border="0" src="java2356d1.jpg" width="231" height="488"></td>
+		<td><img border="0" src="java2356d2.jpg" width="231" height="488"></td>
+	</tr>
+	<tr>
+	<td colspan="2" >
+<pre><b>Figure 8</b></b></pre></td>
+	</tr>
+</table>
+<p><font color="#FF0000"><b>The program parameters</b></font></p>
+<p>The parameters shown in Figure 9 were used to produce the output shown in 
+Figure 8.&nbsp; The signal and noise level information is provided by the two 
+boldface lines in Figure 9.</p>
+
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre>Using following values:
+feedbackGain: 1.25E-6
+numberIterations: 3375
+filterLength: 15
+<b>wideBandNoiseScale: 60.0
+fmSignalScale: 20.0</b>
+fmSignalCase: 3
+freqSlideConst: 4.0E-4
+freqShiftFactorLow: 0.5
+freqShiftFactorHigh: 1.5
+spectralWidth: 222
+lengthMultiplier: 2
+Conventional data length: 32<br></pre>
+      <pre><b>Figure 9</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Which approach is best?</b></font></p>
+<p>You can judge for yourself, but it looks to me like the existence and 
+location of the spectral lines in the adaptive <i>(left)</i> panel in 
+<a href="#Figure_8">Figure 8</a> 
+is much better than the conventional <i>(right)</i> panel.</p>
+<p><font color="#FF0000"><b>Increase conventional spectrum data length</b></font></p>
+<p>The right panel of Figure 10 shows the result of keeping the signal-to-noise 
+ratio the same as in <a href="#Figure_8">Figure 8</a> while increasing to 80 samples the amount of signal plus noise data 
+included in each conventional Fourier transform.&nbsp; <i>(This significantly 
+increases the computational requirement for the conventional approach.)</i>&nbsp; 
+In this case, each chunk of data subjected to conventional spectrum analysis 
+overlaps the previous chunk by five <a name="Figure_10">samples</a>.</p>
+
+<table border="1" bgcolor="#ccffff">
+	<tr>
+		<td><img border="0" src="java2356e1.jpg" width="231" height="488"></td>
+		<td><img border="0" src="java2356e2.jpg" width="231" height="488"></td>
+	</tr>
+	<tr>
+	<td colspan="2" >
+<pre><b>Figure 10</b></b></pre></td>
+	</tr>
+</table>
+<p><font color="#FF0000"><b>Which is best now?</b></font></p>
+<p>Once again, you can be the judge.&nbsp; Although the existence and location 
+of the spectral lines in the right panel of Figure 10 is more obvious than the 
+existence and location of the spectral lines in the right panel of 
+<a href="#Figure_8">Figure 8</a>, 
+it still looks to me like the adaptive approach in the left panel in Figure 10 
+is superior.&nbsp; Furthermore, the left panel in Figure 10 is much less 
+computationally demanding than the right panel.</p>
+<p><font color="#FF0000"><b>The program parameters</b></font></p>
+<p>Figure 11 shows the parameters that were used to produce the output shown in 
+Figure 10.&nbsp; The increased length of data used for conventional spectral 
+analysis is shown by the boldface lines in Figure 11.</p>
+<table border="1" cols="1" width="482" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre>Input values were provided.
+Using following values:
+feedbackGain: 1.25E-6
+numberIterations: 3375
+filterLength: 15
+wideBandNoiseScale: 60.0
+fmSignalScale: 20.0
+fmSignalCase: 3
+freqSlideConst: 4.0E-4
+freqShiftFactorLow: 0.5
+freqShiftFactorHigh: 1.5
+spectralWidth: 222
+<b>lengthMultiplier: 5</b>
+<b>Conventional data length: 80</b><br></pre>
+      <pre><b>Figure 11</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Enough talk, let's see some code!</b></font></p>
+<p>Now let's see the code that produced these results.</p>
+<h2 align="center" ><font color="#000000"><a name="Preview">Preview</a></font></h2>
+<p><font color="#FF0000"><b>The program named Adapt05</b></font></p>
+<p>The adaptive line tracker program named <b>Adapt05</b> can be viewed in its 
+entirety in Listing 20 near the end of the lesson.</p>
+<p>The purpose of the program is 
+to use the general purpose LMS adaptive engine provided by <b>AdaptEngine01</b>
+<i>(see an explanation of the <b>AdaptEngine01</b> class in the lesson entitled 
+<a href="http://www.developer.com/java/other/article.php/3566951">A 
+General-Purpose LMS Adaptive Engine in Java</a>)</i> to 
+implement an adaptive spectral line tracker.&nbsp; The line tracker is designed to 
+track the frequency of frequency-modulated signals buried in wide-band 
+noise.&nbsp; Adaptive processing takes place in the time domain.&nbsp; The signals are tracked 
+in the frequency domain.</p>
+<p><font color="#FF0000"><b>Comparison with conventional methods</b></font></p>
+<p>Experimental results produced by the adaptive line 
+tracker are compared with results produced by conventional spectrum analysis.</p>
+<p><font color="#FF0000"><b>A whitening filter is used</b></font></p>
+<p>The 
+program develops a whitening filter <i>(see the lesson entitled 
+<a href="http://www.developer.com/java/other/article.php/3560501">An Adaptive 
+Whitening Filter in Java</a>)</i> 
+performing one adaptive iteration for each incoming sample.&nbsp; In addition, the program 
+computes the amplitude frequency response of the whitening filter at the 
+end of every 75th iteration.&nbsp; The notches in the whitening filter 
+are converted to peaks and provide an indication of the frequencies of the FM 
+signals.</p>
+<p>The result of computing each amplitude response on a whitening filter is 
+displayed as one of the plots in the left panel of <a href="#Figure_10">Figure 10</a>.&nbsp; The plots 
+are stacked one below the other with increasing time going down the page.&nbsp; 
+The peaks in the plots in <a href="#Figure_10">Figure 10</a> show the frequencies of the FM signals in 
+the time period immediately preceding each plot.&nbsp; Frequency increases from 
+left to right with zero at the left and one-half the sampling frequency at the 
+right.</p>
+<p><font color="#FF0000"><b>Experimental results</b></font></p>
+<p>A demonstration of the program capability is accomplished by processing time 
+series consisting of wide-band noise plus FM signals.&nbsp; Three different experimental 
+cases can be specified by the user:</p>
+<ol>
+	<li>A single FM sweep from a low frequency to a 
+high frequency.&nbsp; The user specifies the rate at which the signal sweeps.</li>
+	<li>A single 
+FM signal that switches back and forth between two frequencies.&nbsp; The user 
+specifies each of the two frequencies.</li>
+	<li>An additive combination of the two cases described above.</li>
+</ol>
+<p><font color="#FF0000"><b>User input</b></font></p>
+<p>User input to control a variety of experimental parameters is provided by way of command-line parameters.&nbsp; The 
+command-line parameters are:</p>
+<ul>
+	<li><b>double feedbackGain</b>:&nbsp; This is a multiplicative 
+factor that is used in the feedback loop of the LMS adaptive algorithm.</li>
+	<li><b>int 
+numberIterations</b>:&nbsp; This is the number of iterations that the adaptive algorithm is 
+allowed to execute before terminating and displaying the results.&nbsp; In 
+	<a href="#Figure_10">Figure 10</a>, the number of iterations was chosen so as to fill one page with 
+	plotted results.</li>
+	<li><b>int filterLength</b>:&nbsp; This is the length of the prediction filter that is developed within the adaptive algorithm.&nbsp; Note that this length is one less than the length of the whitening 
+filter mentioned above.&nbsp; As you learned in the lesson entitled 
+	<a href="http://www.developer.com/java/other/article.php/3560501">An 
+	Adaptive Whitening Filter in Java</a>, the whitening filter 
+	consists of the prediction filter with a -1 
+	concatenated onto its end.</li>
+	<li><b>double wideBandNoiseScale</b>:&nbsp; This is a scale factor that 
+is applied to the wide band noise before it is added to the FM signal.</li>
+	<li><b>double 
+fmSignalScale</b>:&nbsp; This is a scale factor that is applied to each FM signal before 
+it is added to the wide-band noise.</li>
+	<li><b>int fmSignalCase</b>:&nbsp; This parameter specifies the test case 
+described above.&nbsp; The value must be 1, 2, or 3.</li>
+	<li><b>double freqSlideConst</b>:&nbsp; This value specifies 
+the rate at which the FM sweep signal changes frequency.&nbsp; The higher the value of 
+this parameter, the faster will be the change in frequency.</li>
+	<li><b>double 
+freqShiftFactorLow</b>:&nbsp; The base frequency for the frequency switching signal is 
+one-fourth of the sampling frequency.&nbsp; This multiplicative factor is applied to 
+the base frequency to establish the low frequency for the frequency-switching 
+signal.&nbsp; For example, a value of 0.5 for this parameter results in a frequency 
+that is one-eighth of the sampling frequency.</li>
+	<li><b>double freqShiftFactorHigh</b>:&nbsp; This 
+parameter is applied as a multiplicative factor to the base frequency to 
+establish the upper frequency for the frequency shifting signal.</li>
+	<li><b>int 
+lengthMultiplier</b>:&nbsp; This parameter specifies the length of each chunk of data that 
+	is analyzed using conventional spectral analysis.&nbsp; This value is a multiple of 
+the length of the whitening filter.</li>
+</ul>
+<p><font color="#FF0000"><b>Default parameters</b></font></p>
+<p>If the user doesn't provide the required ten command-line 
+parameters, parameter values are used.</p>
+<p>See the default-value comments in the 
+code for an indication of the approximate values that might be appropriate for 
+any particular parameter.</p>
+<p><font color="#FF0000"><b>A marker at zero frequency</b></font></p>
+<p>The program puts a marker at zero frequency in each 
+spectral plot.&nbsp; This makes it possible to visually confirm that the spectral plots 
+are properly aligned, with one spectral plot shown above the other.</p>
+<p>If the plots are properly aligned, this results in the thin black vertical line 
+shown at a frequency of zero in <a href="#Figure_10">Figure 10</a>.&nbsp; If the plots are not properly 
+aligned, this marker will appear to walk across the page, probably in a fairly 
+regular fashion.</p>
+<p><font color="#FF0000"><b>Program testing</b></font></p>
+<p>The program was tested using 
+J2SE 5.0 and WinXP.&nbsp; J2SE 5.0 or later is required.</p>
+<p><font color="#FF0000"><b>The class named PlotALot08</b></font></p>
+<p>This program uses a new version of a plotting class from the <b>PlotALot</b> 
+family of plotting classes.&nbsp; You can view a complete listing of the <b>
+PlotALot08</b> class in Listing 21.&nbsp; By now, you should be very familiar 
+with the general construct of the classes in the <b>PlotALot</b> family, so I won bore 
+you with an explanation of the class.</p>
+
+<font color="#FF0000"><b>The adaptive engine named AdaptEngine01</b></font><p>
+The adaptive engine named <b>AdaptEngine01</b> provides all of the required 
+adaptive behavior for this program.&nbsp; You learned about the adaptive engine 
+in the lesson entitled 
+<a href="http://www.developer.com/java/other/article.php/3566951">A 
+General-Purpose LMS Adaptive Engine in Java</a>, so I won't repeat the explanation of that class 
+in this lesson.</p>
+
+<h2 align="center"> <a name="Discussion and Sample Programs"></a><font color="#000000">Discussion
+and Sample Code</font></h2>
+
+<p><font color="#FF0000"><b>Adapt05</b></font></p>
+<p>The class named <b>Adapt05</b> and the <b>main</b> method begin in Listing 1.</p><p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>class <b>Adapt05</b>{
+
+  public static void <b>main</b>(String[] args){
+    //Default parameter values.  See a description of each
+    // of these parameters in the opening comments above.
+    // Note that this set of default values represents a
+    // high signal-to-noise ratio.
+    double feedbackGain = 0.00001;
+    int numberIterations = 3375;
+    int filterLength = 15;
+    double wideBandNoiseScale = 1.0;
+    double fmSignalScale = 20.0;
+    int fmSignalCase = 3;
+    double freqSlideConst = 0.0004;
+    double freqShiftFactorLow = 0.5;
+    double freqShiftFactorHigh = 1.5;
+    int lengthMultiplier = 2;
+    
+    int spectralWidth = 222;//Not a user input value
+    
+    if(args.length != 10){
+      System.out.println(
+               "Usage with all parameters following the " +
+               "program name:\n" +
+               "java Adapt05\n" +
+               "feedbackGain\n" + 
+               "numberIterations\n" + 
+               "filterLength\n" +
+               "wideBandNoiseScale\n" +
+               "fmSignalScale\n" +
+               "fmSignalCase\n" +
+               "freqSlideConst\n" +
+               "freqShiftFactorLow\n" +
+               "freqShiftFactorHigh\n" +
+               "lengthMultiplier\n");
+               
+      System.out.println(
+          "Input values were not provided.\n"+
+          "Using following values:\n" +
+          "feedbackGain: " + feedbackGain +
+          "\nnumberIterations: " + numberIterations +
+          "\nfilterLength: " + filterLength +
+          "\nwideBandNoiseScale: " + wideBandNoiseScale +
+          "\nfmSignalScale: " + fmSignalScale +
+          "\nfmSignalCase: " + fmSignalCase +
+          "\nfreqSlideConst: " + freqSlideConst +
+          "\nfreqShiftFactorLow: " + freqShiftFactorLow +
+          "\nfreqShiftFactorHigh: " + freqShiftFactorHigh +
+          "\nspectralWidth: " + spectralWidth +
+          "\nlengthMultiplier: " + lengthMultiplier +
+          "\nConventional data length: " + 
+                         (lengthMultiplier * filterLength + 
+                                        lengthMultiplier));
+    }else{//Command line params were provided.
+      feedbackGain = Double.parseDouble(args[0]);
+      numberIterations = Integer.parseInt(args[1]);
+      filterLength = Integer.parseInt(args[2]);
+      wideBandNoiseScale = Double.parseDouble(args[3]);
+      fmSignalScale = Double.parseDouble(args[4]);
+      fmSignalCase = Integer.parseInt(args[5]);
+      freqSlideConst = Double.parseDouble(args[6]);
+      freqShiftFactorLow = Double.parseDouble(args[7]);
+      freqShiftFactorHigh = Double.parseDouble(args[8]);
+      lengthMultiplier = Integer.parseInt(args[9]);
+    
+      System.out.println(
+          "Input values were provided.\n"+
+          "Using following values:\n" +
+          "feedbackGain: " + feedbackGain +
+          "\nnumberIterations: " + numberIterations +
+          "\nfilterLength: " + filterLength +
+          "\nwideBandNoiseScale: " + wideBandNoiseScale +
+          "\nfmSignalScale: " + fmSignalScale +
+          "\nfmSignalCase: " + fmSignalCase +
+          "\nfreqSlideConst: " + freqSlideConst+
+          "\nfreqShiftFactorLow: " + freqShiftFactorLow +
+          "\nfreqShiftFactorHigh: " + freqShiftFactorHigh +
+          "\nspectralWidth: " + spectralWidth +
+          "\nlengthMultiplier: " + lengthMultiplier +
+          "\nConventional data length: " + 
+                         (lengthMultiplier * filterLength + 
+                                        lengthMultiplier));
+    }//end else<br><br><b><font face="Courier New,Courier">Listing 1</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The code in Listing 1 is straightforward, and shouldn't require 
+any explanation beyond the comments in the code.</p>
+<p><font color="#FF0000"><b>Instantiate an object of the class</b></font></p>
+<p>Listing 2 instantiates a new object of the <b>Adapt05</b> class and 
+invokes the method named <b>process</b> on that object.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    new Adapt05().process(feedbackGain,
+                          numberIterations,
+                          filterLength,
+                          wideBandNoiseScale,
+                          fmSignalScale,
+                          fmSignalCase,
+                          freqSlideConst,
+                          freqShiftFactorLow,
+                          freqShiftFactorHigh,
+                          spectralWidth,
+                          lengthMultiplier);
+  }//end main<br><br><b><font face="Courier New,Courier">Listing 2</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Listing 2 also signals the end of the <b>main</b> method.</p>
+<p><font color="#FF0000"><b>The method named process</b></font></p>
+<p>Listing 3 shows the beginning of the method named <b>process</b>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  void <b>process</b>(double feedbackGain,
+               int numberIterations,
+               int filterLength,
+               double wideBandNoiseScale,
+               double fmSignalScale,
+               int fmSignalCase,
+               double freqSlideConst,
+               double freqShiftFactorLow,
+               double freqShiftFactorHigh,
+               int spectralWidth,
+               int lengthMultiplier){
+
+    //Declare and initialize working variables.
+    double err = 0;
+    double wideBandNoise = 0;
+    double fmSignal = 0;
+    double freqSlideValue = 0;
+    double freqShiftFactor = freqShiftFactorLow;<br><br><b><font face="Courier New,Courier">Listing 3</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>This is the primary processing and plotting method for the program.&nbsp; This method uses an object of the
+<b>AdaptEngine01</b> class to provide the adaptive behavior.</p>
+<p>The code in Listing 3 declares and initializes some working variables.</p>
+<p><font color="#FF0000"><b>Array for the whitening filter</b></font></p>
+<p>Listing 4 creates an array object to contain the whitening filter.&nbsp; The actual 
+whitening of the data is accomplished within the object of type <b>AdaptEngine01</b>.&nbsp; 
+That object returns the prediction portion of the whitening filter, but does not 
+return an actual whitening filter.</p>
+<p>This copy of the whitening filter is required solely for the purpose of 
+computing and displaying the frequency response of the whitening filter.&nbsp; 
+Note that the length of the whitening filter is one greater than the length of 
+the filter that is returned by the adaptive object.&nbsp; The extra coefficient 
+in the whitening filter is set to a value of -1 by the code in Listing 4.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    double[] whiteningFilter = 
+                              new double[filterLength + 1];
+
+    whiteningFilter[filterLength] = -1;<br><br><b><font face="Courier New,Courier">Listing 4</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>All other values in the whitening filter are initialized to zero by the code 
+in Listing 4.&nbsp; Coefficient values returned by the adaptive process are 
+copied into the lower elements of the whitening filter later.</p>
+<p><font color="#FF0000"><b>A data delay line</b></font></p>
+<p>Listing 5 creates an array to contain two samples of the data that will be 
+adaptively processed.&nbsp; </p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    double[] data = new double[2];<br><br><b><font face="Courier New,Courier">Listing 5</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>This array is used as a tapped delay line.&nbsp; During each adaptive 
+iteration, the data sample to be 
+filtered is located at index 0.&nbsp; The value of the adaptive target is 
+located at index 1.&nbsp; Each new data sample is inserted at index 1, causing 
+the value at that index to be moved to index 0.&nbsp; This causes the value at 
+index 0 to fall off the end of the delay line.</p>
+<p><font color="#FF0000"><b>A delay line for raw data</b></font></p>
+<p>Listing 6 creates an array object to serve as a delay line to contain a chunk of raw 
+data.&nbsp; This raw data is used for conventional spectral analysis.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    double[] rawData = new double[
+                  lengthMultiplier*whiteningFilter.length];<br><br><b><font face="Courier New,Courier">Listing 6</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The length of this delay line is an integer multiple of the length of the 
+whitening filter.&nbsp; The multiplier is provided as a user input parameter.</p>
+<p><font color="#FF0000"><b>A general-purpose adaptive engine object</b></font></p>
+<p>Listing 7 instantiates a general purpose adaptive processing object of the 
+class <b>AdaptEngine01</b>.&nbsp; This object is used later to provide the 
+adaptive behavior for the entire program.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    <b>AdaptEngine01</b> theAdapter = 
+              new AdaptEngine01(filterLength,feedbackGain);<br><br><b><font face="Courier New,Courier">Listing 7</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Instantiate plotting objects</b></font></p>
+<p>Listing 8 instantiates two plotting objects of the <b>PlotALot08 </b>class.&nbsp; 
+The first plotting object is used later to display the frequency response of the 
+whitening filter.&nbsp; The second plotting object is used later to display the 
+results of the conventional spectrum analysis.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    //Instantiate a plotting object to display whitening
+    // filter frequency response data.
+    PlotALot08 freqPlotObj = new PlotALot08(
+                                         "Adaptive",
+                                         spectralWidth + 8,
+                                         487,
+                                         10,
+                                         1,
+                                         0,
+                                         0);
+
+    //Instantiate a plotting object to display the results
+    // of conventional spectrum analysis.
+    PlotALot08 conventionalPlotObj = new PlotALot08(
+                                         "Conventional",
+                                         spectralWidth + 8,
+                                         487,
+                                         10,
+                                         1,
+                                         0,
+                                         0);
+                                   <br><br><b><font face="Courier New,Courier">Listing 8</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The class named <b>PlotALot08</b> can be viewed in Listing 21 near the end of 
+the lesson.&nbsp; Although this class is new to this lesson, it is very similar 
+to the previously-published classes in the family of <b>PlotALot</b> classes and 
+should not require an explanation.</p>
+<p><font color="#FF0000"><b>Start looping and get wide-band noise sample</b></font></p>
+<p>Listing 9 shows the beginning of a <b>for</b> loop that will execute the 
+specified number of adaptive iterations.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    for(int cnt = 0;cnt &lt; numberIterations;cnt++){
+      wideBandNoise = 
+                 wideBandNoiseScale*(2.0*(random() - 0.5));<br><br><b><font face="Courier New,Courier">Listing 9</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Listing 9 also gets the next sample of <b>wideBandNoise</b> with a uniform 
+distribution from -1.0 to +1.0.&nbsp; The noise is scaled by the specified scale 
+factor.&nbsp; <i>(Note the use of a static import directive for the Math class, 
+which requires J2SE 5.0 or later.)</i></p>
+<p><font color="#FF0000"><b>Get the next sample of narrow-band signal</b></font></p>
+<p>Listing 10 gets the next sample of frequency-modulated sinusoidal <i>
+(narrow-band)</i> signal.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>      //Get the next sample of fmSignal data. The contents
+      // of the following variable sets the frequency for
+      // the FM sweep signal for this sample. This value
+      // increases for each successive iteration.
+      freqSlideValue += freqSlideConst;
+
+      //Use the value of fmSignalCase to determine which
+      // configuration of FM signal to generate.
+      if(fmSignalCase == 1){
+        //Single source, sweep frequency
+        fmSignal = fmSignalScale*(sin(
+                          cnt*(freqSlideValue + 2*PI/32)));
+      }else if(fmSignalCase == 2){
+        //Single source, shift frequency.  Frequency shifts
+        // every 1650 iterations.
+        if(cnt%1650 == 0){
+          if(freqShiftFactor == freqShiftFactorLow){
+            freqShiftFactor = freqShiftFactorHigh;
+          }else{
+            freqShiftFactor = freqShiftFactorLow;
+          }//end else
+        }//end if
+        fmSignal = fmSignalScale*sin(
+                               freqShiftFactor*cnt*2*PI/4);
+      }else if(fmSignalCase == 3){
+        //Two signal sources with one of each of the above
+        // configurations.
+        if(cnt%1650 == 0){
+          if(freqShiftFactor == freqShiftFactorLow){
+            freqShiftFactor = freqShiftFactorHigh;
+          }else{
+            freqShiftFactor = freqShiftFactorLow;
+          }//end else
+        }//end if
+        fmSignal = fmSignalScale*(sin(
+                          cnt*(freqSlideValue + 2*PI/32)) +
+                          sin(freqShiftFactor*cnt*2*PI/4));
+      }else{
+        System.out.println(
+            "Incorrect signal case, terminating");
+        System.exit(0);
+      }//end else<br><br><b><font face="Courier New,Courier">Listing 10</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The narrow-band signal consists of:</p>
+<ul>
+	<li>A frequency-modulated sweep as shown in <a href="#Figure_3">Figure 3</a>, or</li>
+	<li>A frequency-modulated shift as shown in <a href="#Figure_1">Figure 1</a>, or</li>
+	<li>A combination of the two as shown in <a href="#Figure_5">Figure 5</a>.</li>
+</ul>
+<p>The choice among the three alternatives is provided by the user as an input 
+parameter.</p>
+<p>Although the code in Listing 10 is somewhat long, it is straightforward and 
+shouldn't require a detailed explanation.</p>
+<p><font color="#FF0000"><b>Insert the raw data into the delay lines</b></font></p>
+<p>The first statement in Listing 11 inserts the raw signal plus noise data into 
+the two-element delay line that is used to feed the adaptive process.</p>
+<p>The second statement in Listing 11 inserts the raw signal plus noise data 
+into the longer delay line that is used to feed the conventional spectrum 
+analysis process.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>      //Insert the wideBandNoise plus fmSignal into the
+      // two-element delay line.
+      flowLine(data,wideBandNoise+fmSignal);
+      
+      //Insert signal plus noise into delay line used for
+      // conventional spectrum analysis.
+      flowLine(rawData,wideBandNoise+fmSignal);<br><br><b><font face="Courier New,Courier">Listing 11</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Obviously, I could have used the same delay line for both purposes.&nbsp; 
+However, since each delay line is used to feed an entirely different process, I 
+decided to separate the two for clarity of purpose.</p>
+<p><font color="#FF0000"><b>Execute the adaptive process</b></font></p>
+<p>The single statement in Listing 12 invokes the <b>adapt</b> method on the 
+adaptive engine of type <b>AdaptEngine01</b>, to perform the adaptive process 
+for the entire program.&nbsp; <i>(All of the other code in the <b>process</b> 
+method is used to manage data and to display results.)</i></p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>      AdaptiveResult result = 
+                         theAdapter.<b>adapt</b>(data[0],data[1]);<br><br><b><font face="Courier New,Courier">Listing 12</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Input to the adapt method</b></font></p>
+<p>The code in Listing 12 passes the two samples from the two-element delay line 
+to the <b>adapt</b> method.&nbsp; The first parameter is the next sample of raw 
+data that is to be filtered by the adaptive prediction filter.&nbsp; The second 
+parameter is the sample that is used as the predictive target.</p>
+<p>In other words, the <b>adapt</b> method uses the first parameter in 
+conjunction with previous samples that have been saved in an attempt to predict the 
+value of the second parameter.&nbsp; The prediction error is then used to adjust 
+the coefficients in the prediction filter that is maintained by the <b>adapt</b> 
+method.</p>
+<p><font color="#FF0000"><b>Several values are returned by the adapt method</b></font></p>
+<p>Several important results are returned by the <b>adapt</b> method.&nbsp; 
+These results are encapsulated in an object of the class <b>AdaptiveResult</b>.&nbsp; 
+This class is a wrapper class that is designed to encapsulate the adaptive results 
+in a single object.</p>
+<p><font color="#FF0000"><b>Frequency response and conventional spectrum</b></font></p>
+<p>Now that the adaptive process has been completed for this iteration, the next 
+major task is to compute and to display the frequency response of the whitening 
+filter and the conventional spectrum of the raw data at the end of every 75th 
+adaptive iteration.</p>
+<p><font color="#FF0000"><b>Construct the whitening filter</b></font></p>
+<p>As mentioned earlier, the actual whitening process is performed inside the <b>
+adapt</b> method.&nbsp; A copy of the whitening filter is not returned by the <b>
+adapt</b> method.&nbsp; However, a copy of the prediction filter is returned by 
+the <b>adapt</b> method.&nbsp; The whitening filter is simply the prediction 
+filter with an extra coefficient having a value of -1 concatenated onto its end.</p>
+<p>An array for storage of the whitening filter was constructed in Listing 4.&nbsp; 
+The value of -1 was also deposited into the last element in that array in 
+Listing 4.&nbsp; Listing 13 constructs and saves the whitening filter by copying the 
+coefficients from the prediction filter that was returned by the <b>adapt</b> 
+method into the lower elements of the whitening filter array, leaving the value of -1 in the last element.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>      System.arraycopy(result.filterArray,
+                       0,
+                       whiteningFilter,
+                       0,
+                       filterLength);<br><br><b><font face="Courier New,Courier">Listing 13</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<blockquote>
+	<p><i>(While performing the final edit on this lesson, I realized that I 
+	should have moved the statement in Listing 13 inside of the <b>if</b> 
+	statement in Listing 14 to conserve computer resources.&nbsp; The new 
+	whitening filter needs to be constructed only when the frequency response of 
+	the filter is to be computed and displayed.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Compute and display frequency data</b></font></p>
+<p>Listing 14 contains an <b>if</b> statement that causes frequency data to be 
+computed and displayed at the end of every 75th adaptive iteration, as shown in 
+<a href="#Figure_7">Figure 7</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>      if(cnt%75 == 0){
+        //Compute and display the frequency response of the
+        // whitening filter.
+        <b>displayFreqResponse</b>(whiteningFilter,
+                            freqPlotObj,
+                            spectralWidth,
+                            whiteningFilter.length - 1);
+
+        //Compute and display the conventional spectrum of
+        // a chunk of raw signal plus noise data.
+        <b>displaySpectrum</b>(rawData,
+                        conventionalPlotObj,
+                        spectralWidth,
+                        rawData.length - 1);
+      }//End display of frequency data
+    }//End for loop, End adaptive process<br><br><b><font face="Courier New,Courier">Listing 14</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The invocation of the <b>displayFreqResponse</b> method in Listing 14 
+computes and displays the amplitude response of the whitening filter as shown in 
+the left panel of <a href="#Figure_7">Figure 7</a>.</p>
+<p>The invocation of the <b>displaySpectrum</b> method in Listing 14 computes 
+and displays the conventional amplitude spectrum for comparison purposes as 
+shown in the right panel of <a href="#Figure_7">Figure 7</a>.</p>
+<p>I will have more to say about these two methods later.</p>
+<p><font color="#FF0000"><b>Display the results</b></font></p>
+<p>Listing 14 also signals the end of the <b>for</b> loop that began in Listing 
+9.&nbsp; Once the code in Listing 14 has been executed, all that remains is to 
+cause the graphic data that has been stored in the plotting objects to be 
+displayed on the screen.&nbsp; This is accomplished by the code in Listing 15.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    freqPlotObj.plotData(0,0);
+    conventionalPlotObj.plotData(232,0);
+    
+  }//end process method<br><br><b><font face="Courier New,Courier">Listing 15</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Listing 15 also signals the end of the <b>process</b> method and the end of 
+the program.</p>
+<p><font color="#FF0000"><b>Computing and displaying frequency data</b></font></p>
+<p>Listing 14 above invokes the <b>displayFreqResponse</b> method and the <b>
+displaySpectrum</b> method to cause the frequency data to be displayed.</p>
+<p>The purpose of the<b> displayFreqResponse </b>method is to compute and 
+display the amplitude frequency response of an incoming whitening filter.</p>
+<p><font color="#FF0000"><b>Partially explained in an earlier lesson</b></font> </p>
+<p>A method very similar to and having the same name as the <b>displayFreqResponse</b> 
+method 
+was explained in the lesson entitled 
+<a href="http://www.developer.com/java/other/article.php/3560501">An Adaptive 
+Whitening Filter in Java</a>.&nbsp; Therefore, I am going to 
+begin by referring you back to that lesson for an explanation 
+of the overall method.</p>
+<p>You can view the new version of <b>displayFreqResponse</b> used in this lesson in 
+Listing 20 near the end of the lesson.&nbsp; This explanation will pick up at 
+the point in the method where the version of the method used in this lesson 
+differs from the version of the method used in the lesson entitled 
+<a href="http://www.developer.com/java/other/article.php/3560501">An Adaptive 
+Whitening Filter in Java</a>.</p>
+<p><font color="#FF0000"><b>Primary differences</b></font></p>
+<p>The primary difference between the two versions of the method has to do with the final 
+formatting of the frequency response curve for display.&nbsp; If you refer back 
+to Figure 3 in the lesson entitled 
+<a href="http://www.developer.com/java/other/article.php/3560501">An Adaptive 
+Whitening Filter in Java</a>, you will see that the locations of 
+spectral lines in the spectrum were indicated by deep notches in the amplitude 
+response curve.&nbsp; <i>(That lesson also displayed phase response information, 
+which is not of interest in this lesson.)</i></p>
+<p>If you refer back to <a href="#Figure_1">Figure 1</a> in this lesson, you 
+will see that the presence of narrow-band signal is indicated by a peak at the 
+signal frequency in the display of the response.&nbsp; This is accomplished by turning the 
+response curve upside down and then normalizing it.</p>
+<p><font color="#FF0000"><b>Code in the displayFreqResponse method</b></font></p>
+<p>The code in Listing 16 picks up at the point where the code differs from the 
+code in the previously-explained version of the method.</p>
+<p>Listing 16 changes the algebraic sign on all the amplitude response values to turn the response curve upside down.&nbsp; This causes the notches in the response curve to appear as peaks in the display 
+as shown in <a href="#Figure_1">Figure 1</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    //Note that from this point forward, all references to
+    // magnitude are referring to log base 10 data, which
+    // can be thought of as scaled decibels.
+    
+    for(int cnt = 0;cnt &lt; magnitude.length;cnt++){
+      magnitude[cnt] = -magnitude[cnt];
+    }//end for loop<br><br><b><font face="Courier New,Courier">Listing 16</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Was this necessary?</b></font></p>
+<p>Obviously it wasn't necessary to turn the notches into peaks.&nbsp; However, 
+this results in a display that is more in line with what we are accustomed to 
+seeing.&nbsp; We tend to expect the presence of energy to be represented by a 
+peak in the spectrum and that is the information that we are conveying here.</p>
+<p><font color="#FF0000"><b>Normalization of the data</b></font></p>
+<p>The effective display of a large amount of data is not an easy thing to 
+accomplish.&nbsp; A typical display medium normally provides a fixed amount of 
+space in which to display the data.&nbsp; If the data values are large, 
+excursions in the display will typically be large, and may even exceed the 
+allowable space.</p>
+<p>On the other hand, if the data values are small, excursions in the display 
+will often be very small and possibly not even visible.&nbsp; A lot of work is usually 
+required to make it possible to display data having a wide variety of values in 
+a limited space in a meaningful way.</p>
+<p>The purpose of much of the following code is to normalize the amplitude response such that each response curve will occupy the same size 
+rectangle in the 
+display regardless of the magnitude of the input data.&nbsp; <i>(See
+<a href="#Figure_1">Figure 1</a> as an example of this normalization.)</i></p>
+<p><font color="#FF0000"><b>Make the smallest value equal to zero</b></font></p>
+<p>The code in Listing 17 is executed once for each frequency response curve 
+that is to be displayed.&nbsp; We begin by biasing the values in the frequency 
+response such that the smallest value becomes zero.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    //First find the smallest value.
+    double min = 9999999999.0;
+    for(int cnt = 0;cnt &lt; magnitude.length;cnt++){
+      if(magnitude[cnt] &lt; min){
+        min = magnitude[cnt];
+      }//end if
+    }//end for loop
+    //Now apply the bias.
+    for(int cnt = 0;cnt &lt; magnitude.length;cnt++){
+      magnitude[cnt] -= min;
+    }//end for loop<br><br><b><font face="Courier New,Courier">Listing 17</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Once you know the purpose of the code in Listing 17, the behavior of the 
+code is straightforward and should not require further explanation.</p>
+<p><font color="#FF0000"><b>Normalize the peak value</b></font></p>
+<p>The code in Listing 18 performs the following steps:</p>
+<ul>
+	<li>Find and save the absolute peak value for the response curve</li>
+	<li>Set the value at zero frequency to the peak value for the response 
+	curve.</li>
+	<li>Scale all the values in the response curve to cause the peak value to 
+	end up with a vale of 20.&nbsp; This causes each response curve to occupy 
+	overlapping rectangular strips in the final plot <i>(see <a href="#Figure_1">
+	Figure 1</a>),</i> each of which has a vertical dimension of 20 pixels.</li>
+</ul>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    //Find the absolute peak value.  Begin with a negative
+    // trial value with a large magnitude and replace it
+    // with the largest magnitude value.
+    double peak = -9999999999.0;
+    for(int cnt = 0;cnt &lt; magnitude.length;cnt++){
+      if(peak &lt; abs(magnitude[cnt])){
+        peak = abs(magnitude[cnt]);
+      }//end if
+    }//end for loop
+    
+    //Set the zero frequency value to the peak so that it
+    // can be used to visually confirm plot synchronization
+    // later.
+    magnitude[0] = peak;
+
+    //Normalize to 20 times the peak value. Each response
+    // curve will now occupy a horizontal strip of the
+    // plotting area that is 20 pixels from top to bottom.
+    for(int cnt = 0;cnt &lt; magnitude.length;cnt++){
+      magnitude[cnt] = 20*magnitude[cnt]/peak;
+    }//end for loop<br><br><b><font face="Courier New,Courier">Listing 18</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>The value at zero frequency</b></font></p>
+<p>Typically the value of a frequency response curve at a frequency of zero is 
+of little or no interest.</p>
+<blockquote>
+	<p><i>(Signals in the real world don't usually 
+exist at a frequency of zero, unless you are measuring the output from a battery 
+	or direct-current generator.&nbsp; A non-zero value at zero frequency 
+	usually 
+indicates an undesirable electronic bias in the acquisition of the sampled 
+data.)</i></p>
+</blockquote>
+<p>Therefore, the values of the response curves at zero frequency 
+were used to solve a potential plotting-alignment problem.</p>
+<p><font color="#FF0000"><b>Alignment can be difficult</b></font></p>
+<p>It can be a little difficult to get all of the parameters set correctly in 
+the use of the class named <b>PlotALot08</b> to cause the plots to be properly 
+aligned with each response curve correctly placed above the one below it.&nbsp; 
+Therefore, the value of the response at zero frequency was artificially set to 
+the peak value to make it visually obvious if the plot is not properly aligned.&nbsp; 
+When the plot is properly aligned, those values all line up vertically on the 
+left side of the plot as shown in <a href="#Figure_1">Figure 1</a>.</p>
+<p>Even without the markers at zero frequency, it would be rather obvious if the 
+plots were not properly aligned in <a href="#Figure_1">Figure 1</a>.&nbsp; 
+However, that would not be the case for the right panel in <a href="#Figure_8">
+Figure 8</a> or the right panel in <a href="#Figure_10">Figure 10</a>.&nbsp; 
+Therefore, this marker at zero frequency can be very helpful in providing 
+assurance that the spectral data is being properly displayed.</p>
+<p><font color="#FF0000"><b>Feed the plotting object</b></font></p>
+<p>The code in Listing 19 feeds the normalized frequency response data to the 
+plotting object.&nbsp; Note that this data was converted to decibels in that 
+portion of the method that was explained in the earlier lesson entitled 
+<a href="http://www.developer.com/java/other/article.php/3560501">An Adaptive 
+Whitening Filter in Java</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    for(int cnt = 0;cnt &lt; magnitude.length;cnt++){
+      plot.feedData(magnitude[cnt]);
+    }//end for loop
+    
+  }//end displayFreqResponse<br><br><b><font face="Courier New,Courier">Listing 19</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Listing 19 also signals the end of the method named <b>displayFreqResponse</b>.</p>
+<p><font color="#FF0000"><b>The method named displaySpectrum</b></font></p>
+<p>The method named <b>displaySpectrum</b> is used to compute and to display the 
+results of the conventional spectrum analysis that is performed on the raw 
+signal plus noise data.&nbsp; You can view the method in its entirety in Listing 
+20 near the end of the lesson.</p>
+<p>The code in this method is similar to, but is not identical to the code in the method named
+<b>displayFreqResponse</b> that was explained above.</p>
+<p>The major differences between the two methods are:</p>
+<ul>
+	<li>The conversion to decibels is disabled in the method named <b>
+	displaySpectrum</b>.&nbsp; However, the required code to convert the 
+	spectral data to decibels is still there so that you can re-enable it to see 
+	the results of conversion of spectral data to decibels if you wish to do so.</li>
+	<li>The spectral data values are not turned upside down in the method named
+	<b>displaySpectrum</b>.&nbsp; Thus peaks in the spectral energy are 
+	displayed as peaks in the plot, as shown in the right panels of
+	<a href="#Figure_8">Figure 8</a> and <a href="#Figure_10">Figure 10</a>.</li>
+</ul>
+<p>The method named <b>displaySpectrum</b> shown in Listing 20 is completely 
+documented through the use of in-code comments.&nbsp; Therefore, further 
+explanation of the method should not be necessary.<br>
+</p>
+
+<h2 align="center"><a name="Run the program"></a>Run the Program</h2>
+
+<p>I encourage you to copy the code from the classes in the section entitled
+<a href="#Complete Program Listings">Complete Program Listings</a>.&nbsp; 
+Compile and execute the programs.&nbsp; Experiment with the code.&nbsp; Make changes to the code, recompile, execute, 
+and observe the results of your changes.</p>
+<p>In addition to the classes named <b>Adapt05</b> and <b>PlotALot08</b> <i>(for which the 
+source code is provided in this lesson),</i> you will need access to the 
+following classes.&nbsp; The source code for these classes can be found in the 
+lessons indicated.</p>
+<ul>
+	<li>ForwardRealToComplex01:&nbsp;
+	<a href="http://www.developer.com/java/other/article.php/3380031">Spectrum 
+	Analysis using Java, Sampling Frequency, Folding Frequency, and the FFT 
+	Algorithm</a></li>
+	<li>AdaptEngine01:
+	<a href="http://www.developer.com/java/other/article.php/3566951">A 
+	General-Purpose LMS Adaptive Engine in Java</a></li>
+	<li>AdaptiveResult:
+	<a href="http://www.developer.com/java/other/article.php/3566951">A 
+	General-Purpose LMS Adaptive Engine in Java</a></li>
+</ul>
+<h2 align="center" ><a name="Summary">Summary</a></h2>
+<p>In this lesson, I showed you how to use the general-purpose 
+<a href="http://cnx.rice.edu/content/m11829/latest/">LMS</a> 
+adaptive engine from a previous lesson to write an adaptive line tracker in Java. </p>
+<h2 align="center" ><a name="Whats Next">What's Next?</a></h2>
+<p>Future lessons in this series will become somewhat more general.&nbsp; I plan to 
+publish lessons that explain and provide examples of four common scenarios in 
+which adaptive filtering is used:</p>
+<ul>
+	<li>System Identification</li>
+	<li>Inverse System Identification</li>
+	<li>Noise Cancellation</li>
+	<li>Prediction</li>
+</ul>
+<p>Somewhere along the way I may also publish a lesson that explains and 
+illustrates the difference between <i>least mean square (LMS)</i> and <i>
+recursive least squares (RLS)</i> adaptive algorithms.</p>
+<h2 align="center"><a name="References">References</a></h2>
+<p>In preparation for understanding the material in this lesson, I recommend 
+that you study the material in the following previously-published lessons:</p>
+<ul>
+	<li><a href="http://www.dickbaldwin.com/dsp/Dsp00100.htm">100</a>&nbsp;&nbsp; Periodic 
+	Motion and Sinusoids</li>
+	<li><a href="http://www.dickbaldwin.com/dsp/Dsp00104.htm">104</a>&nbsp;&nbsp; Sampled 
+	Time Series</li>
+	<li><a href="http://www.dickbaldwin.com/dsp/Dsp00108.htm">108</a>&nbsp;&nbsp; 
+	Averaging Time Series</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3374611">1478</a> 
+	Fun with Java, How and Why Spectral Analysis Works</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3380031">1482</a> 
+	Spectrum Analysis using Java, Sampling Frequency, Folding Frequency, and the 
+	FFT Algorithm</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3392871">1483</a> 
+	Spectrum Analysis using Java, Frequency Resolution versus Data Length</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3411041">1484</a> 
+	Spectrum Analysis using Java, Complex Spectrum and Phase Angle</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3436341">1485</a> 
+	Spectrum Analysis using Java, Forward and Inverse Transforms, Filtering in 
+	the Frequency Domain</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3484591">1487</a> 
+	Convolution and Frequency Filtering in Java</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3487996">1488</a> 
+	Convolution and Matched Filtering in Java</li>
+	<li><a href="http://www.developer.com/java/data/article.php/3529186">1492</a> 
+	Plotting Large Quantities of Data using Java</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3549991">2350</a> 
+	Adaptive Filtering in Java, Getting Started</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3560501">2352</a> An Adaptive Whitening Filter in Java</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3566951">2354</a> A General-Purpose LMS Adaptive Engine in Java</li>
+</ul>
+
+<h2 align="center"> <a name="Complete Program Listings"></a>Complete Program Listings</h2>
+
+<p>Complete listings of the classes discussed in this lesson are shown in the 
+listings below.</p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>/*File Adapt05.java
+Copyright 2005, R.G.Baldwin
+
+The purpose of the program is to use the general purpose 
+adaptive engine provided by AdaptEngine01 to implement an 
+adaptive spectral line tracker. The line tracker is 
+designed to track the frequency of frequency-modulated 
+signals buried in wide-band noise. Adaptive processing 
+takes place in the time domain.  The signals are tracked 
+in the frequency domain. Experimental results produced by
+the adaptive line tracker are compared with results 
+produced by conventional spectrum analysis.
+
+The program develops a whitening filter and uses the 
+notches in the whitening filter as an indication of the 
+frequency of the FM signals at equal intervals in time.
+
+Demonstration of the program capability is accomplished by 
+processing time series consiting of wide-band noise plus FM
+signals.
+
+Three different experimental cases can be specified by the 
+user:
+
+1. A single FM sweep from a low frequency to a high 
+frequency. The user specifies the rate at which the signal
+sweeps.
+
+2. A single FM signal that switches back and forth between 
+two frequencies.  The user specifies each of the 
+frequencies.
+
+3. An additive combination of the two cases described
+above.
+
+User input is provided by way of command-line parameters.
+The command-line parameters are:
+
+double feedbackGain: This is the multiplicative factor that
+is used in the feedback loop of the LMS adaptive algorithm.
+
+int numberIterations: This is the number of iterations that
+the adaptive algorithm is allowed to execute before
+terminating and displaying the results.
+
+int filterLength: This is the length of the filter that is 
+developed within the adaptive algorithm. Note that this
+length is one less than the length of the whitening filter 
+mentioned above.  The whitening filter consists of this
+filter with a -1 concatenated onto its end.
+
+double wideBandNoiseScale: This is a scale factor that is 
+applied to the wide band noise before it is added to the
+FM signal.
+
+double fmSignalScale: This is a scale factor that is 
+applied to each FM signal before it is added to the 
+wide-band noise.
+
+int fmSignalCase: This the test case described above.  Must
+be 1, 2, or 3.
+
+double freqSlideConst: This value specifies the rate at 
+which the FM sweep signal changes frequency. The higher the
+value of this parameter, the faster will be the change in 
+frequency.
+
+double freqShiftFactorLow: The base frequency for the 
+frequency switching signal is one-fourth of the sampling
+frequency. This multiplicative factor is applied to the
+base frequency to establish the low frequency for the 
+frequency-switching signal.  For example, a value of 0.5 
+for this parameter results in a frequency that is 
+one-eighth of the sampling frequency.
+
+double freqShiftFactorHigh: This parameter is applied as a 
+multiplicative factor to the base frequency to establish 
+the upper frequency for the frequency shifting signal.
+
+int lengthMultiplier:  This parameter specifies the length 
+of the chunks of data that will be analyzed using
+conventional spectral analysis.  This value is a multiple 
+of the length of the whitening filter.
+
+If the user doesn't provide ten command-line parameters,
+a set of default values is used.  See the default-value
+comments in the code for an indication of the approximate 
+values that might be appropriate for any particular 
+parameter.
+
+The program puts a marker at zero frequency in each 
+spectral plot. This makes it possible to visually confirm
+that the spectral plots are properly synchronized, with one
+spectral plot above the other.
+
+Tested using J2SE 5.0 and WinXP.  J2SE 5.0 or later is
+required.
+**********************************************************/
+import static java.lang.Math.*;//J2SE 5.0 req
+
+class Adapt05{
+
+  public static void main(String[] args){
+    //Default parameter values.  See a description of each
+    // of these parameters in the opening comments above.
+    // Note that this set of default values represents a
+    // high signal-to-noise ratio.
+    double feedbackGain = 0.00001;
+    int numberIterations = 3375;
+    int filterLength = 15;
+    double wideBandNoiseScale = 1.0;
+    double fmSignalScale = 20.0;
+    int fmSignalCase = 3;
+    double freqSlideConst = 0.0004;
+    double freqShiftFactorLow = 0.5;
+    double freqShiftFactorHigh = 1.5;
+    int lengthMultiplier = 2;
+    
+    int spectralWidth = 222;//Not a user input value
+    
+    if(args.length != 10){
+      System.out.println(
+               "Usage with all parameters following the " +
+               "program name:\n" +
+               "java Adapt05\n" +
+               "feedbackGain\n" + 
+               "numberIterations\n" + 
+               "filterLength\n" +
+               "wideBandNoiseScale\n" +
+               "fmSignalScale\n" +
+               "fmSignalCase\n" +
+               "freqSlideConst\n" +
+               "freqShiftFactorLow\n" +
+               "freqShiftFactorHigh\n" +
+               "lengthMultiplier\n");
+               
+      System.out.println(
+          "Input values were not provided.\n"+
+          "Using following values:\n" +
+          "feedbackGain: " + feedbackGain +
+          "\nnumberIterations: " + numberIterations +
+          "\nfilterLength: " + filterLength +
+          "\nwideBandNoiseScale: " + wideBandNoiseScale +
+          "\nfmSignalScale: " + fmSignalScale +
+          "\nfmSignalCase: " + fmSignalCase +
+          "\nfreqSlideConst: " + freqSlideConst +
+          "\nfreqShiftFactorLow: " + freqShiftFactorLow +
+          "\nfreqShiftFactorHigh: " + freqShiftFactorHigh +
+          "\nspectralWidth: " + spectralWidth +
+          "\nlengthMultiplier: " + lengthMultiplier +
+          "\nConventional data length: " + 
+                         (lengthMultiplier * filterLength + 
+                                        lengthMultiplier));
+    }else{//Command line params were provided.
+      feedbackGain = Double.parseDouble(args[0]);
+      numberIterations = Integer.parseInt(args[1]);
+      filterLength = Integer.parseInt(args[2]);
+      wideBandNoiseScale = Double.parseDouble(args[3]);
+      fmSignalScale = Double.parseDouble(args[4]);
+      fmSignalCase = Integer.parseInt(args[5]);
+      freqSlideConst = Double.parseDouble(args[6]);
+      freqShiftFactorLow = Double.parseDouble(args[7]);
+      freqShiftFactorHigh = Double.parseDouble(args[8]);
+      lengthMultiplier = Integer.parseInt(args[9]);
+    
+      System.out.println(
+          "Input values were provided.\n"+
+          "Using following values:\n" +
+          "feedbackGain: " + feedbackGain +
+          "\nnumberIterations: " + numberIterations +
+          "\nfilterLength: " + filterLength +
+          "\nwideBandNoiseScale: " + wideBandNoiseScale +
+          "\nfmSignalScale: " + fmSignalScale +
+          "\nfmSignalCase: " + fmSignalCase +
+          "\nfreqSlideConst: " + freqSlideConst+
+          "\nfreqShiftFactorLow: " + freqShiftFactorLow +
+          "\nfreqShiftFactorHigh: " + freqShiftFactorHigh +
+          "\nspectralWidth: " + spectralWidth +
+          "\nlengthMultiplier: " + lengthMultiplier +
+          "\nConventional data length: " + 
+                         (lengthMultiplier * filterLength + 
+                                        lengthMultiplier));
+    }//end else
+      
+    //Instantiate a new object of the Adapt05 class and
+    // invoke the method named process on that object.
+    new Adapt05().process(feedbackGain,
+                          numberIterations,
+                          filterLength,
+                          wideBandNoiseScale,
+                          fmSignalScale,
+                          fmSignalCase,
+                          freqSlideConst,
+                          freqShiftFactorLow,
+                          freqShiftFactorHigh,
+                          spectralWidth,
+                          lengthMultiplier);
+  }//end main
+  //-----------------------------------------------------//
+  
+  //This is the primary processing and plotting method for 
+  // the program.  This method uses an object of the
+  // AdaptEngine01 class to provide the adaptive behavior.
+  void process(double feedbackGain,
+               int numberIterations,
+               int filterLength,
+               double wideBandNoiseScale,
+               double fmSignalScale,
+               int fmSignalCase,
+               double freqSlideConst,
+               double freqShiftFactorLow,
+               double freqShiftFactorHigh,
+               int spectralWidth,
+               int lengthMultiplier){
+
+    //Declare and initialize working variables.
+    double err = 0;
+    double wideBandNoise = 0;
+    double fmSignal = 0;
+    double freqSlideValue = 0;
+    double freqShiftFactor = freqShiftFactorLow;
+
+    //Create an array to contain the whitening filter. The
+    // actual whitening of the data is accomplished within
+    // the object of type AdaptEngine01. That object
+    // returns the prediction portion of the whitening
+    // filter, but does not return an actual whitening
+    // filter. This copy of the whitening filter is
+    // required solely for the purpose of computing and
+    // displaying the frequency response of the whitening
+    // filter.  Note that the length of the whitening
+    // filter is one greater than the length of the filter
+    // that is returned by the adaptive object. The extra
+    // coefficient in the whitening filter is set to a
+    // value of -1.
+    double[] whiteningFilter = 
+                              new double[filterLength + 1];
+    //Set the last coefficient value in the whitening
+    // filter to -1. All other values are initialized to
+    // zero. Coefficient values returned by the adaptive
+    // process will be copied into the lower elements of
+    // thewhitening filter later.
+    whiteningFilter[filterLength] = -1;
+    
+    //Create an array to contain two samples of the data to
+    // be adaptively processed.  This array is used as a
+    // tapped delay line. The data sample to be filtered is
+    // located at index 0.  The value of the adaptive
+    // target is located at index 1.
+    double[] data = new double[2];
+    
+    //Create an array to serve as a delay line to contain a
+    // chunk of raw data that will be used for conventional
+    // spectral analysis. Make the length of the data an
+    // integer multiple of the length of the whitening
+    // filter.
+    double[] rawData = new double[
+                  lengthMultiplier*whiteningFilter.length];
+    
+    //Instantiate a general purpose adaptive processing
+    // object. This object provides the adaptive behavior
+    // for the entire program.
+    AdaptEngine01 theAdapter = 
+              new AdaptEngine01(filterLength,feedbackGain);
+
+    //Instantiate a plotting object to display whitening
+    // filter frequency response data.
+    PlotALot08 freqPlotObj = new PlotALot08(
+                                         "Adaptive",
+                                         spectralWidth + 8,
+                                         487,
+                                         10,
+                                         1,
+                                         0,
+                                         0);
+    //Instantiate a plotting object to display the results
+    // of conventional spectrum analysis.
+    PlotALot08 conventionalPlotObj = new PlotALot08(
+                                         "Conventional",
+                                         spectralWidth + 8,
+                                         487,
+                                         10,
+                                         1,
+                                         0,
+                                         0);
+                                   
+    //Perform the specified number of iterations
+    for(int cnt = 0;cnt &lt; numberIterations;cnt++){
+      //Generate the synthetic wideBandNoise and fmSignal
+      // data.
+      
+      //Get the next sample of wideBandNoise with a
+      // uniform distribution from -1.0 to +1.0.  Scale the
+      // noise by the specified scale factor. Note the use
+      // of a static import directive for the Math class,
+      // which requires J2SE 5.0 or later.
+      wideBandNoise = 
+                 wideBandNoiseScale*(2.0*(random() - 0.5));
+      
+      //Get the next sample of fmSignal data. The contents
+      // of the following variable set the frequency for
+      // the FM sweep signal for this sample. This value
+      // increases for each successive iteration.
+      freqSlideValue += freqSlideConst;
+
+      //Use the value of fmSignalCase to determine which
+      // configuration of FM signal to generate.
+      if(fmSignalCase == 1){
+        //Single source, sweep frequency
+        fmSignal = fmSignalScale*(sin(
+                          cnt*(freqSlideValue + 2*PI/32)));
+      }else if(fmSignalCase == 2){
+        //Single source, shift frequency.  Frequency shifts
+        // every 1650 iterations.
+        if(cnt%1650 == 0){
+          if(freqShiftFactor == freqShiftFactorLow){
+            freqShiftFactor = freqShiftFactorHigh;
+          }else{
+            freqShiftFactor = freqShiftFactorLow;
+          }//end else
+        }//end if
+        fmSignal = fmSignalScale*sin(
+                               freqShiftFactor*cnt*2*PI/4);
+      }else if(fmSignalCase == 3){
+        //Two signal sources with one of each of the above
+        // configurations.
+        if(cnt%1650 == 0){
+          if(freqShiftFactor == freqShiftFactorLow){
+            freqShiftFactor = freqShiftFactorHigh;
+          }else{
+            freqShiftFactor = freqShiftFactorLow;
+          }//end else
+        }//end if
+        fmSignal = fmSignalScale*(sin(
+                          cnt*(freqSlideValue + 2*PI/32)) +
+                          sin(freqShiftFactor*cnt*2*PI/4));
+      }else{
+        System.out.println(
+            "Incorrect signal case, terminating");
+        System.exit(0);
+      }//end else
+      
+      //Insert the wideBandNoise plus fmSignal into the
+      // two-element delay line.
+      flowLine(data,wideBandNoise+fmSignal);
+      
+      //Insert signal plus noise into delay line used for
+      // conventional spectrum analysis.
+      flowLine(rawData,wideBandNoise+fmSignal);
+      
+      //Execute the adaptive whitening process. Pass the
+      // two samples to the adapt method, one as the data
+      // to be filtered and the other as the predictive
+      // target. This one statement is responsible for all
+      // of the adaptive behavior of the program.
+      AdaptiveResult result = 
+                         theAdapter.adapt(data[0],data[1]);
+
+      //Compute and plot the frequency response and the
+      // conventional spectrum every 75 iterations.
+      
+      //Construct the whitening filter by copying the
+      // prediction filter that was returned by the
+      // adapter into the lower elements of the whitening
+      // filter array, leaving the value of -1 in the last
+      // element.
+      System.arraycopy(result.filterArray,
+                       0,
+                       whiteningFilter,
+                       0,
+                       filterLength);      
+      
+      if(cnt%75 == 0){
+        //Compute and display the frequency response of the
+        // whitening filter.
+        displayFreqResponse(whiteningFilter,
+                            freqPlotObj,
+                            spectralWidth,
+                            whiteningFilter.length - 1);
+
+        //Compute and display the conventional spectrum of
+        // a chunk of raw signal plus noise data.
+        displaySpectrum(rawData,
+                        conventionalPlotObj,
+                        spectralWidth,
+                        rawData.length - 1);
+      }//End display of frequency data
+    }//End for loop, End adaptive process
+    
+    //Cause all the data to be plotted.
+    freqPlotObj.plotData(0,0);
+    conventionalPlotObj.plotData(232,0);
+    
+  }//end process method
+  //-----------------------------------------------------//
+
+  //This method simulates a tapped delay line. It receives
+  // a reference to an array and a value.  It discards the
+  // value at index 0 of the array, moves all the other
+  // values by one element toward 0, and inserts the new
+  // value at the top of the array.
+  static void flowLine(double[] line,double val){
+    for(int cnt = 0;cnt &lt; (line.length - 1);cnt++){
+      line[cnt] = line[cnt+1];
+    }//end for loop
+    line[line.length - 1] = val;
+  }//end flowLine
+  //-----------------------------------------------------//
+  
+  //This method is used to compute and display the
+  // amplitude frequency response of an incoming whitening
+  // filter.
+  void displayFreqResponse(
+     double[] filter,PlotALot08 plot,int len,int zeroTime){
+
+    //Create the arrays required by the Fourier Transform.
+    double[] timeDataIn = new double[len];
+    double[] realSpect = new double[len];
+    double[] imagSpect = new double[len];
+    double[] angle = new double[len];
+    double[] magnitude = new double[len];
+    
+    //Copy the filter into the timeDataIn array
+    System.arraycopy(filter,0,timeDataIn,0,filter.length);
+
+    //Compute DFT of the filter from zero to the folding
+    // frequency and save it in the output arrays.
+    ForwardRealToComplex01.transform(timeDataIn,
+                                     realSpect,
+                                     imagSpect,
+                                     angle,
+                                     magnitude,
+                                     zeroTime,
+                                     0.0,
+                                     0.5);
+
+    //Display the magnitude data. Convert to normalized
+    // decibels first.
+    //Eliminate or change any values that are incompatible
+    // with log10 method.
+    for(int cnt = 0;cnt &lt; magnitude.length;cnt++){
+      if((magnitude[cnt] == Double.NaN) || 
+                                    (magnitude[cnt] &lt;= 0)){
+        //Replace the magnitude by a very small positive
+        // value.
+        magnitude[cnt] = 0.0000001;
+      }else if(magnitude[cnt] == Double.POSITIVE_INFINITY){
+        //Replace the magnitude by a very large positive
+        // value.
+        magnitude[cnt] = 9999999999.0;
+      }//end else if
+    }//end for loop
+  
+    //Now convert magnitude data to log base 10
+    for(int cnt = 0;cnt &lt; magnitude.length;cnt++){
+      magnitude[cnt] = log10(magnitude[cnt]);
+    }//end for loop
+    
+    //Note that from this point forward, all references to
+    // magnitude are referring to log base 10 data, which
+    // can be thought of as scaled decibels.
+    
+    //Change the algebraic sign on all the values to turn
+    // the response curve upside down.  This causes the
+    // notches in the response curve to appear as peaks in
+    // the display.
+    for(int cnt = 0;cnt &lt; magnitude.length;cnt++){
+      magnitude[cnt] = -magnitude[cnt];
+    }//end for loop
+
+    //The purpose of much of the following code is to
+    // normalize the amplitude response such that each
+    // response curve will occupy the same size horizontal
+    // strip in the plot regardless of the magnitude
+    // of the input data.
+    
+    //Bias the values such that the smallest value becomes
+    // zero.
+    //First find the smallest value.
+    double min = 9999999999.0;
+    for(int cnt = 0;cnt &lt; magnitude.length;cnt++){
+      if(magnitude[cnt] &lt; min){
+        min = magnitude[cnt];
+      }//end if
+    }//end for loop
+    //Now apply the bias.
+    for(int cnt = 0;cnt &lt; magnitude.length;cnt++){
+      magnitude[cnt] -= min;
+    }//end for loop
+
+    //Find the absolute peak value.  Begin with a negative
+    // peak value with a large magnitude and replace it
+    // with the largest magnitude value.
+    double peak = -9999999999.0;
+    for(int cnt = 0;cnt &lt; magnitude.length;cnt++){
+      if(peak &lt; abs(magnitude[cnt])){
+        peak = abs(magnitude[cnt]);
+      }//end if
+    }//end for loop
+    
+    //Set the zero frequency value to the peak so that it
+    // can be used to visually confirm plot synchronization
+    // later.
+    magnitude[0] = peak;
+
+    //Normalize to 20 times the peak value. Each response
+    // curve will now occupy a horizontal strip of the
+    // plotting area that is 20 pixels from top to bottom.
+    for(int cnt = 0;cnt &lt; magnitude.length;cnt++){
+      magnitude[cnt] = 20*magnitude[cnt]/peak;
+    }//end for loop
+
+    //Now feed the normalized decibel data to the plotting
+    // system.
+    for(int cnt = 0;cnt &lt; magnitude.length;cnt++){
+      plot.feedData(magnitude[cnt]);
+    }//end for loop
+    
+  }//end displayFreqResponse
+  //-----------------------------------------------------//
+  
+  //This method is used to compute and display the
+  // conventional amplitude spectrum of a chunk of incoming
+  // data.
+  //The code in this method is similar to, but not
+  // identical to the code in the method named
+  // displayFreqResponse.
+  void displaySpectrum(
+     double[] data,PlotALot08 plot,int len,int zeroTime){
+
+    //Create the arrays required by the Fourier Transform.
+    double[] timeDataIn = new double[len];
+    double[] realSpect = new double[len];
+    double[] imagSpect = new double[len];
+    double[] angle = new double[len];
+    double[] magnitude = new double[len];
+    
+    //Copy the data into the timeDataIn array
+    System.arraycopy(data,0,timeDataIn,0,data.length);
+
+    //Compute DFT of the data from zero to the folding
+    // frequency and save it in the output arrays.
+    ForwardRealToComplex01.transform(timeDataIn,
+                                     realSpect,
+                                     imagSpect,
+                                     angle,
+                                     magnitude,
+                                     zeroTime,
+                                     0.0,
+                                     0.5);
+
+    //Display the magnitude data. Note that conversion to
+    // decibels has been disabled in this version of the
+    // method. Enable the following code to re-enable
+    // the conversion to decibels.
+/*
+    //Eliminate or change any values that are incompatible
+    // with log10 method.
+    for(int cnt = 0;cnt &lt; magnitude.length;cnt++){
+      if((magnitude[cnt] == Double.NaN) || 
+                                    (magnitude[cnt] &lt;= 0)){
+        //Replace the magnitude by a very small positive
+        // value.
+        magnitude[cnt] = 0.0000001;
+      }else if(magnitude[cnt] == Double.POSITIVE_INFINITY){
+        //Replace the magnitude by a very large positive
+        // value.
+        magnitude[cnt] = 9999999999.0;
+      }//end else if
+    }//end for loop
+  
+    //Now convert magnitude data to log base 10
+    for(int cnt = 0;cnt &lt; magnitude.length;cnt++){
+      magnitude[cnt] = log10(magnitude[cnt]);
+    }//end for loop
+*/
+
+    //These spectral results are normalized the same way
+    // the frequency response curves are normalized as
+    // described in the method named displayFreqResponse.
+    //Bias the values such that the smallest value becomes
+    // zero.
+    //First find the smallest value.
+    double min = 9999999999.0;
+    for(int cnt = 0;cnt &lt; magnitude.length;cnt++){
+      if(magnitude[cnt] &lt; min){
+        min = magnitude[cnt];
+      }//end if
+    }//end for loop
+    //Now apply the bias.
+    for(int cnt = 0;cnt &lt; magnitude.length;cnt++){
+      magnitude[cnt] -= min;
+    }//end for loop
+
+    //Find the absolute peak value.  Begin with a negative
+    // peak value with a large magnitude and replace it
+    // with the largest magnitude value.
+    double peak = -9999999999.0;
+    for(int cnt = 0;cnt &lt; magnitude.length;cnt++){
+      if(peak &lt; abs(magnitude[cnt])){
+        peak = abs(magnitude[cnt]);
+      }//end if
+    }//end for loop
+
+    //Set the zero frequency value to the peak so that it
+    // can be used to confirm plot synchronization later.
+    magnitude[0] = peak;
+
+    //Normalize to 20 times the peak value.
+    for(int cnt = 0;cnt &lt; magnitude.length;cnt++){
+      magnitude[cnt] = 20*magnitude[cnt]/peak;
+    }//end for loop
+
+    //Now feed the normalized data to the plotting
+    // system.
+    for(int cnt = 0;cnt &lt; magnitude.length;cnt++){
+      plot.feedData(magnitude[cnt]);
+    }//end for loop
+    
+  }//end displaySpectrum
+  //-----------------------------------------------------//
+}//end class Adapt05
+//=======================================================//<br><br><b><font face="Courier New,Courier">Listing 20</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<p>&nbsp;</p>
+
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>/*File PlotALot08.java 
+Copyright 2005, R.G.Baldwin
+This is an update to the program named PlotALot01.
+The purpose of this update is to eliminate the
+drawing of the horizontal axes on the plot.
+Otherwise, it is identical to PlotALot01.
+
+This program is designed to plot large amounts of
+time-series data for a single channel.  See
+PlotALot02.java for a two-channel program.
+
+Note that by carefully adjusting the plotting
+parameters, this program could also be used to
+plot large quantities of spectral data in a
+waterfall display.
+
+The class provides a main method so that the
+class can be run as an application to test
+itself.
+
+There are three steps involved in the use of this
+class for plotting time series data:
+1. Instantiate a plotting object of type 
+   PlotALot08 using one of two overloaded 
+   constructors.
+2. Feed data that is to be plotted to the 
+   plotting object by invoking the feedData 
+   method once for each data value.
+3. Invoke one of two overloaded plotData methods 
+   on the plotting object once all of the data 
+   has been fed to the object.  This causes all
+   of the data to be plotted.
+   
+A using program can instantiate as many 
+plotting objects as are needed to plot all of the
+different time series that need to be plotted.
+Each plotting object can be used to plot as many
+data values as need be plotted until the program
+runs out of available memory.
+
+The plotting object of type PlotALot08 owns one 
+or more Page objects that extend the Frame class.
+The plotting object can own as many Page objects 
+as are necessary to plot all of the data that is 
+fed to that plotting object.
+
+The program produces a graphic output consisting 
+of a stack of Page objects on the screen, with 
+the data plotted on a Canvas object contained by 
+the Page object.  The Page showing the earliest 
+data is on the top of the stack and the Page 
+showing the latest data is on the bottom of the 
+stack.  The Page objects on the top of the stack 
+must be physically moved in order to see the 
+Page objects on the bottom of the stack.
+
+Each Page object contains one or more horizontal 
+axes on which the data is plotted.  The earliest 
+data is plotted on the axis nearest the top of 
+the Page moving from left to right across the 
+axis.  Positive data values are plotted above
+the axis and negative values are plotted below
+the axis.  When the right end of an axis is 
+reached, the next data value is plotted on the 
+left end of the axis immediately below it.  When 
+the right end of the last axis on the Page is 
+reached, a new Page object is created and the 
+next data value is plotted at the left end of the
+top axis on that Page object.
+
+A mentioned above, there are two overloaded 
+versions of the constructor for the PlotALot08
+class. One overloaded version accepts several 
+incoming parameters allowing the user to control
+various aspects of the plotting format. A second 
+overloaded version accepts a title string only 
+and sets all of the plotting parameters to 
+default values. You can easily modify these
+default values and recompile the class if you
+prefer different default values.
+
+The parameters for the version of the constructor
+that accepts plotting format information are:
+
+String title: Title for the Frame object. This
+ title is concatenated with the page number and 
+ the result appears in the banner at the top of 
+ the Frame.
+int frameWidth:The Frame width in pixels.
+int frameHeight: The Frame height in pixels.
+int traceSpacing: Distance between trace axes in
+ pixels.
+int sampSpace: Number of pixels dedicated to each
+ data sample in pixels per sample.  Must be 1 or
+ greater.
+int ovalWidth: Width of an oval that is used to 
+ mark the sample value on the plot.
+int ovalHeight: Height of an oval that is used to
+ mark the sample value on the plot.
+
+For test purposes, the main method instantiates 
+and feeds two independent plotting objects. 
+Plotting parameters are specified for the first 
+plotting object. Default plotting parameters are 
+accepted for the second plotting object.
+ 
+The data that is fed to each plotting object is 
+white random noise. However, for the first
+plotting object, fifteen of the data values are 
+not random.  Rather, seven of the values are set
+to values of 0,0,25,-25,25,0,0 to confirm the 
+proper transition from the end of one page to the
+beginning of the next page. In addition, eight of
+the values are set to 0,0,20,20,-20,-20,0,0 in
+order to confirm the proper transition from one 
+trace to the next trace on the same page.
+
+These specific values and the locations in the 
+data where they are placed provide visible 
+confirmation that the transitions mentioned above
+are handled correctly. Note, however that these 
+are the correct locations for an AWT Frame object
+under WinXP. A Frame may have different inset 
+values under other operating systems, which may 
+cause these specific locations to be incorrect 
+for that operating system.  In that case, the 
+values will be plotted but they won't confirm 
+the proper transition.
+
+The following information about the plotting 
+parameters for each plotting object is displayed 
+on the command line screen when the class is used
+for plotting.  The values shown below result from
+the execution of the main method of the class for
+test purposes. One of the plotting objects 
+instantiated by the main method is entitled "A" 
+and the other is entitled "B".
+
+Title: A
+Frame width: 158
+Frame height: 237
+Page width: 150
+Page height: 210
+Trace spacing: 36
+Sample spacing: 5
+Traces per page: 5
+Samples per page: 150
+
+Title: B
+Frame width: 400
+Frame height: 410
+Page width: 392
+Page height: 383
+Trace spacing: 50
+Sample spacing: 2
+Traces per page: 7
+Samples per page: 1372
+
+There are two overloaded versions of the plotData
+method. One version allows the user to specify 
+the location on the screen where the stack of 
+plotted pages will appear. This version requires 
+two parameters, which are coordinate values in 
+pixels.  The first parameter specifies the 
+horizontal coordinate of the upper left corner of
+the stack of pages relative to the upper left 
+corner of the screen.  The second parameter 
+specifies the vertical coordinate of the upper 
+left corner of the stack of pages relative to the
+upper left corner of the screen. Specifying 
+coordinate values of 0,0 causes the stack to be 
+located in the upper left corner of the screen.  
+
+The other overloaded version of plotData places 
+the stack of pages in the upper left corner of 
+the screen by default.
+ 
+Each page has a WindowListener that will 
+terminate the program if the user clicks the 
+close button on the Frame.
+
+The program was tested using J2SE 5.0 and WinXP.
+Requires J2SE 5.0 to support generics.
+************************************************/
+
+import java.awt.*;
+import java.awt.event.*;
+import java.util.*;
+
+public class PlotALot08{
+  //This main method is provided so that the
+  // class can be run as an application to test
+  // itself.
+  public static void main(String[] args){
+    //Instantiate two independent plotting
+    // objects.  Control plotting parameters for
+    // the first object.  Accept default plotting
+    // parameters for the second object.
+    PlotALot08 plotObjectA = 
+            new PlotALot08("A",158,237,36,5,4,4);
+    PlotALot08 plotObjectB = new PlotALot08("B");
+    
+    //Feed the data to the first plotting object.
+    for(int cnt = 0;cnt &lt; 275;cnt++){
+      //Plot some white random noise in the first
+      // object using specified plotting
+      // parameters. Note, that fifteen of the
+      // following values are not random.  Seven
+      // values are set to 0,0,25,-25,25,0,0
+      // specifically to confirm the proper
+      // transition from the end of one page to
+      // the beginning of the next page.  Eight
+      // values are set to 0,0,20,20,-20,-20,0,0
+      // to confirm the proper transition from
+      // one trace to the next trace on the same
+      // page.  Note that these are the correct
+      // values for an AWT Frame object under
+      // WinXP.  However, a Frame may have 
+      // different inset values on other
+      // operating systems, which may cause these
+      // specific values to be incorrect.
+      if(cnt == 147){
+        plotObjectA.feedData(0);
+      }else if(cnt == 148){
+        plotObjectA.feedData(0);
+      }else if(cnt == 149){
+        plotObjectA.feedData(25);
+      }else if(cnt == 150){
+        plotObjectA.feedData(-25);
+      }else if(cnt == 151){
+        plotObjectA.feedData(25);
+      }else if(cnt == 152){
+        plotObjectA.feedData(0);
+      }else if(cnt == 153){
+        plotObjectA.feedData(0);
+      }else if(cnt == 26){
+        plotObjectA.feedData(0);
+      }else if(cnt == 27){
+        plotObjectA.feedData(0);
+      }else if(cnt == 28){
+        plotObjectA.feedData(20);
+      }else if(cnt == 29){
+        plotObjectA.feedData(20);
+      }else if(cnt == 30){
+        plotObjectA.feedData(-20);
+      }else if(cnt == 31){
+        plotObjectA.feedData(-20);
+      }else if(cnt == 32){
+        plotObjectA.feedData(0);
+      }else if(cnt == 33){
+        plotObjectA.feedData(0);
+      }else{
+        plotObjectA.feedData(
+                       (Math.random() - 0.5)*25);
+      }//end else
+    }//end for loop
+    //Cause the data to be plotted.
+    plotObjectA.plotData(401,0);
+    
+    //Plot white random noise in the second
+    // plotting object using default plotting
+    // parameters.
+    //Feed the data to the second plotting
+    // object.
+    for(int cnt = 0;cnt &lt; 2600;cnt++){
+      plotObjectB.feedData(
+                       (Math.random() - 0.5)*25);
+    }//end for loop
+    //Cause the data to be plotted.
+    plotObjectB.plotData();
+    
+  }//end main
+  //-------------------------------------------//
+
+  String title;
+  int frameWidth;
+  int frameHeight;
+  int traceSpacing;//pixels between traces
+  int sampSpacing;//pixels between samples
+  int ovalWidth;//width of sample marking oval
+  int ovalHeight;//height of sample marking oval
+  
+  int tracesPerPage;
+  int samplesPerPage;
+  int pageCounter = 0;
+  int sampleCounter = 0;
+  ArrayList &lt;Page&gt; pageLinks = 
+                           new ArrayList&lt;Page&gt;();
+  
+  //There are two overloaded versions of the
+  // constructor for this class.  This
+  // overloaded version accepts several incoming
+  // parameters allowing the user to control
+  // various aspects of the plotting format. A
+  // different overloaded version accepts a title
+  // string only and sets all of the plotting
+  // parameters to default values.
+  PlotALot08(String title,//Frame title
+             int frameWidth,//in pixels
+             int frameHeight,//in pixels
+             int traceSpacing,//in pixels
+             int sampSpace,//in pixels per sample
+             int ovalWidth,//sample marker width
+             int ovalHeight)//sample marker hite
+  {//constructor
+    //Specify sampSpace as pixels per sample.
+    // Should never be less than 1.  Convert to
+    // pixels between samples for purposes of
+    // computation.
+    this.title = title;
+    this.frameWidth = frameWidth;
+    this.frameHeight = frameHeight;
+    this.traceSpacing = traceSpacing;
+    //Convert to pixels between samples.
+    this.sampSpacing = sampSpace - 1;
+    this.ovalWidth = ovalWidth;
+    this.ovalHeight = ovalHeight;
+
+    //The following object is instantiated solely
+    // to provide information about the width and
+    // height of the canvas. This information is
+    // used to compute a variety of other
+    // important values.
+    Page tempPage = new Page(title);
+    int canvasWidth = tempPage.canvas.getWidth();
+    int canvasHeight = 
+                     tempPage.canvas.getHeight();
+    //Display information about this plotting
+    // object.
+    System.out.println("\nTitle: " + title);
+    System.out.println(
+          "Frame width: " + tempPage.getWidth());
+    System.out.println(
+        "Frame height: " + tempPage.getHeight());
+    System.out.println(
+                   "Page width: " + canvasWidth);
+    System.out.println(
+                 "Page height: " + canvasHeight);
+    System.out.println(
+               "Trace spacing: " + traceSpacing);
+    System.out.println(
+         "Sample spacing: " + (sampSpacing + 1));
+    if(sampSpacing &lt; 0){
+      System.out.println("Terminating");
+      System.exit(0);
+    }//end if
+    //Get rid of this temporary page.
+    tempPage.dispose();
+    //Now compute the remaining important values.
+    tracesPerPage = 
+                 (canvasHeight - traceSpacing/2)/
+                                    traceSpacing;
+    System.out.println("Traces per page: "
+                                + tracesPerPage);
+    if(tracesPerPage == 0){
+      System.out.println("Terminating program");
+      System.exit(0);
+    }//end if
+    samplesPerPage = canvasWidth * tracesPerPage/
+                               (sampSpacing + 1);
+    System.out.println("Samples per page: "
+                               + samplesPerPage);
+    //Now instantiate the first usable Page
+    // object and store its reference in the
+    // list.
+    pageLinks.add(new Page(title));
+  }//end constructor
+  //-------------------------------------------//
+  
+  PlotALot08(String title){
+    //Invoke the other overloaded constructor
+    // passing default values for all but the
+    // title.
+    this(title,400,410,50,2,2,2);
+  }//end overloaded constructor
+  //-------------------------------------------//
+  
+  //Invoke this method for each point to be
+  // plotted.
+  void feedData(double val){
+    if((sampleCounter) == samplesPerPage){
+      //if the page is full, increment the page
+      // counter, create a new empty page, and
+      // reset the sample counter.
+      pageCounter++;
+      sampleCounter = 0;
+      pageLinks.add(new Page(title));
+    }//end if
+    //Store the sample value in the MyCanvas
+    // object to be used later to paint the
+    // screen.  Then increment the sample
+    // counter.  The sample value passes through
+    // the page object into the current MyCanvas
+    // object.
+    pageLinks.get(pageCounter).putData(
+                              val,sampleCounter);
+    sampleCounter++;
+  }//end feedData
+  //-------------------------------------------//
+  
+  //There are two overloaded versions of the
+  // plotData method.  One version allows the
+  // user to specify the location on the screen
+  // where the stack of plotted pages will
+  // appear.  The other version places the stack
+  // in the upper left corner of the screen.
+  
+  //Invoke one of the overloaded versions of
+  // this method once when all of the data has
+  // been fed to the plotting object in order to
+  // rearrange the order of the pages with
+  // page 0 at the top of the stack on the
+  // screen.
+  
+  //For this overloaded version, specify xCoor
+  // and yCoor to control the location of the
+  // stack on the screen.  Values of 0,0 will
+  // place the stack at the upper left corner of
+  // the screen.  Also see the other overloaded
+  // version, which places the stack at the upper
+  // left corner of the screen by default.
+  void plotData(int xCoor,int yCoor){
+    Page lastPage = 
+             pageLinks.get(pageLinks.size() - 1);
+    //Delay until last page becomes visible.
+    while(!lastPage.isVisible()){
+      //Loop until last page becomes visible
+    }//end while loop
+    
+    Page tempPage = null;
+    //Make all pages invisible
+    for(int cnt = 0;cnt &lt; (pageLinks.size());
+                                          cnt++){
+      tempPage = pageLinks.get(cnt);
+      tempPage.setVisible(false);
+    }//end for loop
+    
+    //Now make all pages visible in reverse order
+    // so that page 0 will be on top of the
+    // stack on the screen.
+    for(int cnt = pageLinks.size() - 1;cnt &gt;= 0;
+                                          cnt--){
+      tempPage = pageLinks.get(cnt);
+      tempPage.setLocation(xCoor,yCoor);
+      tempPage.setVisible(true);
+    }//end for loop
+
+  }//end plotData(int xCoor,int yCoor)
+  //-------------------------------------------//
+  
+  //This overloaded version of the method causes
+  // the stack to be located in the upper left
+  // corner of the screen by default
+  void plotData(){
+    plotData(0,0);//invoke overloaded version
+  }//end plotData()
+  //-------------------------------------------//
+
+  //Inner class.  A PlotALot08 object may
+  // have as many Page objects as are required
+  // to plot all of the data values.  The 
+  // reference to each Page object is stored
+  // in an ArrayList object belonging to the
+  // PlotALot08 object.
+  class Page extends Frame{
+    MyCanvas canvas;
+    int sampleCounter;
+
+    Page(String title){//constructor
+      canvas = new MyCanvas();
+      add(canvas);
+      setSize(frameWidth,frameHeight);    
+      setTitle(title + " Page: " + pageCounter);
+      setVisible(true);
+      
+      //---------------------------------------//
+      //Anonymous inner class to terminate the
+      // program when the user clicks the close
+      // button on the Frame.
+      addWindowListener(
+        new WindowAdapter(){
+          public void windowClosing(
+                                  WindowEvent e){
+            System.exit(0);//terminate program
+          }//end windowClosing()
+        }//end WindowAdapter
+      );//end addWindowListener
+      //---------------------------------------//
+    }//end constructor
+    //=========================================//
+  
+    //This method receives a sample value of type
+    // double and stores it in an array object
+    // belonging to the MyCanvas object.
+    void putData(double sampleValue,
+                 int sampleCounter){
+      canvas.data[sampleCounter] = sampleValue;
+      //Save the sample counter in an instance
+      // variable to make it available to the
+      // overridden paint method. This value is
+      // needed by the paint method so it will
+      // know how many samples to plot on the
+      // final page which probably won't be full.
+      this.sampleCounter = sampleCounter;
+    }//end putData
+    
+    //=========================================//
+    //Inner class
+    class MyCanvas extends Canvas{
+      double [] data = 
+                      new double[samplesPerPage];
+      
+      //Override the paint method
+      public void paint(Graphics g){
+/*
+Eliminate the drawing of horizontal axes for this
+version of the program.
+        //Draw horizontal axes, one for each
+        // trace.
+        for(int cnt = 0;cnt &lt; tracesPerPage;
+                                          cnt++){
+          g.drawLine(0,
+                     (cnt+1)*traceSpacing,
+                     this.getWidth(),
+                     (cnt+1)*traceSpacing);
+        }//end for loop
+*/
+        //Plot the points if there are any to be
+        // plotted.
+        if(sampleCounter &gt; 0){
+          for(int cnt = 0;cnt &lt;= sampleCounter;
+                                          cnt++){
+            //Compute a vertical offset to locate
+            // the data on a particular trace.
+            int yOffset = 
+                   (1 + cnt*(sampSpacing + 1)/
+                   this.getWidth())*traceSpacing;
+            //Draw an oval centered on the sample
+            // value to mark the sample.  It is 
+            // best if the dimensions of the oval
+            // are evenly divisable by 2 for 
+            // centering purposes.
+            //Reverse the sign on sample value to
+            // cause positive sample values to go
+            // up on the screen
+            g.drawOval(cnt*(sampSpacing + 1)%
+                   this.getWidth() - ovalWidth/2,
+              yOffset - (int)data[cnt] 
+                                  - ovalHeight/2,
+              ovalWidth,
+              ovalHeight);
+            
+            //Connect the sample values with
+            // straight lines.  Do not draw a
+            // line connecting the last sample in
+            // one trace to the first sample in
+            // the next trace.
+            if(cnt*(sampSpacing + 1)%
+                               this.getWidth() &gt;=
+                                sampSpacing + 1){
+              g.drawLine(
+                (cnt - 1)*(sampSpacing + 1)%
+                                 this.getWidth(),
+                yOffset - (int)data[cnt-1],
+                cnt*(sampSpacing + 1)%
+                                 this.getWidth(),
+                yOffset - (int)data[cnt]);
+            }//end if
+          }//end for loop
+        }//end if for sampleCounter &gt; 0
+      }//end overridden paint method
+    }//end inner class MyCanvas
+  }//end inner class Page
+}//end class PlotALot08
+//=============================================//
+<br><br><b><font face="Courier New,Courier">Listing 21</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<p>&nbsp;</p>
+
+<hr  size="3" width="100%">
+<p>Copyright 2005, Richard G. Baldwin.&nbsp; Reproduction in whole or in part in any 
+form or medium without express written permission from Richard Baldwin is 
+prohibited. </p>
+<h4>About the author</h4>
+<b><a href="mailto:Baldwin@DickBaldwin.com">Richard Baldwin</a></b><i> is a 
+college professor (at Austin Community College in Austin, TX) and private 
+consultant whose primary focus is a combination of Java, C#, and XML. In 
+addition to the many platform and/or language independent benefits of Java and 
+C# applications, he believes that a combination of Java, C#, and XML will become 
+the primary driving force in the delivery of structured information on the Web.</i>    
+<p><i>Richard has participated in numerous consulting projects and he 
+frequently provides onsite training at the high-tech companies located in and 
+around Austin, Texas.&nbsp; He is the author of Baldwin's Programming
+<a href="http://www.dickbaldwin.com">Tutorials</a>, which have gained a 
+worldwide following among experienced and aspiring programmers. He has also 
+published articles in JavaPro magazine.</i> </p>
+<p><i>In addition to his programming expertise, Richard has many years of 
+practical experience in Digital Signal Processing (DSP).&nbsp; His first job after he 
+earned his Bachelor's degree was doing DSP in the Seismic Research Department of 
+Texas Instruments.&nbsp; (TI is still a world leader in DSP.)&nbsp; In the following 
+years, he applied his programming and DSP expertise to other interesting areas 
+including sonar and underwater acoustics.</i> </p>
+<p><i>Richard holds an MSEE degree from Southern Methodist University and has 
+many years of experience in the application of computer technology to real-world 
+problems.</i> </p>
+<p><i><a href="mailto:baldwin@dickbaldwin.com">Baldwin@DickBaldwin.com</a></i>
+</p>
+<p><b>Keywords</b><br>
+Java adaptive filtering convolution filter frequency spectrum LMS amplitude 
+phase time-delay linear DSP impulse decibel log10 DFT transform bandwidth signal 
+noise real-time dot-product vector time-series prediction whitening </p>
+<p>-end- </p>
+<p>&nbsp;</p>
+<p> <br>
+&nbsp; </p>
+<br>
+<br>
+<br>
+<br>
+<table border="0" cellpadding="0" cellspacing="0" width="16" height="23">
+	<!-- MSTableType="layout" -->
+	<tr>
+		<td valign="top" colspan="3" height="3">
+		<!-- MSCellType="ContentHead" -->
+		&nbsp;</td>
+	</tr>
+	<tr>
+		<td valign="top" width="6">
+		<!-- MSCellType="NavBody" -->
+		&nbsp;</td>
+		<td valign="top" width="5">
+		<!-- MSCellType="ContentBody" -->
+		&nbsp;</td>
+		<td valign="top" height="18" width="5">
+		<!-- MSCellType="NavBody2" -->
+		&nbsp;</td>
+	</tr>
+	<tr>
+		<td valign="top" colspan="3" height="2">
+		<!-- MSCellType="ContentFoot" -->
+		&nbsp;</td>
+	</tr>
+</table>
+</body>
+</html>

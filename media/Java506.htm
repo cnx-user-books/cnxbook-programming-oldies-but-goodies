@@ -1,0 +1,778 @@
+<html><head>
+   <meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
+   <meta name="generator" content="mozilla/4.04 [en] (win95; i) [netscape]">
+   <meta name="author" content="richard g. baldwin">
+   <title>... in Java by Richard G Baldwin</title></head><body><!--start-->
+
+<center><h3><b><i>Richard G Baldwin (512) 223-4758, <a href="mailto:baldwin@austin.cc.tx.us">baldwin@austin.cc.tx.us</a>,
+<a href="http://www2.austin.cc.tx.us/baldwin/">http://www2.austin.cc.tx.us/baldwin/</a></i></b></h3></center>
+
+<center><h2><b><!--title-->JavaBeans, Introspection<!--endtitle--></b></h2></center>
+Java Programming, Lecture Notes # 506, Revised 02/18/98.
+<ul><li><a href="#preface">Preface</a></li>
+
+<li><a href="#introduction">Introduction</a></li>
+
+<li><a href="#the need for introspection">The Need for Introspection</a></li>
+
+<li><a href="#design patterns, general">Design Patterns, General</a></li>
+
+<li><a href="#design patterns for properties">Design Patterns for Properties</a></li>
+
+<ul><li><a href="#simple properties">Simple properties</a></li>
+
+<li><a href="#boolean properties">Boolean Properties</a></li>
+
+<li><a href="#indexed properties">Indexed Properties</a></li></ul>
+
+<li><a href="#design patterns for events">Design Patterns for Events</a></li>
+
+<ul><li><a href="#multicast events">Multicast Events</a></li>
+
+<li><a href="#unicast events">Unicast Events</a></li></ul>
+
+<li><a href="#design patterns for methods">Design Patterns for Methods</a></li>
+
+<li><a href="#explicit specification">Explicit Specification</a></li>
+
+<li><a href="#analyzing a bean">Analyzing a Bean</a></li>
+
+<li><a href="#capitalization rules">Capitalization Rules</a></li>
+
+<li><a href="#sample program">Sample Program</a></li>
+
+<ul><li><a href="#interesting code fragments">Interesting Code Fragments</a></li>
+
+<li><a href="#program listing">Program Listing</a></li></ul></ul>
+
+<hr align=left width="100%"><center><h2><a name="preface"></a><b><font color="#ff0000">Preface</font></b></h2></center>
+Students in Prof. Baldwin's <b><u>Advanced Java Programming</u></b> classes
+at ACC are responsible for knowing and understanding all of the material
+in this lesson.
+
+<p>JDK 1.1 was released on February 18, 1997 and JDK 1.1.1 was released
+on March 27, 1997. This lesson was originally written on April 10, 1997
+using the software and documentation in the JDK 1.1.1 download package
+along with the April 97 release of the BDK 1.0 download package.
+<center><h2><a name="introduction"></a><font color="#ff0000">Introduction</font></h2></center>
+The JavaBeans APIs include the following class:
+<br>&nbsp;
+<table border bgcolor="#00ffff" ><tr><td><b>java.beans.Introspector</b>.&nbsp;</td></tr></table>
+This class provides a standard way for visual builder tools to learn about
+the <u>properties</u>, <u>events</u>, and <u>methods</u> of a target Bean's
+class.
+
+<p>The <b>Introspector </b>class contains two overloaded versions of a
+single method that can be used to analyze the target bean's class and superclasses
+looking either for explicit or implicit information. The information discovered
+is used to build and return an object of type <b>BeanInfo </b>that describes
+the target bean. Once the object of type BeanInfo is available, a variety
+of methods are available to extract specific information about the bean
+from that object.
+
+<p>The programmer can elect provide explicit information about a bean or
+can rely on automatic low-level reflection and the recognition of <i>design
+patterns.</i> The explicit approach will be briefly covered here, and discussed
+in more detail in a subsequent lesson.
+
+<p>The methods of the <b>Introspector</b> class use low-level <i>reflection
+</i>techniques in the analysis of the bean. Low-level reflection techniques
+were studied in an earlier lesson.
+
+<p>The primary method of the <b>Introspector </b>class used to analyze
+a bean is the <b>getBeanInfo() </b>method. Simply put, this method takes
+a target <b>Class </b>object as a parameter and returns a <b>BeanInfo </b>object
+containing information about the target class. The <b>BeanInfo </b>class
+contains a number of methods that can be used to extract the different
+elements of information from the <b>BeanInfo </b>object.
+
+<p>There are two versions of the <b>getBeanInfo()</b> method. The method
+which accepts only one parameter returns information about the target class
+and <u>all</u> its superclasses.
+
+<p>Another version accepts a second <b>Class </b>object as a parameter
+and uses that class as a ceiling for introspection up the inheritance hierarchy.
+For example, if this second class is the direct superclass of the primary
+target class, only information about the primary target class is returned.
+<center><h2><a name="the need for introspection"></a><font color="#ff0000">The Need
+for Introspection</font></h2></center>
+Builder environments, and some runtime situations need to identify the
+properties, events, and methods that a bean supports. This process is called
+<i>introspection</i>.
+
+<p>One of the goals of the Java designers was to avoid the requirement
+for the use of a separate specification language for defining the behavior
+of a bean. Their goal was to make its behavior completely specifiable in
+Java.
+
+<p>According to JavaSoft:
+<br>&nbsp;
+<table border bgcolor="#00ffff" ><tr><td>"A key goal of Java Beans is to make it very easy to write simple components
+and to provide default implementations for most common tasks."&nbsp;</td></tr></table>
+Therefore, they have worked to make it possible to introspect on simple
+beans without requiring a lot of extra effort on the part of the component
+developer. At the same time, they have also worked to provide the component
+developer with an alternative approach that provides full and precise control
+over which <i>properties</i>, <i>events</i>, and <i>methods </i>are exposed
+for more sophisticated components.
+
+<p>Remember these three: <i>properties</i>, <i>events</i>, and <i>methods</i>.
+The object of introspection is to gather information about these the exposed
+<i>properties</i>, <i>events</i>, and <i>methods </i>of a bean.
+
+<p>This has resulted in a composite mechanism. The default case is to use
+low-level <i>reflection </i>to analyze the methods supported by a bean
+and then to apply <i>design patterns</i> to determine from the methods
+the specific <i>events</i>, <i>properties</i>, and <i>public methods </i>that
+are supported.
+
+<p>However, they have also made it possible for a component developer to
+provide a class that implements the <b>BeanInfo</b> interface and to use
+that class to explicitly describe the bean. This <b>BeanInfo</b> class
+is then used to discover the beans behavior.
+
+<p>The <b>Introspector </b>class is provided to allow application builders
+and other tools to analyze beans in a uniform manner. The <b>Introspector
+</b>class understands the various <i>design patterns</i> and standard interfaces
+and extracts the pertinent information from the bean.
+<center><h2><a name="design patterns, general"></a><font color="#ff0000">Design Patterns,
+General</font></h2></center>
+The JavsSoft meaning of <i>design patterns</i> as used in this lesson is:
+<br>&nbsp;
+<table border bgcolor="#00ffff" ><tr><td>"conventional names and type signatures for sets of methods and/or
+interfaces that are used for standard purposes."</td></tr></table>
+A common example of design patterns as used in the <b>Introspector </b>class
+is the use of the
+<br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td><pre><tt>public void set&lt;PropertyName>(&lt;PropertyType> a);</tt>&nbsp;</pre>
+
+<pre><tt>public &lt;PropertyType> get&lt;PropertyName>();</tt>&nbsp;</pre></td></tr></table>
+methods to <i>set </i>and <i>get </i>the value of the property with the
+specified name and the specified type.
+
+<p>JavaSoft has settled on the use of <i>design patterns</i> for at least
+two reasons.
+<br>&nbsp;
+<table border bgcolor="#00ffff" ><tr><td><ul><li><u>First</u>, they provide a useful programming standard and documentation
+hint for human programmers. By using <i>design patterns</i> in their programming
+style, the programmer who defines the class and other programmers who read
+it can more quickly understand and use new classes.&nbsp;</li>
+
+<li><u>Second</u>, the use of <i>design patterns</i> makes it possible for
+JavaSoft and others to write tools and libraries that recognize the <i>design
+patterns</i> and use them to analyze and understand components. <i>Design
+patterns</i> are used for Java Beans as a way to implement <u>automatic</u>
+identification of <i>properties</i>, <i>events</i>, and <i>exported methods</i>.&nbsp;</li></ul></td></tr></table>
+Again, however, the use of <i>design patterns</i> is entirely optional
+within Java Beans. Programmers who desire to do so can explicitly specify
+their <i>properties</i>, <i>methods</i>, and <i>events </i>using the <b>BeanInfo
+</b>interface. By doing that, the programmer can use whatever names they
+please, provided of course that they satisfy the general requirements of
+the Java language.
+<center><h2><a name="design patterns for properties"></a><font color="#ff0000">Design
+Patterns for Properties</font></h2></center>
+Properties may be
+<ul><li>
+simple</li>
+
+<li>
+indexed</li>
+
+<li>
+bound</li>
+
+<li>
+constrained</li></ul>
+In this lesson, we will deal primarily with <i>simple </i>and <i>indexed
+</i>properties and defer the other two to a subsequent lesson.
+<center><h3><a name="simple properties"></a><font color="#ff0000">Simple properties</font></h3></center>
+The <b>Introspector </b>uses <i>design patterns</i> to locate properties
+by looking for methods having signatures of the form
+<br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td><pre><tt>public void set&lt;PropertyName>(&lt;PropertyType> a);</tt>&nbsp;</pre>
+
+<pre><tt>public &lt;PropertyType> get&lt;PropertyName>();</tt>&nbsp;</pre></td></tr></table>
+The existence of a matching pair of such methods is regarded as defining
+a <i>read-write </i>property whose name will be &lt;propertyName>. (Note
+the change in case of the first letter in the property name. This will
+be explained more fully later.)
+
+<p>The two methods are used to <i>get</i> and <i>set</i> the property values
+as the names of the method imply.
+
+<p>Both methods in the pair may be located either in the same class, or
+one may be in a subclass and the other may be in a superclass.
+
+<p>If only one of the methods from the pair exists, then it is regarded
+either as a <i>read-only</i> or a <i>write-only</i> property.
+
+<p>The default assumption is that the property is neither <i>bound </i>nor
+<i>constrained</i>. As mentioned earlier, this will be discussed in more
+detail in a subsequent lesson.
+
+<p>Reflecting the above general description in more concrete terms might
+result in the following
+<br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td><pre><tt>public void setMyProperty(int a){//...}</tt>&nbsp;</pre>
+
+<pre><tt>public int getMyProperty(){//...}</tt>&nbsp;</pre></td></tr></table>
+pair of methods for a property named <b>myProperty</b> of type <b>int</b>.
+<center><h3><a name="boolean properties"></a><font color="#ff0000">Boolean Properties</font></h3></center>
+As a special case for <b>boolean</b> properties, the <b>Introspector </b>will
+recognize the following form either in place of <u>or</u> in addition to
+the <i>get</i> method.
+<br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td><pre><tt>public boolean is&lt;PropertyName>(){//...}</tt>&nbsp;</pre></td></tr></table>
+In either case, if the “is&lt;PropertyName>” method is present for a boolean
+property then it will be used to read the property value.
+
+<p>An example for a boolean property named <b>ready</b> might be:
+<br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td><pre><tt>public boolean isReady(){//...}&nbsp;</tt></pre>
+
+<pre><tt>public void setReady(boolean m){//...}&nbsp;</tt></pre></td></tr></table>
+It is important to remember that the instance variable used to maintain
+the value of the property is <u>not required</u> to have the same name
+as the property, but it may have the same name.
+<center><h3><a name="indexed properties"></a><font color="#ff0000">Indexed Properties</font></h3></center>
+An indexed property is a property having multiple values stored in an array.
+The following design patterns are regarded as indicating a property of
+this type.
+<br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td><pre><tt>public &lt;PropertyElementType>&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; get&lt;PropertyName>(int a){//...}</tt></pre>
+
+<pre><tt>public void set&lt;PropertyName>(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int a, &lt; PropertyElementType> b){//...}</tt></pre></td></tr></table>
+where the value passed to the integer parameter is the <u>index</u> of
+the element of interest. It is also possible to have accessor methods which
+read and/or write the <u>entire array</u>. This results in design patterns
+which look like the following:
+<br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td><pre><tt>public &lt;PropertyType>[] get&lt;PropertyName>(){//...}&nbsp;</tt></pre>
+
+<pre><tt>public void set&lt;PropertyName>(&lt;PropertyType> a[])&nbsp;</tt></pre></td></tr></table>
+Taking all of this into account might lead to the following four methods
+in the design pattern for an indexed property of type <b>MyType</b> named
+<b>myProperty</b>.
+<br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td><pre><tt>//return an element</tt>&nbsp;
+<tt>public MyType getMyProperty(int a){//...}
+
+//set an element
+public void setMyProperty(int a, MyType b){//...}&nbsp;</tt>&nbsp;</pre>
+
+<pre><tt>public MyType[] getMyProperty(){//...} //return an array</tt>&nbsp;</pre>
+
+<pre><tt>public void setMyProperty(MyType a[]){//...} //set an array</tt></pre></td></tr></table>
+
+<center><h2><a name="design patterns for events"></a><font color="#ff0000">Design Patterns
+for Events</font></h2></center><font color="#000000">Events can be exposed as <i>multicast </i>or <i>unicast
+</i>events. A <i>multicast </i>event notifies one or more <b>Listeners
+</b>of the occurrence of an event. A <i>unicast </i>event can support <u>only
+one</u> <b>Listener</b>.</font><center><h3><a name="multicast events"></a><font color="#ff0000">Multicast Events</font></h3></center>
+The <i>design pattern</i> that is used to identify the events that are
+<i>multicast </i>by a bean consists of a pair of methods of the form:
+<br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td><pre><tt>public void add&lt;EventListenerType>(&lt;EventListenerType> a)</tt></pre>
+
+<pre><tt>public void&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; remove&lt;EventListenerType>(&lt;EventListenerType> a)</tt></pre></td></tr></table>
+where
+<ul><li>
+both methods take the same “&lt;EventListenerType>” type argument,</li>
+
+<li>
+the “&lt;EventListenerType>” type implements the <b>java.util.EventListener</b>
+interface,</li>
+
+<li>
+the first method starts with “add”,</li>
+
+<li>
+the second method starts with “remove”, and</li>
+
+<li>
+the “&lt;EventListenerType>” type name ends with “Listener”.</li></ul>
+This design pattern is based on an assumption that the bean is acting as
+a <i>multicast </i>event source for the events specified in the “&lt;EventListenerType>”
+interface.
+
+<p>A pair of example methods that define a multicast event source might
+look like the following:
+<br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td><tt>public void addMyTypeOfListener(MyTypeOfListener t){//...}&nbsp;</tt><pre><tt>public void&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; removeMyTypeOfListener(MyTypeOfListener t){//...}</tt></pre></td></tr></table>
+
+<center><h3><a name="unicast events"></a><font color="#ff0000">Unicast Events</font></h3></center><i>Unicast </i>events comprise a special case. If the add method in the
+above design pattern throws the <b>java.util.TooManyListenersException</b>,
+it is assumed that the event source is <i>unicast </i>and can only tolerate
+a single event listener being registered at any given time. Converting
+the above example to a <i>unicast </i>source gives us
+<br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td><pre>public void add<tt>MyTypeOf</tt>Listener(<tt>MyTypeOf</tt>Listener t)&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp; throws java.util.TooManyListenersException{//...}&nbsp;</pre>
+
+<pre><tt>public void&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; removeMyTypeOfListener(MyTypeOfListener t){//...}</tt></pre></td></tr></table>
+
+<center><h2><a name="design patterns for methods"></a><font color="#ff0000">Design
+Patterns for Methods</font></h2></center>
+The default assumption is that all public methods of a bean should be exposed
+as external methods. This makes them accessible by other components or
+by scripting languages. This includes all property accessor methods and
+all event listener registry methods. The exception to this assumption occurs
+when the programmer explicitly identifies the methods.
+<center><h2><a name="explicit specification"></a><font color="#ff0000">Explicit Specification</font></h2></center>
+As an alternative to the use of <i>design patterns</i>, a bean can explicitly
+specify which <i>properties</i>, <i>events</i>, and <i>methods </i>it supports
+by providing a class that implements the <b>BeanInfo</b> interface.
+
+<p>As mentioned earlier, a more detailed discussion of this topic will
+be deferred to a subsequent lesson. For the meantime, suffice it to say
+that application tools should always use the <b>Introspector </b>interface
+which combines the information from a variety of potential sources, including
+explicit specifications, to construct a <b>BeanInfo </b>descriptor for
+a target bean.
+<center><h2><a name="analyzing a bean"></a><font color="#ff0000">Analyzing a Bean</font></h2></center>
+The <b>java.beans.Introspector</b> will search out and identify exposed
+<i>properties</i>, <i>methods</i>, and <i>events </i>on a bean using both
+explicit specifications and by performing implicit analysis using <i>design
+patterns</i>. That information is encapsulated into a <b>BeanInfo </b>object
+that describes the bean class.
+
+<p>The <b>Introspector </b>examines each class in the inheritance chain
+of the target class. It checks at each level to determine if there is a
+matching <b>BeanInfo </b>class providing explicit information about the
+bean. If it finds such a class, it uses that explicit information.
+
+<p>If it does not find such a class it uses low-level <i>reflection </i>APIs
+to study the target class and then uses <i>design patterns</i> to analyze
+its behavior. It then moves on up the inheritance chain.
+
+<p>This multi-level analysis allows component developers to deliver complex
+beans with explicitly specified behavior. These beans can then be subclassed
+and extended by end-user customers without a requirement to provide explicit
+behavior information. The <b>Introspector </b>can then combine the explicit
+behavior information provided by the bean's developer with information
+gained by <i>reflection </i>and <i>design patterns</i> on the behavior
+introduced when the bean is subclassed.
+<center><h2><a name="capitalization rules"></a><font color="#ff0000">Capitalization
+Rules</font></h2></center>
+A set of capitalization rules are defined to be used whenever <i>design
+patterns</i> are used to infer a <i>property </i>or <i>event </i>name.
+
+<p>When the name is extracted from the middle of a normal <i>mixedCase</i>
+Java name, the first character in the name will normally be converted to
+a lower case letter. For example the property accessor method named <b>setMyProp()</b>
+would normally result in a property name of <b>myProp</b>.
+
+<p>However, since it is sometimes desirable to use all uppercase names,
+the case will not be changed if the first two characters of the name are
+both uppercase. For example, the property accessor method named<b> setRGB()</b>
+would result in a property name of <b>RGB</b>.
+<center><h2><a name="sample program"></a><font color="#ff0000">Sample Program</font></h2></center>
+This program was designed to be compiled and executed under JDK 1.1.1.
+The purpose of this program is to illustrate <b>Introspection</b>, and
+in particular to illustrate the use of the static <b>getBeanInfo()</b>
+method of the <b>Introspector </b>class to encapsulate information about
+a bean in an object of type <b>BeanInfo</b>.
+
+<p>Once the information about the bean is encapsulated in the <b>BeanInfo
+</b>object, a variety of other methods are used to extract specific types
+of information about the bean from the object.
+
+<p>In order to illustrate the behavior of the different methods being used,
+the application was applied to the skeleton bean named <b>Beans01 </b>(which
+we discussed in an earlier lesson) and the output from the program for
+each section of code was included as comments in that section.
+
+<p>To use the program, enter the command
+<br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td><pre>java Introspect01 beanName&nbsp;</pre></td></tr></table>
+where beanName is the name of a beans class file without the .class extension.
+
+<p>As a sidelight, this program also illustrates the use of the <b>fileWriter</b>
+and <b>printWriter</b> classes which are new to JDK 1.1. However, since
+they are to be discussed in another lesson dealing with I/O upgrades in
+JDK 1.1, they are not discussed in this lesson.
+
+<p>The program was tested using JDK 1.1.1 and Win95.
+<center><h3><a name="interesting code fragments"></a><font color="#ff0000">Interesting
+Code Fragments</font></h3></center>
+The first interesting code fragment is that portion of the constructor
+that creates an object of type <b>Class </b>that describes the class of
+the bean specified on the command line. Here, we create an object of type
+<b>Class </b>that describes the class of the bean. This object will be
+used later with the static <b>getBeanInfo()</b> method of the <b>Introspector
+</b>class. The <b>forName()</b> method of the <b>Class </b>class returns
+such an object, given the name of the class as a <b>String </b>parameter.
+<br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td><pre>Class myBeanClassObject = Class.forName(myBeanClassName);</pre></td></tr></table>
+The next interesting code fragment uses the static <b>getBeanInfo()</b>
+method of the <b>Introspector </b>class to obtain information about the
+class of the bean and its superclasses. There are two overloaded versions
+of this method. One version which requires a single parameter extracts
+information about the <u>entire inheritance tree</u>.
+
+<p>The second version that has two parameters uses the second parameter
+to determine the point in the tree <u>at and above</u> which information
+is not needed. In this case, we make the second parameter be the superclass
+of the bean, thus causing the <b>getBeanInfo()</b> method to extract information
+only on the class of the bean.
+<br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td><pre>BeanInfo beanInfo = Introspector.getBeanInfo(
+&nbsp;&nbsp;&nbsp;&nbsp; myBeanClassObject,myBeanClassObject.getSuperclass());</pre></td></tr></table>
+The next interesting code fragment applies the <b>getBeanDescriptor()</b>
+method to the <b>BeanInfo </b>object to produce an object of type <b>BeanDescriptor</b>.
+Such an object provides global information about a bean, including its
+Java class, its displayName, etc.
+
+<p>Once the <b>BeanDescriptor </b>object is available, other methods are
+applied to the object to extract specific information from the object and
+write it to the output file.
+
+<p>When this application was applied to the skeleton bean named <b>Beans01
+</b>that we studied in an earlier lesson, the output shown in the comments
+was produced by this section of code.
+<br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td><pre>/*
+Name of bean:&nbsp; Beans01
+Class of bean: class Beans01
+*/
+BeanDescriptor beanDescriptor =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; beanInfo.getBeanDescriptor();
+printWriter.println("Name of bean:&nbsp; "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + beanDescriptor.getName());
+printWriter.println("Class of bean: "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + beanDescriptor.getBeanClass());
+printWriter.println("");</pre></td></tr></table>
+The next interesting code fragment uses the <b>getPropertyDescriptors()</b>
+method to produce an array of <b>PropertyDescriptor </b>objects.
+
+<p>Each object describes one property that a Java Bean exports via a pair
+of accessor methods. Once that array of objects is available, other methods
+are used to extract specific information about each of the properties and
+to write that information into the output file.
+
+<p>When this program was applied to the skeleton bean named <b>Beans01</b>,
+the output for this section of code was as shown in the comments. Note
+that the <b>preferredSize </b>property is a <i>read-only</i> property because
+its <i>set</i> method is <i>null </i>(there is no <i>set</i> method for
+this property). Note that manual breaks have been inserted to make the
+material fit the page.
+<br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td><pre>/*
+==== Properties: ====
+Name: color
+&nbsp;Type:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; class java.awt.Color
+&nbsp;Get method:&nbsp;
+&nbsp; public synchronized java.awt.Color Beans01.getColor()
+&nbsp;Set method:&nbsp;
+&nbsp; public synchronized void Beans01.setColor(java.awt.Color)
+Name: preferredSize
+&nbsp;Type:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; class java.awt.Dimension
+&nbsp;Get method: public synchronized&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; java.awt.Dimension Beans01.getPreferredSize()
+&nbsp;Set method: null
+Name: myBooleanProperty
+&nbsp;Type:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; boolean
+&nbsp;Get method:&nbsp;
+&nbsp; public synchronized boolean Beans01.isMyBooleanProperty()
+&nbsp;Set method:&nbsp;
+&nbsp; public synchronized void&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Beans01.setMyBooleanProperty(boolean)
+*/
+printWriter.println("==== Properties: ====");
+PropertyDescriptor[] propertyDescriptor =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; beanInfo.getPropertyDescriptors();
+for (int i=0; i&lt;propertyDescriptor.length; i++) {
+&nbsp; printWriter.println("Name: " +&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; propertyDescriptor[i].getName());
+&nbsp; printWriter.println(" Type:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + propertyDescriptor[i].getPropertyType());
+&nbsp; printWriter.println(" Get method: "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + propertyDescriptor[i].getReadMethod());
+&nbsp; printWriter.println(" Set method: "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + propertyDescriptor[i].getWriteMethod());
+}//end for-loop
+printWriter.println("");</pre></td></tr></table>
+The next interesting code fragment uses the <b>getEventSetDescriptors()</b>
+method to produce an array of <b>EventSetDescriptor </b>objects. Other
+methods are then used to extract information from each of those objects.
+
+<p>When this program was applied to the skeleton bean named <b>Beans01</b>,
+the output for this section of code was as shown in the comments. (Note
+that the line breaks were inserted during the editing of this document
+to make it all fit on the screen.) In this case, only one <i>multicast
+</i>event was exposed by the bean.
+<br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td><pre>&nbsp;&nbsp;&nbsp; ==== Events: ====
+&nbsp;&nbsp;&nbsp; Event Name: action
+&nbsp;&nbsp;&nbsp;&nbsp; Add Method:&nbsp;&nbsp;&nbsp; public synchronized void Beans01.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; addActionListener(java.awt.event.ActionListener)
+&nbsp;&nbsp;&nbsp;&nbsp; Remove Method: public synchronized void Beans01.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; removeActionListener(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; java.awt.event.ActionListener)
+&nbsp;&nbsp;&nbsp;&nbsp; Event Type: actionPerformed
+&nbsp;&nbsp;&nbsp; */
+&nbsp;&nbsp;&nbsp; printWriter.println("==== Events: ====");
+&nbsp;&nbsp;&nbsp; EventSetDescriptor[] eventSetDescriptor =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; beanInfo.getEventSetDescriptors();
+&nbsp;&nbsp;&nbsp; for (int i=0; i&lt;eventSetDescriptor.length; i++) {
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; printWriter.println("Event Name: "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + eventSetDescriptor[i].getName());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; printWriter.println(" Add Method:&nbsp;&nbsp;&nbsp; " +
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; eventSetDescriptor[i].getAddListenerMethod());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; printWriter.println(" Remove Method: " +
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; eventSetDescriptor[i].getRemoveListenerMethod());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; MethodDescriptor[] methodDescriptor =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; eventSetDescriptor[i].
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; getListenerMethodDescriptors();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for (int j=0; j&lt;methodDescriptor.length; j++) {
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; printWriter.println(" Event Type: "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + methodDescriptor[j].getName());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end for-loop
+&nbsp;&nbsp;&nbsp; }//end for-loop
+&nbsp;&nbsp;&nbsp; printWriter.println("");</pre></td></tr></table>
+The final interesting code fragment uses the <b>getMethodDescriptors()</b>
+method to produce an array of <b>MethodDescriptor </b>objects. Each such
+object describes a particular method that a Java Bean supports for external
+access from other methods.
+
+<p>This program was applied to the skeleton bean named <b>Beans01</b>,
+and the output for this section of code is shown in the comments. You should
+note that the list of methods includes property accessor methods, methods
+that expose multicast event support, and "ordinary" methods that are not
+intended to expose properties or events.
+<br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td><pre>&nbsp;&nbsp;&nbsp; /*
+&nbsp;&nbsp;&nbsp; ==== Methods: ====
+&nbsp;&nbsp;&nbsp; makeRed
+&nbsp;&nbsp;&nbsp; setMyBooleanProperty
+&nbsp;&nbsp;&nbsp; removeActionListener
+&nbsp;&nbsp;&nbsp; addActionListener
+&nbsp;&nbsp;&nbsp; setColor
+&nbsp;&nbsp;&nbsp; getColor
+&nbsp;&nbsp;&nbsp; getPreferredSize
+&nbsp;&nbsp;&nbsp; makeBlue
+&nbsp;&nbsp;&nbsp; isMyBooleanProperty
+&nbsp;&nbsp;&nbsp; */
+&nbsp;&nbsp;&nbsp; printWriter.println("==== Methods: ====");
+&nbsp;&nbsp;&nbsp; MethodDescriptor[] methodDescriptor =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; beanInfo.getMethodDescriptors();
+&nbsp;&nbsp;&nbsp; for (int i=0; i&lt;methodDescriptor.length; i++) {
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; printWriter.println(methodDescriptor[i].getName());
+&nbsp;&nbsp;&nbsp; }//end for-loop
+&nbsp;&nbsp;&nbsp; printWriter.println("");.</pre></td></tr></table>
+The above code fragments represent only those parts of the program that
+are new and interesting in the context of Java Beans. A listing of the
+entire program with comments is contained in the next section.
+<center><h3><a name="program listing"></a><font color="#ff0000">Program Listing</font></h3></center>
+A listing of the entire program with comments follows. See the previous
+sections for an operational description of the program.
+<br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td><pre>/*File Introspect01.java Copyright 1997, R.G.Baldwin
+This program was designed to be compiled and executed&nbsp;
+under JDK 1.1.1.
+
+The purpose of this program is to illustrate the use of the
+static getBeanInfo() method of the Introspector class to&nbsp;
+encapsulate information about a bean in an object of type&nbsp;
+BeanInfo.
+
+Once the information about the bean is encapsulated in the
+BeanInfo object, a variety of other methods are used to&nbsp;
+extract specific types of information about the bean from
+the object.
+
+In order to illustrate the behavior of the different&nbsp;
+methods being used, the application was applied to the&nbsp;
+skeleton bean named Beans01 (discussed in an earlier&nbsp;
+lesson) and the output from the program for each section of
+code was included as comments in that section.
+
+The program was tested using JDK 1.1.1 and Win95.&nbsp;&nbsp;
+**********************************************************/
+import java.io.*;
+import java.beans.*;
+import java.lang.reflect.*;
+
+public class Introspect01
+{
+&nbsp; //name of bean class file to be analyzed
+&nbsp; static String myBeanClassName;&nbsp;
+&nbsp; FileWriter fileWriter;
+&nbsp; PrintWriter printWriter;
+
+&nbsp; //Start the program and get the name of the class file&nbsp;
+&nbsp; // for the bean in the String myBeanClassName
+&nbsp; public static void main(String args[]) throws Exception {
+&nbsp;&nbsp;&nbsp; myBeanClassName = args[0];
+&nbsp;&nbsp;&nbsp; Introspect01 x = new Introspect01();
+&nbsp; }//end main
+&nbsp;&nbsp;
+&nbsp; public Introspect01() throws Exception {//constructor
+&nbsp;&nbsp;&nbsp; //Open an output file to store the report in.
+&nbsp;&nbsp;&nbsp; fileWriter = new FileWriter("junk.txt");
+&nbsp;&nbsp;&nbsp; printWriter = new PrintWriter(fileWriter);&nbsp;
+&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Create an object of type Class that describes the&nbsp;
+&nbsp;&nbsp;&nbsp; // class of the bean. The static method&nbsp;
+&nbsp;&nbsp;&nbsp; // Introspector.getBeanInfo() requires either one or
+&nbsp;&nbsp;&nbsp; // two objects of type Class as parameters.&nbsp; The&nbsp;
+&nbsp;&nbsp;&nbsp; // forName() method of the Class class returns such an
+&nbsp;&nbsp;&nbsp; // object, given the name of a class as a parameter.&nbsp;
+&nbsp;&nbsp;&nbsp; Class myBeanClassObject = Class.forName(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; myBeanClassName);
+&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Given the Class object that describes the bean's&nbsp;
+&nbsp;&nbsp;&nbsp; // class, use the static getBeanInfo() method of the
+&nbsp;&nbsp;&nbsp; // Introspector class to obtain information about the
+&nbsp;&nbsp;&nbsp; // class of the bean.&nbsp; Save this information in an
+&nbsp;&nbsp;&nbsp; // object of type BeanInfo.&nbsp; The second parameter&nbsp;
+&nbsp;&nbsp;&nbsp; // passed to getBeanInfo() prevents introspection from
+&nbsp;&nbsp;&nbsp; // going further up the inheritance hierarchy.
+&nbsp;&nbsp;&nbsp; BeanInfo beanInfo = Introspector.getBeanInfo(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; myBeanClassObject,myBeanClassObject.getSuperclass());
+&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //A BeanDescriptor object provides global information
+&nbsp;&nbsp;&nbsp; // about a bean, including its Java class, its&nbsp;
+&nbsp;&nbsp;&nbsp; // displayName, etc. Use the getBeanDescriptor()&nbsp;
+&nbsp;&nbsp;&nbsp; // method to extract information of that type from&nbsp;
+&nbsp;&nbsp;&nbsp; // the beanInfo object and store it in a new&nbsp;
+&nbsp;&nbsp;&nbsp; // BeanDescriptor object. Store the information in the
+&nbsp;&nbsp;&nbsp; // output file using methods designed to extract the&nbsp;
+&nbsp;&nbsp;&nbsp; // name and class of the bean from the beanDescriptor
+&nbsp;&nbsp;&nbsp; // object.&nbsp; When this application was applied to the&nbsp;
+&nbsp;&nbsp;&nbsp; // skeleton bean named Beans01, the following output&nbsp;
+&nbsp;&nbsp;&nbsp; // was produced by this section of code.
+&nbsp;&nbsp;&nbsp; /*
+&nbsp;&nbsp;&nbsp; Name of bean:&nbsp; Beans01
+&nbsp;&nbsp;&nbsp; Class of bean: class Beans01
+&nbsp;&nbsp;&nbsp; */
+&nbsp;&nbsp;&nbsp; BeanDescriptor beanDescriptor =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; beanInfo.getBeanDescriptor();
+&nbsp;&nbsp;&nbsp; printWriter.println("Name of bean:&nbsp; " +&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; beanDescriptor.getName());
+&nbsp;&nbsp;&nbsp; printWriter.println("Class of bean: " +&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; beanDescriptor.getBeanClass());
+&nbsp;&nbsp;&nbsp; printWriter.println("");
+&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //A PropertyDescriptor object describes one property&nbsp;
+&nbsp;&nbsp;&nbsp; // that a Java Bean exports via a pair of accessor&nbsp;
+&nbsp;&nbsp;&nbsp; // methods. Use the getPropertyDescriptors() method
+&nbsp;&nbsp;&nbsp; // to create an array of PropertyDescriptor objects,&nbsp;
+&nbsp;&nbsp;&nbsp; // one for each exported property.&nbsp; Then store that&nbsp;
+&nbsp;&nbsp;&nbsp; // information in the output file using methods&nbsp;
+&nbsp;&nbsp;&nbsp; // designed to extract the name of the property, the&nbsp;
+&nbsp;&nbsp;&nbsp; // type of the property, the name of the get method,&nbsp;
+&nbsp;&nbsp;&nbsp; // and the name of the set method. When this&nbsp;
+&nbsp;&nbsp;&nbsp; // application was applied to Beans01, the following
+&nbsp;&nbsp;&nbsp; // output was produced by this section of code.&nbsp; Manual
+&nbsp;&nbsp;&nbsp; // line breaks were inserted to make it fit in the&nbsp;
+&nbsp;&nbsp;&nbsp; // available space.
+&nbsp;&nbsp;&nbsp; /*
+&nbsp;&nbsp;&nbsp; ==== Properties: ====
+&nbsp;&nbsp;&nbsp; Name: color
+&nbsp;&nbsp;&nbsp;&nbsp; Type:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; class java.awt.Color
+&nbsp;&nbsp;&nbsp;&nbsp; Get method: public synchronized java.awt.Color&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Beans01.getColor()
+&nbsp;&nbsp;&nbsp;&nbsp; Set method: public synchronized void&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Beans01.setColor(java.awt.Color)
+&nbsp;&nbsp;&nbsp; Name: preferredSize
+&nbsp;&nbsp;&nbsp;&nbsp; Type:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; class java.awt.Dimension
+&nbsp;&nbsp;&nbsp;&nbsp; Get method: public synchronized java.awt.Dimension&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Beans01.getPreferredSize()
+&nbsp;&nbsp;&nbsp;&nbsp; Set method: null
+&nbsp;&nbsp;&nbsp; Name: myBooleanProperty
+&nbsp;&nbsp;&nbsp;&nbsp; Type:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; boolean
+&nbsp;&nbsp;&nbsp;&nbsp; Get method: public synchronized boolean&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Beans01.isMyBooleanProperty()
+&nbsp;&nbsp;&nbsp;&nbsp; Set method: public synchronized void&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Beans01.setMyBooleanProperty(boolean)
+&nbsp;&nbsp;&nbsp; */
+&nbsp;&nbsp;&nbsp; printWriter.println("==== Properties: ====");
+&nbsp;&nbsp;&nbsp; PropertyDescriptor[] propertyDescriptor =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; beanInfo.getPropertyDescriptors();
+&nbsp;&nbsp;&nbsp; for (int i=0; i&lt;propertyDescriptor.length; i++) {
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; printWriter.println("Name: " +&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; propertyDescriptor[i].getName());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; printWriter.println(" Type:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; " +&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; propertyDescriptor[i].getPropertyType());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; printWriter.println(" Get method: " +&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; propertyDescriptor[i].getReadMethod());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; printWriter.println(" Set method: " +&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; propertyDescriptor[i].getWriteMethod());
+&nbsp;&nbsp;&nbsp; }//end for-loop
+&nbsp;&nbsp;&nbsp; printWriter.println("");
+&nbsp;&nbsp;
+
+&nbsp;&nbsp;&nbsp; //An EventSetDescriptor object describes a group of&nbsp;
+&nbsp;&nbsp;&nbsp; // events that a given Java bean fires. Information can
+&nbsp;&nbsp;&nbsp; // be extracted from each object of the type.&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; // When this application was applied to the Beans01&nbsp;
+&nbsp;&nbsp;&nbsp; // bean, the following output was produced by this&nbsp;
+&nbsp;&nbsp;&nbsp; // section of code (note that line breaks were
+&nbsp;&nbsp;&nbsp; // inserted during editing).
+&nbsp;&nbsp;&nbsp; /*
+&nbsp;&nbsp;&nbsp; ==== Events: ====
+&nbsp;&nbsp;&nbsp; Event Name: action
+&nbsp;&nbsp;&nbsp;&nbsp; Add Method:&nbsp;&nbsp;&nbsp; public synchronized void Beans01.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; addActionListener(java.awt.event.ActionListener)
+&nbsp;&nbsp;&nbsp;&nbsp; Remove Method: public synchronized void Beans01.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; removeActionListener(java.awt.event.ActionListener)
+&nbsp;&nbsp;&nbsp;&nbsp; Event Type: actionPerformed
+&nbsp;&nbsp;&nbsp; */
+&nbsp;&nbsp;&nbsp; printWriter.println("==== Events: ====");
+&nbsp;&nbsp;&nbsp; EventSetDescriptor[] eventSetDescriptor =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; beanInfo.getEventSetDescriptors();
+&nbsp;&nbsp;&nbsp; for (int i=0; i&lt;eventSetDescriptor.length; i++) {
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; printWriter.println("Event Name: " +&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; eventSetDescriptor[i].getName());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; printWriter.println(" Add Method:&nbsp;&nbsp;&nbsp; " +
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; eventSetDescriptor[i].getAddListenerMethod());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; printWriter.println(" Remove Method: " +
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; eventSetDescriptor[i].getRemoveListenerMethod());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; MethodDescriptor[] methodDescriptor =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; eventSetDescriptor[i].
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; getListenerMethodDescriptors();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for (int j=0; j&lt;methodDescriptor.length; j++) {
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; printWriter.println(" Event Type: " +&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; methodDescriptor[j].getName());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end for-loop
+&nbsp;&nbsp;&nbsp; }//end for-loop
+&nbsp;&nbsp;&nbsp; printWriter.println("");
+
+&nbsp;&nbsp;&nbsp; //A MethodDescriptor describes a particular method that
+&nbsp;&nbsp;&nbsp; // a Java Bean supports for external access from other
+&nbsp;&nbsp;&nbsp; // components.&nbsp; The getMethodDescriptors() method&nbsp;
+&nbsp;&nbsp;&nbsp; // returns an array of MethodDescriptor objects where&nbsp;
+&nbsp;&nbsp;&nbsp; // each object describes one of the methods.&nbsp; When this
+&nbsp;&nbsp;&nbsp; // application was applied to the Beans01 bean, the&nbsp;
+&nbsp;&nbsp;&nbsp; // following output was produced by this section&nbsp;
+&nbsp;&nbsp;&nbsp; // of code.
+&nbsp;&nbsp;&nbsp; /*
+&nbsp;&nbsp;&nbsp; ==== Methods: ====
+&nbsp;&nbsp;&nbsp; makeRed
+&nbsp;&nbsp;&nbsp; setMyBooleanProperty
+&nbsp;&nbsp;&nbsp; removeActionListener
+&nbsp;&nbsp;&nbsp; addActionListener
+&nbsp;&nbsp;&nbsp; setColor
+&nbsp;&nbsp;&nbsp; getColor
+&nbsp;&nbsp;&nbsp; getPreferredSize
+&nbsp;&nbsp;&nbsp; makeBlue
+&nbsp;&nbsp;&nbsp; isMyBooleanProperty
+&nbsp;&nbsp;&nbsp; */
+&nbsp;&nbsp;&nbsp; printWriter.println("==== Methods: ====");
+&nbsp;&nbsp;&nbsp; MethodDescriptor[] methodDescriptor =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; beanInfo.getMethodDescriptors();
+&nbsp;&nbsp;&nbsp; for (int i=0; i&lt;methodDescriptor.length; i++) {
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; printWriter.println(methodDescriptor[i].getName());
+&nbsp;&nbsp;&nbsp; }//end for-loop
+&nbsp;&nbsp;&nbsp; printWriter.println("");
+&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; printWriter.close();
+&nbsp; }//end constructor
+}//end class Introspect01</pre></td></tr></table>
+-end-<!--end--></body></html>

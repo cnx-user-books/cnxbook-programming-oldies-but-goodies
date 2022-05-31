@@ -1,0 +1,3071 @@
+<!DOCTYPE doctype PUBLIC "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+  <meta http-equiv="Content-Type"
+ content="text/html; charset=iso-8859-1">
+  <meta name="GENERATOR" content="Microsoft FrontPage 6.0">
+  <title>... JAVA and DSP by Richard G Baldwin</title>
+</head>
+<body alink="#ff0000" lang="EN-US" link="#0000ff" vlink="#666666">
+<h2>Digital Signatures using Message Digests with Java</h2>
+<i>Learn to use the SHA-1 message digest algorithm along with the RSA encryption 
+algorithm to create and use digital signatures that conserve communication 
+bandwidth.</i><p><b>Published:</b>&nbsp; April 19, 2005<br>
+<b>By <a href="#About_the_author">Richard G. Baldwin</a></b> </p>
+<p>Java Programming, Notes # 730</p>
+<ul>
+  <li><a href="#Preface">Preface</a></li>
+  <li><a href="#Background_Information">Background Information</a></li>
+  <li><a href="#Preview">Preview</a></li>
+  <li><a href="#Discussion_and_Sample_Code">Discussion and Sample Code</a></li>
+  <li><a href="#Run_the_Programs">Run the Programs</a></li>
+  <li><a href="#Summary">Summary</a></li>
+  <li><a href="#Whats%20Next">What's Next</a></li>
+  <li><a href="#Complete_Program_Listings">Complete Program Listings</a>
+  </li>
+</ul>
+<hr align="center" size="3" width="100%">
+<center>
+<h2> <a name="Preface">Preface</a></h2>
+</center>
+<p><font color="#FF0000"><b>Fourth</b></font><font color="#ff0000"><b> in a series</b></font></p>
+<p>This lesson is the fourth in a series designed to teach you
+something about the inner workings of cryptography using Java.&nbsp;
+The first lesson was entitled 
+<a href="http://www.developer.com/java/ent/article.php/3447491">Public Key 
+Cryptography 101 Using Java</a>.&nbsp; The previous lesson was entitled 
+<a href="http://www.developer.com/java/data/article.php/3487986">Message Digests 
+101 using Java</a>.</p>
+<p>Hopefully, when you
+finish studying the lessons in this series, you will have learned a
+little about what goes on
+&quot;<i>under the hood&quot;</i> when you apply a cryptographic process.</p>
+<p><font color="#FF0000"><b>Purpose of this lesson</b></font></p>
+<p>In an earlier lesson entitled
+<a href="http://www.developer.com/java/data/article.php/3469641">Digital 
+Signatures 101 using Java</a>, I promised to show how to use a message digest 
+for the creation of a digital signature.&nbsp; In the lesson entitled 
+<a href="http://www.developer.com/java/data/article.php/3487986">Message Digests 
+101 using Java</a>, I showed you how to implement the SHA-1 
+algorithm to create message digests.</p>
+<p>The purpose of this lesson is to deliver on my previous promise to show you how to create and use SHA-1 message 
+digests for the creation of digital signatures.&nbsp; This lesson also shows you 
+how to eliminate the need for a delimiter character to separate the message text 
+from the digital signature as was the case in the lesson entitled
+<a href="http://www.developer.com/java/data/article.php/3469641">Digital 
+Signatures 101 using Java</a>.</p>
+<p><font color="#ff0000"><b>Not a lesson on JCE</b></font></p>
+<p>The lessons in this series do not provide instructions on how to use
+the
+<a
+ href="http://java.sun.com/j2se/1.4/docs/guide/security/jce/JCERefGuide.html">Java
+Cryptography Extension <i>(JCE)</i></a>.&nbsp; The purpose of this series is to 
+teach you how to implement common cryptography algorithms for small cases 
+without dependence on a cryptography API.</p>
+<p><font color="#ff0000"><b>Not intended for production use</b></font></p>
+<p>The programs that I will provide and explain in this series of
+lessons are not intended to be used for production cryptography.&nbsp;
+If you need to do production cryptography using Java, you should use Sun's
+<a href="http://java.sun.com/j2se/1.4/docs/guide/security/jce/JCERefGuide.html">Java Cryptography Extension <i>(JCE)</i></a><i>.</i></p>
+<p>The programs that I will provide in this series are intended to help
+you to experiment with and to learn about various cryptographic
+and secure hash algorithms.&nbsp; They are designed to help you to gain a better understanding of how they work, and why
+they do what they do.&nbsp; In addition, the lessons in this series are intended 
+to help you understand some of the common uses of cryptography such as the use 
+of digital signatures.</p>
+<p><b><font color="#ff0000">Viewing tip</font></b> </p>
+<p>You may find it useful to open another copy of this lesson in a
+separate browser window.&nbsp; That will make it easier for you to
+scroll back and forth among the different figures and listings while
+you are reading about them.</p>
+<p><b><font color="#ff0000">Supplementary material</font></b> </p>
+<p>I recommend that you also study the other lessons in my extensive collection 
+of online Java tutorials.&nbsp; You will find those lessons published at
+<a href="http://softwaredev.earthweb.com/java">Gamelan.com</a>.&nbsp; However, as of 
+the date of this writing, Gamelan doesn't maintain a consolidated index of my 
+Java tutorial lessons, and sometimes they are difficult to locate there.&nbsp; You 
+will find a consolidated index at <a href="http://www.dickbaldwin.com">
+www.DickBaldwin.com</a><font color="#000000">.</font></p>
+<h2 align="center"><a name="Background_Information">Background
+Information</a></h2>
+<p>The lessons in this series will present and explain programs that
+implement cryptographic and secure hash algorithms intended to achieve secure
+communications between two parties.&nbsp; These algorithms fall into
+two broad categories:</p>
+<ul>
+  <li>Public <i>(asymmetric)</i> key cryptography</li>
+  <li>Symmetric key cryptography</li>
+</ul>
+<p>The first several lessons will deal with
+<a
+ href="http://en.wikipedia.org/wiki/Cryptography#Public_key_cryptography">public
+key cryptography</a>.&nbsp; Subsequent lessons will deal with
+<a
+ href="http://en.wikipedia.org/wiki/Cryptography#Symmetric_key_cryptography">symmetric
+key cryptography</a>. </p>
+<p>Please see the earlier lesson entitled  
+<a href="http://www.developer.com/java/ent/article.php/3447491">Public Key 
+Cryptography 101 Using Java</a> for a discussion of
+the difference between the two.</p>
+<p><font color="#FF0000"><b>Asymmetric or public key cryptography</b></font></p>
+<p>This lesson deals with <i>asymmetric</i> or <i>public key </i>cryptography.&nbsp;
+With asymmetric key cryptography, there are two keys.&nbsp; One key is
+used to encrypt the data and the other is used to decrypt the
+data.&nbsp; Thus, one of the keys <i>(the encryption key)</i> can be
+publicly disclosed without compromising secrecy so long as the other key <i>(the
+decryption key)</i> is held secret.&nbsp; This leads to the common name
+of <i>public key </i>cryptography<i>.</i></p>
+<p><font color="#FF0000"><b>Sometimes the roles are switched</b></font></p>
+<p>Actually the concept that the <i>encryption key</i> is public and the
+<i>decryption key</i> is secret isn't always correct.&nbsp; As you will
+see in this lesson, either key can be used to encrypt the data provided
+that the other key is used to decrypt the data.&nbsp; It is very important, 
+however, that one of the keys be kept secret.&nbsp; For purposes of <i>digital
+signing</i> of messages as explained in this lesson, the secret key is used to encrypt 
+a digest of the message and the public key is used to decrypt it.</p>
+<p><font color="#ff0000"><b>The RSA and SHA-1 algorithms</b></font></p>
+<p>This lesson deals with a particular asymmetric key algorithm known
+as the <a href="http://theory.lcs.mit.edu/%7Erivest/rsapaper.pdf">
+RSA</a> algorithm.&nbsp; Please see the earlier lesson entitled  
+<a href="http://www.developer.com/java/ent/article.php/3447491">Public Key 
+Cryptography 101 Using Java</a> to gain a basic understanding of the RSA
+algorithm.</p>
+<p>This lesson also deals with a particular message-digest algorithm known as 
+SHA-1.&nbsp; Please see the previous lesson entitled 
+<a href="http://www.developer.com/java/data/article.php/3487986">Message Digests 
+101 using Java</a> to gain a better 
+understanding of the SHA-1 algorithm.</p>
+<p><font color="#ff0000"><b>Message signing and digital signatures</b></font></p>
+<p>In one of their papers, the authors of the RSA algorithm point out that <i>"... publicly
+revealing an encryption key does not thereby reveal the corresponding
+decryption key.</i></p>
+<p>An important consequence of this is that a message can be <i>"signed"</i>
+using a privately held key.&nbsp; The signature can be verified using
+the corresponding publicly revealed key.&nbsp; This was discussed and 
+illustrated in detail in the earlier lesson entitled
+<a href="http://www.developer.com/java/data/article.php/3469641">Digital 
+Signatures 101 using Java</a>.&nbsp; That lesson illustrated a simple protocol 
+for creating digital signatures without the use of message digests.&nbsp; </p>
+<p><font color="#ff0000"><b>Message digests provide a better alternative</b></font></p>
+<p>The simple protocol used by the programs in the earlier lesson entitled
+<a href="http://www.developer.com/java/data/article.php/3469641">Digital 
+Signatures 101 using Java</a> was to create a
+digital signature that is an encrypted version of the entire text
+message.&nbsp; It was pointed out that this can be wasteful of communication 
+bandwidth, particularly for long
+messages.&nbsp; A more efficient
+approach for long messages is to apply another mathematical algorithm to the message, 
+which will produce something called a <i>message digest</i>.</p>
+<p><font color="#FF0000"><b>A fingerprint</b></font></p>
+<p>The message-digest algorithm takes an arbitrary amount of input message data
+and produces a fixed-length output that represents the message data.&nbsp;
+The fixed-length version is commonly referred to as a <i>digest</i> or
+a <i>
+fingerprint</i>.&nbsp; While it is not guaranteed that the digests for two
+different messages will be different, the probability that two
+different messages will produce the same digest is extremely small.</p>
+<p>Using this approach, the sender of the message would compute, encode, and encrypt 
+a digest for the message and would use the 
+encrypted digest as the digital signature <i>(instead of 
+encrypting the entire message for use as a digital signature).</i>&nbsp; If the 
+message is a long message, this will save communications bandwidth <i>(but will also require an extra computational step at
+each end of the communication).</i></p>
+<h2 align="center"><a name="Preview">Preview</a></h2>
+<p><font color="#ff0000"><b>Two different programs</b></font></p>
+<p>I will present and explain two different programs in this
+lesson.&nbsp; The first program named <b>Rsa09</b> will illustrate the
+digital signing of an <i>unencrypted</i> message using an encrypted digital
+signature based on an SHA-1 message digest.</p>
+<p>The second program named <b>Rsa10</b> will illustrate the digital
+signing of an <i>encrypted</i> message using an encrypted digital signature 
+based on an SHA-1 message digest.</p>
+<p><font color="#ff0000"><b>Three important aspects</b></font></p>
+<p>There are at least three important aspects of electronic
+communication:</p>
+<ul>
+  <li><b>Authentication:</b> Confirming the identities of the parties involved.
+  </li>
+  <li><b>Confidentiality:</b> Making certain that only authorized
+parties can understand the message, even if it is intercepted by
+unauthorized persons. </li>
+  <li><b>Integrity:</b> Confirming that the content of the message wasn't
+modified during transmission.</li>
+</ul>
+<p>The first program named <b>Rsa09</b> illustrates a scenario
+where only <i>
+authentication</i> and <i>integrity</i> are of concern.&nbsp; In this
+scenario, there is no need to be concerned about the public disclosure
+of the content of a message.</p>
+<p>The second program named <b>Rsa10</b> illustrates a scenario where all
+three aspects are important.&nbsp; In this case, it is also necessary
+to keep the content of the message confidential.</p>
+<h2 align="center"><a name="Discussion_and_Sample_Code">Discussion and
+Sample Code</a></h2>
+<p><font color="#ff0000"><b>The program named Rsa09</b></font></p>
+<p>IMPORTANT: BECAUSE THIS PROGRAM USES PREDETERMINED KEYS THAT WERE DESIGNED 
+FOR A BLOCK SIZE OF 12, IT WILL WORK CORRECTLY ONLY FOR A BLOCK SIZE OF 12.</p>
+<p><font color="#FF0000"><b>The purpose of the program</b></font></p>
+<p>The purpose of this program is to illustrate the signing of an unencrypted 
+message using an encrypted message digest as the digital signature, along with the later verification of the signature by the receiver of 
+the message.</p>
+<p>This lesson also shows you how to eliminate the need for a delimiter character 
+to separate the message text from the digital signature <i>(as was the case in 
+the earlier lesson entitled 
+<a href="http://www.developer.com/java/data/article.php/3469641">Digital 
+Signatures 101 using Java</a>).</i></p>
+<p><font color="#FF0000"><b>Alice and Bob</b></font></p>
+<p>Many of the comments in this program reflect the scenario of Alice and Bob, which is 
+common in discussions of RSA.&nbsp; Alice needs to send a <i>signed</i> 
+unencrypted message to Bob.&nbsp; The message needs to be signed so that Bob can 
+be confident that the message that he received was actually sent by Alice and 
+was not sent by 
+someone pretending to be Alice.</p>
+<p>Bob also needs to confirm the integrity of the message by confirming that the 
+message was not modified during the transmission from Alice to Bob.</p>
+<p><font color="#FF0000"><b>Creating a digital signature</b></font></p>
+<p>Alice creates a digital signature by getting an SHA-1 message digest for her 
+message.&nbsp; Then she encodes and encrypts the digest using her private key 
+and the RSA algorithm.&nbsp; The encrypted digest becomes her digital signature.&nbsp; 
+She signs the message by appending the encrypted digest to the end of the 
+message.&nbsp; Bob can later decrypt the digital signature using Alice's public 
+key.</p>
+<p><font color="#FF0000"><b>Separating the message from the signature</b></font></p>
+<p>Bob will need some way to separate the message from the digital signature.&nbsp; 
+Therefore, before sending the signed message to Bob, Alice appends four 
+numeric characters to the end that specify the length of the original message in 
+characters.&nbsp; Then Alice sends the signed message to Bob.</p>
+<p>Bob extracts the message length from the end of the signed message.&nbsp; He 
+uses this information to separate the original message from the digital 
+signature.&nbsp; Then he decrypts and decodes the digital signature using 
+Alice's public key.</p>
+<p><font color="#FF0000"><b>What does Bob already know?</b></font></p>
+<p>Bob knows that the original message digest was 40 hexadecimal characters in length, 
+because an SHA-1 message digest is always 160 bits or 20 bytes in length.&nbsp; 
+Two hexadecimal characters are required to represent each byte, resulting in 40 
+hexadecimal characters for a hexadecimal representation of an SHA-1message 
+digest.</p>
+<p>Bob also knows that any additional characters beyond the first 40 hexadecimal 
+characters were the result of extending the message digest to make it 
+possible to encrypt it using the RSA encryption algorithm.&nbsp; Bob discards all but the first 40 characters from 
+the decoded digital signature.</p>
+<p><font color="#FF0000"><b>Checking the message digest</b></font></p>
+<p>Then Bob computes an SHA-1 message digest for the extracted message and 
+compares it with the first 40 characters of the decoded digital signature.&nbsp; 
+If they match, he concludes that the digital signature is valid.&nbsp; If not, 
+he concludes that the digital signature is invalid.</p>
+<p>If the digital signature is valid, Bob has confirmed both the authenticity and the 
+integrity of the message from Alice.&nbsp; It could only have been sent by Alice
+<i>(or by someone having access to her private key).</i>&nbsp; Furthermore, the 
+message could not have been modified after Alice computed her message digest and 
+created her digital signature.</p>
+<p>This program allows the message to contain all of the ASCII characters from 
+<a name="space_">space</a> (32) through ~ (126) inclusive.</p>
+<p><font color="#FF0000"><b>Predetermined keys</b></font></p>
+<p>This program uses predetermined values for the following:</p>
+<ul>
+	<li>Alice's public key, e</li>
+	<li>Alice's private key, d</li>
+	<li>Alice's modulus operand, n</li>
+</ul>
+<p><font color="#FF0000"><b>Disclaimer</b></font></p>
+<p>This program should not be used for production purposes.&nbsp; If you need a 
+Java program for production use, you should develop it using Sun's JCE API.</p>
+<p><font color="#FF0000"><b>Testing</b></font></p>
+<p>This program was tested using Sun's JDK 1.5 and WinXP.</p>
+<p><font color="#FF0000"><b>The program output</b></font></p>
+<p>This program produces the output shown in Figure 1.&nbsp; Note that line 
+breaks were manually entered into Figure 1 to force the material to fit in this 
+narrow publication format.&nbsp; I will refer back to Figure 1 as I explain the 
+code in this program.</p>
+<table bgcolor="#ccffff" border="1" cols="1" width="400">
+  <tbody>
+    <tr>
+      <td>
+      <pre>1. Alice's keys:
+2. e: 17
+3. d: 279263220413
+4. n: 951386374109
+
+5. Block size: 12
+
+6. Alice's msg: Hello Bob, how are you? I am goi
+ng to go to the movie tonight. I plan to see Gone
+with the Wind. I really like Clark Gable. Woul
+d you like to go with me? I would really like to
+have some company. Your friend, Alice.
+
+7. Alice's msg digest: 89CA87110E2063FAF4A364B77C
+18C3260AD47B8E
+
+8. Alice's extended msg digest: 89CA87110E2063FAF
+4A364B77C18C3260AD47B8E00000000
+
+
+9. Alice's encrypted digital signature: 511335051
+5586806264156901277970003516182249744328267808527
+91138100851742238493708680633911102408
+
+10. Alice's signed msg: Hello Bob, how are you? 
+I am going to go to the movie tonight. I plan to 
+see Gone with the Wind. I really like Clark Gabl
+e. Would you like to go with me? I would really
+like to have some company. Your friend, Alice.5
+1133505155868062641569012779700035161822497443282
+6780852791138100851742238493708680633911102408
+
+11. Alice's signed msg with msg length appended: 
+Hello Bob, how are you? I am going to go to the 
+movie tonight. I plan to see Gone with the Wind. 
+I really like Clark Gable. Would you like to go
+with me? I would really like to have somecompan
+y. Your friend, Alice.51133505155868062641569012
+7797000351618224974432826780852791138100851742238
+4937086806339111024080220
+
+12. Bob's calculated msg len: 220
+
+13. Bob's extracted msg text: Hello Bob, how are 
+you? I am going to go to the movie tonight. I pl
+an to see Gone with the Wind. I really like Clar
+k Gable. Would you like to go with me? I would 
+really like to have some company. Your friend, A
+lice.
+
+14. Bob's extracted extended digital signature: 5
+1133505155868062641569012779700035161822497443282
+6780852791138100851742238493708680633911102408
+
+15. Bob's decoded extended digital signature: 89C
+A87110E2063FAF4A364B77C18C3260AD47B8E00000000
+
+16. Bob's decoded digital signature: 89CA87110E20
+63FAF4A364B77C18C3260AD47B8E
+
+17. Bob's digest: 89CA87110E2063FAF4A364B77C18C32
+60AD47B8E
+
+18. Bob's conclusion: Valid signature
+      
+<b>Figure 1</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<p><font color="#FF0000"><b>Discuss in fragments</b></font></p>
+<p>As is my custom, I will discuss and explain this program by breaking it down 
+into fragments and discussing the fragments.&nbsp; You can view the program in its entirety in 
+Listing 26 
+near the end of the lesson.</p>
+<p><font color="#FF0000"><b>The Rsa09 and Keys classes</b></font></p>
+<p>The class named <b>Rsa09</b> begins in Listing 1.&nbsp; This class begins 
+with the definition of a <b>static</b> class named <b>Keys</b>.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+  <tbody>
+    <tr>
+      <td>
+      <pre>class Rsa09{
+
+  static class Keys{
+    BigInteger n = 
+                  new BigInteger("951386374109");
+    BigInteger d = 
+                  new BigInteger("279263220413");
+    BigInteger e = new BigInteger("17");
+  }//end inner class Keys
+
+<b>Listing 1</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p></p>
+<p><font color="#FF0000"><b>Purpose of the Keys class</b></font></p>
+<p>The<b> Keys</b> class is a static class whose sole purpose is to create an 
+object that serves as a container for the keys.&nbsp; It was made static so that it 
+can be instantiated and accessed from within the <b>main</b> method.&nbsp; An object of the
+<b>Keys</b> class contains precomputed values for the two keys, <b>e</b> and <b>
+d</b>, and for the modulus operand <b>n</b>.&nbsp; In this context, <b>e</b> is the public key 
+and <b>d</b> is the private key.</p>
+<p>Note that the precomputed key values encapsulated in a <b>Keys</b> object 
+were designed to be used with a block size of 12.</p>
+<p><font color="#FF0000"><b>Beginning of the main method</b></font></p>
+<p>The <b>main</b> method begins in Listing 2.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  public static void main(String[] args){
+    Keys aliceKeys = new Keys();
+
+<b>Listing 2</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p></p>
+<p>The code in Listing 2 instantiates an object of the <b>Keys</b> class, and 
+refers to that object as <b>aliceKeys</b>.&nbsp; The contents of the object 
+represent Alice's public and private keys.</p>
+<p><font color="#FF0000"><b>The test message</b></font></p>
+<p>Listing 3 constructs a <b>String</b> object referred to as <b>aliceMsg</b>.&nbsp; 
+This <b>String</b> object constitutes the message that Alice will sign and send 
+to Bob.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  String aliceMsg = "Hello Bob, how are you?  I "
+      + "am going to go to the movie tonight. I "
+      + "plan to see Gone with the Wind.  I "
+      + "really like Clark Gable.  Would you "
+      + "like to go with me?  I would really "
+      + "like to have some company.  Your "
+      + "friend, Alice.";
+
+<b>Listing 3</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p></p>
+<p><font color="#FF0000"><b>Miscellaneous operations</b></font></p>
+<p>The code in Listing 4 performs several miscellaneous operations.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    //Set blockSize.
+    int blockSize = 12;
+
+    //Instantiate an object of this class
+    Rsa09 obj = new Rsa09();
+
+    //Display the key values along with the
+    // modulus operand.
+    System.out.println("1. Alice's keys:");
+    System.out.println("2. e: " + aliceKeys.e);
+    System.out.println("3. d: " + aliceKeys.d);
+    System.out.println("4. n: " + aliceKeys.n);
+    System.out.println("\n5. Block size: " 
+                                    + blockSize);
+    
+    //Display the message that Alice will sign 
+    // and send to Bob.
+    System.out.println("\n6. Alice's msg: "
+                                     + aliceMsg);
+
+<b>Listing 4</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p></p>
+<p>Listing 4 begins by setting the encryption block size to 12 in order to match 
+the required block size for the keys shown in Listing 1.&nbsp; Then Listing 4 instantiates an object of the
+<b>Rsa09</b> class and refers to that object as <b>obj</b>.</p>
+<p>Following this, Listing 4 displays the text material identified by Line 1 
+through Line 6 in Figure 1.</p>
+<p><font color="#FF0000"><b>Get the message digest</b></font></p>
+<p>Listing 5 invokes the <b>digestIt</b> method to get a message digest that 
+represents the <b>String</b> message referred to by <b>aliceMsg</b>.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    byte[] aliceDigest = 
+               obj.digestIt(aliceMsg.getBytes());
+
+<b>Listing 5</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p></p>
+<p>The <b>digestIt</b> method generates and returns a digest for an incoming array of bytes using Sun's SHA 
+message digest algorithm.&nbsp; This method is essentially the same as the 
+method having the same name that was discussed and explained in the earlier 
+lesson entitled <a href="http://www.developer.com/java/data/article.php/3487986">
+Message Digests 101 using Java</a>.&nbsp; Therefore, I won't discuss the <b>digestIt</b> 
+method further in this lesson.&nbsp; You can view the method in its entirety in 
+Listing 26 near the end of the lesson.</p>
+<p><font color="#FF0000"><b>Display the message digest in hexadecimal</b></font></p>
+<p>Listing 6 invokes the <b>byteArrayToHexStr</b> method to convert the message 
+digest to a string of hexadecimal characters.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    System.out.println(
+         "\n7. Alice's msg digest: " 
+           + obj.byteArrayToHexStr(aliceDigest));
+
+<b>Listing 6</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p></p>
+<p>Listing 6 also displays the hexadecimal representation of the message digest 
+as Line number 7 in Figure 1.</p>
+<p>The <b>byteArrayToHexStr</b> method converts an incoming array of bytes into 
+a <b>String</b> that represents each of the bytes as two hexadecimal characters.</p>
+<p>The <b>byteArrayToHexStr</b> method is essentially the same as the method 
+having the same name that was discussed and explained in the previous lesson 
+entitled <a href="http://www.developer.com/java/data/article.php/3487986">
+Message Digests 101 using Java</a>.&nbsp; Therefore, I won't discuss the method named <b>
+byteArrayToHexStr</b> further in this lesson.&nbsp; You can view the method in 
+its entirety in Listing 26 near the end of this lesson.</p>
+<p><font color="#FF0000"><b>Extend to multiple of block size</b></font></p>
+<p>You will recall from earlier lessons that the RSA encryption algorithm is a 
+block-oriented algorithm.&nbsp; Therefore, the length of the material to be 
+encrypted must be a multiple of the block size.</p>
+<p>Listing 7 extends the length of the digest to force this condition to be 
+satisfied.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    int tailLen = aliceDigest.length % blockSize;
+    int extendLen = 0;
+    if((tailLen > 0)){
+                 extendLen = blockSize - tailLen;
+    }//end if
+
+    //Create an array for the extended digest
+    // with all elements initialized to a value
+    // of 0.
+    byte[] aliceExtendedDigest = 
+        new byte[aliceDigest.length + extendLen];
+
+    //Copy the digest into the bottom of the new
+    // array.  The empty portion at the top of
+    // the array becomes the extension.
+    System.arraycopy(aliceDigest,0,
+                     aliceExtendedDigest,0,
+                     aliceDigest.length);
+
+<b>Listing 7</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p></p>
+<p><font color="#FF0000"><b>Calculate the required length</b></font></p>
+<p>Listing 7 begins by calculating the required length of the extended message 
+digest.</p>
+<p><font color="#FF0000"><b>Create array object of required length</b></font></p>
+<p>Then Listing 7 creates an array object of type <b>byte</b> with a <b>length</b> 
+equal to the required extended length of the message digest.&nbsp; Recall that 
+all array elements are initialized to a value of 0 for type <b>byte</b>.</p>
+<p><font color="#FF0000"><b>Populate the array</b></font></p>
+<p>Then Listing 7 copies the message digest into the lower elements of the array 
+object.&nbsp; The elements at the top with a default value of 0 constitute the 
+extension to the message digest.</p>
+<p><font color="#FF0000"><b>Convert the extended message digest to hexadecimal</b></font></p>
+<p>Listing 8 invokes the <b>byteArrayToHexStr</b> method to convert the extended 
+message digest into hexadecimal format.&nbsp; This is necessary to guarantee 
+that the characters that represent the digest are included in the set of 95 
+characters from space through ~ alluded to <a href="#space_">earlier</a>.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    String aliceExtendedDigestAsHex = 
+      obj.byteArrayToHexStr(aliceExtendedDigest);
+
+    System.out.println(
+             "\n8. Alice's extended msg digest: "
+                     + aliceExtendedDigestAsHex);
+
+<b>Listing 8</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p></p>
+<p>Listing 8 also displays the extended message digest in hexadecimal format 
+producing Line number 8 in the output shown in Figure 1.&nbsp; As you can see from Figure 1, for a 
+block size of 12, it was necessary to extend the hexadecimal representation of 
+the message digest from 40 to 48 hexadecimal characters.</p>
+<blockquote>
+	<p><i>(Bob will discard the final eight characters later because he knows 
+	that only 40 hexadecimal characters are required to represent a message 
+	digest that is computed using the SHA-1 algorithm.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Encode the extended message digest</b></font></p>
+<p>As you will recall from earlier lessons, the input to the RSA algorithm must 
+be in the form of integer numeric data.&nbsp; Therefore, Listing 9 invokes the<b> 
+encode</b> method to encode the hexadecimal representation of the extended 
+message digest into integer numeric format in preparation for encryption.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    String aliceEncodedDigest = 
+            obj.encode(aliceExtendedDigestAsHex);
+
+<b>Listing 9</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p></p>
+<p><font color="#FF0000"><b>The encode method</b></font></p>
+<p>The purpose of the <b>encode</b> method is to encode a plain text message 
+into numeric format where:</p>
+<ul>
+	<li>space = 32 - 32 = 0</li>
+	<li>...</li>
+	<li>A = 65 - 32 = 33</li>
+	<li>...</li>
+	<li>Z = 90 - 32 = 58</li>
+	<li>...</li>
+	<li>a = 97 - 32 = 65</li>
+	<li>...</li>
+	<li>~ = 126 - 32 = 94</li>
+</ul>
+<p>This is the place where the restriction on the allowable characters contained 
+in the message or message digest comes into play.&nbsp; A message digest 
+expressed in hexadecimal format satisfies this restriction.&nbsp; </p>
+<p>The <b>encode</b> method used in this program is essentially the same as the 
+method having the same name discussed and explained in the earlier lesson 
+entitled 
+<a href="http://www.developer.com/java/data/article.php/3469641">Digital 
+Signatures 101 using Java</a>.&nbsp; Therefore, I won't discuss the <b>encode</b> method 
+further in this lesson.&nbsp; You can view the <b>encode</b> method in its 
+entirety in Listing 26 near the end of the lesson.</p>
+<p><font color="#FF0000"><b>Create the digital signature</b></font></p>
+<p>Alice creates the digital signature for her message by invoking the <b>doRSA</b> 
+method to encrypt the encoded and extended message digest using her <i>private</i> key.&nbsp; 
+This is shown in Listing 10.&nbsp; Bob can later decrypt Alice's digital 
+signature for this message using Alice's <i>public</i> key.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    String aliceSignature = obj.doRSA(
+      aliceEncodedDigest,aliceKeys.d,aliceKeys.n,
+                                      blockSize);
+    System.out.println(
+     "\n9. Alice's encrypted digital signature: "
+                               + aliceSignature);
+
+<b>Listing 10</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p></p>
+<p>Listing 10 also displays the encrypted digital signature producing Line 9 in 
+the output shown in Figure 1.&nbsp; It is worth noting at this point that the 
+encrypted digital signature consists of 96 characters.&nbsp; </p>
+<p><font color="#FF0000"><b>Digital signature is a constant length</b></font></p>
+<p>The length of the encrypted digital signature will always be 96 characters 
+for the SHA-1 message digest algorithm, the RSA encryption algorithm with a 
+block size of 12, and the encoding algorithm used in this program to convert the 
+hexadecimal representation of the message digest to integer numeric format.&nbsp; 
+That will be true even if the length of the message represented by the message 
+digest is extended to many thousands of characters.</p>
+<p>Thus, one advantage of the use of message digests for digital signatures <i>
+(relative to the approach used in the earlier lesson entitled 
+<a href="http://www.developer.com/java/data/article.php/3469641">Digital 
+Signatures 101 using Java</a>)</i> is that 
+the digital signature is always relatively short regardless of the length of the 
+message.&nbsp; Therefore, for long messages, the use of message digests for 
+digital signatures results in conservation of communication bandwidth <i>(at the 
+expense of extra computational requirements).</i></p>
+<p><font color="#FF0000"><b>The doRSA method</b></font></p>
+<p>The <b>doRSA</b> method applies the RSA encryption algorithm to an input 
+string using a specified exponent, a specified modulus operator, and a 
+specified block size, which are provided as input parameters.</p>
+<p>This method can be used to encrypt or to decrypt the input string depending 
+on whether the exponent is an encryption key or a decryption key.</p>
+<p>The <b>doRSA</b> method used in this program is essentially the same as that 
+discussed and explained in the earlier lesson entitled 
+<a href="http://www.developer.com/java/data/article.php/3469641">Digital 
+Signatures 101 using Java</a>.&nbsp; Therefore, I 
+won't discuss the <b>doRSA</b> method further in this lesson.&nbsp; You can view 
+the <b>doRSA</b> method in its entirety in Listing 26 near the end of the 
+lesson.</p>
+<p><font color="#FF0000"><b>Sign the message</b></font></p>
+<p>At this point, Alice signs the message by appending the encrypted digital 
+signature onto the end of the actual text message.&nbsp; This is shown in 
+Listing 10.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    String aliceSignedMsg = 
+                       aliceMsg + aliceSignature;
+    System.out.println(
+                     "\n10. Alice's signed msg: "
+                               + aliceSignedMsg);
+
+<b>Listing 11</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p></p>
+<p>Listing 10 also displays the signed message, producing Line 10 in the output 
+shown in Figure 1.</p>
+<p><font color="#FF0000"><b>Append the length of the message</b></font></p>
+<p>When Bob receives the signed message, he will need to separate the message 
+text from the digital signature.&nbsp; Somehow, he must know where the message 
+text ends and the digital signature begins.&nbsp; There are several ways to 
+accomplish this.&nbsp; The programs in the lesson entitled 
+<a href="http://www.developer.com/java/data/article.php/3469641">Digital 
+Signatures 101 using Java</a> dedicated the underscore character to be used as a 
+delimiter between the message text and the digital signature.&nbsp; This is OK, 
+except that it means that the underscore character cannot be used elsewhere in 
+the message,<i> (unless you want to also 
+get in involved in the use of escape sequences as are commonly used in 
+programming source code).</i></p>
+<p><font color="#FF0000"><b>A different approach</b></font></p>
+<p>This program takes a different approach.&nbsp; Rather than dedicating a 
+delimiter character, the code in Listing 12 appends 
+four numeric characters onto the end of the signed message indicating the length 
+of the original message.&nbsp; These numeric characters contain leading zeros 
+if necessary.&nbsp; Bob will extract and use this information to determine the 
+length of the text message, and to separate the 
+text message from the digital signature.&nbsp; As written here, this approach can 
+accommodate message lengths up to 9999 characters.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    String aliceMsgLenAsStr = 
+                          "" + aliceMsg.length();
+    //Confirm number of characters in the string.
+    if((aliceMsgLenAsStr.length() > 4) 
+            || (aliceMsgLenAsStr.length() <= 0)){
+      System.out.println(
+                        "Message length error.");
+      System.exit(0);
+    }//end if
+    //Prepend leading zeros if necessary
+    if(aliceMsgLenAsStr.length() == 1){
+                         aliceMsgLenAsStr = "000"
+                              + aliceMsgLenAsStr;
+    }else if(aliceMsgLenAsStr.length() == 2){
+      aliceMsgLenAsStr = "00" + aliceMsgLenAsStr;
+    }else if(aliceMsgLenAsStr.length() == 3){
+      aliceMsgLenAsStr = "0" + aliceMsgLenAsStr;
+    }else if(aliceMsgLenAsStr.length() == 1){
+                        aliceMsgLenAsStr = "000" 
+                             + aliceMsgLenAsStr;
+    }//end else
+    
+    //Append the message length string to the
+    // previously signed message.
+    aliceSignedMsg = aliceSignedMsg 
+                              + aliceMsgLenAsStr;
+    System.out.println(
+      "\n11. Alice's signed msg with msg length "
+                           + "appended: " 
+                               + aliceSignedMsg);
+
+<b>Listing 12</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p></p>
+<p><font color="#FF0000"><b>The code is straightforward</b></font></p>
+<p>Although the code fragment in Listing 12 is rather long, there is nothing 
+conceptually difficult about the code in Listing 12.&nbsp; This code simply 
+creates a four-character <b>String</b> containing characters that indicate the length of the 
+original message.&nbsp; This four-character <b>String</b> is appended onto the 
+end of the signed message.</p>
+<p>Listing 12 also displays the signed message with the number of characters 
+appended onto the end, producing Line 11 in the output shown in Figure 1.&nbsp; 
+As you can see, the last four characters of Line 11 in Figure 1 indicate that 
+the length of the original text message was 220 characters.</p>
+<p><font color="#FF0000"><b>Send the message to Bob</b></font></p>
+<p>At this point, Alice sends her signed message to Bob.&nbsp; This is 
+accomplished conceptually in Listing 13 by assigning the reference contained in
+<b>aliceSignedMsg</b> to the reference variable named <b>bobSignedMsg</b>.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    String bobSignedMsg = aliceSignedMsg;
+
+<b>Listing 13</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p></p>
+<p>At this point, Bob has the message and can begin the process of validating 
+it.&nbsp; Bob will need to extract the message length, the message text, and the 
+digital signature from the signed message.</p>
+<p><font color="#FF0000"><b>Get the message length</b></font></p>
+<p>Bob begins by extracting the length of the text message from the end of the 
+signed message as shown in Listing 14.&nbsp; Hopefully, you will have no 
+difficulty understanding the code in Listing 14.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    int bobMsgLen = Integer.parseInt(
+                   bobSignedMsg.substring(
+                     bobSignedMsg.length() - 4));
+    System.out.println(
+               "\n12. Bob's calculated msg len: "
+                                 + bobMsgLen);
+
+<b>Listing 14</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p></p>
+<p>Listing 14 also displays the message length extracted by Bob, producing Line 12 in Figure 1.&nbsp; As you can see from 
+Line 12, Bob concludes that the 
+length of the text message is 220 characters.</p>
+<p><font color="#FF0000"><b>Extract the message text</b></font></p>
+<p>Next Bob uses the message length to extract the first 220 characters from the 
+signed message as shown in Listing 15.&nbsp; This is the text of the message 
+that Alice sent to Bob.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    String bobMsgText = bobSignedMsg.substring(
+                                 0,bobMsgLen);
+    System.out.println(
+               "\n13. Bob's extracted msg text: "
+                             + bobMsgText);
+
+<b>Listing 15</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p></p>
+<p>Listing 15 also displays the message text producing Line 13 in Figure 1.&nbsp; 
+</p>
+<p><font color="#FF0000"><b>Authenticate the source and confirm the integrity</b></font></p>
+<p>However, at this point, Bob can't be certain that the message was actually sent 
+by Alice.&nbsp; It may have been sent by someone pretending to be Alice.&nbsp; Even if the 
+message was sent by Alice, it may have been modified in transit.&nbsp; Alice may 
+not be going to see <i>Gone with the Wind</i> after all.&nbsp; Her message may 
+have been modified in transit, and she may actually be 
+going to a hockey game instead of a movie.</p>
+<p>Bob needs to use the digital signature to authenticate the source of the message and to confirm the 
+integrity of the message.</p>
+<p><font color="#FF0000"><b>Extract the encoded and encrypted digital signature</b></font></p>
+<p>Bob knows that everything following the message text except for the four 
+characters at the end <i>(that indicate the message length)</i> is the encoded and 
+encrypted version of the extended digital signature.&nbsp; He extracts that 
+signature in 
+Listing 16.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+  <tbody>
+    <tr>
+      <td>
+      <pre>
+    String bobExtractedSignature =
+          bobSignedMsg.substring(
+            bobMsgLen,bobSignedMsg.length() - 4);
+    System.out.println(
+        "\n14. Bob's extracted extended digital "
+                    + "signature: " 
+                        + bobExtractedSignature);
+
+<b>Listing 16</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p></p>
+<p>Listing 16 also displays this information, producing Line 14 in Figure 1.</p>
+<p><font color="#FF0000"><b>Decrypt and decode the extended digital signature</b></font></p>
+<p>At this point, Bob uses Alice's public key to decrypt the digital signature.&nbsp; 
+Then he invokes the <b>decode</b> method to decode the extended digital 
+signature as shown in Listing 17.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    //Bob decrypts the extended digital
+    // signature using Alice's public key.
+    String bobDecryptedExtendedSignature =
+            obj.doRSA(bobExtractedSignature,
+              aliceKeys.e,aliceKeys.n,blockSize);
+
+    //Bob decodes the extended digital signature.
+    String bobDecodedExtendedSignature = 
+                obj.decode(
+                  bobDecryptedExtendedSignature);
+
+    System.out.println(
+          "\n15. Bob's decoded extended digital "
+                + "signature: "
+                  + bobDecodedExtendedSignature);
+
+<b>Listing 17</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p></p>
+<p>The <b>decode</b> method used in this program is essentially the same as the 
+method having the same name that was discussed and explained in the lesson 
+entitled 
+<a href="http://www.developer.com/java/data/article.php/3469641">Digital 
+Signatures 101 using Java</a>.&nbsp; Therefore, I won't discuss the <b>decode</b> method 
+further in this lesson.&nbsp; The method can be viewed in its entirety in 
+Listing 26 near the end of the lesson.</p>
+<p><font color="#FF0000"><b>The output</b></font></p>
+<p>Listing 17 also displays the decoded digital signature, producing the output 
+shown by Line 15 in Figure 1.&nbsp; At this point, you can compare Line 15 with 
+Line 8 in Figure 1 to confirm that they match.&nbsp; Of course, 
+Bob can't see Line 8 in Figure 1, so he has some more work to do.</p>
+<p><font color="#FF0000"><b>Discard the extended characters</b></font></p>
+<p>Bob knows that the digital signature produced by the SHA-1 message-digest 
+algorithm consists of 40 hexadecimal characters.&nbsp; He knows that any 
+additional characters were put there simply to fill out the last block in order 
+to make encryption possible using the RSA encryption algorithm.&nbsp; He 
+extracts the hexadecimal version of the digital signature by ignoring all but 
+the first 40 hexadecimal characters as shown in Listing 18.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    String bobDecodedSignature = 
+                     bobDecodedExtendedSignature.
+                                 substring(0,40);
+    System.out.println(
+        "\n16. Bob's decoded digital signature: "
+                          + bobDecodedSignature);
+
+<b>Listing 18</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p></p>
+<p>Listing 18 also displays the result, producing Line 16 in Figure 1.&nbsp; You 
+can compare Line 16 with Line 7 to confirm that they match.&nbsp; Once again, 
+however, Bob can't see Line 7 so he has some more work to do.</p>
+<p><font color="#FF0000"><b>Compute a message digest for comparison</b></font></p>
+<p>In order to authenticate the source of the message and to confirm the 
+integrity of the message, Bob needs to use the same SHA-1 message-digest 
+algorithm to compute a message digest for the received message and to compare it 
+with the decrypted and decoded digital signature.</p>
+<p>Bob does this in Listing 19.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    //Bob computes the msg digest for comparison
+    // with the decoded signature.
+    byte[] bobDigest = 
+       obj.digestIt(bobMsgText.getBytes());
+    
+    System.out.println("\n17. Bob's digest: " 
+            + obj.byteArrayToHexStr(bobDigest));
+
+<b>Listing 19</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p></p>
+<p><font color="#FF0000"><b>Compare the two message digests</b></font></p>
+<p>Listing 19 also displays the message digest produced by Bob and displays the 
+result in Line 17 of Figure 1.&nbsp; Since the message digest is only 40 
+hexadecimal characters in length, Bob could visually compare his version of the 
+message digest shown in Line 17 with the decoded digital signature shown in Line 
+16 of Figure 1.&nbsp; However, Bob decides to automate the comparison process as 
+shown in Listing 20.</p>
+<p>Listing 20 compares the decoded digital signature with Bob's computed message 
+digest and displays an output message indicating whether or not the signature is 
+valid.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    if(bobDecodedSignature.equals(
+             obj.byteArrayToHexStr(bobDigest))){
+      System.out.println(
+                       "\n18. Bob's conclusion: "
+                            + "Valid signature");
+    }else{
+      System.out.println(
+                       "\n18. Bob's conclusion: "
+                          + "Invalid signature");
+    }//end else
+
+  }//end main
+
+<b>Listing 20</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p></p>
+<p>For this particular case, Listing 20 produces the output shown in Line 18 in 
+Figure 1.&nbsp; Bob concludes that the digital signature contained in Alice's 
+signed message is valid.&nbsp; </p>
+<p><font color="#FF0000"><b>Authenticity and integrity is confirmed</b></font></p>
+<p>Since the digital signature is valid, Bob can conclude that the message was 
+sent by Alice <i>(or someone having access to her private key).</i>&nbsp; Thus, the 
+message has been <i>authenticated,</i> confirming the identity of the sender.</p>
+<p>Bob can also conclude that the message was not modified by someone else 
+during transmission <i>(unless that person had access to Alice's private key),</i> 
+thus validating the integrity of the message.</p>
+<p>On the other hand, if the digital signature had been deemed to be invalid, 
+Bob would conclude that either the <i>authenticity</i> or the <i>integrity</i> 
+of the message is questionable.</p>
+</p>
+<p></p>
+<p><font color="#FF0000"><b>The program named Rsa10 - a different scenario</b></font></p>
+<p>The purpose of the program named<b> Rsa10 </b>is to illustrate the signing of an <i><b>
+encrypted</b></i> message along with the later verification of the signature by 
+the receiver of the message.&nbsp; This program differs from the previous 
+program named <b>Rsa09</b> in that the previous program signed an <b><i>
+unencrypted</i></b> message.</p>
+<p>As before, the comments in this program reflect the scenario of Alice and 
+Bob.&nbsp; However, this time, Alice needs to send a signed <i><b>encrypted</b></i> 
+message to Bob instead of sending a signed <i><b>unencrypted</b></i> message to him.</p>
+<p><font color="#FF0000"><b>Authenticity and integrity</b></font></p>
+<p>As before, the message needs to be signed so that Bob can be confident that 
+the message that he received was sent by Alice and not by someone pretending to 
+be Alice.&nbsp; Bob also needs to confirm the integrity of the message by 
+confirming that the message was not modified during the transmission from Alice 
+to Bob.</p>
+<p><font color="#FF0000"><b>Confidentiality</b></font></p>
+<p>Also, a very important aspect of this scenario is that the confidentiality of 
+the message must be maintained.&nbsp; That is, the message must be sent in such 
+a way that it can only be read by Bob.</p>
+<p><font color="#FF0000"><b>Signing the message</b></font></p>
+<p>As before, Alice creates a digital signature by getting an SHA-1 message 
+digest for her message.&nbsp; Then she encodes and encrypts the digest using her
+<i>private</i> key and the RSA algorithm.&nbsp; The encrypted digest becomes her 
+digital signature.&nbsp; Alice signs the message by appending the encrypted 
+digest to the end of the message.&nbsp; Bob can later decrypt the digital 
+signature using Alice's <i>public</i> key.</p>
+<p><font color="#FF0000"><b>Maintaining confidentiality</b></font></p>
+<p>Up to this point, this program is very similar to the previous program, but 
+this is where the two programs diverge.</p>
+<p>Alice will ensure the confidentiality of the message by encrypting the entire 
+signed message using Bob's <i>public</i> key.&nbsp; Then only Bob <i>(or someone 
+having access to Bob's private)</i> key can decrypt and read the message.</p>
+<p>As before, Bob will need some way to separate the message from the digital 
+signature after he decrypts and decodes the received message.&nbsp; Alice will 
+satisfy this need by appending numeric characters onto the end of the message to 
+notify Bob of the length of the original message.&nbsp; 
+In addition, before encoding and encrypting the signed message using the RSA 
+algorithm, Alice must 
+extend the length of the signed message to cause the length of the signed and 
+encoded message to be a multiple of the block size.</p>
+<p><font color="#FF0000"><b>Two birds with one stone</b></font></p>
+<p>Alice takes care of both of these requirements at the same time.&nbsp; She 
+extends the unencoded signed message with a pad that causes the extended length 
+of the unencoded signed message to be a multiple of half the block size <i>(the 
+encoding scheme in use doubles the length of the signed message, so the encoded 
+message length will be a multiple of the block size).</i></p>
+<p>In addition, Alice causes the last four bytes in the pad to contain numeric 
+characters specifying the length of the original message.&nbsp; If the pad is 
+more than four bytes long, Alice fills in the extra characters in the pad with 
+equal characters (=).</p>
+<blockquote>
+	<p><i>(Bob can later extract the length of the original message and use it 
+	to separate the message from the signature.&nbsp; He can also discard the 
+	equal characters used to extend the length of the message.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Send the message to Bob</b></font></p>
+<p>Then Alice sends the signed encoded and encrypted message to Bob.</p>
+<p><font color="#FF0000"><b>Decrypt and decode the signed message</b></font></p>
+<p>Bob begins by decrypting and decoding the encrypted signed message.&nbsp; 
+Then he extracts the length of the original message from the end of the decoded 
+signed message.&nbsp; </p>
+<p><font color="#FF0000"><b>Separate the digital signature from the message</b></font></p>
+<p>Bob uses this information along with his knowledge that the pad may also 
+contain equal characters (=) as filler, to extract the encrypted digital 
+signature from the decoded signed message.&nbsp; Bob also uses this information 
+to extract the message from the decoded signed message.</p>
+<p><font color="#FF0000"><b>Decrypt and decode the digital signature</b></font></p>
+<p>At this point, this operations in this program have pretty well converged 
+back into the operations in the previous 
+program named <b>Rsa09</b>.&nbsp; Bob decrypts and decodes the encrypted digital 
+signature using Alice's public key.&nbsp; As before, Bob knows that the original 
+message digest was 40 hexadecimal characters in length, because an SHA-1 message 
+digest is always 160 bits or 20 bytes in length.&nbsp; Two hexadecimal 
+characters are required to represent each byte, resulting in 40 hexadecimal 
+characters for a hexadecimal representation of an SHA-1 message digest.</p>
+<p><font color="#FF0000"><b>Extract the message digest</b></font></p>
+<p>Bob also knows that any additional hexadecimal characters beyond the first 40 
+were the result of extending the message digest to make it possible to encrypt 
+it using the RSA encryption algorithm.&nbsp; Bob discards all but the first 40 
+characters from the decoded digital signature.</p>
+<p><font color="#FF0000"><b>Compute a new message digest for comparison</b></font></p>
+<p>Then Bob computes an SHA-1 message digest for the extracted message and 
+compares it with the first 40 characters of the decoded digital signature.&nbsp; 
+If they match, he concludes that the digital signature is valid.&nbsp; If not, 
+he concludes that the digital signature is invalid.</p>
+<p><font color="#FF0000"><b>Confirming authenticity and integrity</b></font></p>
+<p>If the digital signature is valid, Bob has confirmed the authenticity and the 
+integrity of the message from Alice.&nbsp; It could only have been sent by Alice 
+or by someone having access to her private key.&nbsp; Furthermore, the message 
+could not have been modified after Alice computed her message digest and created 
+her digital signature.</p>
+<p><font color="#FF0000"><b>Maintaining confidentiality</b></font></p>
+<p>Finally, because Alice encrypted the signed message using Bob's public key, 
+only Bob or someone having access to his private key can decrypt the signed 
+message.&nbsp; Therefore, the confidentiality of the message was protected 
+during the transmission of the message from Alice to Bob.</p>
+<p><font color="#FF0000"><b>Allowable character set</b></font></p>
+<p>As before, this program allows all of the ASCII characters from space (32) 
+through ~ (126) inclusive to be included in the message.&nbsp; None of these 
+characters are set aside to be used as delimiter characters.</p>
+<blockquote>
+	<p><i>(Note that the use 
+of the equal character (=) to extend the signed message prior to encoding and 
+encryption does not prohibit the use of this character within the message 
+itself.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Predetermined keys</b></font></p>
+<p>This program uses predetermined values for the following:</p>
+<ul>
+	<li>Alice's public key, e</li>
+	<li>Alice's private key, d</li>
+	<li>Alice's modulus operand, n</li>
+	<li>Bob's public key, e</li>
+	<li>Bob's private key, d</li>
+	<li>Bob's modulus operand, n</li>
+</ul>
+<p>The above keys were all designed to be used with a block size of 12.</p>
+<p><font color="#FF0000"><b>Discussion will be brief</b></font></p>
+<p>Much of the code in this program is identical to or very similar to the code in the previous program 
+named <b>Rsa09</b>.&nbsp; Because of the similarity of this program to the 
+previous program, I will discuss only those code fragments that contain 
+important differences between the two programs.&nbsp; You can view the entire 
+program in Listing 27 near the end of the lesson.</p>
+<p><font color="#FF0000"><b>The program output</b></font></p>
+<p>This program produces the output shown in Figure 2. <i>(Note that line breaks 
+were manually entered into Figure 2 to force the material to fit into this narrow 
+publication format.)</i>&nbsp; I will refer back to Figure 2 while discussing 
+the program code, and will comment only on those portions of the output that 
+differentiate this program from the previous program.</p>
+<table bgcolor="#ccffff" border="1" cols="1" width="400">
+  <tbody>
+    <tr>
+      <td>
+      <pre>1. Alice's keys:
+2. e: 17
+3. d: 279263220413
+4. n: 951386374109
+
+5. Bob's keys:
+6. e: 19
+7. d: 799574694235
+8. n: 951386374109
+
+9. Block size: 12
+
+10. Alice's msg: Hello Bob, how are you?  I am go
+ing to go to the movie tonight. I plan to see Gon
+e with the Wind.  I really like Clark Gable.  Wou
+ld you like to go with me?  I would really like t
+o have some company.  Your friend, Alice.
+
+11. Alice's msg digest: 89CA87110E2063FAF4A364B77
+C18C3260AD47B8E
+
+12. Alice's extended msg digest: 89CA87110E2063FA
+F4A364B77C18C3260AD47B8E00000000
+
+13. Alice's encrypted digital signature: 51133505
+1558680626415690127797000351618224974432826780852
+791138100851742238493708680633911102408
+
+14. Alice's signed msg: Hello Bob, how are you?  
+I am going to go to the movie tonight. I plan to 
+see Gone with the Wind.  I really like Clark Gabl
+e.  Would you like to go with me?  I would really
+ like to have some company.  Your friend, Alice.5
+1133505155868062641569012779700035161822497443282
+6780852791138100851742238493708680633911102408
+
+15. Alice's padded signed msg with msg length app
+ended: Hello Bob, how are you? I am going to go t
+o the movie tonight. I plan to see Gone with the 
+Wind.  I really like Clark Gable.  Would you like
+ to go with me?  I would really like to have some
+ company.  Your friend, Alice.5113350515586806264
+1569012779700035161822497443282678085279113810085
+1742238493708680633911102408====0220
+
+16. Alice's encrypted signed message: 91401046409
+0477812185023522059255227103733444908183675749115
+8834555666464747955317487974740038223011505609617
+0958348608789466477424942329033371476785906742456
+0777331120891074470078287368038504581398329728289
+1169705147103312551664808525983850773644838883849
+5892974479228714690946361944896047795453704351458
+0138918238467231200275709874384289825441638463619
+4489607764755499173131264107586650093298351648729
+8983371264328395673083207830600854525558017959215
+2887426943639881827352686383004770007421461800123
+9893565435323832631156747443170942361455453339508
+2810225070374501073338462893929842434027331818342
+2870733493040858128661542384978031710885942868854
+
+17. Bob's decrypted and decoded signed message: H
+ello Bob, how are you?  I am going to go to the m
+ovie tonight. I plan to see Gone with the Wind.  
+I really like Clark Gable.  Would you like to go 
+with me?  I would really like to have some compan
+y.  Your friend, Alice.51133505155868062641569012
+7797000351618224974432826780852791138100851742238
+493708680633911102408====0220
+
+18. Bob's calculated msg len: 220
+
+19. Bob's extracted msg text: Hello Bob, how are 
+you?  I am going to go to the movie tonight. I pl
+an to see Gone with the Wind.  I really like Clar
+k Gable.  Would you like to go with me?  I would 
+really like to have some company.  Your friend, A
+lice.
+
+20. Bob's extracted extended digital signature: 5
+1133505155868062641569012779700035161822497443282
+6780852791138100851742238493708680633911102408
+
+21. Bob's decoded extended digital signature: 89C
+A87110E2063FAF4A364B77C18C3260AD47B8E00000000
+
+22. Bob's decoded digital signature: 89CA87110E20
+63FAF4A364B77C18C3260AD47B8E
+
+23. Bob's digest: 89CA87110E2063FAF4A364B77C18C32
+60AD47B8E
+
+24. Bob's conclusion: Valid signature
+      
+<b>Figure 2</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<p><font color="#FF0000"><b>Instantiate two separate Keys objects</b></font></p>
+<p>The first important difference that we see occurs at the beginning of the <b>
+main</b> method shown in Listing 21.&nbsp; This code instantiates and populates 
+two objects of the class <b>Keys</b>.&nbsp; One object is used to encapsulate 
+predetermined keys for Alice.&nbsp; The other object is used to encapsulate 
+predetermined keys for Bob.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  public static void main(String[] args){
+    //Instantiate an object containing
+    // Alice's keys.
+    Keys aliceKeys = new Keys();
+    aliceKeys.n = new BigInteger("951386374109");
+    aliceKeys.d = new BigInteger("279263220413");
+    aliceKeys.e = new BigInteger("17");
+    
+    //Instantiate an object containing
+    // Bob's keys
+    Keys bobKeys = new Keys();
+    //Note, these key values were designed to
+    // be used with a block size of 12
+    bobKeys.n = new BigInteger("951386374109");
+    bobKeys.d = new BigInteger("799574694235");
+    bobKeys.e = new BigInteger("19");
+
+<b>Listing 21</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p></p>
+<p>The contents of the two objects are later displayed producing Lines 1 through 
+8 in Figure 2.</p>
+<p><font color="#FF0000"><b>Skip code in the main method</b></font></p>
+<p>A large amount of code, which is either identical to, or very similar to code 
+in the previous program named <b>Rsa09</b>, will be skipped between the code fragment 
+in Listing 21 and the code fragment in Listing 22. Listing 22 picks up at the point where 
+Alice has finished signing the message.&nbsp; You can view the code that was 
+skipped in Listing 27 
+near the end of the lesson.</p>
+<p><font color="#FF0000"><b>Prepare to encrypt the signed message</b></font></p>
+<p>Because Alice needs to maintain confidentiality, she will encrypt the signed 
+message using Bob's public key before sending the message to him.&nbsp; In 
+preparation for encoding and encryption, she needs to extend the length of the 
+signed message such that the total length is a multiple of half the block size.&nbsp;
+<i>(The length of the encoded message will be a multiple of the block size.)</i></p>
+<p>In addition, Alice needs to notify Bob as to the length of the original 
+message so that he will have a way to separate the text of the original message 
+from the encrypted message signature.&nbsp; She will accomplish both of these 
+requirements at the same time.</p>
+<p>Alice will extend the signed message using a pad that includes the length of 
+the original message in the last four bytes of the pad.&nbsp; All bytes in the 
+pad other than the last four bytes will be filled with equal characters (=).</p>
+<p><font color="#FF0000"><b>Invoke the padTheMsg method</b></font></p>
+<p>Continuing with the <b>main</b> method, Alice accomplishes this by invoking 
+the method named <b>padTheMsg</b> as shown in Listing 22.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    String alicePaddedSignedMsg = 
+        obj.<b>padTheMsg</b>(aliceSignedMsg,blockSize/2,
+                              aliceMsg.length());
+    System.out.println(
+      "\n15. Alice's padded signed msg with msg "
+                         + "length appended: " 
+                         + alicePaddedSignedMsg);
+
+<b>Listing 22</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p></p>
+<p>Listing 22 also displays the padded signed message after the original message 
+length has been appended as the last four characters in the pad.&nbsp; This 
+output is shown in Line 15 in Figure 2.&nbsp; Line 15 shows that the original 
+message contained 220 characters and also shows the equal characters used as 
+filler in the pad.</p>
+<p><font color="#FF0000"><b>The method named padTheMsg</b></font></p>
+<p>Setting the <b>main</b> method aside temporarily, the method named <b>
+padTheMsg</b> is shown in its entirety in Listing 23.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  private String padTheMsg(
+          String msgIn,int block,int origMsgLen){
+    byte[] msgData = msgIn.getBytes();
+    int msgInLen = msgData.length;
+    int tailLength = msgInLen%block;
+    int padLength = 0;
+    if((block - tailLength >= 4))
+      padLength = block - tailLength;
+    else 
+      padLength = 2*block - tailLength;
+      
+    //Create a four-byte array containing
+    // characters that indicate the length of
+    // the original msg with leading zeros if
+    // necessary.
+    String msgLenAsStr = "" + origMsgLen;
+    //Confirm number of characters.
+    if((msgLenAsStr.length() > 4) 
+                 || (msgLenAsStr.length() <= 0)){
+      System.out.println(
+                        "Message length error.");
+      System.exit(0);
+    }//end if
+    
+    //Prepend leading zeros if necessary
+    if(msgLenAsStr.length() == 1){
+      msgLenAsStr = "000" + msgLenAsStr;
+    }else if(msgLenAsStr.length() == 2){
+      msgLenAsStr = "00" + msgLenAsStr;
+    }else if(msgLenAsStr.length() == 3){
+      msgLenAsStr = "0" + msgLenAsStr;
+    }else if(msgLenAsStr.length() == 1){
+      msgLenAsStr = "000" + msgLenAsStr;
+    }//end else
+    
+    //Create a four-byte array containing the
+    // original message length as four numeric
+    // characters with leading zeros.
+    byte[] msgLenAsBytes = 
+                          msgLenAsStr.getBytes();
+      
+    //Construct an array containing the bytes
+    // required to make the padded message length
+    // equal to a multiple of block
+    byte[] thePad = new byte[padLength];
+
+    //Populate the array with = characters. 
+    // No need to put = characters in the last
+    // four bytes.
+    for(int cnt = 0;cnt < thePad.length - 4;
+                                          cnt++){
+      thePad[cnt] = '=';
+    }//end for loop
+    
+    //Put the original message length at the end
+    // of the pad.
+    System.arraycopy(msgLenAsBytes,0,thePad,
+                            thePad.length - 4,4);
+    
+    //Create an output array.
+    byte[] output = 
+                  new byte[msgInLen + padLength];
+
+    //Populate the output array with the original
+    // msgData concatenated with the pad.
+    System.arraycopy(msgData,0,output,0,
+                                       msgInLen);
+    System.arraycopy(
+       thePad,0,output,msgInLen,thePad.length);
+       
+    //Convert the output to a String and return
+    // the String..
+    String outputAsStr = new String(output);
+    return outputAsStr;
+
+  }//end padTheMsg
+
+<b>Listing 23</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p></p>
+<p>The method named <b>padTheMsg</b> extends a message such that the final length 
+is a multiple of the incoming parameter named <b>block</b> and the last four 
+bytes specify the value of the incoming parameter named <b>origMsgLength</b>.&nbsp; 
+All the remaining bytes in the pad are filled with equal characters (=).&nbsp; 
+The padded message is returned as type <b>String</b>.</p>
+<p>While the method is rather long, it is not conceptually difficult, and the 
+comments should be self explanatory.&nbsp; Therefore, I won't discuss the method 
+in detail.</p>
+<p><font color="#FF0000"><b>Encode and encrypt the signed message</b></font></p>
+<p>Returning now to the <b>main</b> method, Alice invokes the <b>encode</b> and
+<b>doRSA</b> methods, <i>(which were discussed previously),</i> to first encode and then 
+encrypt the signed message using Bob's public key.&nbsp; This is shown in 
+Listing 24.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    //Encode the message.
+    String aliceEncodedSignedMsg = 
+                obj.encode(alicePaddedSignedMsg);
+
+    //Encrypt the message.
+    String aliceEncryptedSignedMsg = obj.doRSA(
+       aliceEncodedSignedMsg,bobKeys.e,bobKeys.n,
+                                      blockSize);
+    System.out.println(
+     "\n16. Alice's encrypted signed message: "
+                      + aliceEncryptedSignedMsg);
+
+<b>Listing 24</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p></p>
+<p>Listing 24 also displays the encrypted message as Line 16 in Figure 2.</p>
+<p>Then Alice sends the encrypted signed message to Bob.</p>
+<p><font color="#FF0000"><b>Decrypt and decode the message</b></font></p>
+<p>Bob invokes the <b>doRSA</b> and <b>decode</b> methods to decrypt and decode the message 
+using his private key, as shown in Listing 25.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    String bobEncryptedSignedMsg = 
+                         aliceEncryptedSignedMsg;
+    
+    //At the receiving end, Bob begins by
+    // decrypting and decoding the signed
+    // message using his private key.
+
+    //Decrypt the message.
+    String bobDecryptedSignedMsg = obj.doRSA(
+       bobEncryptedSignedMsg,bobKeys.d,bobKeys.n,
+                                      blockSize);
+    //Decode the message.
+    String bobDecodedSignedMsg = 
+               obj.decode(bobDecryptedSignedMsg);
+    
+    System.out.println(
+     "\n17. Bob's decrypted and decoded signed "
+            + "message: "+ bobDecodedSignedMsg);
+
+<b>Listing 25</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p></p>
+<p>Listing 25 also displays the decrypted and decoded message producing Line 17 
+in Figure 2.&nbsp; As you can see, Line 17 in Figure 2 matches Line 15 in Figure 
+2, confirming that the encryption and later decryption process was successful.</p>
+<p><font color="#FF0000"><b>Confirming authenticity and integrity</b></font></p>
+<p>At this point, knowing the format of the signed message, Bob has all the 
+information that he needs to confirm the authenticity and the integrity of the 
+message from Alice.</p>
+<p>The remaining code in the program named <b>Rsa10</b> is not identical to, but 
+is very similar to the code used for the same purposes in the previous program 
+named <b>Rsa09</b>.&nbsp; This code, along with my comments in the code, should 
+be self explanatory.&nbsp; Therefore, I won't discuss it further.&nbsp; You can 
+view the remaining code in Listing 27 near the end of the lesson.</p>
+<h2 align="center"><a name="Run_the_Programs">Run the Program</a>s</h2>
+<p>I encourage you to copy, compile and run the following programs that
+are provided in this lesson:</p>
+<ul>
+  <li>Rsa09</li>
+	<li>Rsa10</li>
+</ul>
+<p>Experiment with the programs, making changes and observing the
+results of your changes.</p>
+<p>Above all, have fun and use these programs to learn as much as you
+can about the theory behind and the mechanics of digital signatures
+using message digests and public key cryptography as implemented using Java.</p>
+<h2 align="center"><a name="Summary">Summary</a></h2>
+<p>There are numerous protocols that can be used along with public key 
+cryptography and digital signatures to validate the authenticity and integrity 
+of a message.</p>
+<p>In an earlier lesson, I explained one of those protocols for the use of digital 
+signatures.&nbsp; For that protocol, the sender used her private key to encrypt 
+the entire message and appended the encrypted message onto the original message 
+as a digital signature.&nbsp; That approach can be wasteful of communication 
+bandwidth when the message is long.</p>
+<p>In this lesson, the sender uses the SHA-1 algorithm to compute a fixed-length 
+message digest of the original message.&nbsp; The message digest is encrypted 
+using the sender's private key and appended onto the original message as a 
+digital signature.&nbsp; This approach conserves communication bandwidth for 
+long messages, but requires an extra computational step at both the sending and 
+receiving ends.</p>
+<p>This lesson applies the message-digest approach for two different scenarios.&nbsp; In the first scenario, it 
+was necessary to confirm the authenticity and integrity of a message, but there 
+was no requirement to keep the contents of the message secret.&nbsp; In the 
+second scenario, it was necessary to keep the contents of the message secret in 
+addition to confirming the authenticity and integrity of the message.&nbsp; In 
+the second scenario, the receiver's public key was used by the sender to encrypt the signed 
+message in order to maintain confidentiality.</p>
+<h2 align="center"><a name="Whats Next">What's Next?</a></h2>
+<p>Future lessons in this series will explain other interesting aspects of the creation 
+and use of digital signatures, and will also teach you about symmetric key 
+cryptography.</p>
+<h2 align="center"><a name="Complete_Program_Listings">Complete Program
+Listings</a></h2>
+<p>Complete listings of the programs discussed in this lesson are
+provided in Listing 26 and Listing 27 below.&nbsp; </p>
+<p><font color="#ff0000"><b>A disclaimer</b></font></p>
+<p>The programs that I am providing and explaining in this series of
+lessons are not intended to be used for production cryptography.&nbsp;
+If you need to do production cryptography using Java, you should use
+<a
+ href="http://java.sun.com/j2se/1.4/docs/guide/security/jce/JCERefGuide.html">Sun's
+Java Cryptography Extension <i>(JCE)</i></a><i>.</i></p>
+<p>The programs that I am providing were developed solely for
+instructional purposes.&nbsp; They are intended to help you to
+experiment with and to learn about various cryptosystems and
+to gain a better understanding of how they work, and why they do what
+they do.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+  <tbody>
+    <tr>
+      <td>
+      <pre>/*File Rsa09.java
+Copyright 2005, R.G.Baldwin
+
+IMPORTANT:  BECAUSE THIS PROGRAM USES
+PREDETERMINED KEYS THAT WERE DESIGNED FOR A BLOCK
+SIZE OF 12, IT WILL WORK CORRECTLY ONLY FOR A
+BLOCK SIZE OF 12.
+
+The purpose of this program is to illustrate the
+signing of an unencrypted message along with the
+later verification of the signature by the
+receiver of the message.
+
+The comments in this program reflect the
+scenario of Alice and Bob, which is common in
+discussions of RSA.
+
+Alice needs to send a signed unencrypted message
+to Bob.  The message needs to be signed so that
+Bob can be confident that the message that he
+received was sent by Alice and not by someone
+pretending to be Alice.  Bob also needs to 
+confirm the integrity of the message by 
+confirming that the message was not modified
+during the transmission from Alice to Bob.
+
+Alice creates a digital signature by getting an 
+SHA-1 message digest for her message.  Then she 
+encodes and encrypts the digest using her private
+key and the RSA algorithm.  The encrypted digest 
+becomes her digital signature.  She signs the 
+message by appending the encrypted digest to the 
+end of the message.  Bob can later decrypt the
+digital signature using Alice's public key.
+
+Bob will need some way to separate the message 
+from the digital signature.  Before sending the 
+signed message to Bob, Alice appends four 
+characters to the end that specify the length of
+the original message in characters.
+
+Then Alice sends the signed message to Bob.
+
+Bob extracts the message length from the end of 
+the signed message.  He uses this information to 
+separate the original message from the digital 
+signature.  Then he decrypts and decodes the 
+digital signature using Alice's public key.
+
+Bob knows that the original message digest was 40
+hex characters in length, because an SHA-1
+message digest is always 160 bits or 20 bytes
+in length. Two hex characters are required to
+represent each byte, resulting in 40 hex
+characters for a hex representation of an SHA-1
+message digest.
+
+Bob also knows that any additional hex characters
+beyond the first 40 were the result of extending
+the message digest to make it possible to 
+encrypt the message digest.  Bob discards all but
+the first 40 characters from the decoded digital 
+signature.
+
+Then Bob computes an SHA-1 message digest for the
+extracted message and compares it with the first
+40 characters of the decoded digital signature.
+If they match, he concludes that the digital 
+signature is valid.  If not, he concludes that 
+the digital signature is invalid.
+
+If the digital signature is valid, he has 
+confirmed the authenticity and the integrity of 
+the message from Alice.  It could only have been 
+sent by Alice or by someone having access to her 
+private key.  Furthermore, the message could not
+have been modified after Alice computed her
+message digest and created her digital signature.
+
+This program supports all of the ASCII characters
+from space (32) through ~ (126) inclusive to be
+used in the message.
+
+This program uses predetermined values for the
+following:
+Alice's public key, e
+Alice's private key, d
+Alice's modulus operand, n
+
+This program should not be used for production
+purposes.  If you need a Java program for
+production use, you should develop it using Sun's
+JCE API.
+
+See the theoretical basis for the RSA algorithm
+at:
+http://theory.lcs.mit.edu/~rivest/rsapaper.pdf
+
+Another good reference is at:
+http://www.math.mtu.edu/mathlab/COURSES/holt/dnt
+/phi4.html
+
+Tested using SDK 1.5 and WinXP.  This program
+produces the following output.  Note that line
+breaks were manually entered to force the 
+material to fit in this narrow publication
+format.
+
+1. Alice's keys:
+2. e: 17
+3. d: 279263220413
+4. n: 951386374109
+
+5. Block size: 12
+
+6. Alice's msg: Hello Bob, how are you?  I am goi
+ng to go to the movie tonight. I plan to see Gone
+ with the Wind.  I really like Clark Gable.  Woul
+d you like to go with me?  I would really like to
+ have some company.  Your friend, Alice.
+
+7. Alice's msg digest: 89CA87110E2063FAF4A364B77C
+18C3260AD47B8E
+
+8. Alice's extended msg digest: 89CA87110E2063FAF
+4A364B77C18C3260AD47B8E00000000
+
+
+9. Alice's encrypted digital signature: 511335051
+5586806264156901277970003516182249744328267808527
+91138100851742238493708680633911102408
+
+10. Alice's signed msg: Hello Bob, how are you?  
+I am going to go to the movie tonight. I plan to 
+see Gone with the Wind.  I really like Clark Gabl
+e.  Would you like to go with me?  I would really
+ like to have some company.  Your friend, Alice.5
+1133505155868062641569012779700035161822497443282
+6780852791138100851742238493708680633911102408
+
+11. Alice's signed msg with msg length appended: 
+Hello Bob, how are you?  I am going to go to the 
+movie tonight. I plan to see Gone with the Wind. 
+ I really like Clark Gable.  Would you like to go
+ with me?  I would really like to have somecompan
+y.  Your friend, Alice.51133505155868062641569012
+7797000351618224974432826780852791138100851742238
+4937086806339111024080220
+
+12. Bob's calculated msg len: 220
+
+13. Bob's extracted msg text: Hello Bob, how are 
+you?  I am going to go to the movie tonight. I pl
+an to see Gone with the Wind.  I really like Clar
+k Gable.  Would you like to go with me?  I would 
+really like to have some company.  Your friend, A
+lice.
+
+14. Bob's extracted extended digital signature: 5
+1133505155868062641569012779700035161822497443282
+6780852791138100851742238493708680633911102408
+
+15. Bob's decoded extended digital signature: 89C
+A87110E2063FAF4A364B77C18C3260AD47B8E00000000
+
+16. Bob's decoded digital signature: 89CA87110E20
+63FAF4A364B77C18C3260AD47B8E
+
+17. Bob's digest: 89CA87110E2063FAF4A364B77C18C32
+60AD47B8E
+
+18. Bob's conclusion: Valid signature
+************************************************/
+import java.math.BigInteger;
+import java.security.*;
+
+class Rsa09{
+  //This is a static inner class whose sole
+  // purpose is to create an object that serves
+  // as a container for keys.  It was made static
+  // so that it can be instantiated from within
+  // main.  It contains precomputed values for
+  // the two keys, e and d, and the modulus
+  // operand n.
+  //
+  // e is the public key
+  // d is the private key
+  static class Keys{
+    //Note, these key values were designed to
+    // be used with a block size of 12
+    BigInteger n = 
+                  new BigInteger("951386374109");
+    BigInteger d = 
+                  new BigInteger("279263220413");
+    BigInteger e = new BigInteger("17");
+  }//end inner class Keys
+
+  public static void main(String[] args){
+    //Instantiate an object containing
+    // keys.
+    Keys aliceKeys = new Keys();
+
+    //Test msg.
+    String aliceMsg="Hello Bob, how are you?  I "
+      + "am going to go to the movie tonight. I "
+      + "plan to see Gone with the Wind.  I "
+      + "really like Clark Gable.  Would you "
+      + "like to go with me?  I would really "
+      + "like to have some company.  Your "
+      + "friend, Alice.";
+
+    //Set blockSize.
+    int blockSize = 12;
+
+    //Instantiate an object of this class
+    Rsa09 obj = new Rsa09();
+
+    //Display the key values along with the
+    // modulus operand.
+    System.out.println("1. Alice's keys:");
+    System.out.println("2. e: " + aliceKeys.e);
+    System.out.println("3. d: " + aliceKeys.d);
+    System.out.println("4. n: " + aliceKeys.n);
+    System.out.println("\n5. Block size: " 
+                                    + blockSize);
+    
+    //Display the message that Alice will sign 
+    // and send to Bob.
+    System.out.println("\n6. Alice's msg: "
+                                     + aliceMsg);
+                                      
+    //Get the msg digest
+    byte[] aliceDigest = 
+               obj.digestIt(aliceMsg.getBytes());
+    
+    //Display the msg digest as a string of hex
+    // characters
+    System.out.println(
+         "\n7. Alice's msg digest: " 
+           + obj.byteArrayToHexStr(aliceDigest));
+
+    //Extend the length of the digest to force it
+    // to be a multiple of the block size.
+    int tailLen = aliceDigest.length % blockSize;
+    int extendLen = 0;
+    if((tailLen > 0)){
+                 extendLen = blockSize - tailLen;
+    }//end if
+    
+    //Create an array for the extended digest
+    // with all elements initialized to a value
+    // of 0.
+    byte[] aliceExtendedDigest = 
+        new byte[aliceDigest.length + extendLen];
+    //Copy the digest into the bottom of the new
+    // array.  The empty portion at the top of
+    // the array becomes the extension.
+    System.arraycopy(aliceDigest,0,
+                     aliceExtendedDigest,0,
+                     aliceDigest.length);
+
+    //Convert the extended digest into a String
+    // of hex characters.  This is necessary to
+    // ensure that all of the bytes are
+    // compatible with the characters supported
+    // by the encode method.
+    String aliceExtendedDigestAsHex = 
+      obj.byteArrayToHexStr(aliceExtendedDigest);
+    //Display the extended msg digest
+    System.out.println(
+             "\n8. Alice's extended msg digest: "
+                     + aliceExtendedDigestAsHex);
+
+    //Alice encodes the extended msg digest into
+    // numeric formatin preparation for
+    // encryption.
+    String aliceEncodedDigest = 
+            obj.encode(aliceExtendedDigestAsHex);
+
+    //Alice creates a digital signature by
+    // encrypting the encoded msg digest using
+    // her private key.
+    String aliceSignature = obj.doRSA(
+      aliceEncodedDigest,aliceKeys.d,aliceKeys.n,
+                                      blockSize);
+    System.out.println(
+     "\n9. Alice's encrypted digital signature: "
+                               + aliceSignature);
+
+    //Alice signs the msg by appending the
+    // digital signature onto the msg.
+    String aliceSignedMsg = 
+                       aliceMsg + aliceSignature;
+    System.out.println(
+                     "\n10. Alice's signed msg: "
+                               + aliceSignedMsg);
+                                    
+    //Alice appends four characters onto the end
+    // of the signed msg indicating the length of
+    // the original msg with leading zeros if
+    // necessary. Bob will need this information
+    // to separate the msg from the signature.
+    // This approach can accommodate msg lengths
+    // up to 9999 characters.
+    String aliceMsgLenAsStr = 
+                          "" + aliceMsg.length();
+    //Confirm number of characters.
+    if((aliceMsgLenAsStr.length() > 4) 
+            || (aliceMsgLenAsStr.length() <= 0)){
+      System.out.println(
+                        "Message length error.");
+      System.exit(0);
+    }//end if
+    //Prepend leading zeros if necessary
+    if(aliceMsgLenAsStr.length() == 1){
+                         aliceMsgLenAsStr = "000"
+                              + aliceMsgLenAsStr;
+    }else if(aliceMsgLenAsStr.length() == 2){
+      aliceMsgLenAsStr = "00" + aliceMsgLenAsStr;
+    }else if(aliceMsgLenAsStr.length() == 3){
+      aliceMsgLenAsStr = "0" + aliceMsgLenAsStr;
+    }else if(aliceMsgLenAsStr.length() == 1){
+                        aliceMsgLenAsStr = "000" 
+                             + aliceMsgLenAsStr;
+    }//end else
+    
+    //Append the message length string to the
+    // previously signed message.
+    aliceSignedMsg = aliceSignedMsg 
+                              + aliceMsgLenAsStr;
+    System.out.println(
+      "\n11. Alice's signed msg with msg length "
+                           + "appended: " 
+                               + aliceSignedMsg);
+    
+
+    //Alice sends the signed msg to Bob.  
+    
+    String bobSignedMsg = aliceSignedMsg;
+    
+    //At the receiving end, Bob extracts the msg 
+    // length, the msg text, and the digital
+    // signature from the signed msg.
+    //Get the message length.
+    int bobMsgLen = Integer.parseInt(
+                   bobSignedMsg.substring(
+                     bobSignedMsg.length() - 4));
+    System.out.println(
+               "\n12. Bob's calculated msg len: "
+                                 + bobMsgLen);
+ 
+    //Get the message text.
+    String bobMsgText = bobSignedMsg.substring(
+                                 0,bobMsgLen);
+    System.out.println(
+               "\n13. Bob's extracted msg text: "
+                             + bobMsgText);
+                             
+    //Bob knows that everything following the msg
+    // text except for the four characters at the
+    // end that indicate the message length is
+    // the encoded and encrypted version of the
+    // extended digital signature.  He extracts
+    // it.
+    String bobExtractedSignature =
+          bobSignedMsg.substring(
+            bobMsgLen,bobSignedMsg.length() - 4);
+    System.out.println(
+        "\n14. Bob's extracted extended digital "
+                    + "signature: " 
+                        + bobExtractedSignature);
+
+    //Now Bob has the message length, the
+    // message, and the encrypted digital
+    // signature.
+
+    //Bob decrypts the extended digital
+    // signature using Alice's public key.
+    String bobDecryptedExtendedSignature =
+            obj.doRSA(bobExtractedSignature,
+              aliceKeys.e,aliceKeys.n,blockSize);
+
+    //Bob decodes the extended digital signature.
+    String bobDecodedExtendedSignature = 
+                obj.decode(
+                  bobDecryptedExtendedSignature);
+
+    System.out.println(
+          "\n15. Bob's decoded extended digital "
+                + "signature: "
+                  + bobDecodedExtendedSignature);
+                             
+    //Bob knows that the digital signature
+    // consists of 40 hex digits and that any
+    // additional characters were put there to
+    // fill out the last block and make
+    // encryption possible.  He extracts the hex
+    // version of the digital signature by
+    // ignoring all but the first 40 hex
+    // characters.
+    String bobDecodedSignature = 
+                     bobDecodedExtendedSignature.
+                                 substring(0,40);
+    System.out.println(
+        "\n16. Bob's decoded digital signature: "
+                          + bobDecodedSignature);
+    
+    //Bob computes the msg digest for comparison
+    // with the decoded signature.
+    byte[] bobDigest = 
+       obj.digestIt(bobMsgText.getBytes());
+    
+    System.out.println("\n17. Bob's digest: " 
+            + obj.byteArrayToHexStr(bobDigest));
+                             
+    //Bob compares the decoded digital signature
+    // with his computed msg digest and displays
+    // an output message indicating whether or
+    // not the signature is valid.
+    if(bobDecodedSignature.equals(
+             obj.byteArrayToHexStr(bobDigest))){
+      System.out.println(
+                       "\n18. Bob's conclusion: "
+                            + "Valid signature");
+    }else{
+      System.out.println(
+                       "\n18. Bob's conclusion: "
+                          + "Invalid signature");
+    }//end else
+
+  }//end main
+  //-------------------------------------------//
+
+  //The purpose of this method is to encode a
+  // plain text msg into numeric format
+  // where:
+  // space = 32 - 32 = 0
+  // A = 65 - 32 = 33
+  // ...
+  // Z = 90 - 32 = 58
+  // ...
+  // a = 97 - 32 = 65
+  // ...
+  // ~ = 126 - 32 = 94
+
+  //Note that this encoding method supports all
+  //of the ASCII characters from space through
+  // tilde (~) inclusive.
+  String encode(String msg){
+    byte[] textChars = msg.getBytes();
+    String temp = "";
+    String encodedMsg = "";
+
+    //Build the encoded text string two numeric
+    // characters at a time.  Each msg
+    // character is converted into two numeric
+    // characters according to the relationships
+    // given above.
+    for(int cnt = 0; cnt < msg.length();
+                                          cnt++){
+      temp = String.valueOf(
+                       textChars[cnt] - ' ');
+      //Convert all single-character numeric
+      // values to two characters with a leading
+      // zero, as in 09.
+      if(temp.length() < 2) temp = "0" + temp;
+      encodedMsg += temp;
+    }//end for loop
+    return encodedMsg;
+  }//end encode
+  //-------------------------------------------//
+
+  //The purpose of this method is to reverse the
+  // encoding process implemented by the encode
+  // method, converting a string of numeric
+  // characters back to a text string containing
+  // the ASCII characters from space through
+  // tilde.
+  String decode(String encodedMsg){
+    String temp = "";
+    String decodedText = "";
+    for(int cnt = 0; cnt < encodedMsg.length();
+                                       cnt += 2){
+      temp = encodedMsg.substring(cnt,cnt + 2);
+      //Convert two numeric text characters to a
+      // value of type int.
+      int val = Integer.parseInt(temp) + 32;
+      //Convert the ASCII character values to
+      // numeric String values and build the
+      // output String one character at a time.
+      decodedText += String.valueOf((char)val);
+    }//end for loop
+    return decodedText;
+  }//end decode
+  //-------------------------------------------//
+
+  //Apply the RSA algorithm to an input string
+  // using the exponent exp and the modulus
+  // operator n, which are provided as input
+  // parameters.  This method can be used to
+  // encrypt or to decipher the input string
+  // depending on whether the exponent is an
+  // encryption key or a decryption key.  Apply
+  // the algorithm for the block size given by
+  // the incoming parameter named blockSize.
+  String doRSA(String inputString,
+               BigInteger exp,
+               BigInteger n,
+               int blockSize){
+
+    BigInteger block;
+    BigInteger output;
+    String temp = "";
+    String outputString = "";
+
+    //Iterate and process one block at a time.
+    for(int cnt = 0; cnt < inputString.length();
+                               cnt += blockSize){
+      //Get the next block of characters
+      // and encapsulate them in a BigInteger
+      // object.
+      temp = inputString.substring(
+                            cnt,cnt + blockSize);
+
+      block = new BigInteger(temp);
+      //Raise the block to the power exp, apply
+      // the modulus operand n, and save the
+      // remainder.  This is the essence of the
+      // RSA algorithm.
+      output = block.modPow(exp,n);
+
+      //Convert the numeric result to a
+      // four-character string, appending leading
+      // zeros as necessary.
+      temp = output.toString();
+      while(temp.length() < blockSize){
+        temp = "0" + temp;
+      }//end while
+
+      //Build the outputString blockSize
+      // characters at a time.  Each character
+      // in the inputString results in one
+      // character in the outputString.
+      outputString += temp;
+    }//end for loop
+
+    return outputString;
+  }//end doRSA
+  //-------------------------------------------//
+  
+  //This method generates and returns a digest
+  // for an incoming array of bytes using Sun's
+  // SHA msg digest algorithm..
+  byte[] digestIt(byte[] dataIn){
+    byte[] theDigest = null;
+    try{
+      //Create a MessageDigest object
+      // implementing the SHA algorithm, as
+      // supplied by SUN
+      MessageDigest msgDigest = 
+         MessageDigest.getInstance("SHA", "SUN");
+      //Feed the byte array to the digester.  Can
+      // accommodate multiple calls if needed
+      msgDigest.update(dataIn);
+      //Complete the digestion and save the
+      // result
+      theDigest = msgDigest.digest();
+    }catch(Exception e){System.out.println(e);}
+
+    //Return the digest value to the calling
+    // method as an array of bytes.
+    return theDigest;
+  }//end digestIt()
+  //-------------------------------------------//
+  
+  //This method converts an incoming array of
+  // bytes into a string that represents each of
+  // the bytes as two hex characters.
+  String byteArrayToHexStr(byte[] data){
+    String output = "";
+    String tempStr = "";
+    int tempInt = 0;
+    for(int cnt = 0;cnt < data.length;cnt++){
+      //Deposit a byte into the 8 lsb of an int.
+      tempInt = data[cnt]&0xFF;
+      //Get hex representation of the int as a
+      // string.
+      tempStr = Integer.toHexString(tempInt);
+      //Append a leading 0 if necessary so that
+      // each hex string will contain two
+      // characters.
+      if(tempStr.length() == 1)
+                         tempStr = "0" + tempStr;
+      //Concatenate the two characters to the
+      // output string.
+      output = output + tempStr;
+    }//end for loop
+    return output.toUpperCase();
+  }//end byteArrayToHexStr
+  //-------------------------------------------//
+
+}//end class Rsa09
+
+<b>Listing 26</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p></p>
+<p>&nbsp;</p>
+<p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+  <tbody>
+    <tr>
+      <td>
+      <pre>/*File Rsa10.java
+Copyright 2005, R.G.Baldwin
+
+IMPORTANT:  BECAUSE THIS PROGRAM USES
+PREDETERMINED KEYS THAT WERE DESIGNED FOR A BLOCK
+SIZE OF 12, IT WILL WORK CORRECTLY ONLY FOR A
+BLOCK SIZE OF 12.
+
+The purpose of this program is to illustrate the
+signing of an encrypted message along with the
+later verification of the signature by the
+receiver of the message.
+
+The comments in this program reflect the
+scenario of Alice and Bob, which is common in
+discussions of RSA.
+
+Alice needs to send a signed encrypted message
+to Bob.  The message needs to be signed so that
+Bob can be confident that the message that he
+received was sent by Alice and not by someone
+pretending to be Alice.  Bob also needs to 
+confirm the integrity of the message by 
+confirming that the message was not modified
+during the transmission from Alice to Bob.  
+Finally, the confidentiality of the message must 
+be maintained.  That is, the message must be sent
+in such a way that it can only be read by Bob.
+
+Alice creates a digital signature by getting an 
+SHA-1 message digest for her message.  Then she 
+encodes and encrypts the digest using her private
+key and the RSA algorithm.  The encrypted digest 
+becomes her digital signature.  She signs the 
+message by appending the encrypted digest to the 
+end of the message.  Bob can later decrypt the
+digital signature using Alice's public key.
+
+Alice will ensure confidentiality by encrypting 
+the entire signed message using Bob's public key.
+Then only Bob or someone having access to his 
+private key can decrypt and read the message.
+
+Bob will need some way to separate the message 
+from the digital signature after he decrypts and 
+decodes it.  One way to make this possible is to
+notify Bob of the length of the original message.
+
+In addition, before encoding and encrypting the 
+signed message, Alice must extend the length of 
+the signed message to cause the length of the 
+signed and encoded message to be a multiple of 
+the block size.
+
+Alice takes care of both of these requirement at 
+the same time.  She pads the unencoded signed 
+message with a pad that causes the extended 
+length of the unencoded signed message to be a 
+multiple of half the block size (the encoding 
+scheme in use doubles the length of the signed 
+message).  In addition, she causes the last four 
+bytes in the pad to contain numeric characters 
+specifying the length of the original message.
+If the pad is more than four bytes long, Alice 
+fills in the pad with equal characters (=).
+
+Bob can later extract the length of the 
+original message and use it to separate the 
+message from the signature.  
+
+Then Alice sends the signed encrypted message 
+to Bob.
+
+Bob begins by decrypting and decoding the 
+encrypted signed message.  He extracts the 
+length of the original message from the end of 
+the decoded signed message.  He uses this 
+information along with his knowledge that the 
+pad may also contain equal characters (=) as 
+filler to extract the encrypted digital signature
+from the decoded signed message.  He also uses 
+this information to extract the message from the 
+decoded signed message.
+
+Bob decrypts and decodes the encrypted digital 
+signature using Alice's public key.
+
+Bob knows that the original message digest was 40
+hex characters in length, because an SHA-1
+message digest is always 160 bits or 20 bytes
+in length. Two hex characters are required to
+represent each byte, resulting in 40 hex
+characters for a hex representation of an SHA-1
+message digest.
+
+Bob also knows that any additional hex characters
+beyond the first 40 were the result of extending
+the message digest to make it possible to 
+encrypt it.  Bob discards all but the first 40 
+characters from the decoded digital signature.
+
+Then Bob computes an SHA-1 message digest for the
+extracted message and compares it with the first
+40 characters of the decoded digital signature.
+If they match, he concludes that the digital 
+signature is valid.  If not, he concludes that 
+the digital signature is invalid.
+
+If the digital signature is valid, he has 
+confirmed the authenticity and the integrity of 
+the message from Alice.  It could only have been 
+sent by Alice or by someone having access to her 
+private key.  Furthermore, the message could not
+have been modified after Alice computed her
+message digest and created her digital signature.
+
+Finally, because Alice encrypted the signed 
+message using Bob's public key, only Bob or 
+someone having access to his private key can 
+decrypt the signed message.  Therefore, the 
+confidentiality of the message was protected
+during the transmission of the message from Alice
+to Bob.
+
+This program supports all of the ASCII characters
+from space (32) through ~ (126) inclusive to be
+used in the message.  None of these characters 
+are set aside to be used as delimiter characters.
+The use of the equal character (=) to extend the
+signed message prior to encoding and encryption
+does not prohibit the use of this character 
+within the message proper.
+
+This program uses predetermined values for the
+following:
+Alice's public key, e
+Alice's private key, d
+Alice's modulus operand, n
+
+Bob's public key, e
+Bob's private key, d
+Bob's modulus operand, n
+
+The above keys were all designed to be used with
+a block size of 12.
+
+This program should not be used for production
+purposes.  If you need a Java program for
+production use, you should develop it using Sun's
+JCE API.
+
+See the theoretical basis for the RSA algorithm
+at:
+http://theory.lcs.mit.edu/~rivest/rsapaper.pdf
+
+Another good reference is at:
+http://www.math.mtu.edu/mathlab/COURSES/holt/dnt
+/phi4.html
+
+Tested using SDK 1.5 and WinXP.  This program
+produces the following output.  Note that line
+breaks were manually entered to force the 
+material to fit in this narrow publication
+format.
+
+1. Alice's keys:
+2. e: 17
+3. d: 279263220413
+4. n: 951386374109
+
+5. Bob's keys:
+6. e: 19
+7. d: 799574694235
+8. n: 951386374109
+
+9. Block size: 12
+
+10. Alice's msg: Hello Bob, how are you?  I am go
+ing to go to the movie tonight. I plan to see Gon
+e with the Wind.  I really like Clark Gable.  Wou
+ld you like to go with me?  I would really like t
+o have some company.  Your friend, Alice.
+
+11. Alice's msg digest: 89CA87110E2063FAF4A364B77
+C18C3260AD47B8E
+
+12. Alice's extended msg digest: 89CA87110E2063FA
+F4A364B77C18C3260AD47B8E00000000
+
+13. Alice's encrypted digital signature: 51133505
+1558680626415690127797000351618224974432826780852
+791138100851742238493708680633911102408
+
+14. Alice's signed msg: Hello Bob, how are you?  
+I am going to go to the movie tonight. I plan to 
+see Gone with the Wind.  I really like Clark Gabl
+e.  Would you like to go with me?  I would really
+ like to have some company.  Your friend, Alice.5
+1133505155868062641569012779700035161822497443282
+6780852791138100851742238493708680633911102408
+
+15. Alice's padded signed msg with msg length app
+ended: Hello Bob, how are you? I am going to go t
+o the movie tonight. I plan to see Gone with the 
+Wind.  I really like Clark Gable.  Would you like
+ to go with me?  I would really like to have some
+ company.  Your friend, Alice.5113350515586806264
+1569012779700035161822497443282678085279113810085
+1742238493708680633911102408====0220
+
+16. Alice's encrypted signed message: 91401046409
+0477812185023522059255227103733444908183675749115
+8834555666464747955317487974740038223011505609617
+0958348608789466477424942329033371476785906742456
+0777331120891074470078287368038504581398329728289
+1169705147103312551664808525983850773644838883849
+5892974479228714690946361944896047795453704351458
+0138918238467231200275709874384289825441638463619
+4489607764755499173131264107586650093298351648729
+8983371264328395673083207830600854525558017959215
+2887426943639881827352686383004770007421461800123
+9893565435323832631156747443170942361455453339508
+2810225070374501073338462893929842434027331818342
+2870733493040858128661542384978031710885942868854
+
+17. Bob's decrypted and decoded signed message: H
+ello Bob, how are you?  I am going to go to the m
+ovie tonight. I plan to see Gone with the Wind.  
+I really like Clark Gable.  Would you like to go 
+with me?  I would really like to have some compan
+y.  Your friend, Alice.51133505155868062641569012
+7797000351618224974432826780852791138100851742238
+493708680633911102408====0220
+
+18. Bob's calculated msg len: 220
+
+19. Bob's extracted msg text: Hello Bob, how are 
+you?  I am going to go to the movie tonight. I pl
+an to see Gone with the Wind.  I really like Clar
+k Gable.  Would you like to go with me?  I would 
+really like to have some company.  Your friend, A
+lice.
+
+20. Bob's extracted extended digital signature: 5
+1133505155868062641569012779700035161822497443282
+6780852791138100851742238493708680633911102408
+
+21. Bob's decoded extended digital signature: 89C
+A87110E2063FAF4A364B77C18C3260AD47B8E00000000
+
+22. Bob's decoded digital signature: 89CA87110E20
+63FAF4A364B77C18C3260AD47B8E
+
+23. Bob's digest: 89CA87110E2063FAF4A364B77C18C32
+60AD47B8E
+
+24. Bob's conclusion: Valid signature
+
+************************************************/
+import java.math.BigInteger;
+import java.security.*;
+
+class Rsa10{
+  //This is a static inner class whose sole
+  // purpose is to create an object that serves
+  // as a container for keys.  It was made static
+  // so that it can be instantiated from within
+  // main.  It contains precomputed values for
+  // the two keys, e and d, and the modulus
+  // operand n.
+  //
+  // e is the public key
+  // d is the private key
+  static class Keys{
+    BigInteger n;
+    BigInteger d;
+    BigInteger e;
+  }//end inner class Keys
+
+  public static void main(String[] args){
+    //Instantiate an object containing
+    // Alice's keys.
+    Keys aliceKeys = new Keys();
+    //Note, these key values were designed to
+    // be used with a block size of 12
+    aliceKeys.n = new BigInteger("951386374109");
+    aliceKeys.d = new BigInteger("279263220413");
+    aliceKeys.e = new BigInteger("17");
+    
+    //Instantiate an object containing
+    // Bob's keys
+    Keys bobKeys = new Keys();
+    //Note, these key values were designed to
+    // be used with a block size of 12
+    bobKeys.n = new BigInteger("951386374109");
+    bobKeys.d = new BigInteger("799574694235");
+    bobKeys.e = new BigInteger("19");
+
+    //Test msg.
+    String aliceMsg="Hello Bob, how are you?  I "
+      + "am going to go to the movie tonight. I "
+      + "plan to see Gone with the Wind.  I "
+      + "really like Clark Gable.  Would you "
+      + "like to go with me?  I would really "
+      + "like to have some company.  Your "
+      + "friend, Alice.";
+
+    //Set blockSize.
+    int blockSize = 12;
+
+    //Instantiate an object of this class
+    Rsa10 obj = new Rsa10();
+
+    //Display the key values along with the
+    // modulus operand.
+    System.out.println("1. Alice's keys:");
+    System.out.println("2. e: " + aliceKeys.e);
+    System.out.println("3. d: " + aliceKeys.d);
+    System.out.println("4. n: " + aliceKeys.n);
+    
+    System.out.println("\n5. Bob's keys:");
+    System.out.println("6. e: " + bobKeys.e);
+    System.out.println("7. d: " + bobKeys.d);
+    System.out.println("8. n: " + bobKeys.n);
+    
+    System.out.println("\n9. Block size: " 
+                                    + blockSize);
+    
+    //Display the message that Alice will sign 
+    // and send to Bob.
+    System.out.println("\n10. Alice's msg: "
+                                     + aliceMsg);
+                                      
+    //Get the msg digest
+    byte[] aliceDigest = 
+               obj.digestIt(aliceMsg.getBytes());
+    
+    //Display the msg digest as a string of hex
+    // characters
+    System.out.println(
+           "\n11. Alice's msg digest: " 
+           + obj.byteArrayToHexStr(aliceDigest));
+
+    //Extend the length of the digest to force it
+    // to be a multiple of the block size.
+    int tailLen = aliceDigest.length % blockSize;
+    int extendLen = 0;
+    if((tailLen > 0)){
+                 extendLen = blockSize - tailLen;
+    }//end if
+    
+    //Create an array for the extended digest
+    // with all elements initialized to a value
+    // of 0.
+    byte[] aliceExtendedDigest = 
+        new byte[aliceDigest.length + extendLen];
+    //Copy the digest into the bottom of the new
+    // array.  The empty portion at the top of
+    // the array becomes the extension.
+    System.arraycopy(aliceDigest,0,
+                     aliceExtendedDigest,0,
+                     aliceDigest.length);
+
+    //Convert the extended digest into a String
+    // of hex characters.  This is necessary to
+    // ensure that all of the bytes are
+    // compatible with the characters supported
+    // by the encode method.
+    String aliceExtendedDigestAsHex = 
+      obj.byteArrayToHexStr(aliceExtendedDigest);
+    //Display the extended msg digest
+    System.out.println(
+            "\n12. Alice's extended msg digest: "
+                    + aliceExtendedDigestAsHex);
+
+    //Alice encodes the extended msg digest into
+    // numeric format in preparation for
+    // encryption.
+    String aliceEncodedDigest = 
+            obj.encode(aliceExtendedDigestAsHex);
+
+    //Alice creates a digital signature by
+    // encrypting the encoded msg digest using
+    // her private key.
+    String aliceSignature = obj.doRSA(
+      aliceEncodedDigest,aliceKeys.d,aliceKeys.n,
+                                      blockSize);
+    System.out.println(
+      "\n13. Alice's encrypted digital " 
+                + "signature: "+ aliceSignature);
+
+    //Alice signs the msg by appending the
+    // digital signature onto the msg.
+    String aliceSignedMsg = 
+                       aliceMsg + aliceSignature;
+    System.out.println(
+                     "\n14. Alice's signed msg: "
+                               + aliceSignedMsg);
+                                    
+    //Because she needs to maintain
+    // confidentiality, Alice will encrypt the
+    // signed message using Bob's public key
+    // before sending the message to him.  In
+    // preparation for encoding and encryption,
+    // she needs to extend the length of the
+    // signed message such that the total length
+    // is a multiple of half the block size.  In
+    // addition, she needs to notify Bob as to
+    // the length of the original message so
+    // that he will have a way to separate the
+    // text of the original message from the
+    // encrypted message signature.  She will
+    // accomplish both of these requirements at
+    // the same time.  She will pad the signed
+    // message using a pad that includes the
+    // length of the original message in the
+    // last four bytes of the pad.  All bytes in
+    // the pad other than the last four bytes
+    // are filled with equal characters (=).
+    String alicePaddedSignedMsg = 
+        obj.padTheMsg(aliceSignedMsg,blockSize/2,
+                              aliceMsg.length());
+    System.out.println(
+      "\n15. Alice's padded signed msg with msg "
+                         + "length appended: " 
+                         + alicePaddedSignedMsg);
+      
+    //Alice encodes and encrypts the padded
+    // signed message using Bob's public key.
+    
+    //Encode the message.
+    String aliceEncodedSignedMsg = 
+                obj.encode(alicePaddedSignedMsg);
+
+    //Encrypt the message.
+    String aliceEncryptedSignedMsg = obj.doRSA(
+       aliceEncodedSignedMsg,bobKeys.e,bobKeys.n,
+                                      blockSize);
+    System.out.println(
+     "\n16. Alice's encrypted signed message: "
+                      + aliceEncryptedSignedMsg);
+                      
+    //************
+    //Alice sends the encrypted signed msg to
+    // Bob.  
+    //************
+    
+    String bobEncryptedSignedMsg = 
+                         aliceEncryptedSignedMsg;
+    
+    //At the receiving end, Bob begins by
+    // decrypting and decoding the signed
+    // message using his private key.
+
+    //Decrypt the message.
+    String bobDecryptedSignedMsg = obj.doRSA(
+       bobEncryptedSignedMsg,bobKeys.d,bobKeys.n,
+                                      blockSize);
+    //Decode the message.
+    String bobDecodedSignedMsg = 
+               obj.decode(bobDecryptedSignedMsg);
+    
+    System.out.println(
+     "\n17. Bob's decrypted and decoded signed "
+            + "message: "+ bobDecodedSignedMsg);
+    
+    //Bob extracts the message length, the 
+    // message text, and the digital signature
+    // from the decoded signed msg.
+
+    //Extract the message length.
+    int bobMsgLen = Integer.parseInt(
+            bobDecodedSignedMsg.substring(
+              bobDecodedSignedMsg.length() - 4));
+    System.out.println(
+               "\n18. Bob's calculated msg len: "
+                                    + bobMsgLen);
+ 
+    //Extract the message text.
+    String bobExtractedMsgText =
+                   bobDecodedSignedMsg.substring(
+                                    0,bobMsgLen);
+    System.out.println(
+               "\n19. Bob's extracted msg text: "
+                          + bobExtractedMsgText);
+                             
+    //Bob knows that everything between the
+    // message text and the first equal sign in
+    // the decoded signed message is the
+    // extended, encoded, and encrypted digital
+    // signature.  He also knows that if there
+    // are no equal signs the last four bytes
+    // containing the length of the original
+    // message need to be discarded.  He uses
+    // this knowledge to extract the encrypted
+    // signature.
+
+    String bobExtractedEncryptedSignature;
+    if(bobDecodedSignedMsg.indexOf("=") != -1){
+       bobExtractedEncryptedSignature =
+         bobDecodedSignedMsg.substring(
+           bobMsgLen,bobDecodedSignedMsg.indexOf(
+                                           "="));
+    }else{
+      bobExtractedEncryptedSignature =
+             bobDecodedSignedMsg.substring(
+               bobMsgLen,
+               bobDecodedSignedMsg.length() - 4);
+    }//end else
+    
+    System.out.println(
+        "\n20. Bob's extracted extended digital "
+             + "signature: " 
+               + bobExtractedEncryptedSignature);
+
+    //Now Bob has the message length, the
+    // message, and the encrypted digital
+    // signature.
+
+    //Bob decrypts the extended digital
+    // signature using Alice's public key.
+    String bobDecryptedExtendedSignature =
+        obj.doRSA(bobExtractedEncryptedSignature,
+              aliceKeys.e,aliceKeys.n,blockSize);
+
+    //Bob decodes the extended digital signature.
+    String bobDecodedExtendedSignature = 
+       obj.decode(bobDecryptedExtendedSignature);
+
+    System.out.println(
+          "\n21. Bob's decoded extended digital "
+                + "signature: "
+                  + bobDecodedExtendedSignature);
+                             
+    //Bob knows that the digital signature
+    // consists of only 40 hex digits and that
+    // any additional characters were put there
+    // to fill out the last block and make
+    // encryption possible.  He extracts the hex
+    // version of the digital signature by
+    // ignoring all but the first 40 hex
+    // characters.
+    String bobDecodedSignature = 
+        bobDecodedExtendedSignature.substring(
+                                           0,40);
+    System.out.println(
+        "\n22. Bob's decoded digital signature: "
+                          + bobDecodedSignature);
+    
+    //Bob computes the msg digest for comparison
+    // with the decoded signature.
+    byte[] bobDigest = obj.digestIt(
+                 bobExtractedMsgText.getBytes());
+    
+    System.out.println("\n23. Bob's digest: " 
+             + obj.byteArrayToHexStr(bobDigest));
+                             
+    //Bob compares the decoded digital signature
+    // with his computed msg digest and displays
+    // an output message indicating whether or
+    // not the signature is valid.
+    if(bobDecodedSignature.equals(
+             obj.byteArrayToHexStr(bobDigest))){
+      System.out.println(
+                       "\n24. Bob's conclusion: "
+                            + "Valid signature");
+    }else{
+      System.out.println(
+                       "\n24. Bob's conclusion: "
+                          + "Invalid signature");
+    }//end else
+
+  }//end main
+  //-------------------------------------------//
+
+  //The purpose of this method is to encode a
+  // plain text msg into numeric format
+  // where:
+  // space = 32 - 32 = 0
+  // A = 65 - 32 = 33
+  // ...
+  // Z = 90 - 32 = 58
+  // ...
+  // a = 97 - 32 = 65
+  // ...
+  // ~ = 126 - 32 = 94
+
+  //Note that this encoding method supports all
+  //of the ASCII characters from space through
+  // tilde (~) inclusive.
+  String encode(String msg){
+    byte[] textChars = msg.getBytes();
+    String temp = "";
+    String encodedMsg = "";
+
+    //Build the encoded text string two numeric
+    // characters at a time.  Each msg
+    // character is converted into two numeric
+    // characters according to the relationships
+    // given above.
+    for(int cnt = 0; cnt < msg.length();
+                                          cnt++){
+      temp = String.valueOf(
+                       textChars[cnt] - ' ');
+      //Convert all single-character numeric
+      // values to two characters with a leading
+      // zero, as in 09.
+      if(temp.length() < 2) temp = "0" + temp;
+      encodedMsg += temp;
+    }//end for loop
+    return encodedMsg;
+  }//end encode
+  //-------------------------------------------//
+
+  //The purpose of this method is to reverse the
+  // encoding process implemented by the encode
+  // method, converting a string of numeric
+  // characters back to a text string containing
+  // the ASCII characters from space through
+  // tilde.
+  String decode(String encodedMsg){
+    String temp = "";
+    String decodedText = "";
+    for(int cnt = 0; cnt < encodedMsg.length();
+                                       cnt += 2){
+      temp = encodedMsg.substring(cnt,cnt + 2);
+      //Convert two numeric text characters to a
+      // value of type int.
+      int val = Integer.parseInt(temp) + 32;
+      //Convert the ASCII character values to
+      // numeric String values and build the
+      // output String one character at a time.
+      decodedText += String.valueOf((char)val);
+    }//end for loop
+    return decodedText;
+  }//end decode
+  //-------------------------------------------//
+
+  //Apply the RSA algorithm to an input string
+  // using the exponent exp and the modulus
+  // operator n, which are provided as input
+  // parameters.  This method can be used to
+  // encrypt or to decipher the input string
+  // depending on whether the exponent is an
+  // encryption key or a decryption key.  Apply
+  // the algorithm for the block size given by
+  // the incoming parameter named blockSize.
+  String doRSA(String inputString,
+               BigInteger exp,
+               BigInteger n,
+               int blockSize){
+
+    BigInteger block;
+    BigInteger output;
+    String temp = "";
+    String outputString = "";
+
+    //Iterate and process one block at a time.
+    for(int cnt = 0; cnt < inputString.length();
+                               cnt += blockSize){
+      //Get the next block of characters
+      // and encapsulate them in a BigInteger
+      // object.
+      temp = inputString.substring(
+                            cnt,cnt + blockSize);
+
+      block = new BigInteger(temp);
+      //Raise the block to the power exp, apply
+      // the modulus operand n, and save the
+      // remainder.  This is the essence of the
+      // RSA algorithm.
+      output = block.modPow(exp,n);
+
+      //Convert the numeric result to a
+      // four-character string, appending leading
+      // zeros as necessary.
+      temp = output.toString();
+      while(temp.length() < blockSize){
+        temp = "0" + temp;
+      }//end while
+
+      //Build the outputString blockSize
+      // characters at a time.  Each character
+      // in the inputString results in one
+      // character in the outputString.
+      outputString += temp;
+    }//end for loop
+
+    return outputString;
+  }//end doRSA
+  //-------------------------------------------//
+  
+  //This method generates and returns a digest
+  // for an incoming array of bytes using Sun's
+  // SHA msg digest algorithm..
+  byte[] digestIt(byte[] dataIn){
+    byte[] theDigest = null;
+    try{
+      //Create a MessageDigest object
+      // implementing the SHA algorithm, as
+      // supplied by SUN
+      MessageDigest msgDigest = 
+         MessageDigest.getInstance("SHA", "SUN");
+      //Feed the byte array to the digester.  Can
+      // accommodate multiple calls if needed
+      msgDigest.update(dataIn);
+      //Complete the digestion and save the
+      // result
+      theDigest = msgDigest.digest();
+    }catch(Exception e){System.out.println(e);}
+
+    //Return the digest value to the calling
+    // method as an array of bytes.
+    return theDigest;
+  }//end digestIt()
+  //-------------------------------------------//
+  
+  //This method converts an incoming array of
+  // bytes into a string that represents each of
+  // the bytes as two hex characters.
+  String byteArrayToHexStr(byte[] data){
+    String output = "";
+    String tempStr = "";
+    int tempInt = 0;
+    for(int cnt = 0;cnt < data.length;cnt++){
+      //Deposit a byte into the 8 lsb of an int.
+      tempInt = data[cnt]&0xFF;
+      //Get hex representation of the int as a
+      // string.
+      tempStr = Integer.toHexString(tempInt);
+      //Append a leading 0 if necessary so that
+      // each hex string will contain two
+      // characters.
+      if(tempStr.length() == 1)
+                         tempStr = "0" + tempStr;
+      //Concatenate the two characters to the
+      // output string.
+      output = output + tempStr;
+    }//end for loop
+    return output.toUpperCase();
+  }//end byteArrayToHexStr
+  //-------------------------------------------//
+  //This method pads a message such that the
+  // final length is a multiple of block and the
+  // last four bytes specify the origMsgLength.
+  // All the remaining bytes in the pad are
+  // filled with equal characters (=). The padded
+  // message is returned as type String.
+  private String padTheMsg(
+          String msgIn,int block,int origMsgLen){
+    byte[] msgData = msgIn.getBytes();
+    int msgInLen = msgData.length;
+    int tailLength = msgInLen%block;
+    int padLength = 0;
+    if((block - tailLength >= 4))
+      padLength = block - tailLength;
+    else 
+      padLength = 2*block - tailLength;
+      
+    //Create a four-byte array containing
+    // characters that indicate the length of
+    // the original msg with leading zeros if
+    // necessary.
+    String msgLenAsStr = "" + origMsgLen;
+    //Confirm number of characters.
+    if((msgLenAsStr.length() > 4) 
+                 || (msgLenAsStr.length() <= 0)){
+      System.out.println(
+                        "Message length error.");
+      System.exit(0);
+    }//end if
+    
+    //Prepend leading zeros if necessary
+    if(msgLenAsStr.length() == 1){
+      msgLenAsStr = "000" + msgLenAsStr;
+    }else if(msgLenAsStr.length() == 2){
+      msgLenAsStr = "00" + msgLenAsStr;
+    }else if(msgLenAsStr.length() == 3){
+      msgLenAsStr = "0" + msgLenAsStr;
+    }else if(msgLenAsStr.length() == 1){
+      msgLenAsStr = "000" + msgLenAsStr;
+    }//end else
+    
+    //Create a four-byte array containing the
+    // original message length as four numeric
+    // characters with leading zeros.
+    byte[] msgLenAsBytes = 
+                          msgLenAsStr.getBytes();
+      
+    //Construct an array containing the bytes
+    // required to make the padded message length
+    // equal to a multiple of block
+    byte[] thePad = new byte[padLength];
+
+    //Populate the array with = characters. 
+    // No need to put = characters in the last
+    // four bytes.
+    for(int cnt = 0;cnt < thePad.length - 4;
+                                          cnt++){
+      thePad[cnt] = '=';
+    }//end for loop
+    
+    //Put the original message length at the end
+    // of the pad.
+    System.arraycopy(msgLenAsBytes,0,thePad,
+                            thePad.length - 4,4);
+    
+    //Create an output array.
+    byte[] output = 
+                  new byte[msgInLen + padLength];
+
+    //Populate the output array with the original
+    // msgData concatenated with the pad.
+    System.arraycopy(msgData,0,output,0,
+                                       msgInLen);
+    System.arraycopy(
+       thePad,0,output,msgInLen,thePad.length);
+       
+    //Convert the output to a String and return
+    // the String..
+    String outputAsStr = new String(output);
+    return outputAsStr;
+
+  }//end padTheMsg
+  //-------------------------------------------//
+}//end class Rsa10
+
+<b>Listing 27</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>&nbsp;</p>
+<hr align="center" size="3" width="100%">
+<p>Copyright 2005, Richard G. Baldwin.&nbsp; Reproduction in whole or in part in any 
+form or medium without express written permission from Richard Baldwin is 
+prohibited. </p>
+<h4><a name="About_the_author">About the author</a></h4>
+<b><a href="mailto:Baldwin@DickBaldwin.com">Richard Baldwin</a></b><i> is a 
+college professor (at Austin Community College in Austin, TX) and private 
+consultant whose primary focus is a combination of Java, C#, and XML. In 
+addition to the many platform and/or language independent benefits of Java and 
+C# applications, he believes that a combination of Java, C#, and XML will become 
+the primary driving force in the delivery of structured information on the Web.</i>    
+<p><i>Richard has participated in numerous consulting projects and he 
+frequently provides onsite training at the high-tech companies located in and 
+around Austin, Texas.&nbsp; He is the author of Baldwin's Programming
+<a href="http://www.dickbaldwin.com">Tutorials</a>, which have gained a 
+worldwide following among experienced and aspiring programmers. He has also 
+published articles in JavaPro magazine.</i> </p>
+<p><i>In addition to his programming expertise, Richard has many years of 
+practical experience in Digital Signal Processing (DSP).&nbsp; His first job after he 
+earned his Bachelor's degree was doing DSP in the Seismic Research Department of 
+Texas Instruments.&nbsp; (TI is still a world leader in DSP.)&nbsp; In the following 
+years, he applied his programming and DSP expertise to other interesting areas 
+including sonar and underwater acoustics.</i> </p>
+<p><i>Richard holds an MSEE degree from Southern Methodist University and has 
+many years of experience in the application of computer technology to real-world 
+problems.</i> </p>
+<p><i><a href="mailto:baldwin@dickbaldwin.com">Baldwin@DickBaldwin.com</a></i>
+</p>
+<p>-end-</p>
+</body>
+</html>

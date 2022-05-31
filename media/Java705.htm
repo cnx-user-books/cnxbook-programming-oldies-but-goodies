@@ -1,0 +1,303 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>... in Java by Richard G Baldwin</TITLE>
+<META NAME="Template" CONTENT="C:\PROGRAM FILES\MICROSOFT OFFICE\OFFICE\html.dot">
+</HEAD>
+<BODY LINK="#0000ff" VLINK="#800080" BGCOLOR="#ffffff">
+
+<P><!--start--></P>
+<I><H3 ALIGN="CENTER">Richard G Baldwin (512) 223-4758, </I><A HREF="mailto:baldwin@austin.cc.tx.us"><I>baldwin@austin.cc.tx.us</I></A><I>, </I><A HREF="http://www2.austin.cc.tx.us/baldwin/"><I>http://www2.austin.cc.tx.us/baldwin/</I></A></H3>
+<H2 ALIGN="CENTER"><!--title-->Security, Servlets, Using Basic Authentication<!--endtitle--></H2>
+<P>Java Programming, Lecture Notes # 705, Revised 5/13/99. </P>
+
+<UL>
+<LI><A HREF="#Preface">Preface</A> </LI>
+<LI><A HREF="#Disclaimer">Disclaimer</A> </LI>
+<LI><A HREF="#Introduction">Introduction</A> </LI>
+<LI><A HREF="#Problems_With_Basic_Authentication">Problems with Basic Authentication</A> </LI>
+<LI><A HREF="#Digest_Authentication">Digest Authentication</A> </LI>
+<LI><A HREF="#sample_program">Sample Program</A> </LI>
+
+<UL>
+<LI><A HREF="#Interesting_Code_Fragments">Interesting Code Fragments</A> </LI>
+<LI><A HREF="#program_listing">Program Listing</A> </LI></UL>
+</UL>
+
+<P><HR></P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Preface">Preface</A></H2>
+</FONT><P>Students in Prof. Baldwin's <B><U>Advanced Java Programming</B></U> classes at ACC will be responsible for knowing and understanding all of the material in this lesson beginning with the spring semester of 1999. </P>
+<P>This lesson was originally written on March 28, 1999. </P>
+<P>The sample servlet in this lesson was tested using Win95, Netscape Navigator, the JDK 1.2 download package from JavaSoft, the JSDK 2.0 download package from JavaSoft, and the Jigsaw web server that, as of 3/27/99, was freely available from http://www.w3.org/Jigsaw/. The sample program was tested using Jigsaw from the same machine, and also from a different machine on the network.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Disclaimer">Disclaimer</A></H2>
+</FONT><P>I claim absolutely no expertise in the area of security. I am simply a college professor attempting to gather information about Java on one hand and present it to my students on the other. I disclaim any responsibility for any security problems that may occur as a result of anyone using any of the material in any of my tutorial lessons.</P>
+<P>You are responsible for your own actions. With regard to security, you should study not only the material that I will present, but also material provided by others who possess expertise in the security area. Hopefully my material will be useful in getting you started in that direction.</P>
+<P>Two good books on security published by O'Reilly &amp; Associates are:</P>
+
+<UL>
+<U><LI>Java Security</U> by Scott Oaks </LI>
+<U><LI>Java Cryptography</U> by Jonathan Knudsen</LI></UL>
+
+<P>I highly recommend both of these books.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Introduction">Introduction</A></H2>
+</FONT><P>Much of the material in this lesson is a repeat of the material in a previous lesson on session tracking, but with a different slant.</P>
+<B><FONT COLOR="#ff0000"><P>What is Basic Authentication?</P>
+</B></FONT><P>Most HTTP servers provide a <U>very weak</U> form of security commonly known as <I>Basic Authentication</I>.</P>
+<P>An HTTP server that provides Basic Authentication has the capability to maintain a list of user names and passwords. </P>
+<P>It also has the capability to protect resources (directories, files, servlets, etc.) making those resources available only to specified users.</P>
+<B><FONT COLOR="#ff0000"><P>How is this information maintained?</P>
+</B></FONT><P>The manner in which the list of user names and passwords is maintained, and the manner in which resources are protected, <U>differs from one server to the next</U>. </P>
+<P>For the sample program in this lesson, I used the administrator features of the Jigsaw server to establish the list and the protection. You will need to see your server documentation for more information on this topic.</P>
+<B><FONT COLOR="#ff0000"><P>What does it mean for a resource to be <I>protected</I>?</P>
+</B></FONT><P>When a resource is protected and a client attempts to access it, the server requires the client to provide the user's name and password. </P>
+<P>Typically, the browser obtains the name and password from the user and provides it to the server. If that user is authorized to access the requested resource, the request is granted.</P>
+<B><FONT COLOR="#ff0000"><P>What happens next?</P>
+</B></FONT><P>Thereafter, the browser remembers and resends the name and the password as the user views different pages <U>on the same site</U>. This continues until the user moves on to a different site or exits the browser. </P>
+<P>If the user comes back to the site before exiting the browser, the process of sending the name and password resumes.</P>
+<B><FONT COLOR="#ff0000"><P>How does this involve servlets?</P>
+</B></FONT><P>After the user logs in to the server by providing the name and password to the browser, the <U>user name is available to the servlet</U> through the <B>getRemoteUser()</B> method. </P>
+<P>Assuming that the user name is unique, it can be used as a key to persistent storage (such as a database) for the purpose of maintaining information about the session.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Problems_With_Basic_Authentication">Problems with Basic Authentication</A></H2>
+</FONT><P>An earlier lesson suggested that during network communications, you should be concerned with</P>
+
+<UL>
+<LI>Authentication </LI>
+<LI>Confidentiality </LI>
+<LI>Integrity</LI></UL>
+
+<P>Basic Authentication provides <U>no support for</U> <I>Confidentiality</I> and <I>Integrity</I>.  It does provide a very weak form of <I>Authentication</I>.</P>
+<B><FONT COLOR="#ff0000"><P>So, what is the problem?</P>
+</B></FONT><P>The main problem with the Authentication model provided by <I>Basic Authentication</I> is the ease with which someone else can decode the user name and password information if they can intercept it. </P>
+<P>This is illustrated by the sample program later in this lesson where a method of one of the Sun classes is used to decode and display the user name and password.</P>
+<P>A site that relies on Basic Authentication <U>cannot be considered secure</U>. </P>
+<P>However, in some cases where the value of the material that might be compromised is low, the site administrator may be more interested in ease of use than security and the use of Basic Authentication might be appropriate.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Digest_Authentication">Digest Authentication</A></H2>
+</FONT><P>Some server/browser combinations support a more secure form of authentication known as <I>Digest Authentication</I>. Rather than sending the user name and password in the simple encoded form mentioned above, it is encrypted using a secure encryption algorithm. A dialog is conducted between the server and the browser that makes it possible for the two to exchange the encrypted information.</P>
+<P>I mention this here only to alert you to the fact that it may provide you with a secure alternative to Basic Authentication. If you know that Digest Authentication is supported both by your server and <U>by all of the browsers</U> that will be used by your clients, you may want to consider its use.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="sample_program"></A>Sample Program</H2>
+</FONT><P>The name of the servlet discussed below is <B>Servlet13A</B>. This is one of a group of three similar servlets named:</P>
+
+<UL>
+<LI>Servlet13A </LI>
+<LI>Servlet13B </LI>
+<LI>Servlet13C</LI></UL>
+
+<B><FONT COLOR="#ff0000"><P>What was protected?</P>
+</B></FONT><P>In my case, the server was set up to protect all three servlets by <U>protecting the directory</U> in which they are stored. (It is also possible to protect individual servlets and individual files.) </P>
+<P>The list of users having access to the servlets in the protected directory was set up to include the user named <B>dick</B>. </P>
+<B><FONT COLOR="#ff0000"><P>What happens next?</P>
+</B></FONT><P>When the client makes a request to invoke one of the servlets, the server requires the client to provide a name and password. </P>
+<P>The server compares the name and password to the list of valid name/password combinations maintained in the database by the server. If the name/password combination is <U>not valid</U>, the client gets <U>another opportunity</U> to provide a name and password.</P>
+<P>If the name/password combination is <U>valid</U>, the server compares the name to the list of names established as having access to the directory containing the servlet. </P>
+<P>If the name matches one of the names on that list, the servlet is invoked on behalf of the client.</P>
+<B><FONT COLOR="#ff0000"><P>What does the servlet do?</P>
+</B></FONT><P>When one of the servlets is invoked, it produces an output similar to the following on the client screen (only the name of the servlet differs from one servlet to the next):</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<PRE>Welcome to <B>Servlet13A</B> 
+Hello dick
+Authentication Type: Basic
+Authorization: Basic ZGljazpkcm93c3NhcA==
+Unencoded name and password: dick:drowssap
+Please visit these other servlets:
+<U>Servlet13A
+Servlet13B
+Servlet13C</PRE></U></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>The encoded name and password</P>
+</B></FONT><P>The fourth line shows the simple encoded version of the name and password passed over the Internet as:. </P>
+<B><CODE><P>Authorization: Basic ZGljazpkcm93c3NhcA==</P>
+</CODE><FONT COLOR="#ff0000"><P>Decoded name and password</P>
+</B></FONT><P>The fifth line shows the user name and password after it has been decoded by the servlet as:</P>
+<B><CODE><P>Unencoded name and password: dick:drowssap</P>
+</B></CODE><P>As mentioned earlier, the <U>ease with which this information can be decoded</U> causes this to be an extremely weak security model.</P>
+<B><FONT COLOR="#ff0000"><P>The remaining output</P>
+</B></FONT><P>The last three lines in the output are hyperlinks to each of the three servlets. </P>
+<P>Having invoked any one of the three servlets, the user can again invoke any one of the three. No matter which one is invoked, the servlet is able to identify the user and to get the user's name and password.</P>
+<FONT COLOR="#ff0000"><H3 ALIGN="CENTER"><A NAME="Interesting_Code_Fragments">Interesting Code Fragments</A></H3>
+</FONT><P>The first fragment shows the beginning of the controlling class and the beginning of the <B>doGet()</B> method. </P>
+<P>The fragment also shows the typical HTML boilerplate necessary to create an HTML page to be sent to the client. You have seen material such as this many times before.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>public class Servlet13A extends HttpServlet{
+  public void doGet(HttpServletRequest req, 
+                    HttpServletResponse res)
+                      throws ServletException, IOException{
+    res.setContentType("text/html");
+    PrintWriter out = res.getWriter();
+    out.println("&lt;HTML&gt;");
+    out.println("&lt;HEAD&gt;&lt;TITLE=Servlet13A&lt;/TITLE&gt;&lt;/HEAD&gt;");
+    out.println("&lt;BODY&gt;");
+    
+    out.println("Welcome to Servlet13A &lt;BR&gt;");</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>The getRemoteUser() method</P>
+</B></FONT><P>The next fragment uses the <B>getRemoteUser()</B> method to get and display the name of the remote user.<B> </B>Note that the user name is available <U>without performing any special decoding</U> of the incoming information.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>    out.println("Hello " + req.<B>getRemoteUser</B>() + "&lt;BR&gt;");</PRE></TD>
+</TR>
+</TABLE>
+
+<P>Once the user has logged in, this name is available to servlets on this server until the user exits the browser. Therefore, it is important for the user to exit the browser when the session has been completed.</P>
+<B><FONT COLOR="#ff0000"><P>The getAuthType() method</P>
+</B></FONT><P>The next fragment gets and displays the type of authentication being used by the server. </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>    out.println("Authentication Type: " 
+                             + req.<B>getAuthType</B>() + "&lt;BR&gt;");</PRE></TD>
+</TR>
+</TABLE>
+
+<P>In this case, the type is <I>Basic Authentication</I>. </P>
+<P>As mentioned earlier, some servers also support a more secure form of authentication known as <I>Digest Authentication</I>.</P>
+<B><FONT COLOR="#ff0000"><P>The getHeader() method</P>
+</B></FONT><P>The next fragment shows the use of the <B>getHeader()</B> method to get and display the authorization string <U>in its encoded format</U>.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>    String auth = req.<B>getHeader</B>("Authorization");
+    out.println("Authorization: " + auth + "&lt;BR&gt;");</PRE></TD>
+</TR>
+</TABLE>
+
+<P>Note that the string <B>"Authorization"</B> is passed to the method in order to get the authorization string. </P>
+<P>Recall from above that the value of the authorization string displayed was:</P><DIR>
+<DIR>
+
+<P>Basic <B>ZGljazpkcm93c3NhcA==</P></DIR>
+</DIR>
+
+</B><P>The boldface portion of this string contains the encoded version of the user name and password. </P>
+<B><FONT COLOR="#ff0000"><P>No single method available...</P>
+</B></FONT><P>There is no single method available for extracting the password as is the case with the name, but the <U>password isn't difficult to extract</U>. </P>
+<P>The next fragment </P>
+
+<UL>
+<LI>Extracts that substring from the entire string </LI>
+<LI>Unencodes the substring </LI>
+<LI>Displays the unencoded version. </LI></UL>
+
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>    String encodedNamePassword = auth.<B>substring</B>(6);
+    sun.misc.BASE64Decoder dec = 
+                              new <B>sun.misc.BASE64Decoder</B>();
+    String unencodedNamePassword = 
+         new String(dec.<B>decodeBuffer</B>(encodedNamePassword));
+    out.<B>println</B>("Unencoded name and password: " 
+                         + unencodedNamePassword + "&lt;BR&gt;");</PRE></TD>
+</TR>
+</TABLE>
+
+<P>In my case, the unencoded version is displayed as</P><DIR>
+<DIR>
+
+<B><P>dick:drowssap</P></DIR>
+</DIR>
+
+<FONT COLOR="#ff0000"><P>Anybody can do it</P>
+</B></FONT><P>Any computer that can intercept the communication between the client and the server can decode the user name and password just as easily.</P>
+<B><FONT COLOR="#ff0000"><P>The remaining code</P>
+</B></FONT><P>The remaining code (not shown here) creates hyperlinks for all three of the servlets allowing the user to navigate among the different servlets at will. Each time the user invokes any one of these servlets prior to exiting the browser, the name and password information for that user will be available as shown above.</P>
+<P>The remaining code also provides the boilerplate necessary to close out the HTML page. You can view the remaining code in the next section.</P>
+<FONT COLOR="#ff0000"><H3 ALIGN="CENTER"><A NAME="program_listing"></A>Program Listing</H3>
+</FONT><P>A complete listing of one of the servlets follows. The other two servlets are identical to this one with the exception of the servlet name, so they aren't shown here.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Servlet13A.java, Copyright 1999, R.G.Baldwin
+Rev 3/25/99
+This is one of a group of three servlets:
+Servlet13A
+Servlet13B
+Servlet13C
+
+that are designed to illustrate session tracking using 
+BASIC AUTHENTICATION.
+
+All three servlets are protected by the server.  When the
+user requests the server to invoke one of the servlets,
+the server requires the user to provide a name and 
+password.  That name and password is compared, by the
+server, to the set of name/password combinations maintained
+in a database by the server.
+
+If the name/password combination is valid, the server
+compares the name to the list of names established by
+the server administrator as being allowed access to the
+servlet.  If the name matches one of the names on that
+list, the servlet is invoked on behalf of the client.
+
+When the servlet is invoked, it produces an output
+similar to the following on the client screen:
+  
+Welcome to Servlet13A 
+Hello dick
+Authentication Type: Basic
+Authorization: Basic ZGljazpkcm93c3NhcA==
+Unencoded name and password: dick:drowssap
+Please visit these other servlets:
+Servlet13A
+Servlet13B
+Servlet13C
+
+where the last three lines are hyperlinks to each of the
+three servlets.
+
+The servlet was tested using the JDK 1.2 download package
+from JavaSoft along with the Java Servlet Development Kit
+(JSDK) 2.0 from JavaSoft and the Jigsaw web server. All 
+tests were performed under Win95.
+
+**********************************************************/
+import java.io.*;
+import javax.servlet.*;
+import javax.servlet.http.*;
+
+public class Servlet13A extends HttpServlet{
+  public void doGet(HttpServletRequest req, 
+                    HttpServletResponse res)
+                      throws ServletException, IOException{
+    res.setContentType("text/html");
+    PrintWriter out = res.getWriter();
+    out.println("&lt;HTML&gt;");
+    out.println("&lt;HEAD&gt;&lt;TITLE=Servlet13A&lt;/TITLE&gt;&lt;/HEAD&gt;");
+    out.println("&lt;BODY&gt;");
+    
+    out.println("Welcome to Servlet13A &lt;BR&gt;");
+
+    out.println("Hello " + req.getRemoteUser() + "&lt;BR&gt;");
+    out.println("Authentication Type: " 
+                             + req.getAuthType() + "&lt;BR&gt;");
+    String auth = req.getHeader("Authorization");
+    out.println("Authorization: " + auth + "&lt;BR&gt;");
+    String encodedNamePassword = auth.substring(6);
+    sun.misc.BASE64Decoder dec = 
+                              new sun.misc.BASE64Decoder();
+    String unencodedNamePassword = 
+         new String(dec.decodeBuffer(encodedNamePassword));
+    out.println("Unencoded name and password: " 
+                         + unencodedNamePassword + "&lt;BR&gt;");
+    out.println("Please visit these other servlets:&lt;BR&gt;");
+
+    out.println("&lt;A HREF=\"http://baldwin:8001/servlets"
+                + "/Servlet13A\"&gt;Servlet13A&lt;/A&gt;" + "&lt;BR&gt;");
+    out.println("&lt;A HREF=\"http://baldwin:8001/servlets"
+                + "/Servlet13B\"&gt;Servlet13B&lt;/A&gt;" + "&lt;BR&gt;");
+    out.println("&lt;A HREF=\"http://baldwin:8001/servlets"
+                + "/Servlet13C\"&gt;Servlet13C&lt;/A&gt;" + "&lt;BR&gt;");
+
+
+    out.println("&lt;/font&gt;&lt;/h1&gt;");
+    out.println("&lt;/BODY&gt;&lt;/HTML&gt;");
+  }//end doGet()
+}//end class Servlet13A</PRE></TD>
+</TR>
+</TABLE>
+
+<P>-end-<!--end--></P></BODY>
+</HTML>

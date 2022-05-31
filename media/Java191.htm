@@ -1,0 +1,883 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>... in Java by Richard G Baldwin</TITLE>
+<META NAME="Template" CONTENT="C:\PROGRAM FILES\MSOFFICE\OFFICE\html.dot">
+</HEAD>
+<BODY LINK="#0000ff" VLINK="#800080">
+
+<P><!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN"><!--start--></P>
+<I><H3 ALIGN="CENTER">Richard G Baldwin (512) 223-4758, </I><A HREF="mailto:baldwin@austin.cc.tx.us"><I>baldwin@austin.cc.tx.us</I></A><I>, </I><A HREF="http://www2.austin.cc.tx.us/baldwin/"><I>http://www2.austin.cc.tx.us/baldwin/</I></A></H3>
+<H2 ALIGN="CENTER"><!--title-->Swing, Custom Rendering of Tree Nodes<!--endTitle--></H2>
+<P>Java Programming, Lecture Notes # 191, Revised 03/10/99. </P>
+
+<UL>
+<LI><A HREF="#Preface">Preface</A> </LI>
+<LI><A HREF="#Introduction">Introduction</A> </LI>
+<LI><A HREF="#Overview">Overview</A> </LI>
+<LI><A HREF="#Sample_Program">Sample Program</A> </LI>
+
+<UL>
+<LI><A HREF="#Interesting_Code_Fragments">Interesting Code Fragments</A> </LI>
+<LI><A HREF="#Program_Listing">Program Listing</A> </LI></UL>
+</UL>
+
+<P><HR></P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Preface"></A>Preface</H2>
+</FONT><P>Students in Prof. Baldwin's <B><U>Advanced Java Programming</B></U> classes at ACC will be responsible for knowing and understanding all of the material in this lesson beginning with the spring semester of 1999. </P>
+<P>This lesson was originally written on September 27, 1998, using the JDK 1.1.6 download package along with Swing 1.0.3. The purpose of this lesson is to illustrate the use of the <B>JTree</B> class and associated classes for creating and using trees. </P>
+<P>On 3/10/99, the import directives in the sample program were modified for JDK 1.2 compatibility. The name of the modified program is Tree06A.java. The modified program was confirmed to compile and run properly under JDK 1.2.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Introduction"></A>Introduction</H2>
+</FONT><P>Swing makes it possible to create tree structures similar to Windows Explorer.&nbsp; The tree can be collapsed and expanded to hide or expose inner nodes in the tree.&nbsp; The <I>look</I> of the tree is subject to Swing's <I>pluggable look and feel</I>.&nbsp; The sample program in this lesson uses a Windows look and feel, although it can easily be changed by modifying only one statement. </P>
+<P>It is possible for the programmer to define a special model class to maintain the data, in a Model-View-Controller sense.&nbsp; However, that isn't necessary because a default model is also available.&nbsp; The sample program in this lesson uses the default data model. </P>
+<P>It is also possible for the programmer to define how the individual nodes in the tree are to be rendered.&nbsp; Rendering of the nodes is customized in the sample program in this lesson.&nbsp; They are rendered using an image and a text label. </P>
+<P>Several different types of events can be generated and handled when the user performs various actions on a Swing tree.&nbsp; The sample program in this lesson uses this event capability to change the icon whenever the user selects a leaf of the tree for the first time, and also to display a message identifying the leaf that was selected. </P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Overview"></A>Overview</H2>
+</FONT><P>Swing implements a modified form of the Model-View-Controller (MVC) paradigm on all its components.&nbsp; As of September 1998, most of the current literature on Swing trees presents them in this paradigm.&nbsp; While the MVC paradigm may lead to better program design, it also leads to additional programming complexity and requires a much higher level of skill and understanding on the part of the programmer. </P>
+<P>It is often possible to use Swing components in your programs without getting explicitly involved in the MVC paradigm.&nbsp; This lesson shows you how to create and use Swing trees in an effective manner without any explicit consideration of MVC.&nbsp; Several subsequent lessons, centered around the <B>JList</B> class, discusses this topic in depth.&nbsp; (The <B>JList</B> and <B>JTree</B> classes are very similar from a programming viewpoint.) </P>
+<P>In addition to the use of trees and selection listener objects, this lesson also illustrates the use of object serialization and scroll panes. </P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Sample_Program"></A>Sample Program</H2>
+</FONT><P>As of JDK 1.1.6 and Swing 1.0.3, this program has a problem with some of the labels being chopped off when they are displayed in the tree.&nbsp; Some news group articles indicate that this may be a bug in the JDK or the Swing library.&nbsp; If so, it will hopefully be fixed in a future release of Swing.&nbsp; If you can explain how to fix this problem, I would appreciate hearing about it. </P>
+<P>Another aspect of this problem is that the <B>JList</B> class provides a couple of methods by which you can control the size of the cells into which you render your objects.&nbsp; This makes it possible to avoid the problem with <B>JList</B>.&nbsp; If such a method exists to be used with the <B>JTree</B> class, I haven't discovered it yet in JDK 1.1.  (Haven't had time yet to look for it in JDK 1.2.)</P>
+<P>This program provides a fairly simple approach to creating and maintaining a tree structure using the Swing <B>JTree</B> without becoming explicitly involved in the MVC paradigm. </P>
+<P>The program creates a tree that has a Windows look and feel.&nbsp; The tree can be collapsed and expanded by clicking on the + and - boxes in the typical Windows Explorer style. </P>
+<P>The tree consists of <I>nodes</I> and <I>leaves</I>.&nbsp; A leaf is a node that doesn't have any children.&nbsp; Each leaf on the tree has both an icon and a label.&nbsp; When a leaf is selected the first time, the icon changes to indicate that it has been selected.&nbsp; When the program terminates, a history file is created and saved containing the state of each leaf.&nbsp; When the program is restarted, the history file is read and used to restore the state of each leaf to its previous value.&nbsp; Object serialization is used to save and restore the history data file. <BR>
+&nbsp; </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#00ffff">
+<P><B>To run this program, you will need to modify the references to the history file and two image files to match your configuration.&nbsp; If you wish to run this program two or more times without loading the history file, find and delete the file named junk.dat from your disk.</B></TD>
+</TR>
+</TABLE>
+
+<P>When a leaf is selected, an event is generated and handled to cause the identification of the leaf that was selected to appear on the bottom of the <B>JFrame</B> containing the tree. </P>
+<P>The program was tested using JDK 1.1.6 and Swing 1.0.3 under Win95. </P>
+<FONT COLOR="#ff0000"><H3 ALIGN="CENTER"><A NAME="Interesting_Code_Fragments"></A>Interesting Code Fragments</H3>
+</FONT><P>The program is written as a single class, containing several inner classes and several instance variables.&nbsp; The first code fragments shows some of those instance variables which are discussed individually following the fragment. <BR>
+&nbsp; </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>public class Tree06 extends JFrame{
+&nbsp; Hashtable <B>theHashtable</B> = new Hashtable();
+&nbsp; JLabel <B>display</B> = new JLabel("Display Selection Here");
+&nbsp; String <B>historyFile</B> = "/jnk/junk.dat";
+&nbsp; String <B>unSelectedImage</B> = "blue-ball.gif";
+&nbsp; String <B>selectedImage</B> = "red-ball.gif";
+&nbsp; int <B>frameWidth</B> = 350;
+&nbsp; int <B>frameHeight</B> = 350;</PRE></TD>
+</TR>
+</TABLE>
+
+<P>Swing allows the programmer to define the manner in which the nodes of the tree are rendered whenever it is necessary to redraw the tree.&nbsp; Each of the nodes in this tree is rendered using a <B>JLabel</B>.&nbsp; The <B>JLabel</B> used for all of the nodes contains a text label. In addition, the <B>JLabel</B> used for the leaves also contains an image.&nbsp; The image changes once the leaf has been selected.&nbsp; The text label is different for each node. </P>
+<P>A method is provided that is called by the system whenever it is necessary to draw a node.&nbsp; To customize the rendering of the nodes, I override this method.&nbsp; (I will discuss the method in detail later.)&nbsp; This method returns the appropriate <B>JLabel</B> for rendering the node. </P>
+<P>A hashtable is created and populated at startup that associates the hashcode of each node with an index into an array containing the <B>JLabel</B> objects.&nbsp; When time comes to render the node, the node is used to access the hashtable to obtain the index of the <B>JLabel</B> required for that particular node.&nbsp; That hashtable is referenced by the reference variable named <B>theHashtable</B> shown in the code fragment above. </P>
+<P>The reference variable named <B>display</B> is simply a reference to a <B>JLabel</B> that is used to display information when a leaf is selected. </P>
+<P>The reference variables named <B>historyFile</B>, <B>unSelectedImage</B>, and <B>selectedImage</B> refer to disk file used to store the history data, and disk files containing the images displayed on the leaves of the tree.&nbsp; You will need to provide your own image files, and will probably modify these references to agree with your disk organization. </P>
+<P>This is followed by two reference variables that specify the size of the <B>JFrame</B> object used as a container for this program. </P>
+<P>The next fragment shows additional instance variables, the first being <B>numberRows</B> which specifies the number of rows of data displayed on the screen when the tree is in the fully expanded mode.&nbsp; This is followed by a reference variable named <B>tree</B>, which is a reference to the actual instance of the <B>JTree</B> class that constitutes the tree. <BR>
+&nbsp; </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>&nbsp; int <B>numberRows</B> = 19;
+&nbsp; JTree <B>tree</B>;
+&nbsp; MyData <B>myData</B>;
+&nbsp; TheData[] <B>data</B>;
+&nbsp; TreePanel <B>treePanel</B>;
+&nbsp; String <B>plafClassName</B>&nbsp;
+&nbsp;&nbsp;&nbsp; = "com.sun.java.swing.plaf.windows.WindowsLookAndFeel";</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The reference variable named <B>myData</B> is a reference to an object containing an array of objects, each of which&nbsp; contains the information necessary to render and process a node in the tree.&nbsp; Each object in the array contains two instance variables:&nbsp; a <B>JLabel</B> and a <B>String</B>.&nbsp; The <B>JLabel</B> contains an image and some text that is displayed when the node is rendered.&nbsp; The <B>String</B> contains some supplementary information that is accessed when the user selects the node. </P>
+<P>The state of this object is maintained throughout the running of the program, and the object is written to disk, using object serialization, when the user terminates the program.&nbsp; It is read back when the user restarts the program.&nbsp; Thus, this is a persistence mechanism for a single user.&nbsp; If an attempt is made to read the object from disk and it doesn't exist, a new object is created with initial data under program control.&nbsp; This object is stored in the disk file referenced by <B>historyFile</B> mentioned earlier. </P>
+<P>The variable named <B>data</B> is simply a convenience variable that refers to the array in the above-mentioned object. </P>
+<P>The variable named <B>treePanel</B> is a reference to a <B>JPanel</B> object that contains the tree in a scrollable pane. </P>
+<P>Finally, the reference variable named <B>plafClassName</B> is used to cause the look and feel of the program to emulate Windows.&nbsp; Other L&amp;F implementations could be used by substituting the proper information in this <B>String</B>. </P>
+<P>That gets us through the preliminaries and into the real code.&nbsp; The next fragment shows a simple <B>main()</B> method that can be used to run this application in a stand-alone mode.&nbsp; This method simply instantiates an object of the controlling class. <BR>
+&nbsp; </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>&nbsp; public static void <B>main</B>(String args[]) {
+&nbsp;&nbsp;&nbsp; <B>new</B> Tree06();
+&nbsp; }//end main</PRE></TD>
+</TR>
+</TABLE>
+
+<P>That brings us to the constructor where the work of creating the tree is carried out.&nbsp; After setting the title on the frame, the following fragment gets the history data from disk, or causes it to be created under program control if it doesn't already exist.&nbsp; I will discuss the code that actually accomplishes this in detail later. <BR>
+&nbsp; </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>&nbsp; public Tree06 () {//constructor
+&nbsp;&nbsp;&nbsp; setTitle("Copyright 1998, R.G.Baldwin");&nbsp;&nbsp;
+
+&nbsp;&nbsp;&nbsp; myData = <B>new MyData()</B>;//ref to object containing array
+&nbsp;&nbsp;&nbsp; data = myData.getData();//ref to the array</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The next fragment is very important in understanding how this Swing tree works.&nbsp; This fragment first creates an array of references to tree nodes of type <B>DefaultMutableTreeNode</B>.&nbsp; Then it constructs the tree by invoking the <B>add</B> method on a node to add children to that node.&nbsp; For example, I have highlighted three lines of code in boldface showing that nodes 1, 5, and 14 are children of node 0.&nbsp; This is accomplished by <I>adding</I> those three nodes to node 0. </P>
+<P>Also, I have italicized three lines of code showing that nodes 2, 3, and 4 are children of node 1.&nbsp; Hopefully with these clues, you will be able to see the rest of the pattern. </P>
+<P>Again, these are nothing but references to node objects, and the manner in which these references are related establishes the structure of the tree.&nbsp; There is one reference variable for each node in the tree. <BR>
+&nbsp; </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>&nbsp;&nbsp;&nbsp; // Create an array of references to tree nodes.&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; DefaultMutableTreeNode[] theTreeNodes =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new <B>DefaultMutableTreeNode</B>[numberRows];
+&nbsp;&nbsp;&nbsp; for(int cnt = 0; cnt &lt; numberRows; cnt++){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theTreeNodes[cnt] = new DefaultMutableTreeNode("");
+&nbsp;&nbsp;&nbsp; }//end for loop
+
+&nbsp;&nbsp;&nbsp; //Construct the tree using the nodes created above.
+&nbsp;&nbsp;&nbsp; // These statements establish ParentChild relationships
+&nbsp;&nbsp;&nbsp; // among the nodes.
+<B>&nbsp;&nbsp;&nbsp; theTreeNodes[0].add(theTreeNodes[1]);
+</B><I>&nbsp;&nbsp;&nbsp; theTreeNodes[1].add(theTreeNodes[2]);
+&nbsp;&nbsp;&nbsp; theTreeNodes[1].add(theTreeNodes[3]);
+&nbsp;&nbsp;&nbsp; theTreeNodes[1].add(theTreeNodes[4]);
+</I>&nbsp;<B>&nbsp;&nbsp; theTreeNodes[0].add(theTreeNodes[5]);
+</B>&nbsp;&nbsp;&nbsp; theTreeNodes[5].add(theTreeNodes[6]);
+&nbsp;&nbsp;&nbsp; theTreeNodes[6].add(theTreeNodes[7]);
+&nbsp;&nbsp;&nbsp; theTreeNodes[6].add(theTreeNodes[8]);
+&nbsp;&nbsp;&nbsp; theTreeNodes[6].add(theTreeNodes[9]);
+&nbsp;&nbsp;&nbsp; theTreeNodes[5].add(theTreeNodes[10]);
+&nbsp;&nbsp;&nbsp; theTreeNodes[10].add(theTreeNodes[11]);
+&nbsp;&nbsp;&nbsp; theTreeNodes[10].add(theTreeNodes[12]);
+&nbsp;&nbsp;&nbsp; theTreeNodes[10].add(theTreeNodes[13]);
+<B>&nbsp;&nbsp;&nbsp; theTreeNodes[0].add(theTreeNodes[14]);
+</B>&nbsp;&nbsp;&nbsp; theTreeNodes[14].add(theTreeNodes[15]);
+&nbsp;&nbsp;&nbsp; theTreeNodes[14].add(theTreeNodes[16]);
+&nbsp;&nbsp;&nbsp; theTreeNodes[14].add(theTreeNodes[17]);
+&nbsp;&nbsp;&nbsp; theTreeNodes[14].add(theTreeNodes[18]);</PRE></TD>
+</TR>
+</TABLE>
+
+<P>As mentioned earlier, when time comes later to draw the tree, it is necessary to render each node into a picture on the screen.&nbsp; In order to do this, it is necessary to first identify the node being rendered, and then retrieve the information required to properly render that node.&nbsp; There are numerous ways to do this.&nbsp; My approach in this program is to maintain the rendering information in an array of objects.&nbsp; That means that I need a way to associate the node being rendered with the element in the array containing the rendering information.&nbsp; I accomplish this by creating a hashtable containing one key/value pair for each node in the tree.&nbsp; The key is the hashcode representation of the node itself, and the value is the index in the array from which rendering information can be retrieved when needed.&nbsp; Note that the rendering information in the array changes over time so the approach must accommodate these changes. </P>
+<P>The next fragment shows the hashtable being populated with the proper index value for each node key.&nbsp; Because an object of the <B>Hashtable</B> class deals only with objects of type <B>Object</B>, it was necessary to wrap the index values in an object of type <B>Integer </B>in order to store them in the hashtable. <BR>
+&nbsp; </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>&nbsp;&nbsp;&nbsp; for(int cnt = 0; cnt &lt; numberRows; cnt++){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theHashtable.<B>put</B>(theTreeNodes[cnt],new <B>Integer</B>(cnt));
+&nbsp;&nbsp;&nbsp; }//end for loop</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The next fragment instantiates an object of type <B>CellRenderer</B> which will be used later by the system to render the individual nodes when they are drawn on the screen.&nbsp; This class implements the <B>TreeCellRenderer</B> interface which in turn requires that it defines a method named <B>getTreeCellRendererComponent()</B>.&nbsp; This method is called by the system to get rendering information for a node whenever it is necessary to redraw the node on the screen.&nbsp; The design of the method in this program causes it to return a reference to a&nbsp; <B>JLabel</B> object containing a text label in all cases and an image in the case where the node is a leaf. </P>
+<P>Next, the <B>CellRenderer</B> object, along with a reference to the root node in the tree, are passed to the constructor of a class named <B>TreePanel</B> that instantiates the actual <B>JTree</B> object in a scrollable pane in a <B>JPanel</B> object.&nbsp; I will discuss that class in detail later. <BR>
+&nbsp; </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>&nbsp;&nbsp;&nbsp; CellRenderer cell = new <B>CellRenderer()</B>;
+&nbsp;&nbsp;&nbsp; treePanel = new <B>TreePanel</B>(theTreeNodes[0], cell);</PRE></TD>
+</TR>
+</TABLE>
+
+<P>There are several listener interfaces defined for use with trees in Swing.&nbsp; The next fragment instantiates a <B>TreeSelectionListener</B> object and registers it on the tree to listen for events caused by the user selecting a node with the mouse or the arrow keys.&nbsp; An event is generated and processed each time the user selects a different node.&nbsp; Nodes that were previously selected can be selected again if another node has been selected in the meantime. </P>
+<P>Selection of a leaf in this program causes the image to change to a red ball and displays the identification of the leaf in a <B>JPanel</B> at the bottom of the outer frame object.&nbsp; Selecting the node again doesn't cause it to change back to a blue ball, but it wouldn't be difficult to implement that kind of toggle behavior. </P>
+<P>I will discuss the class named <B>MyTreeListener</B> from which the listener object is instantiated later. <BR>
+&nbsp; </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>&nbsp;&nbsp;&nbsp; tree.<B>addTreeSelectionListener</B>(new <B>MyTreeListener</B>());</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The remaining code in the constructor is very routine, doing such things as adding the <B>treePanel</B> to the outer frame, setting the size of the frame, making it visible, etc., so I won't highlight and discuss it further in these fragments.&nbsp; You can view that code in the complete listing of the program that follows later. </P>
+<P>The next fragment begins the discussion of the <B>CellRenderer</B> class.&nbsp; This is probably the most complex code in the entire program, so I will try to explain it in detail, possibly repeating some information that I have already mentioned before. </P>
+<P>This class implements the <B>TreeCellRenderer</B> interface, which requires it to define a method named <B>getTreeCellRendererComponent()</B>.&nbsp; Whenever the system needs to render a node, it calls this method and expects the method to return a reference to an object of type <B>Component</B>.&nbsp; That object is used to actually render the visual part of the node (the object is painted on the screen at the appropriate spot). </P>
+<P>Many different classes extend <B>Component</B>, so the returned object can be of many different types including <B>JLabel</B>.&nbsp; I elected to create and return a reference to a <B>JLabel</B> object to be used to render each node. </P>
+<P>The real trick, and the thing that makes this task somewhat difficult is deciding which <B>JLabel</B> reference to return.&nbsp; Although the method receives a large number of parameters, none of them specifically identify the node that is being rendered.&nbsp; The closest thing to an identification of the node being rendered is an incoming parameter named <B>row</B>.&nbsp; However, that parameter doesn't specifically identify the node.&nbsp; It simply identifies the row number of the node in the <I><U>current</I></U> visual representation of the tree.&nbsp; A node that appears on a row with a large value when the tree is fully expanded will appear on a row with a smaller value when the tree has been partially collapsed. </P>
+<P>Therefore, it is necessary to use the row value to work backwards to positively identify the node, and to use that identification to specify the correct <B>JLabel</B> object to return for rendering that node.&nbsp; After invoking some methods to identify the node from the row value, I use the hashtable discussed earlier to retrieve information that allows me to access and return the correct <B>JLabel</B> object. </P>
+<P>More specifically, I enter the hashtable with the node as a key and retrieve an index into an array that contains the rendering information for that node, including a reference to the proper <B>JLabel</B> object. <BR>
+&nbsp; </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>&nbsp; private class <B>CellRenderer</B> implements <B>TreeCellRenderer</B> {
+&nbsp;&nbsp;&nbsp; public Component <B>getTreeCellRendererComponent</B>(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; JTree tree, Object value, boolean selected,&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; boolean expanded, boolean leaf, int <B>row</B>,&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; boolean hasFocus) {</PRE></TD>
+</TR>
+</TABLE>
+
+<P>Accomplishing all of this requires several distinct steps that I will discuss in successive code fragments. </P>
+<P>The first step is to invoke the <B>getPathForRow()</B> method on the <B>JTree</B> object which uses the row value to get the path from the root to the node on that row as an object of type <B>TreePath</B>. <BR>
+&nbsp; </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; TreePath <B>thePath</B> = tree.<B>getPathForRow</B>(row);</PRE></TD>
+</TR>
+</TABLE>
+
+<P>Once I have the path, assuming that is isn't null, I can invoke the <B>getLastPathComponent()</B> method on the <B>TreePath</B> object to get the node at the end of the path. </P>
+<P>Sometimes this method gets called by the system with a null value for the path.&nbsp; I'm not certain why this is, but I don't believe that I have any control over it.&nbsp; Therefore, I must protect against that possibility by testing the path for null before trying to use it. <BR>
+&nbsp; </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <B>if</B>(thePath != null){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DefaultMutableTreeNode <B>theNode</B> =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (DefaultMutableTreeNode)thePath.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <B>getLastPathComponent</B>();</PRE></TD>
+</TR>
+</TABLE>
+
+<P>Once I have the node, I use it as a key to access my hashtable and obtain the index needed to retrieve the rendering information for that node from the array that contains it.&nbsp; Recall that what I actually get from the hashtable is a reference to an object of type <B>Integer</B>.&nbsp; I must invoke the <B>intValue()</B> method on that object to get the actual index value. </P>
+<P>Following this, I use the index to access the array named <B>data</B> from which I extract an object that contains the required <B>JLabel</B> object and some other information as well.&nbsp; I pull out the <B>JLabel</B> and return it.&nbsp; The system then uses this <B>JLabel</B> object to render the node in the drawing. <BR>
+&nbsp; </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int <B>theProperDataID</B> =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ((Integer)theHashtable.<B>get(theNode)</B>).<B>intValue()</B>;
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <B>return data[theProperDataID].theJLabel</B>;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end if</PRE></TD>
+</TR>
+</TABLE>
+
+<P>As mentioned earlier, sometimes the system calls this method with a null value for the path.&nbsp; When that happens, I simply return a dummy <B>JLabel</B> object as shown below. <BR>
+&nbsp; </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; else return <B>new JLabel("Dummy")</B>;
+
+&nbsp;&nbsp;&nbsp; }//end getTreeCellRendererComponent()
+&nbsp; }//end inner class CellRenderer</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The next fragment is similar to, but somewhat less complicated than the previous one.&nbsp; This fragment begins the discussion of the class from which <B>TreeSelectionListener</B> objects are instantiated. </P>
+<P>The <B>TreeSelectionListener</B> interface declares a method named <B>valueChanged()</B> that must be defined in any method that implements the interface.&nbsp; This is standard <I>Delegation Event Model</I> material, so there should be no surprises here. </P>
+<P>The complexity comes from the fact that once again, it is necessary to identify the node that was selected in order to accomplish the desired objective.&nbsp; The objective is to replace the blue ball image with a red ball image the first time that the leaf node is selected.&nbsp; It's a little simpler this time than before. </P>
+<P>The incoming object of type <B>TreeSelectionEvent</B> contains the path to the node, so all that is required is to invoke the <B>getPath()</B> method on the event object and invoke the <B>getLastPathComponent()</B> method on the path to get the node.&nbsp; Then, as before, I use the node to access the index value from the hashtable.&nbsp; All of this is shown in the following fragment. <BR>
+&nbsp; </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>&nbsp; class MyTreeListener implements <B>TreeSelectionListener</B>{
+&nbsp;&nbsp;&nbsp; public void <B>valueChanged</B>(<B>TreeSelectionEvent</B> e) {
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DefaultMutableTreeNode theNode =
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (DefaultMutableTreeNode)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (e.getPath().<B>getLastPathComponent()</B>);
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int theProperDataID =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ((Integer)theHashtable.<B>get(theNode)</B>).intValue();</PRE></TD>
+</TR>
+</TABLE>
+
+<P>If the node is a leaf, the code in the following fragment uses the index value to access the data array to replace the blue ball image with a red ball image.&nbsp; This is accomplished by invoking the <B>setIcon()</B> method on the <B>JLabel</B>.&nbsp; (You will probably be using different images, but you can use the same variable names to reference them.) </P>
+<P>Then the <B>invalidate()</B> method is invoked to force the entire tree to be redrawn so that the new image will become visible. <BR>
+&nbsp; </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (theNode.isLeaf()) {
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; data[theProperDataID].theJLabel.<B>setIcon</B>(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new ImageIcon(selectedImage));
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <B>invalidate()</B>;</PRE></TD>
+</TR>
+</TABLE>
+
+<P>I have one thing remaining to be done in this method, and that is to perform some kind of action related to the selection of the node.&nbsp; In this sample program, all that I do is to display a message on the bottom of the frame identifying the leaf that was selected.&nbsp; In your program designed to accomplish some useful objective, you would probably put the code to accomplish that objective in the next fragment. <BR>
+&nbsp; </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; display.<B>setText</B>(data[theProperDataID].
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <B>theSupplementalInfo</B>);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end if
+&nbsp;&nbsp;&nbsp; }//end valueChanged() method
+&nbsp; }//end inner class MyTreeListener</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The next fragment is the class from which the <B>JPanel</B> containing the tree in a scrollable pane is instantiated.&nbsp; The constructor receives a reference to the root object of the tree, along with a reference to the <B>TreeCellRenderer</B> object.&nbsp; These two references are used to instantiate a new object of type <B>JTree</B> and set the cell renderer for that tree to the renderer object received as a parameter. </P>
+<P>Following this, I do some utility things as described in the comments.&nbsp; You can view the code for these actions in the full listing of the program that follows later. <BR>
+&nbsp; </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>&nbsp; class TreePanel extends JPanel {
+&nbsp;&nbsp;&nbsp; public TreePanel(TreeNode root,&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; TreeCellRenderer renderer){
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <B>tree = new JTree(root);
+</B>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <B>tree.setCellRenderer(renderer);
+
+</B>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Put the tree in a scrollable pane
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Set the look and feel to emulate Windows
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Set to BorderLayout
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Expand the tree
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Code omitted for brevity
+&nbsp;&nbsp;&nbsp; }//end constructor
+&nbsp; }//end inner class TreePanel</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The next code fragment contains part of the code used to construct the object containing an array of objects, each of which contains rendering information for a particular node plus supplemental information for that node. </P>
+<P>The <B>getData()</B> method of this class searches for a specific file on the disk containing historical data about the tree from previous runs.&nbsp; If the file is located, it is read using object serialization and becomes the starting data for the new run. </P>
+<P>If the file is not located, a new set of initialized data is created. </P>
+<P>Note that this class implements <B>Serializable</B> to make it possible to serialize an object of this type and write it to the disk. </P>
+<P>This code is pretty straightforward, so I won't have much to say about it.&nbsp; If you haven't seen object serialization in action, you might want to pay particular attention to that part of the code.&nbsp; As is usually the case in Java I/O, this entails wrapping objects in objects that are wrapped in objects, etc. </P>
+<P>Once the <B>ObjectInputStream</B> is available, you simply invoke the <B>readObject()</B> method on the stream to read, de-serialize, and reconstruct the entire object.&nbsp; I have noticed that there appears to be some degree of size bloat when using object serialization.&nbsp; Generally speaking, the disk files produced by object serialization generally tend to be much larger than would be required to store the same amount of data in a more conventional manner. <BR>
+&nbsp; </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>&nbsp; class MyData implements Serializable{
+&nbsp;&nbsp;&nbsp; //Instantiate an array of objects of type TheData
+&nbsp;&nbsp;&nbsp; TheData[] theData = new TheData[numberRows];
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; TheData[] <B>getData</B>(){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Attempt to find and read "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + historyFile);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(new File(historyFile).exists()){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("File exists, read it");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; try{//try to read the file as a serialized object
+<B>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ObjectInputStream in = new ObjectInputStream(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new FileInputStream(historyFile));
+</B>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; myData = (MyData)in.<B>readObject</B>();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Read completed");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; return myData.theData;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }catch(Exception e){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; e.printStackTrace();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Aborting program");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.exit(0);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end catch</PRE></TD>
+</TR>
+</TABLE>
+
+<P>If the historical data file doesn't exist, a new set of data is created by the following code.&nbsp; This code is very repetitious, so I omitted most of it.&nbsp; You can view it in the program listing later. </P>
+<P>This code populates an array of objects in an object of type <B>TheData</B>.&nbsp; (You can view the definition of the class named <B>TheData</B> in the program listing.)&nbsp; Each object in the array corresponds to one node, and contains a <B>JLabel</B> and a <B>String</B>.&nbsp; The <B>JLabel</B> contains a text label for all nodes, and contains an image for the leaf nodes.&nbsp; The <B>String</B> contains some supplemental information for the node that is displayed when the node is selected. </P>
+<P>As of JDK 1.1.6 and Swing 1.0.3, some of the labels in the <B>JLabel</B> objects are truncated and replaced by ... when they are displayed in the tree.&nbsp;&nbsp; As I mentioned earlier, I don't know why this happens.&nbsp; Sometimes, but not always, it is possible to minimize this effect by inserting extra spaces to cause the label to be longer than required.&nbsp; That is the reason for all of the extra spaces in the strings in this code. <BR>
+&nbsp; </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }<B>else
+</B>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(historyFile&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + " doesn't exist, create it");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theData[0] = new TheData(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "----------------SAMPLE TREE-----------------","");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theData[1] = new TheData("Vegetables&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ","");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theData[2] = new TheData("Cabbage",
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Selected Cabbage");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theData[2].theJLabel.setIcon(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new ImageIcon(unSelectedImage));
+
+//omit most of the code here
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theData[18] = new TheData(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Orange","Selected Orange");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theData[18].theJLabel.setIcon(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new ImageIcon(unSelectedImage));
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; return theData;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; }//end method getData()
+&nbsp; }//end class MyData</PRE></TD>
+</TR>
+</TABLE>
+
+<P>&nbsp;</P>
+<FONT COLOR="#ff0000"><H3 ALIGN="CENTER"><A NAME="Program_Listing"></A>Program Listing</H3>
+</FONT><P>This section contains a complete listing of the program.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Tree06.java
+Revised 9/27/98
+
+This program has a problem some of the labels being
+chopped off.&nbsp; Some newsgroup articles indicate that this
+may be a bug in the JDK or the Swing library.
+
+This program provides a simple-minded approach to creating
+and maintaining a tree structure using the Swing JTree.
+
+The program doesn't make any explicit use of the Swing
+model concept.
+
+The program creates a tree that has a Windows look and&nbsp;
+feel.&nbsp; The tree can be collapsed and expanded by clicking
+on the + and - boxes in the typical Windows Explorer style.
+
+Each leaf on the tree has both an icon and a label.&nbsp; When
+a leaf is selected, the icon changes to indicate that it
+has been selected.&nbsp; When the program terminates, a history
+file is created and saved containing the state of each
+leaf.&nbsp; When the program is restarted, the history file
+is read and used to restore the state of each leaf to its
+previous value.
+
+Object serialization is used to save and restore the
+history data file.
+
+When a leaf is selected, an event is generated and handled
+to cause the identification of the leaf that was selected
+to appear on the bottom of the JFrame containing the&nbsp;
+tree.
+
+Tested using JDK 1.1.6 and Swing 1.0.3 under Win95.
+**********************************************************/
+
+import java.io.*;
+import java.util.*;
+import java.awt.*;
+import java.awt.event.*;
+import com.sun.java.swing.*;
+import com.sun.java.swing.tree.*;
+import com.sun.java.swing.event.*;
+
+//=======================================================//
+public class Tree06 extends JFrame{
+&nbsp; //The following hashtable is used to maintain a link
+&nbsp; // between the nodes/leaves in the tree and the JLabel
+&nbsp; // object that is used to render them.&nbsp;&nbsp;
+&nbsp; Hashtable theHashtable = new Hashtable();
+&nbsp;&nbsp;
+&nbsp; //The following object is used to display the selection
+&nbsp; // at the bottom of the JFrame object
+&nbsp; JLabel display = new JLabel("Display Selection Here");
+
+&nbsp; //Paths and filenames.&nbsp; Modify as you see fit.
+&nbsp; String historyFile = "/jnk/junk.dat";
+&nbsp; //Following image displayed when leaf is not selected
+&nbsp; String unSelectedImage = "blue-ball.gif";
+&nbsp; //Following image displayed when leaf is selected
+&nbsp; String selectedImage = "red-ball.gif";
+&nbsp;&nbsp;
+&nbsp; //Absolute coordinate info in pixels.
+&nbsp; int frameWidth = 350;
+&nbsp; int frameHeight = 350;
+&nbsp;&nbsp;
+&nbsp; //The number of rows in the tree when it is fully
+&nbsp; // expanded
+&nbsp; int numberRows = 19;
+
+&nbsp; //Reference to the JTree object
+&nbsp; JTree tree;
+&nbsp;&nbsp;
+&nbsp; //The following object of type MyData contains an array
+&nbsp; // of objects of type TheData.&nbsp; Each of these objects&nbsp;
+&nbsp; // represents a node in the tree.&nbsp; Each object contains
+&nbsp; // two instance variables:&nbsp; a JLabel object that contains
+&nbsp; // the text and icon for a node, and a String that
+&nbsp; // contains the supplementary information to be accessed
+&nbsp; // when that node is selected.&nbsp; This object is written
+&nbsp; // to disk when the user terminates the program, and is
+&nbsp; // read from the disk when the user starts the program.
+&nbsp; // If a file containing the object doesn't exist when the
+&nbsp; // program is started, a new object is created with
+&nbsp; // initialized data.
+&nbsp; MyData myData;
+
+&nbsp;&nbsp;
+&nbsp; //The following is a reference to the array contained
+&nbsp; // in the object described above.
+&nbsp; TheData[] data;
+
+&nbsp;&nbsp;
+&nbsp; //The following is a reference to a panel which contains
+&nbsp; // the tree.
+&nbsp; TreePanel treePanel;
+&nbsp;&nbsp;
+&nbsp; //The following is a reference to a class which is used
+&nbsp; // to cause the look &amp; feel of the program to emulate
+&nbsp; // Windows.&nbsp; This is necessary to get the + and - boxes
+&nbsp; // that are used to expand and collapse the nodes in
+&nbsp; // the tree. Otherwise, the tree would default to the
+&nbsp; // metal look and feel with buttons instead of + and -
+&nbsp; // boxes.
+&nbsp; String plafClassName&nbsp;
+&nbsp;&nbsp;&nbsp; = "com.sun.java.swing.plaf.windows.WindowsLookAndFeel";
+&nbsp;&nbsp;
+&nbsp; //-----------------------------------------------------//
+
+&nbsp; //The following main method that can be used to test&nbsp;
+&nbsp; // this class on a stand-alone basis.
+&nbsp; public static void main(String args[]) {
+&nbsp;&nbsp;&nbsp; //Instantiate the top-level JFrame object.
+&nbsp;&nbsp;&nbsp; new Tree06();
+&nbsp; }//end main
+&nbsp; //-----------------------------------------------------//
+
+&nbsp; public Tree06 () {//constructor
+&nbsp;&nbsp;&nbsp; setTitle("Copyright 1998, R.G.Baldwin");&nbsp;&nbsp;
+
+&nbsp;&nbsp;&nbsp; //Create new data object, or get historical data object
+&nbsp;&nbsp;&nbsp; // from disk. Put references to the object and the
+&nbsp;&nbsp;&nbsp; // data array contained in that object in variables
+&nbsp;&nbsp;&nbsp; // for later access.
+&nbsp;&nbsp;&nbsp; myData = new MyData();//ref to object containing array
+&nbsp;&nbsp;&nbsp; data = myData.getData();//ref to the array
+
+&nbsp;&nbsp;&nbsp; // Create an array of references to tree nodes.&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; DefaultMutableTreeNode[] theTreeNodes =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new DefaultMutableTreeNode[numberRows];
+&nbsp;&nbsp;&nbsp; for(int cnt = 0; cnt &lt; numberRows; cnt++){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theTreeNodes[cnt] = new DefaultMutableTreeNode("");
+&nbsp;&nbsp;&nbsp; }//end for loop
+
+&nbsp;&nbsp;&nbsp; //Construct the tree using the nodes created above.
+&nbsp;&nbsp;&nbsp; // These statements establish ParentChild relationships
+&nbsp;&nbsp;&nbsp; // among the nodes.
+&nbsp;&nbsp;&nbsp; theTreeNodes[0].add(theTreeNodes[1]);
+&nbsp;&nbsp;&nbsp; theTreeNodes[1].add(theTreeNodes[2]);
+&nbsp;&nbsp;&nbsp; theTreeNodes[1].add(theTreeNodes[3]);
+&nbsp;&nbsp;&nbsp; theTreeNodes[1].add(theTreeNodes[4]);
+&nbsp;&nbsp;&nbsp; theTreeNodes[0].add(theTreeNodes[5]);
+&nbsp;&nbsp;&nbsp; theTreeNodes[5].add(theTreeNodes[6]);
+&nbsp;&nbsp;&nbsp; theTreeNodes[6].add(theTreeNodes[7]);
+&nbsp;&nbsp;&nbsp; theTreeNodes[6].add(theTreeNodes[8]);
+&nbsp;&nbsp;&nbsp; theTreeNodes[6].add(theTreeNodes[9]);
+&nbsp;&nbsp;&nbsp; theTreeNodes[5].add(theTreeNodes[10]);
+&nbsp;&nbsp;&nbsp; theTreeNodes[10].add(theTreeNodes[11]);
+&nbsp;&nbsp;&nbsp; theTreeNodes[10].add(theTreeNodes[12]);
+&nbsp;&nbsp;&nbsp; theTreeNodes[10].add(theTreeNodes[13]);
+&nbsp;&nbsp;&nbsp; theTreeNodes[0].add(theTreeNodes[14]);
+&nbsp;&nbsp;&nbsp; theTreeNodes[14].add(theTreeNodes[15]);
+&nbsp;&nbsp;&nbsp; theTreeNodes[14].add(theTreeNodes[16]);
+&nbsp;&nbsp;&nbsp; theTreeNodes[14].add(theTreeNodes[17]);
+&nbsp;&nbsp;&nbsp; theTreeNodes[14].add(theTreeNodes[18]);
+
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Load the hash table with keys corresponding to
+&nbsp;&nbsp;&nbsp; // each of the nodes in the above array and values
+&nbsp;&nbsp;&nbsp; // which are Integer objects containing the int values
+&nbsp;&nbsp;&nbsp; // from 0 through numberRows-1.&nbsp; Later, when it is
+&nbsp;&nbsp;&nbsp; // time to render a node or a leaf, the hashcode of
+&nbsp;&nbsp;&nbsp; // the node to be rendered will be obtained, that
+&nbsp;&nbsp;&nbsp; // hashcode will be used to determine the corresponding
+&nbsp;&nbsp;&nbsp; // int value, and the int value will be used to index
+&nbsp;&nbsp;&nbsp; // into an array containing the JLabel object to be
+&nbsp;&nbsp;&nbsp; // used to render the node.&nbsp; This is one way to deal
+&nbsp;&nbsp;&nbsp; // with the problem of the row numbers changing when
+&nbsp;&nbsp;&nbsp; // the tree is collapsed.
+&nbsp;&nbsp;&nbsp; for(int cnt = 0; cnt &lt; numberRows; cnt++){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theHashtable.put(theTreeNodes[cnt],new Integer(cnt));
+&nbsp;&nbsp;&nbsp; }//end for loop
+
+&nbsp;&nbsp;&nbsp; //Get a cell renderer object that is used to render the
+&nbsp;&nbsp;&nbsp; // image and label for each node.&nbsp; This CellRenderer&nbsp;
+&nbsp;&nbsp;&nbsp; // object is designed to cause each node to consist of&nbsp;
+&nbsp;&nbsp;&nbsp; // a JLabel which can contain both a String and an&nbsp;
+&nbsp;&nbsp;&nbsp; // image icon.
+&nbsp;&nbsp;&nbsp; CellRenderer cell = new CellRenderer();
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Pass the CellRenderer object along with the root node
+&nbsp;&nbsp;&nbsp; // to the constructor for a TreePanel object.&nbsp; This&nbsp;
+&nbsp;&nbsp;&nbsp; // will construct a JTree object in a scrollpane in
+&nbsp;&nbsp;&nbsp; // a JPanel container.
+&nbsp;&nbsp;&nbsp; treePanel = new TreePanel(theTreeNodes[0], cell);
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Instantiate a TreeSelectionListener object and&nbsp;
+&nbsp;&nbsp;&nbsp; // register it to listen for events caused by the user
+&nbsp;&nbsp;&nbsp; // selecting a node in the tree with the mouse or the&nbsp;
+&nbsp;&nbsp;&nbsp; // arrow keys.&nbsp; An event is processed each time the&nbsp;
+&nbsp;&nbsp;&nbsp; // user selects a different node.&nbsp; Note that nodes that
+&nbsp;&nbsp;&nbsp; // were previously selected can be selected again if&nbsp;
+&nbsp;&nbsp;&nbsp; // another node is selected in between.&nbsp; However, once
+&nbsp;&nbsp;&nbsp; // the icon on a node is modified to indicate that the
+&nbsp;&nbsp;&nbsp; // node has been selected, it does not change back if
+&nbsp;&nbsp;&nbsp; // the node is selected again. (It wouldn't be&nbsp;
+&nbsp;&nbsp;&nbsp; // difficult, however to cause it to toggle.)
+&nbsp;&nbsp;&nbsp; tree.addTreeSelectionListener(new MyTreeListener());
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Display the TreePanel object in the top-level frame.
+&nbsp;&nbsp;&nbsp; Container content = getContentPane();
+&nbsp;&nbsp;&nbsp; content.add(treePanel,BorderLayout.CENTER);
+
+&nbsp;&nbsp;&nbsp; //Place a JLabel at the bottom of the JFrame to display
+&nbsp;&nbsp;&nbsp; // the identity of the node that is selected.
+&nbsp;&nbsp;&nbsp; content.add(display,BorderLayout.SOUTH);
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Set the size of the frame and make it visible.
+&nbsp;&nbsp;&nbsp; setSize(frameWidth, frameHeight);
+&nbsp;&nbsp;&nbsp; setVisible(true);
+
+&nbsp;&nbsp;&nbsp; //An anonymous inner class to terminate the program
+&nbsp;&nbsp;&nbsp; // and save the history file when the
+&nbsp;&nbsp;&nbsp; // user clicks the close button on the frame.&nbsp;
+&nbsp;&nbsp;&nbsp; // The data is saved using object serialization.
+&nbsp;&nbsp;&nbsp; this.addWindowListener(new WindowAdapter() {
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; public void windowClosing(WindowEvent e) {
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Write historical data to disk
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Writing " + historyFile);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ObjectOutputStream out =
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new ObjectOutputStream(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new FileOutputStream(historyFile));
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; out.writeObject(myData);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; out.close();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }catch(Exception ex){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ex.printStackTrace();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end catch block
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.exit(0);}//terminate the program
+&nbsp;&nbsp;&nbsp; });
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp; }//end constructor
+&nbsp; //=====================================================//
+
+&nbsp; //This is an inner class that instantiates a CellRenderer
+&nbsp; // object.&nbsp; In this case, it returns a reference to a
+&nbsp; // JLabel object from an array containing references to
+&nbsp; // JLabel objects.&nbsp; The ID of the node to be
+&nbsp; // rendered is obtained.&nbsp; This ID is used to access
+&nbsp; // a hashtable that associates node hashcodes with int
+&nbsp; // values.&nbsp; The int value is obtained and used to index
+&nbsp; // into an array containing the objects that are used to
+&nbsp; // render the nodes.&nbsp; This approach eliminates problems
+&nbsp; // that occur when relying on the row value (which&nbsp;
+&nbsp; // changes when the tree is collapsed) to index&nbsp;
+&nbsp; // the array.
+&nbsp;&nbsp;&nbsp;
+&nbsp; private class CellRenderer implements TreeCellRenderer {
+&nbsp;&nbsp;&nbsp; //The following method is declared in the interface and
+&nbsp;&nbsp;&nbsp; // must be defined here.&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; public Component getTreeCellRendererComponent(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; JTree tree, Object value, boolean selected,&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; boolean expanded, boolean leaf, int row,&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; boolean hasFocus) {
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Use the row value to get the path to the node
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // to be rendered.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; TreePath thePath = tree.getPathForRow(row);
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Use the path to get the node, and use the ID
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // of the node as a hashtable key to get the int&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // value required to index the array discussed above.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // Note that the int values are stored in the&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // hashtable as Integer objects and therefore must
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // be extracted from those objects using intValue().
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(thePath != null){//sometimes it is null
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DefaultMutableTreeNode theNode =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (DefaultMutableTreeNode)thePath.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; getLastPathComponent();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int theProperDataID =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ((Integer)theHashtable.get(theNode)).intValue();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Access the data array, get and return the JLabel
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // contained in the object referenced in that&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // array.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; return data[theProperDataID].theJLabel;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end if
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Sometimes this method is called with a null path
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // but I don't know why.&nbsp; In that case, return a&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // dummy JLabel.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; else return new JLabel("Dummy");
+
+&nbsp;&nbsp;&nbsp; }//end getTreeCellRendererComponent()
+&nbsp; }//end inner class CellRenderer
+&nbsp; //=====================================================//
+
+&nbsp; //This inner class is used to instantiate a&nbsp;
+&nbsp; // TreeSelectionListener object and register it on the
+&nbsp; // JTree object.&nbsp; The method in this object is invoked
+&nbsp; // whenever the user selects a new node in the tree.
+&nbsp; // A previously-selected node can be selected again if
+&nbsp; // another node is selected in between.&nbsp; The first time
+&nbsp; // a node is selected, an image of a red ball replaces
+&nbsp; // an image of a blue ball that was placed on the node
+&nbsp; // when it was originally instantiated.&nbsp; Selecting the
+&nbsp; // node again does not change it back to a blue ball,
+&nbsp; // but it wouldn't be too difficult to cause it to
+&nbsp; // toggle between the two.
+
+&nbsp; class MyTreeListener implements TreeSelectionListener{
+&nbsp;&nbsp;&nbsp; public void valueChanged(TreeSelectionEvent e) {
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Get the node that was selected.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DefaultMutableTreeNode theNode =
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (DefaultMutableTreeNode)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (e.getPath().getLastPathComponent());
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Use the node as the key and go to the hashtable to&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // get the index of the element in the data array&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // that corresponds to the node.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int theProperDataID =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ((Integer)theHashtable.get(theNode)).intValue();
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //If the node is a leaf, change the image for that&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // node from a blue ball to a red ball in the data
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // array.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (theNode.isLeaf()) {
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; data[theProperDataID].theJLabel.setIcon(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new ImageIcon(selectedImage));
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Force a redraw to cause the red ball to be
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // displayed.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; invalidate();
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%//
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //This is the place to insert any code that should
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // be executed when the user selects a node.&nbsp; In
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // this sample program, the action is to simply to
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // display information about the node in a JLabel
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // at the bottom of the frame.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; display.setText(data[theProperDataID].
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theSupplementalInfo);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%//
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end if
+&nbsp;&nbsp;&nbsp; }//end valueChanged() method
+&nbsp; }//end inner class MyTreeListener
+&nbsp; //=====================================================//
+&nbsp;&nbsp;
+&nbsp; //This inner class is used to instantiate the actual
+&nbsp; // JTree object and place it in a scrollable pane in a
+&nbsp; // JPanel container.&nbsp; The JPanel can then be placed in&nbsp;
+&nbsp; // any other container.
+
+&nbsp; class TreePanel extends JPanel {
+&nbsp;&nbsp;&nbsp; public TreePanel(TreeNode root,&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; TreeCellRenderer renderer){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; setLayout(new BorderLayout());
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Create tree
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; tree = new JTree(root);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Specify the cell renderer to be used whenever the
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // system needs to redraw the tree.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; tree.setCellRenderer(renderer);
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // Put the tree in a scrollable pane and add the
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // scrollable pane to the JPanel container.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; JScrollPane sp = new JScrollPane();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; sp.getViewport().add(tree);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; add(sp, BorderLayout.CENTER);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Set the look and feel to emulate Windows
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; UIManager.setLookAndFeel(plafClassName);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }catch(Exception ex){System.out.println(ex);}
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; SwingUtilities.updateComponentTreeUI(this);
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Expand the tree
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for(int cnt = 0; cnt &lt; numberRows; cnt++){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; tree.expandRow(cnt);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end for loop
+&nbsp;&nbsp;&nbsp; }//end constructor
+&nbsp; }//end inner class TreePanel
+&nbsp; //=====================================================//
+
+&nbsp; //Inner class to construct a data object containing the
+&nbsp; // text for each node, the icon for each node, and the
+&nbsp; // supplementary information associated with each node.
+&nbsp; // The getData method of this class searches for a
+&nbsp; // specific disk file containing historical&nbsp;
+&nbsp; // tree-navigation data, and returns an object from
+&nbsp; // that file if it exists.&nbsp; Object serialization&nbsp;
+&nbsp; // is used to retrieve the object from the disk file.
+&nbsp; // Otherwise, it constructs a new object and returns the
+&nbsp; // array that it contains.&nbsp;&nbsp;
+&nbsp; class MyData implements Serializable{
+&nbsp;&nbsp;&nbsp; //Instantiate an array of objects of type TheData
+&nbsp;&nbsp;&nbsp; TheData[] theData = new TheData[numberRows];
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; TheData[] getData(){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Test for the disk file containing the historical
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // data here.&nbsp; If it exists, read and return it.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // Otherwise, create a new initial set of data.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Attempt to find and read "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + historyFile);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(new File(historyFile).exists()){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("File exists, read it");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; try{//try to read the file as a serialized object
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ObjectInputStream in = new ObjectInputStream(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new FileInputStream(historyFile));
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; myData = (MyData)in.readObject();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Read completed");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; return myData.theData;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }catch(Exception e){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; e.printStackTrace();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Aborting program");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.exit(0);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end catch
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }else
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Historical data file doesn't exist, create it.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // Initialize text data and initialize the icon
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // to the unselected image for each leaf node.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // As of JDK 1.1.6 and Swing 1.0.3, some of the
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // labels on the JLable object are truncated and
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // replaced by ...&nbsp; Sometimes, but not always, it is
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // possible to minimize this by inserting spaces to
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // cause the label to be longer than required.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(historyFile&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + " doesn't exist, create it");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theData[0] = new TheData(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "----------------SAMPLE TREE-----------------","");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theData[1] = new TheData("Vegetables&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ","");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theData[2] = new TheData("Cabbage",
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Selected Cabbage");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theData[2].theJLabel.setIcon(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new ImageIcon(unSelectedImage));
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theData[3] = new TheData("Squash","Selected Squash");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theData[3].theJLabel.setIcon(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new ImageIcon(unSelectedImage));
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theData[4] = new TheData("Onion","Selected Onion");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theData[4].theJLabel.setIcon(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new ImageIcon(unSelectedImage));
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theData[5] = new TheData(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Animals&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ","");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theData[6] = new TheData(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Forrest&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ","");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theData[7] = new TheData("Squirrel",
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Selected Squirrel");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theData[7].theJLabel.setIcon(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new ImageIcon(unSelectedImage));
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theData[8] = new TheData("Rabbit","Selected Rabbit");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theData[8].theJLabel.setIcon(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new ImageIcon(unSelectedImage));
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theData[9] = new TheData("Fox","Selected Fox");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theData[9].theJLabel.setIcon(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new ImageIcon(unSelectedImage));
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theData[10] = new TheData(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Farm&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ","");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theData[11] = new TheData("Horse","Selected Horse");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theData[11].theJLabel.setIcon(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new ImageIcon(unSelectedImage));
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theData[12] = new TheData("Pig","Selected Pig");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theData[12].theJLabel.setIcon(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new ImageIcon(unSelectedImage));
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theData[13] = new TheData("Cow","Selected Cow");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theData[13].theJLabel.setIcon(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new ImageIcon(unSelectedImage));
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theData[14] = new TheData(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Fruit&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ","");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theData[15] = new TheData(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Peach","Selected Peach");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theData[15].theJLabel.setIcon(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new ImageIcon(unSelectedImage));
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theData[16] = new TheData("Grape","Selected Grape");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theData[16].theJLabel.setIcon(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new ImageIcon(unSelectedImage));
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theData[17] = new TheData("Apple","Selected Apple");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theData[17].theJLabel.setIcon(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new ImageIcon(unSelectedImage));
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theData[18] = new TheData(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Orange","Selected Orange");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theData[18].theJLabel.setIcon(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new ImageIcon(unSelectedImage));
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; return theData;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; }//end method getData()
+&nbsp; }//end class MyData
+&nbsp; //===================================================//
+
+&nbsp; //The following inner class is used to create an object
+&nbsp; // in which to maintain the JLabel and the
+&nbsp; // supplementary information for each node in the tree.
+&nbsp; class TheData implements Serializable{
+&nbsp;&nbsp;&nbsp; JLabel theJLabel = new JLabel();
+&nbsp;&nbsp;&nbsp; String theSupplementalInfo;
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //constructor
+&nbsp;&nbsp;&nbsp; TheData(String theLabel,String theSupplementalInfo){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; this.theJLabel.setText(theLabel);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; this.theSupplementalInfo = theSupplementalInfo;
+&nbsp;&nbsp;&nbsp; }//end constructor
+&nbsp; }//end class TheData
+&nbsp; //=====================================================//
+
+}//end class Tree06</PRE></TD>
+</TR>
+</TABLE>
+
+<P>-end- <!--end--></P></BODY>
+</HTML>

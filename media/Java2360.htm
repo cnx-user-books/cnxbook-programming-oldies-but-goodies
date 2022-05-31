@@ -1,0 +1,1707 @@
+<!DOCTYPE doctype PUBLIC "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+  <meta http-equiv="Content-Type"
+ content="text/html; charset=iso-8859-1">
+  <title>... in Java by Richard G Baldwin</title>
+</head>
+<body link="#0000ff" vlink="#666666" alink="#ff0000" lang="EN-US">
+<h2 align="center">Adaptive Noise Cancellation using Java </h2>
+<i>Learn how to use a general-purpose 
+<a href="http://cnx.rice.edu/content/m11829/latest/">LMS</a> 
+adaptive engine to write a Java program that illustrates the use of adaptive 
+filtering for noise cancellation.</i><p><b>Published:</b>&nbsp; April 18, 2006<br>
+<b>by <a href="mailto:Baldwin@DickBaldwin.com">Richard G. Baldwin</a></b>
+</p>
+<p>Java Programming Notes # 2360</p>
+<ul>
+  <li> <a href="#Preface">Preface</a></li>
+  <li> <a href="#General%20Background%20Information">General
+Background Information</a></li>
+  <li> <a href="#Preview">Preview</a></li>
+	<li> <a href="#Experimental_Results">Experimental Results</a></li>
+  <li> <a href="#Discussion%20and%20Sample%20Programs">Discussion and
+Sample Code</a></li>
+  <li> <a href="#Run%20the%20program">Run the Program</a></li>
+  <li> <a href="#Summary">Summary</a></li>
+  <li> <a href="#Whats%20Next">What's Next?</a></li>
+	<li> <a href="#References">References</a></li>
+  <li> <a href="#Complete%20Program%20Listings">Complete Program
+Listings</a></li>
+</ul>
+<hr size="3" width="100%" >
+
+<h2 align="center"> <a name="Preface"></a>Preface</h2>
+
+<p align="left"><font color="#ff0000"><b>DSP and adaptive filtering</b></font></p>
+
+<p align="left">With the decrease in cost and the increase in speed of digital 
+devices, Digital Signal Processing <i>(<a href="http://www.dickbaldwin.com/tocdsp.htm">DSP</a>)</i> 
+is showing up in everything from cell phones to hearing aids to rock concerts.&nbsp; 
+Many applications of DSP are static.&nbsp; That is, the characteristics of the 
+digital processor don't change with time or circumstances.&nbsp; However, a 
+particularly interesting branch of DSP is <i>adaptive filtering.</i>&nbsp; This is a 
+scenario where the characteristics of the digital processor change with time, 
+circumstances, or both.</p>
+
+<p align="left"><font color="#FF0000"><b>Sixth</b></font><font color="#ff0000"><b> 
+in a series</b></font></p>
+
+<p align="left">This is the sixth lesson in a series designed to teach you 
+about adaptive filtering in Java.&nbsp; The first lesson, entitled
+<a href="http://www.developer.com/java/other/article.php/3549991">Adaptive 
+Filtering in Java, Getting Started</a>, introduced you to the topic by showing 
+you how to write a Java program to adaptively design a time-delay convolution 
+filter with a flat amplitude response and a linear phase response using an 
+<a href="http://cnx.rice.edu/content/m11829/latest/">LMS</a> 
+adaptive algorithm.</p>
+<p align="left"><font color="#FF0000"><b>A general-purpose adaptive engine</b></font></p>
+<p align="left">The third lesson in the series, entitled 
+<a href="http://www.developer.com/java/other/article.php/3566951">A 
+General-Purpose LMS Adaptive Engine in Java</a>, presented and explained a general-purpose
+<a href="http://cnx.rice.edu/content/m11829/latest/">LMS</a> adaptive engine 
+written in Java.&nbsp; That engine can be used to solve a wide variety of 
+adaptive problems.</p>
+<p align="left"><font color="#FF0000"><b>Adaptive identification and inverse 
+filtering</b></font></p>
+<p align="left">The previous lesson entitled 
+<a href="http://www.developer.com/java/other/article.php/3583241">Adaptive Identification and 
+Inverse Filtering using Java</a> showed you how to accomplish the first two items in 
+the following list of common applications of adaptive filtering:</p>
+<ul>
+	<li>System Identification</li>
+	<li>Inverse System Identification</li>
+	<li>Noise Cancellation</li>
+	<li>Prediction</li>
+</ul>
+<p><font color="#FF0000"><b>Adaptive noise cancellation</b></font></p>
+<p>This lesson presents and explains a program named <b>Adapt08</b>, which 
+demonstrates the use of adaptive filtering for the third item in the above list, <i>Noise Cancellation</i>.&nbsp; 
+A future lesson will deal with the last item in the above list, <i>Prediction</i>.</p>
+
+<p> <b><font color="#ff0000">Viewing tip</font></b> </p>
+<p>You may find it useful to open another copy of this lesson in a
+separate browser window.&nbsp; That will make it easier for you to
+scroll back
+and forth among the different listings and figures while you are
+reading
+about them.</p>
+<p><b><font color="#ff0000">Supplementary material</font></b> </p>
+<p>I recommend that you also study the other lessons in my extensive
+collection of online Java tutorials.&nbsp; You will find those lessons
+published
+at <a href="http://softwaredev.earthweb.com/java">Gamelan.com</a>.&nbsp;
+However, as of the date of this writing, Gamelan doesn't maintain a
+consolidated index of my Java tutorial lessons, and sometimes they are
+difficult to locate there.&nbsp; You will find a consolidated index at <font
+ color="#000000"> <a href="http://www.dickbaldwin.com/">www.DickBaldwin.com</a>.</font></p>
+<p>In preparation for understanding the material in this lesson, 
+I recommend that you also study the lessons identified in the <a href="#References">
+References</a> section of this document.
+</p>
+<h2 align="center" ><font color="#000000"> <a
+ name="General Background Information">General Background Information</a></font></h2>
+<p><font color="#FF0000"><b>What is <i>adaptive noise cancellation</i>?</b></font></p>
+<p>I will explain <i>adaptive noise cancellation</i> using an example which you 
+can probably relate to.&nbsp; The sample program that I will present later is 
+designed to be consistent with this example.&nbsp; If you go to
+<a href="http://www.google.com/">Google</a> and search for the keywords <b>
+adaptive noise cancellation</b>, you will find other examples of situations 
+where adaptive noise cancellation may be of value.</p>
+<p><font color="#FF0000"><b>A concert in the park</b></font></p>
+<p>Let's assume that you are the promoter of a concert in the local park.&nbsp; 
+In addition to the live performance, you plan to record the concert and to 
+produce and sell an audio CD containing that recording.</p>
+<p><font color="#FF0000"><b>Noise from a waterfall</b></font></p>
+<p>As it turns out, there is a rather large waterfall in the park.&nbsp; The 
+waterfall emits quite a lot of acoustic noise.&nbsp; The acoustic noise emitted 
+by the waterfall has a spectrum that is generally flat across the typical audio 
+spectrum.&nbsp; Thus we would say that the waterfall emits <i>white</i> <i>noise</i>.</p>
+<p>The area of the park where the concert is to be staged is some distance from 
+the waterfall, but it is still possible to hear the waterfall on the stage where 
+the concert is to be performed.&nbsp; Thus, the performers and the spectators 
+can easily hear the waterfall.&nbsp; That means that the performer's microphones 
+will also pick up the sound of the waterfall.</p>
+<p><font color="#FF0000"><b>Waterfall sound is modified by the acoustic path</b></font></p>
+<p>The waterfall doesn't sound exactly the same when heard in the concert area 
+as it sounds when standing near the waterfall.&nbsp; That is because the 
+acoustic path between the waterfall and the concert stage contains physical 
+obstacles that either absorb or reflect the acoustic energy.&nbsp; Thus, by the 
+time the sound reaches the concert stage, it is composed of the sum of the 
+primary sound transmission plus time-delayed and attenuated echoes.&nbsp; Even 
+the primary sound transmission is delayed in time by the length of the acoustic 
+path.</p>
+<p><font color="#FF0000"><b>Need to get rid of the noise from the waterfall</b></font></p>
+<p>The sound of the waterfall in the background may be pleasing to the 
+spectators who attend the concert and commune with nature on a cool spring 
+evening.&nbsp; However, it probably wouldn't be pleasing if those sounds were 
+picked up by the performer's microphones, amplified, and broadcast through the 
+concert speaker system.</p>
+<p>Also, the sounds of the waterfall probably wouldn't be pleasing to the 
+potential customers of the CD if those sounds existed as background noise on the 
+music tracks.&nbsp; To the people who don't have an opportunity to enjoy the 
+natural setting of the concert, those sounds would probably simply be a 
+nuisance.</p>
+<p>Therefore, you give your audio engineers the task of removing the sounds of 
+the waterfall that are picked up by the performer's microphones before those 
+sounds are laid down on the recording of the concert and before they are 
+broadcast by the concert speaker system.</p>
+<p><font color="#FF0000"><b>Adaptive noise cancellation to the rescue</b></font></p>
+<p>It may be possible to accomplish this<i> Noise Cancellation </i>through the use of adaptive 
+filtering.&nbsp; 
+The assumption is that even though the sound of the waterfall as perceived in 
+the concert area is decidedly different from the sound of the waterfall near 
+the source, those sounds are correlated nonetheless.&nbsp; If that is true, 
+an adaptive noise cancellation filter can be used to remove a large portion of 
+the noise produced by the waterfall from the electronic signals produced by the performer's microphones.</p>
+<p>In order to explain how this is accomplished, I will refer you to the 
+following <a href="http://www.owlnet.rice.edu/~ryanking/elec431/intro.html">
+Block Diagram of the Adaptive System</a>, produced by
+<a href="http://www.owlnet.rice.edu/~ryanking/elec431/bios.html">three students</a> 
+at <a href="http://www.rice.edu/">Rice University</a>.</p>
+<p><b><font color="#FF0000">Correspondence between my terminology and the </font>
+<a href="http://www.owlnet.rice.edu/~ryanking/elec431/intro.html">
+<font color="#FF0000">block diagram</font></a></b></p>
+<p>In this example, the white noise emitted by the waterfall is represented by 
+the <b>Reference Signal</b> in the
+<a href="http://www.owlnet.rice.edu/~ryanking/elec431/">block diagram</a>.&nbsp; 
+The acoustic path between the waterfall and the area where the concert is to be 
+staged is represented by the dotted box containing the question mark in the
+<a href="http://www.owlnet.rice.edu/~ryanking/elec431/">block diagram</a>.&nbsp; 
+The sum of the sounds generated by the performers is represented by the <b>Primary Signal</b> 
+in the <a href="http://www.owlnet.rice.edu/~ryanking/elec431/">block diagram</a>.</p>
+<p>The natural addition of the modified waterfall noise to the sounds produced 
+by the performers is represented by the dotted circle containing the plus sign in the
+<a href="http://www.owlnet.rice.edu/~ryanking/elec431/">block diagram</a>.&nbsp; 
+In other words, the output from the performer's microphones contains the sum of 
+the sounds produced by the performers and the noise from the waterfall as 
+modified by the acoustic path between the waterfall and the stage.</p>
+<p><font color="#FF0000"><b>Relation to the adaptive engine</b></font></p>
+<p>The <b>Reference Signal</b> in the block diagram corresponds to one of 
+the two inputs to the adaptive engine that will be discussed in conjunction with 
+the program code.&nbsp; This is the input to the adaptive filter.&nbsp; This is referred to as the <b>whiteNoise</b> in the 
+program.</p>
+<p>The other input to the adaptive engine, commonly referred to as the <i>target</i>, 
+is shown as <b>d(n)</b> in the
+<a href="http://www.owlnet.rice.edu/~ryanking/elec431/">block diagram</a>.</p>
+<p>Finally, the <b>Output</b> shown in the
+<a href="http://www.owlnet.rice.edu/~ryanking/elec431/">block diagram</a> 
+corresponds to the adaptive engine output commonly referred to as the <i>error</i>.</p>
+<p>The large box identified as <b>Adaptive</b> in the
+<a href="http://www.owlnet.rice.edu/~ryanking/elec431/">block diagram</a> 
+corresponds to the <i>adaptive 
+filter</i> in the adaptive engine used in the program.</p>
+<p><font color="#FF0000"><b>Physical arrangement</b></font></p>
+<p>You will use two microphones for this project.&nbsp; One microphone will 
+be placed close to the waterfall where it will produce a high-fidelity 
+electronic replica of the noise being emitted by the waterfall.&nbsp; You will 
+transmit that electronic information from the waterfall to the concert area via 
+electrical cable.&nbsp; At the concert area, you will convert that electronic 
+information into a sampled digital time series and feed it into the adaptive 
+filter of the adaptive engine.&nbsp; This information is represented by <b>
+Reference Signal</b> in the
+<a href="http://www.owlnet.rice.edu/~ryanking/elec431/">block diagram</a>, and 
+is represented by <b>whiteNoise</b> in the program.</p>
+<p>The other microphone is the performer's microphone <i>(or the output from an 
+electronic mixer if there are multiple microphones on the stage)</i>.&nbsp; You 
+will convert this information, <i>(which consists of signal plus waterfall noise)</i>, 
+into a sampled digital time series and feed it as the <i>target</i> to the 
+adaptive engine.&nbsp; This is represented by <b>d(n)</b> in the
+<a href="http://www.owlnet.rice.edu/~ryanking/elec431/">block diagram</a>.</p>
+<p>The output from the adaptive engine commonly referred to as the<i> error,</i> 
+contains the useful output from the adaptive engine in this case.&nbsp; If all 
+goes well, the <i>error</i> will consist mainly of signal information produced 
+by the performers with most of the noise produced by the waterfall having been 
+removed.&nbsp; You will feed the <i>error</i> into the sound system and 
+broadcast it to the spectators.&nbsp; You will also record it to be used later 
+in the production of your audio CD.</p>
+<p><font color="#FF0000"><b>Why does this work?</b></font></p>
+<p>The overall objective of this adaptive scheme is to adjust the filter 
+coefficients in the adaptive digital filter in an attempt to drive the error to zero.</p>
+<p>It is assumed that the signal is uncorrelated with the noise.&nbsp; <i>(This 
+should be the case when the noise is produced by a waterfall and the signal is 
+produced by musicians.)</i>&nbsp; If this assumption is true, 
+a particular signal value at a particular adaptive correction to the 
+filter coefficients may have an impact on that particular correction.&nbsp; 
+However, over the long term, 
+the signal values will not have a lasting effect on the adaptive corrections to 
+the filter coefficients.&nbsp; <i>(The corrections produced by the signal will 
+average out to zero.)</i>&nbsp; Thus, over the long term, the adaptive 
+corrections to the filter coefficients will not be influenced by the signal in one direction or the other.</p>
+<p>Because the noise that is added to the signal is correlated with the 
+white noise that is input to the adaptive filter, over the long term, the 
+adaptive algorithm will attempt to drive the noise component of the error to zero.&nbsp; 
+When the noise component is driven to near zero, the resulting error consists 
+mainly of signal.</p>
+<blockquote>
+	<p><i>(Note however that the existence of the signal that is uncorrelated 
+	with the noise in the adaptive computation will prevent the algorithm from 
+	ever converging to a perfect noise cancellation solution.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Overall analysis</b></font></p>
+<p>Therefore, in operation, the LMS adaptive algorithm attempts to cause the output from 
+the adaptive filter, shown as <b>y(n)</b> in the
+<a href="http://www.owlnet.rice.edu/~ryanking/elec431/">block diagram</a>, to be 
+an exact match for that version of the noise that is added to the <b>Primary 
+Signal </b>at the top of the
+<a href="http://www.owlnet.rice.edu/~ryanking/elec431/">block diagram</a>.&nbsp; 
+This is the result which, when subtracted from the combined signal plus noise, will have the most beneficial effect relative to driving 
+the error to zero.</p>
+<p>When this is accomplished perfectly and the adaptive filter output is subtracted from 
+the combined signal plus noise on the right side of the
+<a href="http://www.owlnet.rice.edu/~ryanking/elec431/">block diagram</a>, the 
+output or error will contain only signal.&nbsp; Once again, however, the existence of the 
+signal in the values used to compute the adaptive corrections will prevent the system from ever reaching a perfect 
+solution, and the error will probably always contain at least a small residue of 
+noise.</p>
+<h2 align="center" ><font color="#000000"><a name="Preview">Preview</a></font></h2>
+<p><font color="#FF0000"><b>The program named Adapt08</b></font></p>
+<p>The purpose of this program is to illustrate an adaptive noise cancellation 
+system.</p>
+<blockquote>
+	<p><i>(See this
+	<a href="http://www.owlnet.rice.edu/~ryanking/elec431/intro.html">URL</a> 
+	for a description and a block diagram of an adaptive noise cancellation 
+	system.)</i></p>
+</blockquote>
+<p>This program requires the following <a name="other_classes">classes</a>:</p>
+<ul>
+	<li>Adapt08.class</li>
+	<li>AdaptEngine02.class</li>
+	<li>AdaptiveResult.class</li>
+	<li>ForwardRealToComplex01.class</li>
+	<li>PlotALot01.class</li>
+	<li>PlotALot03.class</li>
+	<li>PlotALot07.class</li>
+</ul>
+<p><font color="#FF0000"><b>The source code</b></font></p>
+<p>The source code for the class named <b>Adapt08</b> is provided in 
+<a href="#Listing_14">Listing 14</a> near 
+the end of this lesson.&nbsp; The source code for the other classes in the above 
+list is provided in earlier lessons that are accessible via the <a href="#References">References</a> 
+section of this lesson.</p>
+<p><font color="#FF0000"><b>The adaptive engine</b></font></p>
+<p>This program uses the adaptive engine named <b>AdaptEngine02</b> to 
+adaptively develop a convolution filter.&nbsp; One of the inputs to the adaptive engine is 
+the sum of signal plus noise.&nbsp; The other input to the adaptive engine is 
+white noise, which is different from, but which is correlated with the noise that 
+is added to the signal.</p>
+<p>The adaptive engine develops a filter that attempts to remove the noise from the signal 
+plus noise data producing an output consisting of almost pure signal.</p>
+<p><font color="#FF0000"><b>Signal and noise sources</b></font></p>
+<p>The signal and the white noise are derived from a random number generator.&nbsp; 
+Therefore, they are both essentially white.&nbsp; The signal is not correlated 
+with the noise.&nbsp; Before final scaling, the values obtained from the random number 
+generator are uniformly distributed from -1.0 to +1.0.</p>
+<p><font color="#FF0000"><b>Simulation of the propagation of waterfall noise 
+through space</b></font></p>
+<p>The white noise is processed through a convolution filter before adding it to 
+the signal.&nbsp; The convolution filter is designed to simulate the effect of 
+acoustic energy being emitted at one point in space and being modified through 
+the addition of several time-delayed and attenuated echoes before being received 
+at another point in space.&nbsp; This results in constructive and destructive 
+interference such that the noise that is added to the signal is no longer white.&nbsp; 
+However, it is still correlated with the original white noise.</p>
+<p><font color="#FF0000"><b>The graphic output</b></font></p>
+<p>The program produces five graphs with three graphs in a row across the top of 
+the screen and two graphs in a row below the top row as shown by the screen shot in 
+<a name="Figure_1">Figure 1</a>.</p>
+<table border="1" cols="1" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><img border="0" src="java2360a1.jpg" width="460" height="345"><br></pre>
+      <pre><b>Figure 1</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Description of the five graphs</b></font></p>
+<p>A brief description of each of the five graphs, working from 
+left to right, top to bottom, follows:</p>
+<ol>
+	<li>The impulse response of the convolution filter 
+that is applied to the white noise before it is added to the white signal.&nbsp;
+	<i>(Simulates spatial propagation effects.)</i></li>
+	<li>The 
+amplitude and phase response of the convolution filter that is applied to the 
+white noise before it is added to the white signal.&nbsp; <i>(Shows simulated 
+	spatial propagation effects in the frequency domain.)</i></li>
+	<li>Six time series that 
+illustrate the time behavior of the adaptive process.&nbsp; <i>(See description 
+	by color code below.)</i></li>
+	<li>The amplitude and phase 
+response of the adaptive filter at the end of every 400th iteration.</li>
+	<li>The 
+impulse response of the adaptive filter at the end of every 400th adaptive iteration.</li>
+</ol>
+<p><font color="#FF0000"><b>Multiple stacked pages</b></font></p>
+<p>Graph 3, showing the time series data, consists of multiple pages stacked on top of one another.&nbsp; You 
+can move 
+the pages on the top of the stack to view the pages further down.&nbsp; The pages on 
+the top of the stack represent the results produced early in the adaptive 
+process while those further down represent the results produced later in the 
+adaptive process.</p>
+<blockquote>
+	<p><i>(If you increase the number of iterations described later, graphs 
+4 and 5 will also consist of multiple pages stacked on top of one another.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>The <a name="six_time_series">six time series</a> 
+and their colors</b></font></p>
+<p>The six 
+time series that are plotted in Graph #3 are, from top to bottom in the colors 
+indicated:</p>
+<ol>
+	<li><i>(Black)</i> Input to the adaptive filter.&nbsp; This is the white noise 
+	equivalent to the sound of the waterfall in the above described scenario.&nbsp; 
+	This white noise is produced by a random number generator.</li>
+	<li><i>(Red)</i> 
+Target for the adaptive process.&nbsp; This is the signal plus noise, which is 
+	shown as <b>d(n)</b> in the
+	<a href="http://www.owlnet.rice.edu/~ryanking/elec431/">block diagram</a>.&nbsp; 
+	In this case, the noise is the waterfall noise as modified by the acoustic 
+	path and the signal is the white signal produced by a random number 
+	generator.</li>
+	<li><i>(Blue)</i> Output from the adaptive filter, shown as <b>y(n)</b> in 
+	the <a href="http://www.owlnet.rice.edu/~ryanking/elec431/">block diagram</a>.&nbsp; 
+	This is an adaptive estimate of the waterfall noise as modified by the acoustic path.</li>
+	<li><i>(Green)</i> Error computed within the adaptive process.&nbsp; In 
+this case, the error trace is actually the trace that contains the signal with 
+the noise partially removed.&nbsp; In other words, the blue trace is an estimate of the 
+	waterfall noise as modified by the acoustic path and 
+the green trace is the difference between the red trace and the blue 
+trace.&nbsp; The error is shown both as <b>e(n)</b> and as <b>Output</b> in the
+	<a href="http://www.owlnet.rice.edu/~ryanking/elec431/">block diagram</a>.</li>
+	<li><i>(Violet)</i> The original pure signal shown as <b>s(n)</b> in the
+	<a href="http://www.owlnet.rice.edu/~ryanking/elec431/">block diagram</a>. 
+	This trace is not used in the adaptive computation.&nbsp; Rather, it is provided for visual comparison with the green trace that shows 
+	the adaptive process' estimate of the signal after the noise has been 
+	removed.</li>
+	<li><i>(Turquoise)</i> The arithmetic difference 
+between the pure signal trace (violet) and the green trace containing the 
+adaptive process' estimate of the signal.&nbsp;  
+	This trace is not used in the adaptive computation.&nbsp; Rather, it is provided for a 
+	visual 
+arithmetic comparison of the difference between the pure signal trace and the adaptive estimate of the 
+signal.&nbsp; Ideally this trace will go to zero if the adaptive process is successful 
+in totally eliminating the noise from the green trace.</li>
+</ol>
+<p><font color="#FF0000"><b>Impulse responses near the end of the run</b></font></p>
+<p>Near the end of the run, 
+the adaptive update process is disabled.&nbsp; The input data is set to zero for the 
+remainder of the run except that on one occasion, an impulse is inserted into 
+the white noise data.&nbsp; This makes it possible to see:</p>
+<ol>
+	<li>The single impulse in the input noise on the black trace.</li>
+	<li>The impulse response of the convolution filter that is applied to the 
+	white noise before it is added to the white signal.&nbsp; This impulse 
+	response is visible on the red trace.</li>
+	<li>The impulse response of the final adaptive filter.&nbsp; This impulse 
+	response is visible on the blue trace.</li>
+</ol>
+<p>Ideally, the impulse response on the blue trace would be identical to the 
+impulse response on the red trace, indicating that the adaptive filter perfectly 
+matches the convolution filter that is applied to the white noise before it is 
+added to the white signal.&nbsp; As you will see later, the match is not perfect 
+but it is very close.</p>
+<p><font color="#FF0000"><b>User input</b></font></p>
+<p>There is no 
+user input to this program.&nbsp; All parameter values are hard coded into the main method.&nbsp; To 
+run the program with different parameters, modify the parameter values in the 
+source code and recompile the 
+program.</p>
+<p><font color="#FF0000"><b>Program parameters</b></font></p>
+<p>The important program parameters that you might want to modify for 
+experimental purposes are:</p>
+<ul>
+	<li><b>feedbackGain</b>:&nbsp; The gain factor that is used in 
+the feedback loop to adjust the coefficient values in the adaptive filter.</li>
+	<li><b>numberIterations</b>:&nbsp; This is the number of iterations that the program 
+executes before stopping and displaying all of the graphic results.</li>
+	<li><b>filterLength</b>:&nbsp; This is the number of coefficients in the adaptive filter.&nbsp; Must be at least 26.&nbsp; If 
+you change the <b>filterLength</b> to a value that is less than 26, the plot of the impulse responses 
+of the adaptive filter will not be properly aligned.</li>
+	<li><b>noiseScale</b>:&nbsp; The scale factor 
+that is applied to the values that are extracted from the random number generator 
+and used as white noise.</li>
+	<li><b>signalScale</b>:&nbsp; The scale factor that is applied to the values that are extracted from the random number generator and used as white 
+signal.</li>
+	<li><b>pathOperator</b>:&nbsp; A reference to an array of type <b>double[]</b> containing the 
+coefficients of the convolution filter that is applied to the white noise before 
+it is added to the white signal.</li>
+</ul>
+<p><font color="#FF0000"><b>Program testing</b></font></p>
+<p>This program was tested using J2SE 5.0 and WinXP.&nbsp; J2SE 5.0 or later 
+is required.</p>
+<h2 align="center"><font color="#000000"><a name="Experimental_Results">
+Experimental Results</a></font></h2>
+<p>Before getting into the program details, I'm going to show you some 
+experimental results.</p>
+<p><font color="#FF0000"><b>The acoustic path operator</b></font></p>
+<p>The left panel in <a href="#Figure_2">Figure 2</a> shows the convolution operator that was applied to 
+the white noise to simulate the noise arriving at the location in the park where 
+the concert is being held.&nbsp; When this convolution operator is applied to 
+the white noise time series, the result is the sum of the primary time series 
+plus four attenuated and time-delayed replicas of the time series.&nbsp; This is 
+intended to simulate the summation of the original waterfall noise plus several
+<a name="Figure_2">echoes</a>.</p>
+<blockquote>
+	<p><i>(Note that this convolution operator also inserts a time delay of 
+	several samples relative to its input.)</i></p>
+</blockquote>
+
+
+
+<p>
+<table border="1" bgcolor="#ccffff">
+	<tr>
+		<td><img border="0" src="java2360b1.jpg" width="113" height="149"></td>
+		<td><img border="0" src="java2360b2.jpg" width="265" height="149"></td>
+	</tr>
+	<tr>
+	<td colspan="2" >
+<pre><b>Figure 2</b></b></pre></td>
+	</tr>
+</table>
+<p><font color="#FF0000"><b>Complex frequency response</b></font></p>
+<p>The right panel in <a href="#Figure_2">Figure 2</a> shows the complex frequency response of the 
+acoustic path operator.&nbsp; The top curve is the amplitude response and the 
+bottom curve is the phase response.</p>
+<p>As you can see this particular configuration of echoes results in a 
+decidedly non-flat transfer function.&nbsp; The general saw tooth nature of the 
+phase response indicates that there is an overall time delay in addition to the 
+modification of the acoustic energy as a function of frequency.</p>
+<p><b><font color="#FF0000">The adaptive filter operator</font></b></p>
+<p>The left panel in <a name="Figure_3">Figure 3</a> shows the development of the adaptive filter 
+convolution operator from the beginning to the end of the run.&nbsp; Each of the 
+individual graphs beginning at the top and going down the page shows the 
+adaptive convolution operator at the end of every 400th iteration.</p>
+
+<p>
+<table border="1" bgcolor="#ccffff">
+	<tr>
+		<td><img border="0" src="java2360d1.jpg" width="113" height="488"></td>
+		<td><img border="0" src="java2360d2.jpg" width="265" height="488"></td>
+	</tr>
+	<tr>
+	<td colspan="2" >
+<pre><b>Figure 3</b></b></pre></td>
+	</tr>
+</table>
+<p>Ideally, the convolution operator in <a href="#Figure_3">Figure 3</a> should converge to a shape that 
+exactly matches the shape of the convolution operator shown in the left panel of
+<a href="#Figure_2">Figure 2</a>.&nbsp; As you can see, although the match isn't perfect, it is 
+reasonably close at the bottom of <a href="#Figure_3">Figure 3</a>.&nbsp; The continuing random 
+influence of the white signal would probably prevent a perfect solution from 
+ever being achieved regardless of how long the adaptive process is allowed to run.</p>
+<p><font color="#FF0000"><b>The complex frequency response</b></font></p>
+<p>The right panel in <a href="#Figure_3">Figure 3</a> shows the complex frequency response 
+corresponding to each of the impulse responses in the left panel.&nbsp; As 
+before, for each complex frequency response, the amplitude response is above the 
+phase response.</p>
+<p><font color="#FF0000"><b>The time series</b></font></p>
+
+<p>The top panel in <a href="#Figure_4">Figure 4</a> shows the six time series described
+<a href="#six_time_series">earlier</a> at the beginning of the run.&nbsp; The 
+middle panel shows the same six traces in the time period immediately following 
+the period shown in the top panel.&nbsp; The 
+bottom panel shows the same six time series at the end of the run.</p>
+<blockquote>
+	<p><i>(Note that several panels of time series between the beginning and the 
+	end of the run were omitted for <a name="Figure_4">brevity</a>.)</i></p>
+</blockquote>
+
+
+
+<table bgcolor="#ccffff" border="1" cols="1">
+	<tr>
+		<td><img border="0" src="java2360c1.jpg" width="469" height="199"></td>
+	</tr>
+	<tr>
+		<td><img border="0" src="java2360c3.jpg" width="469" height="199"></td>
+	</tr>	
+	
+	<tr>
+		<td><img border="0" src="java2360c2.jpg" width="469" height="199"></td>
+	</tr>
+	<tr>
+		<td>
+		<pre><b>Figure 4</b></pre>
+		</td>
+	</tr>
+</table>
+<p><font color="#FF0000"><b>The white waterfall noise</b></font></p>
+<p>As explained <a href="#six_time_series">earlier</a>, the black trace in <a href="#Figure_4">Figure 4</a> shows the white waterfall noise that is 
+transmitted to the adaptive engine via electrical cable without any influence 
+from the acoustic path.&nbsp; This trace is used as an input to the adaptive 
+process.</p>
+<p><font color="#FF0000"><b>Signal plus modified waterfall noise</b></font></p>
+<p>The red trace in <a href="#Figure_4">Figure 4</a> shows the sum of the white signal and the output 
+from the acoustic path operator shown in <a href="#Figure_2">Figure 2</a>.&nbsp; 
+This trace is used as an input to the adaptive process.</p>
+<p><font color="#FF0000"><b>Output from the adaptive filter</b></font></p>
+<p>The blue trace in <a href="#Figure_4">Figure 4</a> shows the output from the adaptive 
+filter.&nbsp; The adaptive filter attempts to cause its output to match the 
+output from the acoustic path operator so that when it is subtracted from the 
+red trace, the result will be the pure signal.&nbsp; In other words, this is an 
+estimate of the waterfall noise as modified by the acoustic path to the concert 
+area.</p>
+<p><font color="#FF0000"><b>The adaptive output error</b></font></p>
+<p>The green trace in <a href="#Figure_4">Figure 4</a> shows the error in the 
+adaptive process.&nbsp; For this configuration of the adaptive engine, this is 
+the trace that contains the signal with the noise having <i>(hopefully)</i> been 
+removed.</p>
+<p><font color="#FF0000"><b>The pure signal</b></font></p>
+<p>As mentioned <a href="#six_time_series">earlier</a>, the violet trace in
+<a href="#Figure_4">Figure 4</a> shows the original pure signal. This trace is 
+not used in the adaptive process.&nbsp; Rather, it is provided here for visual 
+comparison with the green trace that shows the adaptive process' estimate of the 
+signal after the noise has been removed. </p>
+<p><font color="#FF0000"><b>Estimate of the signal quality</b></font></p>
+<p>Also as mentioned earlier, the turquoise trace in <a href="#Figure_4">Figure 
+4</a> shows the arithmetic difference between the pure signal <i>(violet) </i>
+trace and the green trace containing the adaptive process' estimate of the 
+signal.&nbsp; This trace is not used in the adaptive process.&nbsp; Rather, it is provided 
+for a visual arithmetic comparison of the difference between the pure signal trace and 
+the adaptive estimate of the signal.&nbsp; Ideally this trace will go to zero if the 
+adaptive process is successful in totally eliminating the noise from the green 
+trace. </p>
+<p><font color="#FF0000"><b>The adaptive results</b></font></p>
+<p>You can see the result of the adaptive process by comparing the traces from 
+left to right in <a href="#Figure_4">Figure 4</a>.&nbsp; As you can see, the 
+green error trace is a reasonably good replica of the violet signal trace by the 
+end of the top panel, and is an excellent replica of the violet signal trace by 
+the end of the middle panel.&nbsp; Thus, the noise is being almost totally 
+suppressed from the red trace by the end of the middle panel.</p>
+<p><font color="#FF0000"><b>The impulse responses</b></font></p>
+<p>As explained earlier, the adaptive process is turned off and an impulse is 
+injected into the black trace in the bottom panel of <a href="#Figure_4">Figure 
+4</a>.&nbsp; The impulse response of the acoustic path is shown by the red trace 
+in the bottom panel.&nbsp; The impulse response of the final adaptive filter is 
+shown by the blue trace in the bottom panel of <a href="#Figure_4">Figure 4</a>.</p>
+<p>The objective of the adaptive process is to cause the impulse response of the 
+adaptive filter to match the impulse response of the acoustic path.&nbsp; A 
+visual comparison of the red and blue traces in the bottom panel of
+<a href="#Figure_4">Figure 4</a> shows the extent to which this has been 
+accomplished.</p>
+<p>Now let's see some code. </p>
+
+<h2 align="center"> <a name="Discussion and Sample Programs"></a><font color="#000000">Discussion
+and Sample Code</font></h2>
+
+<p><font color="#FF0000"><b>The class named Adapt08</b></font></p>
+<p>The beginning of the class named <b>Adapt08</b> and the beginning of the <b>
+main</b> method are shown in <a name="Listing_1">Listing 1</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>class Adapt08{
+  public static void main(String[] args){
+    //Default parameter values
+    double feedbackGain = 0.0001;
+    int numberIterations = 2001;
+    int filterLength = 26;//Must be &gt;= 26 for plotting.
+    double noiseScale = 10;
+    double signalScale = 10;<br><br><b><font face="Courier New,Courier">Listing 1</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><a href="#Listing_1">Listing 1</a> declares and initializes some of the program parameters.&nbsp; To 
+experiment with different values for the program parameters, change the 
+values in <a href="#Listing_1">Listing 1</a> and recompile the program.</p>
+<p><font color="#FF0000"><b>The acoustic path operator</b></font></p>
+<p><a name="Listing_2">Listing 2</a> defines the impulse response of the path operator that simulates 
+the acoustic path between the waterfall and the location in the park where the 
+concert is being performed.&nbsp; <i>(This impulse response is shown graphically 
+in <a href="#Figure_2">Figure 2</a>.)</i></p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    double[] pathOperator = {0.0,
+                             0.0,
+                             0.0,
+                             1.0,
+                             0.0,
+                             0.64,
+                             0.0,
+                             0.0,
+                             0.32768,
+                             0.0,
+                             0.0,
+                             0.0,
+                             0.1342176,
+                             0.0,
+                             0.0,
+                             0.0,
+                             0.0,
+                             0.0439803,
+                             0.0};<br><br><b><font face="Courier New,Courier">Listing 2</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Note that the first three values in the impulse response have values of zero.&nbsp; 
+This has the effect of inserting an overall time delay in the acoustic path.&nbsp; 
+The value of 1.0 in the impulse response represents the first arrival of the 
+acoustic waterfall noise at the concert location.&nbsp; The remaining non-zero values in 
+the impulse response represent attenuated echoes that are further delayed in 
+time relative to the first arrival.</p>
+<p>To experiment with different acoustic path operators, change the values in 
+<a href="#Listing_2">Listing 2</a> and recompile the program.&nbsp; See if you can devise an acoustic 
+path operator for which the adaptive algorithm will refuse to converge to a 
+solution.</p>
+<p><font color="#FF0000"><b>Invoke the method named process</b></font></p>
+<p><a name="Listing_3">Listing 3</a> instantiates an object of the <b>Adapt08</b> class and invokes the
+<b>process</b> method on that object, passing the program parameters along with 
+the acoustic path operator to the method.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    new Adapt08().<b>process</b>(feedbackGain,
+                          numberIterations,
+                          filterLength,
+                          noiseScale,
+                          signalScale,
+                          pathOperator);
+  }//end main<br><br><b><font face="Courier New,Courier">Listing 3</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>The process method</b></font></p>
+<p><a name="Listing_4">Listing 4</a> shows the beginning of the <b>process</b> method, including the 
+code required to display the two graphs shown in <a href="#Figure_2">Figure 2</a>.&nbsp; This is the primary adaptive processing and plotting method for the program.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  void <b>process</b>(double feedbackGain,
+               int numberIterations,
+               int filterLength,
+               double noiseScale,
+               double signalScale,
+               double[] pathOperator){
+
+    //The following array will be populated with the
+    // adaptive filter for display purposes.
+    double[] filter = null;
+
+    //Display the pathOperator
+    //First instantiate a plotting object.
+    PlotALot01 pathOperatorObj = new PlotALot01("Path",
+               (pathOperator.length * 4) + 8,148,70,4,0,0);
+
+    //Feed the data to the plotting object.
+    for(int cnt = 0;cnt &lt; pathOperator.length;cnt++){
+      pathOperatorObj.feedData(40*pathOperator[cnt]);
+    }//end for loop
+    
+    //Cause the graph to be displayed on the computer
+    // screen in the upper left corner.
+    pathOperatorObj.plotData(0,0);
+    
+    //Now compute and plot the frequency response of the
+    // path
+    
+    //Instantiate a plotting object for two channels of
+    // frequency response data.  One channel is for
+    // the amplitude and the other channel is the phase.
+    PlotALot03 pathFreqPlotObj = 
+                   new PlotALot03("Path",264,148,35,2,0,0);
+                   
+    //Compute the frequency response and feed the results
+    // to the plotting object.
+    displayFreqResponse(pathOperator,pathFreqPlotObj,
+                                                    128,0);
+                       
+    //Cause the frequency response data stored in the
+    // plotting object to be displayed on the screen in
+    // the top row of images.
+    pathFreqPlotObj.plotData(112,0);<br><br><b><font face="Courier New,Courier">Listing 4</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>All of the code shown in <a href="#Listing_4">Listing 4</a> has been explained in earlier lessons 
+referred to in the <a href="#References">References</a> section of this lesson.&nbsp; 
+That explanation won't be repeated here.</p>
+<p><font color="#FF0000"><b>Instantiate an adaptive engine object</b></font></p>
+<p><a name="Listing_5">Listing 5</a> instantiates an object that will be used to handle the adaptive behavior of the program.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    AdaptEngine02 adapter = new AdaptEngine02(
+                                filterLength,feedbackGain);<br><br><b><font face="Courier New,Courier">Listing 5</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The class named <b>AdaptEngine02</b> was explained in the lesson entitled 
+<a href="http://www.developer.com/java/other/article.php/3583241">Adaptive Identification and 
+Inverse Filtering using Java</a>, and that 
+explanation won't be repeated here.</p>
+<p><font color="#FF0000"><b>Prepare for the iterative adaptive process</b></font></p>
+<p><a name="Listing_6">Listing 6</a> performs several additional steps that are necessary to prepare for 
+the iterative adaptive process and plot the results of the adaptive process.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    //Instantiate an array object that will be used as a
+    // delay line for the white noise data.
+    double[] rawData = new double[pathOperator.length];
+    
+    //Instantiate a plotting object for six channels of
+    // time-series data.
+    PlotALot07 timePlotObj = 
+                   new PlotALot07("Time",468,198,25,2,0,0);
+
+    //Instantiate a plotting object for two channels of
+    // filter frequency response data.  One channel is for
+    // the amplitude and the other channel is for the
+    // phase.
+    PlotALot03 freqPlotObj = 
+                   new PlotALot03("Freq",264,487,35,2,0,0);
+
+    //Instantiate a plotting object to display the filter
+    // impulse response at specific time intervals during
+    // the adaptive process.
+    PlotALot01 filterPlotObj = new PlotALot01("Filter",
+                     (filterLength * 4) + 8,487,70,4,0,0);
+
+    //Declare and initialize working variables.
+    double output = 0;
+    double err = 0;
+    double target = 0;
+    double input = 0;
+    double whiteNoise = 0;
+    double whiteSignal = 0;
+    boolean adaptOn;<br><br><b><font face="Courier New,Courier">Listing 6</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The code in <a href="#Listing_6">Listing 6</a> is very similar to code that I have explained in 
+previous lessons referred to in the <a href="#References">References</a> section 
+of this lesson.&nbsp; I won't bore you by repeating those explanations here.</p>
+<p><font color="#FF0000"><b>Perform the iterative adaptive process</b></font></p>
+<p><a name="Listing_7">Listing 7</a> shows the beginning of a <b>for</b> loop 
+that is used to perform the specified number of iterations of the adaptive 
+process.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    <b>for</b>(int cnt = 0;cnt &lt; numberIterations;cnt++){
+      
+      <b>adaptOn</b> = true;<br><br><b><font face="Courier New,Courier">Listing 7</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>The variable named adaptOn</b></font></p>
+<p>The variable named<b> adaptOn </b>is used to control whether or not the <b>adapt</b> method of the adaptive engine updates the filter coefficients when it is called.&nbsp; The filters are updated when this variable is
+<b>true</b> and are not updated when this variable is <b>false</b>.&nbsp; The 
+value of this variable is maintained as <b>true</b> until near the end of the 
+specified number of iterations.&nbsp; At that time, it is set to <b>false</b> to 
+support the display of the impulse responses shown in the bottom panel of
+<a href="#Figure_4">Figure 4</a>.</p>
+<blockquote>
+	<p><i>(The adaptive process is disabled at that point in time to prevent the 
+	coefficients belonging to the adaptive filter from being modified while the 
+	impulse response of the adaptive filter is being displayed.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Get white signal and noise values</b></font></p>
+<p><a name="Listing_8">Listing 8</a> gets and scales the next sample of white noise and white signal data from a random number generator.&nbsp; 
+The white noise is used to simulate the waterfall noise.&nbsp; Before scaling by
+<b>noiseScale</b> and <b>signalScale</b>, the values are uniformly distributed from -1.0 to 1.0.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>      whiteNoise = noiseScale*(2*(Math.random() - 0.5));
+      whiteSignal = signalScale*(2*(Math.random() - 0.5));<br><br><b><font face="Courier New,Courier">Listing 8</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Produce impulse responses near the end of the run</b></font></p>
+<p>The code in <a href="#Listing_9">Listing 9</a> sets the white noise and white signal values near the end of the run to zero and turns adaptation 
+off by setting the value of <b>adaptOn</b> to <b>false</b>.</p>
+<p>This code also inserts a single impulse near the end of the <b>whiteNoise</b> data that 
+produces impulse responses for the acoustic path and for the adaptive filter.</p>
+<p>The code in <a name="Listing_9">Listing 9</a> produces the impulse responses shown in the bottom 
+panel of <a href="#Figure_4">Figure 4</a>.</p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>      //Set values to zero
+      if(cnt &gt; (numberIterations - 5*filterLength)){
+        whiteNoise = 0;
+        whiteSignal = 0;
+        adaptOn = false;
+      }//end if
+      //Now insert an impulse at one specific location in
+      // the whiteNoise data.
+      if(cnt == numberIterations - 3*filterLength){
+        whiteNoise = 2 * noiseScale;
+      }//end if<br><br><b><font face="Courier New,Courier">Listing 9</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Convolve waterfall noise with acoustic path operator</b></font></p>
+<p><a name="Listing_10">Listing 10</a> convolves the waterfall noise with the acoustic path operator to 
+produce an estimate of the waterfall noise as it would sound at the location in 
+the park where the concert is being performed.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>      //Insert the white noise data into the delay line
+      // that will be used to convolve the white noise
+      // with the path operator.
+      flowLine(rawData,whiteNoise);
+    
+      //Apply the path operator to the white noise data.
+      double pathNoise = 
+                   reverseDotProduct(rawData,pathOperator);<br><br><b><font face="Courier New,Courier">Listing 10</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Code similar to that shown in <a href="#Listing_10">Listing 10</a> has been explained in earlier 
+lessons referred to in the <a href="#References">References</a> section of this 
+lesson.&nbsp; Therefore, I won't repeat that explanation here.</p>
+<p><font color="#FF0000"><b>Perform the adaptive process</b></font></p>
+<p>The code in <a href="#Listing_11">Listing 11</a> performs the adaptive process for one iteration of the
+<b>for</b> loop that began in <a href="#Listing_7">Listing 7</a>.</p>
+<p><a href="#Listing_11">Listing 11</a> begins by declaring a variable that will be populated with a 
+reference to an object containing the results returned by the <b>adapt</b> 
+method of the adaptive <a name="Listing_11">engine</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>      //Declare a variable that will be populated with the
+      // results returned by the adapt method of the
+      // adaptive engine.
+      AdaptiveResult result = null;
+      
+      //Establish the appropriate input values for an
+      // adaptive noise cancellation filter and perform the
+      // adaptive update.
+<b>      input = whiteNoise;
+      target = pathNoise + whiteSignal;</b>
+      result = adapter.adapt(input,target,adaptOn);<br><br><b><font face="Courier New,Courier">Listing 11</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The two boldface statements in <a href="#Listing_11">Listing 11</a> make this 
+program unique and different relative to the other programs explained in the 
+earlier lessons referred to in the <a href="#References">References</a> section 
+of this lesson.</p>
+<p><font color="#FF0000"><b>The general-purpose adaptive engine</b></font></p>
+<p>When I developed the general purpose adaptive engine in the lesson entitled 
+<a href="http://www.developer.com/java/other/article.php/3566951">A 
+General-Purpose LMS Adaptive Engine in Java</a>, I explained:</p>
+<blockquote>
+	<p><i>&quot;In this lesson, I will present and explain a general-purpose
+	<a href="http://cnx.rice.edu/content/m11829/latest/">LMS</a> adaptive engine 
+	written in Java that can be used to solve a wide variety of adaptive 
+	problems.&quot;</i></p>
+</blockquote>
+<p>The adaptive engine receives two input time series and produces two output 
+time series.&nbsp; The engine can be used to solve different problems by 
+carefully selecting the two input time series and order in which they are 
+provided to the adaptive engine.</p>
+<p><font color="#FF0000"><b>The configuration for adaptive noise cancellation</b></font></p>
+<p>In <a href="#Listing_11">Listing 11</a>, the <b>whiteNoise</b> is provided to 
+simulate the waterfall noise and is inserted into the adaptive filter as shown 
+by the <b>Reference Signal</b> in the
+<a href="http://www.owlnet.rice.edu/~ryanking/elec431/">block diagram</a>.</p>
+<p>The <b>target</b> in <a href="#Listing_11">Listing 11</a> is constructed by 
+adding the <b>pathNoise</b> to the <b>whiteSignal</b>.&nbsp; This addition 
+corresponds to the dotted circle with the plus sign at the top of the
+<a href="http://www.owlnet.rice.edu/~ryanking/elec431/">block diagram</a>.</p>
+<p>The value of <b>whiteSignal</b> in <a href="#Listing_11">Listing 11</a> 
+corresponds to the <b>Primary Signal</b> in the
+<a href="http://www.owlnet.rice.edu/~ryanking/elec431/">block diagram</a>.</p>
+<p>The value of the <b>pathNoise</b> in <a href="#Listing_11">Listing 11</a> 
+corresponds to the output from the dotted box containing the question mark in 
+the <a href="http://www.owlnet.rice.edu/~ryanking/elec431/">block diagram</a>.</p>
+<p>The <b>target</b> in <a href="#Listing_11">Listing 11</a> corresponds to <b>
+d(n)</b> in the <a href="http://www.owlnet.rice.edu/~ryanking/elec431/">block 
+diagram</a>.</p>
+<p>The output from the adaptive filter is subtracted from the <b>target</b> 
+value to produce the error.&nbsp; The error is used in a feedback loop to adjust 
+the adaptive filter coefficients as shown in the
+<a href="http://www.owlnet.rice.edu/~ryanking/elec431/">block diagram</a>.</p>
+<p>For this configuration, the error is also the primary output shown by the 
+green trace in <a href="#Figure_4">Figure 4</a>.</p>
+<p><font color="#FF0000"><b>Finish an adaptive iteration</b></font></p>
+<p><a name="Listing_12">Listing 12</a> shows the remaining code in the <b>for</b> loop that began in 
+<a href="#Listing_7">Listing 7</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>      //Get and save adaptive results for plotting and
+      // spectral analysis
+      output = result.output;
+      err = result.err;
+      filter = result.filterArray;
+    
+      //Feed the time series data to the plotting object.
+      timePlotObj.feedData(input,target,output,-err,
+                            whiteSignal,err + whiteSignal);
+    
+      //Compute and plot summary results at the end of
+      // every 400th iteration.
+      if(cnt%400 == 0){
+        displayFreqResponse(filter,freqPlotObj,
+                                    128,filter.length - 1);
+
+        //Display the filter impulse response coefficient
+        // values.  The adaptive engine returns the filter
+        // with the time axis reversed relative to the
+        // conventional display of an impulse response.
+        // Therefore, it is necessary to display it in
+        // reverse order.
+        for(int ctr = 0;ctr &lt; filter.length;ctr++){
+          filterPlotObj.feedData(
+                       40*filter[filter.length - 1 - ctr]);
+        }//end for loop
+      }//End display of frequency response and filter
+    }//End for loop<br><br><b><font face="Courier New,Courier">Listing 12</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>All of the code in <a href="#Listing_12">Listing 12</a> is very similar to code that I have explained 
+in earlier lessons referred to by the <a href="#References">References</a> 
+section of this lesson.&nbsp; Therefore, I won't repeat that explanation here.</p>
+<p><font color="#FF0000"><b>Complete the process method</b></font></p>
+<p><a name="Listing_13">Listing 13</a> shows the remaining code in the <b>process</b> method.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    //Cause the data stored in the plotting objects to be
+    // plotted.
+    timePlotObj.plotData(376,0);//Top of screen
+    freqPlotObj.plotData(0,148);//Left side of screen
+    filterPlotObj.plotData(265,148);
+
+  }//end process method<br><br><b><font face="Courier New,Courier">Listing 13</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Shall I say it one more time?&nbsp; All of the code in <a href="#Listing_13">Listing 13</a> is very 
+similar to code that I have explained in earlier lessons referred to by the
+<a href="#References">References</a> section of this lesson.&nbsp; Therefore, I 
+won't repeat that explanation here.</p>
+<p>Further, the remaining methods belonging to the <b>Adapt08</b> class are 
+similar to methods that I have explained in earlier lessons, so I won't discuss 
+those methods here.&nbsp; You can view the code for the class named <b>Adapt08</b> 
+in its entirety in <a href="#Listing_14">Listing 14</a> near the end of this lesson.</p>
+<h2 align="center"><a name="Run the program"></a>Run the Program</h2>
+
+<p>I encourage you to copy the code for the class named <b>Adapt08</b> from the section entitled
+<a href="#Complete Program Listings">Complete Program Listings</a>.&nbsp; 
+Compile and execute the program.&nbsp; Experiment with the code.&nbsp; Make changes to the code, recompile, execute, 
+and observe the results of your changes.</p>
+<p>Modify the program parameters and the path operator and see if you can explain the results 
+of those modifications.</p>
+<p>See if you can create a path operator for which the adaptive process refuses 
+to converge to a solution.</p>
+<p>Experiment with different values for <b>feedback Gain</b>.&nbsp; What happens if you use a large value for <b>feedbackGain</b>?&nbsp; 
+What happens if you use a very small value for <b>feedbackGain</b>?&nbsp; What 
+happens if you use a negative value for <b>feedbackGain</b>?&nbsp; Can you 
+explain the results that you experience?</p>
+<p>While experimenting with the <b>feedbackGain</b>, you might also want to 
+experiment with the program parameter named <b>numberIterations</b>.&nbsp; 
+See if you can explain the results for small, medium, and large values for this 
+parameter.</p>
+<p><font color="#FF0000"><b>Other classes required</b></font></p>
+<p>In addition to the classes named <b>Adapt08</b>, you will need access to the 
+following classes.&nbsp; The source code for these classes can be found in the 
+lessons indicated.</p>
+<ul>
+	<li>AdaptEngine02:&nbsp;
+	<a href="http://www.developer.com/java/other/article.php/3583241">Adaptive Identification and 
+Inverse Filtering using Java</a></li>
+	<li>AdaptiveResult:&nbsp;
+	<a href="http://www.developer.com/java/other/article.php/3583241">Adaptive Identification and 
+Inverse Filtering using Java</a></li>
+	<li>ForwardRealToComplex01:&nbsp;
+	<a href="http://www.developer.com/java/other/article.php/3380031">Spectrum 
+	Analysis using Java, Sampling Frequency, Folding Frequency, and the FFT 
+	Algorithm</a></li>
+	<li>PlotALot01:&nbsp;
+	<a href="http://www.developer.com/java/data/article.php/3529186">Plotting 
+	Large Quantities of Data using Java</a></li>
+	<li>PlotALot03:&nbsp;
+	<a href="http://www.developer.com/java/data/article.php/3529186">Plotting 
+	Large Quantities of Data using Java</a></li>
+	<li>PlotALot05:&nbsp;
+	<a href="http://www.developer.com/java/other/article.php/3549991">Adaptive 
+	Filtering in Java, Getting Started</a> </li>
+</ul>
+<h2 align="center" ><a name="Summary">Summary</a></h2>
+<p>In this lesson, I showed you how to use a general-purpose 
+<a href="http://cnx.rice.edu/content/m11829/latest/">LMS</a> 
+adaptive engine to write a Java program that illustrates the use of adaptive 
+filtering for <i>Noise Cancellation</i>.</p>
+<h2 align="center" ><a name="Whats Next">What's Next?</a></h2>
+<p>Adaptive filtering is commonly used for the following four scenarios:</p>
+<ul>
+	<li>System Identification</li>
+	<li>Inverse System Identification</li>
+	<li>Noise Cancellation</li>
+	<li>Prediction</li>
+</ul>
+<p>A previous lesson entitled 
+<a href="http://www.developer.com/java/other/article.php/3583241">Adaptive Identification and 
+Inverse Filtering using Java</a> explained how to write Java programs to illustrate the first two 
+scenarios in the above list.&nbsp; This lesson explains how to write a Java 
+program that illustrates the use of adaptive filtering for the third scenario:
+<i>Noise Cancellation</i>.</p>
+<p>I plan to 
+publish a lesson in the near future that explains and provides examples of <i>
+Prediction</i> using adaptive filtering.</p>
+<h2 align="center"><a name="References">References</a></h2>
+<p>In preparation for understanding the material in this lesson, I recommend 
+that you study the material in the following previously-published lessons:</p>
+<ul>
+	<li><a href="http://www.dickbaldwin.com/dsp/Dsp00100.htm">100</a>&nbsp;&nbsp; Periodic 
+	Motion and Sinusoids</li>
+	<li><a href="http://www.dickbaldwin.com/dsp/Dsp00104.htm">104</a>&nbsp;&nbsp; Sampled 
+	Time Series</li>
+	<li><a href="http://www.dickbaldwin.com/dsp/Dsp00108.htm">108</a>&nbsp;&nbsp; 
+	Averaging Time Series</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3374611">1478</a> 
+	Fun with Java, How and Why Spectral Analysis Works</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3380031">1482</a> 
+	Spectrum Analysis using Java, Sampling Frequency, Folding Frequency, and the 
+	FFT Algorithm</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3392871">1483</a> 
+	Spectrum Analysis using Java, Frequency Resolution versus Data Length</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3411041">1484</a> 
+	Spectrum Analysis using Java, Complex Spectrum and Phase Angle</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3436341">1485</a> 
+	Spectrum Analysis using Java, Forward and Inverse Transforms, Filtering in 
+	the Frequency Domain</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3484591">1487</a> 
+	Convolution and Frequency Filtering in Java</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3487996">1488</a> 
+	Convolution and Matched Filtering in Java</li>
+	<li><a href="http://www.developer.com/java/data/article.php/3529186">1492</a> 
+	Plotting Large Quantities of Data using Java</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3549991">2350</a> 
+	Adaptive Filtering in Java, Getting Started</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3560501">2352</a> 
+	An Adaptive Whitening Filter in Java</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3566951">2354</a> 
+	A General-Purpose LMS Adaptive Engine in Java</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3576061">2356</a> An Adaptive Line Tracker in Java</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3583241">2358</a> Adaptive Identification and Inverse Filtering using Java</li>
+</ul>
+
+<h2 align="center"> <a name="Complete Program Listings"></a>Complete Program Listings</h2>
+
+<p>A complete listings of the class discussed in this lesson is shown in 
+<a name="Listing_14">Listing 
+14</a> below.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>/*File Adapt08.java
+Copyright 2005, R.G.Baldwin
+
+The purpose of this program is to illustrate an adaptive
+noise cancellation system.
+
+See the following URL for a description and a block 
+diagram of an adaptive noise cancellation system.
+
+http://www.owlnet.rice.edu/~ryanking/elec431/intro.html
+
+This program requires the following classes:
+Adapt08.class
+AdaptEngine02.class
+AdaptiveResult.class
+ForwardRealToComplex01.class
+PlotALot01.class
+PlotALot03.class
+PlotALot07.class
+
+This program uses the adaptive engine named AdaptEngine02 
+to adaptively develop a filter.  One of the inputs to the
+adaptive engine is the sum of signal plus noise.  The 
+other input to the adaptive engine is noise that is 
+different from, but which is correlated to the noise that
+is added to the signal.  The adaptive engine develops a
+filter that removes the noise from the signal plus noise
+data producing an output consisting of almost pure
+signal.
+
+The signal and the original noise are derived from a
+random number generator.  Therefore, they are both 
+essentially white.  The signal is not correlated with the 
+noise.  Before scaling, the values obtained from the
+random number generator are uniformly distributed from
+-1.0 to +1.0. 
+
+The white noise is processed through a convolution 
+filter before adding it to the signal.  The convolution
+filter is designed to simulate the effect of acoustic
+energy being emitted at one point in space and being 
+modified through the addition of several time-delayed and 
+attenuated echoes before being received at another point 
+in space.  This results in constructive and destructive 
+interference such that the noise that is added to the 
+signal is no longer white.  However, it is still 
+correlated with the original white noise.
+
+The program produces five graphs with three graphs in a 
+row across the top of the screen and two graphs in a row 
+below the top row.
+
+The following is a brief description of each of the five 
+graphs, working from left to right, top to bottom.
+
+1.  The impulse response of the convolution filter that is
+applied to the white noise before it is added to the
+white signal.
+2.  The amplitude and phase response of the convolution
+filter that is applied to the white noise before it is
+added to the white signal.
+3.  Six time series that illustrate the time behavior of 
+the adaptive process.
+4.  The amplitude and phase response of the adaptive 
+filter at the end of every 400th iteration.
+5.  The impulse response of the adaptive filter at the end 
+of every 400th adaptive iteration.
+
+Graph 3 consists of multiple pages stacked on top
+of one another.  Move the pages on the top of the stack to 
+view the pages further down.  The pages on the top of the 
+stack represent the results produced early in the adaptive 
+process while those further down represent the results 
+produced later in the adaptive process.  If you increase
+the number of iterations described later, graphs 4 and 5
+will also consist of multiple pages stacked on top of one
+another.
+
+The six time series that are plotted are, from top to
+bottom in the colors indicated:
+1.  (Black) Input to the adaptive filter.  This is the
+white noise.
+2.  (Red) Target for the adaptive process. This is the
+signal plus noise.
+3.  (Blue) Output from the adaptive filter.
+4.  (Green) Error computed within the adaptive process.
+In this case, the error trace is actually the trace that
+contains the signal with the noise removed.  In other 
+words, the blue trace is an estimate of the noise and the
+green trace is the difference between the red trace and 
+the blue trace.
+5.  (Violet) The original pure signal.  This trace is 
+provided for visual comparison with the green signal trace.
+6.  (Turquoise) The arithmetic difference between the 
+pure signal trace (violet) and the green trace containing
+the adaptive process's estimate of the signal.  This 
+trace is provided for an arithmetic comparison of the
+pure signal trace and the adaptive estimate of the signal.
+Ideally this trace will go to zero if the adaptive process
+is successful in totally eliminating the noise from the
+green trace.
+
+Near the end of the run, the adaptive update process is 
+disabled.  The input data is set to zero for the remainder 
+of the run except that on one occasion, an impulse is 
+inserted into the white noise data.  This makes it 
+possible to see:
+
+1. The impulse response of the convolution filter that
+is applied to the white noise before it is added to the
+white signal.
+2. The impulse response of the final adaptive filter.
+
+There is no user input to this program.  All parameters are
+hard coded into the main method.  To run the program with
+different parameters, modify the parameters and recompile
+the program.
+
+The program parameters are:
+
+feedbackGain: The gain factor that is used in the feedback 
+loop to adjust the coefficient values in the adaptive 
+filter.
+
+numberIterations: This is the number of iterations that the
+program executes before stopping and displaying all of the 
+graphic results.
+
+filterLength: This is the number of coefficients in the 
+adaptive filter.  Must be at least 26.  If you change it
+to a value that is less than 26, the plot of the impulse
+responses of the adaptive filter will not be properly 
+aligned.
+
+noiseScale:  The scale factor that is applied to the values
+that are extracted from the random number generator and
+used as white noise.
+
+signalScale:  The scale factor that is applied to the
+values that are extracted from the random number generator
+and used as white signal.
+
+pathOperator:  Areference to an array of type double[] 
+containing the coefficients of the convolution filter that
+is applied to the white noise before it is added to the
+white signal.
+
+Tested using J2SE 5.0 and WinXP.  J2SE 5.0 or later is 
+required.
+**********************************************************/
+import static java.lang.Math.*;//J2SE 5.0 req
+
+class Adapt08{
+  public static void main(String[] args){
+    //Default parameter values
+    double feedbackGain = 0.0001;
+    int numberIterations = 2001;
+    int filterLength = 26;//Must be &gt;= 26 for plotting.
+    double noiseScale = 10;
+    double signalScale = 10;
+    
+    //Define the path impulse response as a simulation of
+    // an acoustic signal with time-delayed echoes.
+    double[] pathOperator = {0.0,
+                             0.0,
+                             0.0,
+                             1.0,
+                             0.0,
+                             0.64,
+                             0.0,
+                             0.0,
+                             0.32768,
+                             0.0,
+                             0.0,
+                             0.0,
+                             0.1342176,
+                             0.0,
+                             0.0,
+                             0.0,
+                             0.0,
+                             0.0439803,
+                             0.0};
+
+    //Instantiate a new object of the <span lang="en-us"></span>Adapt08 class
+    // and invoke the method named process on that object.
+    new Adapt08().process(feedbackGain,
+                          numberIterations,
+                          filterLength,
+                          noiseScale,
+                          signalScale,
+                          pathOperator);
+  }//end main
+  //-----------------------------------------------------//
+  
+  //This is the primary adaptive processing and plotting
+  // method for the program.
+  void process(double feedbackGain,
+               int numberIterations,
+               int filterLength,
+               double noiseScale,
+               double signalScale,
+               double[] pathOperator){
+
+    //The following array will be populated with the
+    // adaptive filter for display purposes.
+    double[] filter = null;
+
+    //Display the pathOperator
+    //First instantiate a plotting object.
+    PlotALot01 pathOperatorObj = new PlotALot01("Path",
+               (pathOperator.length * 4) + 8,148,70,4,0,0);
+
+    //Feed the data to the plotting object.
+    for(int cnt = 0;cnt &lt; pathOperator.length;cnt++){
+      pathOperatorObj.feedData(40*pathOperator[cnt]);
+    }//end for loop
+    
+    //Cause the graph to be displayed on the computer
+    // screen in the upper left corner.
+    pathOperatorObj.plotData(0,0);
+    
+    //Now compute and plot the frequency response of the
+    // path
+    
+    //Instantiate a plotting object for two channels of
+    // frequency response data.  One channel is for
+    // the amplitude and the other channel is the phase.
+    PlotALot03 pathFreqPlotObj = 
+                   new PlotALot03("Path",264,148,35,2,0,0);
+                   
+    //Compute the frequency response and feed the results
+    // to the plotting object.
+    displayFreqResponse(pathOperator,pathFreqPlotObj,
+                                                    128,0);
+                       
+    //Cause the frequency response data stored in the
+    // plotting object to be displayed on the screen in
+    // the top row of images.
+    pathFreqPlotObj.plotData(112,0);
+    
+    //Instantiate an object to handle the adaptive behavior
+    // of the program.
+    AdaptEngine02 adapter = new AdaptEngine02(
+                                filterLength,feedbackGain);
+
+    //Instantiate an array object that will be used as a
+    // delay line for the white noise data.
+    double[] rawData = new double[pathOperator.length];
+    
+    //Instantiate a plotting object for six channels of
+    // time-series data.
+    PlotALot07 timePlotObj = 
+                   new PlotALot07("Time",468,198,25,2,0,0);
+
+    //Instantiate a plotting object for two channels of
+    // filter frequency response data.  One channel is for
+    // the amplitude and the other channel is for the
+    // phase.
+    PlotALot03 freqPlotObj = 
+                   new PlotALot03("Freq",264,487,35,2,0,0);
+
+    //Instantiate a plotting object to display the filter
+    // impulse response at specific time intervals during
+    // the adaptive process.
+    PlotALot01 filterPlotObj = new PlotALot01("Filter",
+                     (filterLength * 4) + 8,487,70,4,0,0);
+
+    //Declare and initialize working variables.
+    double output = 0;
+    double err = 0;
+    double target = 0;
+    double input = 0;
+    double whiteNoise = 0;
+    double whiteSignal = 0;
+    boolean adaptOn;
+
+    //Perform the specified number of iterations.
+    for(int cnt = 0;cnt &lt; numberIterations;cnt++){
+      
+      //The following variable is used to control whether
+      // or not the adapt method of the adaptive engine
+      // updates the filter coefficients when it is called.
+      // The filters are updated when this variable is
+      // true and are not updated when this variable is
+      // false.
+      adaptOn = true;
+      
+      //Get and scale the next sample of white noise and
+      // white signal data from a random number generator.
+      // Before scaling by noiseScale and signalScale, the
+      // values are uniformly distributed from -1.0 to 1.0.
+      whiteNoise = noiseScale*(2*(Math.random() - 0.5));
+      whiteSignal = signalScale*(2*(Math.random() - 0.5));
+      
+      //Set white noise and white signal values near the
+      // end of the run to zero and turn adaptation off.
+      // Insert an impulse near the end of the whiteNoise
+      // data that will produce impulse responses for the
+      // path and for the adaptive filter.
+      //Set values to zero.
+      if(cnt &gt; (numberIterations - 5*filterLength)){
+        whiteNoise = 0;
+        whiteSignal = 0;
+        adaptOn = false;
+      }//end if
+      //Now insert an impulse at one specific location in
+      // the whiteNoise data.
+      if(cnt == numberIterations - 3*filterLength){
+        whiteNoise = 2 * noiseScale;
+      }//end if
+
+      //Insert the white noise data into the delay line
+      // that will be used to convolve the white noise
+      // with the path operator.
+      flowLine(rawData,whiteNoise);
+    
+      //Apply the path operator to the white noise data.
+      double pathNoise = 
+                   reverseDotProduct(rawData,pathOperator);
+
+      //Declare a variable that will be populated with the
+      // results returned by the adapt method of the
+      // adaptive engine.
+      AdaptiveResult result = null;
+      
+      //Establish the appropriate input values for an
+      // adaptive noise cancellation filter and perform the
+      // adaptive update.
+      input = whiteNoise;
+      target = pathNoise + whiteSignal;
+      result = adapter.adapt(input,target,adaptOn);
+
+      //Get and save adaptive results for plotting and
+      // spectral analysis
+      output = result.output;
+      err = result.err;
+      filter = result.filterArray;
+    
+      //Feed the time series data to the plotting object.
+      timePlotObj.feedData(input,target,output,-err,
+                            whiteSignal,err + whiteSignal);
+    
+      //Compute and plot summary results at the end of
+      // every 400th iteration.
+      if(cnt%400 == 0){
+        displayFreqResponse(filter,freqPlotObj,
+                                    128,filter.length - 1);
+
+        //Display the filter impulse response coefficient
+        // values.  The adaptive engine returns the filter
+        // with the time axis reversed relative to the
+        // conventional display of an impulse response.
+        // Therefore, it is necessary to display it in
+        // reverse order.
+        for(int ctr = 0;ctr &lt; filter.length;ctr++){
+          filterPlotObj.feedData(
+                       40*filter[filter.length - 1 - ctr]);
+        }//end for loop
+      }//End display of frequency response and filter
+    }//End for loop,
+    
+    //Cause the data stored in the plotting objects to be
+    // plotted.
+    timePlotObj.plotData(376,0);//Top of screen
+    freqPlotObj.plotData(0,148);//Left side of screen
+    filterPlotObj.plotData(265,148);
+
+  }//end process method
+  //-----------------------------------------------------//
+  
+  //This method simulates a tapped delay line. It receives
+  // a reference to an array and a value.  It discards the
+  // value at index 0 of the array, moves all the other
+  // values by one element toward 0, and inserts the new
+  // value at the top of the array.
+  void flowLine(double[] line,double val){
+    for(int cnt = 0;cnt &lt; (line.length - 1);cnt++){
+      line[cnt] = line[cnt+1];
+    }//end for loop
+    line[line.length - 1] = val;
+  }//end flowLine
+  //-----------------------------------------------------//
+ 
+  void displayFreqResponse(
+     double[] filter,PlotALot03 plot,int len,int zeroTime){
+
+    //Create the arrays required by the Fourier Transform.
+    double[] timeDataIn = new double[len];
+    double[] realSpect = new double[len];
+    double[] imagSpect = new double[len];
+    double[] angle = new double[len];
+    double[] magnitude = new double[len];
+    
+    //Copy the filter into the timeDataIn array
+    System.arraycopy(filter,0,timeDataIn,0,filter.length);
+
+    //Compute DFT of the filter from zero to the folding
+    // frequency and save it in the output arrays.
+    ForwardRealToComplex01.transform(timeDataIn,
+                                     realSpect,
+                                     imagSpect,
+                                     angle,
+                                     magnitude,
+                                     zeroTime,
+                                     0.0,
+                                     0.5);
+
+    //Note that the conversion to decibels has been
+    // disabled.  You can re-enable the conversion by
+    // removing the comment indicators.
+/*    
+    //Display the magnitude data. Convert to normalized
+    // decibels first.
+    //Eliminate or change any values that are incompatible
+    // with log10 method.
+    for(int cnt = 0;cnt &lt; magnitude.length;cnt++){
+      if((magnitude[cnt] == Double.NaN) || 
+                                    (magnitude[cnt] &lt;= 0)){
+        //Replace the magnitude by a very small positive
+        // value.
+        magnitude[cnt] = 0.0000001;
+      }else if(magnitude[cnt] == Double.POSITIVE_INFINITY){
+        //Replace the magnitude by a very large positive
+        // value.
+        magnitude[cnt] = 9999999999.0;
+      }//end else if
+    }//end for loop
+    
+    //Now convert magnitude data to log base 10
+    for(int cnt = 0;cnt &lt; magnitude.length;cnt++){
+      magnitude[cnt] = log10(magnitude[cnt]);
+    }//end for loop
+*/
+    //Find the absolute peak value.  Begin with a negative
+    // peak value with a large magnitude and replace it
+    // with the largest magnitude value.
+    double peak = -9999999999.0;
+    for(int cnt = 0;cnt &lt; magnitude.length;cnt++){
+      if(peak &lt; abs(magnitude[cnt])){
+        peak = abs(magnitude[cnt]);
+      }//end if
+    }//end for loop
+
+    //Normalize to 20 times the peak value
+    for(int cnt = 0;cnt &lt; magnitude.length;cnt++){
+      magnitude[cnt] = 20*magnitude[cnt]/peak;
+    }//end for loop
+
+    //Now feed the normalized data to the plotting
+    // object.
+    for(int cnt = 0;cnt &lt; magnitude.length;cnt++){
+      plot.feedData(magnitude[cnt],angle[cnt]/20);
+    }//end for loop
+    
+  }//end displayFreqResponse
+  //-----------------------------------------------------//
+  
+  //This method receives two arrays and treats each array
+  // as a vector. The two arrays must have the same length.
+  // The program reverses the order of one of the vectors
+  // and returns the vector dot product of the two vectors.
+  double reverseDotProduct(double[] v1,double[] v2){
+    if(v1.length != v2.length){
+      System.out.println("reverseDotProduct");
+      System.out.println("Vectors must be same length.");
+      System.out.println("Terminating program");
+      System.exit(0);
+    }//end if
+    
+    double result = 0;
+    
+    for(int cnt = 0;cnt &lt; v1.length;cnt++){
+      result += v1[cnt] * v2[v1.length - cnt - 1];
+    }//end for loop
+
+    return result;
+  }//end reverseDotProduct
+  //-----------------------------------------------------//
+}//end class Adapt08<br><br><b><font face="Courier New,Courier">Listing 14</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p></p>
+
+<hr  size="3" width="100%">
+<p>Copyright 2006, Richard G. Baldwin.&nbsp; Reproduction in whole or in part in any 
+form or medium without express written permission from Richard Baldwin is 
+prohibited. </p>
+<h4>About the author</h4>
+<b><a href="mailto:Baldwin@DickBaldwin.com">Richard Baldwin</a></b><i> is a 
+college professor (at Austin Community College in Austin, TX) and private 
+consultant whose primary focus is a combination of Java, C#, and XML. In 
+addition to the many platform and/or language independent benefits of Java and 
+C# applications, he believes that a combination of Java, C#, and XML will become 
+the primary driving force in the delivery of structured information on the Web.</i>    
+<p><i>Richard has participated in numerous consulting projects and he 
+frequently provides onsite training at the high-tech companies located in and 
+around Austin, Texas.&nbsp; He is the author of Baldwin's Programming
+<a href="http://www.dickbaldwin.com">Tutorials</a>, which have gained a 
+worldwide following among experienced and aspiring programmers. He has also 
+published articles in JavaPro magazine.</i> </p>
+<p><i>In addition to his programming expertise, Richard has many years of 
+practical experience in Digital Signal Processing (DSP).&nbsp; His first job after he 
+earned his Bachelor's degree was doing DSP in the Seismic Research Department of 
+Texas Instruments.&nbsp; (TI is still a world leader in DSP.)&nbsp; In the following 
+years, he applied his programming and DSP expertise to other interesting areas 
+including sonar and underwater acoustics.</i> </p>
+<p><i>Richard holds an MSEE degree from Southern Methodist University and has 
+many years of experience in the application of computer technology to real-world 
+problems.</i> </p>
+<p><i><a href="mailto:baldwin@dickbaldwin.com">Baldwin@DickBaldwin.com</a></i>
+</p>
+<p><b>Keywords</b><br>
+Java adaptive filtering convolution filter frequency spectrum LMS amplitude 
+phase time-delay linear DSP impulse decibel log10 DFT transform bandwidth signal 
+noise real-time dot-product vector time-series prediction identification inverse 
+noise cancellation</p>
+<p>-end- </p>
+<p>&nbsp;</p>
+<p> <br>
+&nbsp; </p>
+<br>
+<br>
+<br>
+<br>
+<table border="0" cellpadding="0" cellspacing="0" width="16" height="23">
+	<!-- MSTableType="layout" -->
+	<tr>
+		<td valign="top" colspan="3" height="3">
+		<!-- MSCellType="ContentHead" -->
+		&nbsp;</td>
+	</tr>
+	<tr>
+		<td valign="top" width="6">
+		<!-- MSCellType="NavBody" -->
+		&nbsp;</td>
+		<td valign="top" width="5">
+		<!-- MSCellType="ContentBody" -->
+		&nbsp;</td>
+		<td valign="top" height="18" width="5">
+		<!-- MSCellType="NavBody2" -->
+		&nbsp;</td>
+	</tr>
+	<tr>
+		<td valign="top" colspan="3" height="2">
+		<!-- MSCellType="ContentFoot" -->
+		&nbsp;</td>
+	</tr>
+</table>
+</body>
+</html>

@@ -1,0 +1,620 @@
+<!DOCTYPE doctype PUBLIC "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+                
+  <meta http-equiv="Content-Type"
+ content="text/html; charset=iso-8859-1">
+                
+  <meta name="GENERATOR" content="Microsoft FrontPage 6.0">
+  <title>... JAVA and DSP by Richard G Baldwin</title>
+</head>
+<body link="#0000ff" vlink="#666666" alink="#ff0000" lang="EN-US">
+ 
+<h2>The Opposite Focus Component</h2>
+    <i>Baldwin explains how to use a feature of the focus subsystem 
+to find the opposite component when a particular component gains or loses the 
+focus.</i><p><b>Published:</b>&nbsp; November 2, 2004 <br>
+   <b>By <a href="#About_the_author">Richard G. Baldwin</a></b> </p>
+     
+<p>Java Programming, Notes # 1854</p>
+     
+<ul>
+  <li><a href="#Preface">Preface</a></li>
+  <li><a href="#Preview">Preview</a></li>
+  <li><a href="#Discussion_and_Sample_Code">Discussion and Sample Code</a><li><a href="#Run_the_Programs">Run the Program</a></li>
+  <li><a href="#Summary">Summary</a></li>
+	<li><a href="#Whats Next">What's Next</a></li>
+  <li><a href="#Complete_Program_Listings">Complete Program Listing</a> </li>
+</ul>
+        
+<hr size="3" width="100%" align="center">    
+<center>    
+<h2> <a name="Preface">Preface</a></h2>
+   </center>
+<p><font color="#FF0000"><b>The focus subsystem</b></font> </p>
+<p>When Java<sup>TM</sup> 2 SDK, Standard Edition Version 1.4 
+was released, it contained a large number of new features.&nbsp; This included many changes and additions to 
+the focus subsystem.&nbsp; </p>
+<p>Changes to the focus subsystem represented a major departure from previous 
+versions of Java.&nbsp; Unfortunately, some of the changes caused Java code that 
+had compiled and run successfully under previous versions of the SDK to fail 
+under the new version.</p>
+<p>This lesson is part of a series of lessons designed to 
+teach you how to use the new features of the focus subsystem.</p>
+<p>The first lesson in the series was entitled 
+<a href="http://www.developer.com/java/other/article.php/2198221">Focus 
+Traversal Policies in Java Version 1.4</a>.&nbsp; The previous lesson was 
+entitled <a href="http://www.developer.com/java/other/article.php/3091551">
+Programmatic Focus Traversal in Java V1.4</a>.</p>
+<p><font color="#ff0000"><b>Previous topics</b></font></p>
+<p>Previous lessons in this series have dealt with several aspects of the new focus subsystem, 
+including:</p>
+<ul>
+	<li>Defining new focus traversal keys</li>
+	<li>How to control focusability at runtime.</li>
+	<li>The ability to query for the currently focused Component.</li>
+	<li>The default Focus Traversal Policy.</li>
+	<li>How to establish a focus traversal policy and modify it at runtime.</li>
+	<li>How to control the focus programmatically.</li>
+</ul>
+<p>This lesson will show you how to write code to get the <i>opposite</i> focus 
+component.</p>
+  <p><font color="#FF0000"><b>Background information</b></font></p>
+<p>Before getting into the technical details, I will provide some quotations 
+from Sun that justify this new feature.&nbsp; In discussing the changes to the 
+focus subsystem, Sun has this to say:</p>
+<p><i>&quot;... many developers noted that the APIs for FocusEvent and 
+WindowEvent were insufficient because they did not provide a way for determining 
+the &quot;opposite&quot; Component involved in the focus or activation change. For 
+example, when a Component received a FOCUS_LOST event, it had no way of knowing 
+which Component was gaining focus. Since Microsoft Windows provides this 
+functionality for free, developers migrating from Microsoft Windows C/C++ or 
+Visual Basic to Java had been frustrated by the omission.&quot;</i></p>
+<p>While discussing focus event delivery, Sun tells us:</p>
+<p><i>&quot;Each event includes information about the &quot;opposite&quot; Component or Window 
+involved in the focus or activation change. For example, for a <b>FOCUS_GAINED</b> event, the opposite Component is the Component that lost 
+focus. If the focus or activation change occurs with a native application, with 
+a Java application in a different VM or context, or with no other Component, 
+then the opposite Component or Window is null. This information is accessible 
+using <b>FocusEvent.getOppositeComponent </b>or <b>WindowEvent.getOppositeWindow</b>. </i></p>
+<p><i>On some platforms, it is not possible to discern the opposite Component or 
+Window when the focus or activation change occurs between two different 
+heavyweight Components. In these cases, the opposite Component or Window may be 
+set to null on some platforms, and to a valid non-null value on other platforms. 
+However, for a focus change between two lightweight Components which share the 
+same heavyweight Container, the opposite Component will always be set correctly. 
+Thus, a pure Swing application can ignore this platform restriction when using 
+the opposite Component of a focus change that occurred within a top-level 
+Window.&quot;</i></p>
+<p><b><font color="#ff0000">Viewing tip</font></b> </p>
+ 
+<p>You may find it useful to open another copy of this lesson in a separate
+ browser window.&nbsp; That will make it easier for you to scroll back and
+ forth among the different figures and listings while you are reading about
+ them. </p>
+ 
+<p><b><font color="#ff0000">Supplementary material</font></b> </p>
+ 
+<p>I recommend that you also study the other lessons in my extensive collection
+ of online Java tutorials.&nbsp; You will find those lessons published at
+<a href="http://softwaredev.earthweb.com/java">Gamelan.com</a>.&nbsp; However, 
+as of the date of this writing, Gamelan doesn't maintain a consolidated index 
+of my Java tutorial lessons, and sometimes they are difficult to locate there.&nbsp; 
+You will find a consolidated index at <a
+ href="http://www.dickbaldwin.com">www.DickBaldwin.com</a><font
+ color="#000000">.</font></p>
+<h2 align="center"><a name="Preview">Preview</a></h2>
+<p>In this lesson, I will show you how to use a feature of the focus 
+subsystem to find the <i>opposite</i> component when a particular component 
+gains or loses the focus.</p>
+<p>If that particular component gains the focus, the <i>opposite</i> component is the 
+component that lost the focus.</p>
+<p>If that particular component loses the focus, the <i>opposite</i> component is the 
+component that gained the focus.</p>
+<h2 align="center"><a name="Discussion_and_Sample_Code">Discussion and Sample 
+Code</a></h2>
+<p><font color="#ff0000"><b>Focus traversal</b></font></p>
+<p>Sun defines focus traversal as <i>&quot;the user's ability to change the &quot;focus 
+owner&quot; without moving the cursor.&quot;</i></p>
+<p>Focus traversal can normally be either <i>forward</i> to the next component, 
+or <i>backward</i> to the previous component.</p>
+<p><font color="#ff0000"><b>Traversal typically uses keys</b></font></p>
+<p>Typically, focus traversal is accomplished using one or more keys on the 
+keyboard.&nbsp; For example, it is very common for the TAB key to be used to move the 
+focus along its traversal path in the <i>forward</i> direction, and for the 
+Shift-TAB key combination to be used to move the focus along its traversal path 
+in the<i> backward </i>direction.</p>
+<p><font color="#ff0000"><b>Keyboard is not required</b></font></p>
+<p>However, keyboard action isn't always required.&nbsp; It is also possible for 
+program code to initiate traversal through the execution of program 
+instructions.</p>
+<p><font color="#ff0000"><b>Description of the program</b></font></p>
+<p>This lesson presents and explains a program named <b>FocusOpposite01</b>.</p>
+<p>This program illustrates the ability to programmatically determine 
+the <i>opposite</i> component on a <b>focusGained</b> or 
+<b>focusLost</b> event.</p>
+<p><font color="#FF0000"><b>The program GUI</b></font></p>
+<p>The program causes a single <b>JFrame</b> object to appear on the screen as 
+shown in Figure 1.</p>
+<div align="center">
+<table border="1" cols="1" bgcolor="#99FFCC">
+<tbody>
+<tr>
+<td>                     
+<pre><img border="0" src="java1854a.gif" width="251" height="101">
+
+<b>Figure 1 Screen display.</b>
+</pre>
+</td>
+</tr>
+</tbody>                                
+</table>
+</div>
+</p>
+<p>Four <b>JButton</b> objects appear at the <i>North, South, 
+East,</i> and <i>West</i> locations in the frame.&nbsp; The 
+buttons display the captions 03, 06, 09, and 12.</p>
+<blockquote>
+	<p><i>(The positions of the buttons with their captions 
+mimic four of the numbers on a clock.)</i></p>
+</blockquote>
+<p>Two <b>JLabel</b> objects appear in the center of 
+the frame.&nbsp; These labels are used to display 
+focus information regarding the button in the 
+twelve o'clock position.</p>
+<p><font color="#FF0000"><b>Keyboard focus traversal</b></font></p>
+<p>When the program first starts running, the 
+button with the caption 12 has the focus, and the default focus policy applies.&nbsp; 
+According to the default focus policy, successively 
+pressing the tab key causes the focus to 
+traverse the buttons left to right, top to 
+bottom.&nbsp; Thus, the forward focus traversal path is as follows:&nbsp; 12, 09, 03, 06, and back to 12.</p>
+<p>Holding down the <i>Shift</i> key and successively 
+pressing the tab key causes the focus to traverse 
+the buttons in the reverse direction.</p>
+<p>Clicking any of the four buttons with the mouse causes it to gain the focus.</p>
+<p><font color="#FF0000"><b>When button 12 gains the focus ...</b></font></p>
+<p>Each time the button in the twelve o'clock 
+position gains the focus for any reason, the 
+<i>"opposite"</i> component that lost the focus is 
+identified in one of the labels in the center 
+of the frame.</p>
+<p>The fact that the button in the 
+twelve o'clock position gained the focus is also 
+indicated in the center of 
+the frame.</p>
+<p><font color="#FF0000"><b>When button 12 loses the focus ...</b></font></p>
+<p>Each time the button in the twelve o'clock 
+position loses the focus for any reason, the 
+<i>"opposite"</i> component that gained the focus is 
+identified in one of the labels in the center 
+of the frame.</p>
+<p>The fact that the button in the 
+twelve o'clock position lost the focus is also 
+indicated in the center of 
+the frame.</p>
+<p><font color="#FF0000"><b>SDK V1.4 or later is required</b></font></p>
+<p>This program requires SDK V1.4 or later to run correctly.&nbsp; It was tested using 
+SDK 1.4.2 under WinXP.</p>
+<p><font color="#FF0000"><b>Will discuss in fragments</b></font></p>
+<p>I will discuss this program in fragments.&nbsp; A complete listing of the 
+program is provided in Listing 6 near the end of the lesson.</p>
+<p>Listing 1 shows the entire class named <b>FocusOpposite01</b>, including the
+<b>main</b> method.</p>
+<table border="1" cols="1" width="400" bgcolor="#FFFF00">
+<tbody>
+<tr>
+<td>                     
+<pre>
+public class <b>FocusOpposite01</b> {
+  public static void main(String[] args){
+    <b>new GUI()</b>;
+  }//end main
+}//end class FocusOpposite01
+
+<b>Listing 1</b>
+</pre>
+</td>
+</tr>
+</tbody>                                
+</table></p>
+<p>The code in Listing 1 instantiates a new object of the <b>GUI</b> class.&nbsp; 
+This object produces the screen display shown in Figure 1.</p>
+<p><font color="#FF0000"><b>The GUI class</b></font></p>
+<p>The GUI class, which extends the<b> JFrame</b> class,<b> </b>begins in 
+Listing 2.</p>
+<table border="1" cols="1" width="400" bgcolor="#FFFF00">
+<tbody>
+<tr>
+<td>                     
+<pre>
+class <b>GUI extends JFrame</b>{
+  JLabel labelA = new JLabel(
+                          "Display output here");
+  JLabel labelB = new JLabel("");
+  JPanel panel = new JPanel();
+  JButton button12 = new JButton("12");
+  JButton button03 = new JButton("03");
+  JButton button06 = new JButton("06");
+  JButton button09 = new JButton("09");
+  JFrame frame = this;
+
+<b>Listing 2</b>
+</pre>
+</td>
+</tr>
+</tbody>                                
+</table></p>
+<p>The code in Listing 2 instantiates several buttons and other components 
+required to construct the GUI object shown in Figure 1.</p>
+<p>Listing 2 also creates a reference variable of type <b>JFrame</b> named <b>
+frame</b> and initializes it with a reference to the <b>GUI</b> object.</p>
+<p><font color="#FF0000"><b>The GUI constructor</b></font></p>
+<p>The constructor for the <b>GUI</b> class begins in Listing 3.</p>
+<table border="1" cols="1" width="400" bgcolor="#FFFF00">
+<tbody>
+<tr>
+<td>                     
+<pre>
+  public GUI(){//constructor
+    setSize(250,100);
+    setTitle("Copyright 2004, R.G.Baldwin");
+    setDefaultCloseOperation(
+                           JFrame.EXIT_ON_CLOSE);
+
+    getContentPane().add(button12,"North");
+    getContentPane().add(button03,"East");
+    getContentPane().add(button06,"South");
+    getContentPane().add(button09,"West");
+    panel.add(labelA);
+    panel.add(labelB);
+    getContentPane().add(panel);
+
+    frame.setVisible(true);
+
+<b>Listing 3</b>
+</pre>
+</td>
+</tr>
+</tbody>                                
+</table></p>
+<p>The code in Listing 3 places each of the components in the <b>JFrame</b> in 
+order to construct the <b>GUI </b>object.&nbsp; Then the code in Listing 3 
+causes the <b>GUI</b> object to become visible on the screen.</p>
+<p><font color="#FF0000"><b>An anonymous focus listener class</b></font></p>
+<p>Listing 4 shows the beginning of an anonymous inner class that is used to register a 
+focus listener on the button at twelve o'clock.</p>
+<blockquote>
+	<p><i>(If you are unfamiliar with the use of anonymous inner classes for 
+	listener registration, you will find other tutorial lessons that explain 
+	that concept on my <a href="http://www.dickbaldwin.com/">web site</a>.)</i></p>
+</blockquote>
+<table border="1" cols="1" width="400" bgcolor="#FFFF00">
+<tbody>
+<tr>
+<td>                     
+<pre>
+    //Register focus listener on the twelve
+    //o'clock button
+    button12.addFocusListener(
+      new FocusListener(){
+        public void <b>focusGained</b>(FocusEvent e){
+          labelA.setText("");
+          labelB.setText("");
+          Component lost =
+                        <b>e.getOppositeComponent()</b>;
+          if(lost != null && lost instanceof
+                                        JButton){
+            labelA.setText("Lost: " +
+                           ((JButton)lost).
+                             getActionCommand());
+          }//end if
+
+          Object gained = e.getSource();
+          if(gained != null && gained instanceof
+                                        JButton){
+            labelB.setText("Gained: " +
+                           ((JButton)gained).
+                             getActionCommand());
+          }//end if
+        }//end focusGained
+
+<b>Listing 4</b>
+</pre>
+</td>
+</tr>
+</tbody>                                
+</table></p>
+<p><font color="#FF0000"><b>The focusGained event handler method</b></font></p>
+<p>Listing 4 shows the entire definition for the <b>focusGained</b> event 
+handler method.</p>
+<p>The one thing in Listing 4 that is new to this lesson is the invocation of 
+the <b>getOppositeComponent</b> method on the incoming <b>FocusEvent</b> object.&nbsp; 
+The <b>getOppositeComponent</b> method returns a reference to the component that lost the focus when the 
+button at twelve o'clock gained the focus.</p>
+<p><font color="#FF0000"><b>What does Sun have to say?</b></font></p>
+<p>Sun has this to say about the <b>getOppositeComponent</b> method:</p>
+<blockquote>
+	<p><i>&quot;Returns the other Component involved in this focus change.</i></p>
+	<p><i>For a FOCUS_GAINED event, this is the Component that lost focus.</i></p>
+	<p><i>For a FOCUS_LOST event, this is the Component that gained focus.</i></p>
+	<p><i>If this focus change occurs with a native application, with a Java 
+	application in a different VM or context, or with no other Component, then 
+	null is returned.&quot;</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>The remaining code in focusGained ...</b></font></p>
+<p>The remaining code in the <b>focusGained</b> method in Listing 4:</p>
+<ul>
+	<li>Gets a reference to the object that gained the focus.</li>
+	<li>Confirms that neither that reference nor the reference to the <i>
+	opposite </i>component is null.</li>
+	<li>Confirms that both references refer to objects of type <b>JButton</b></li>
+	<li>Displays the identification of the button that gained the focus and the 
+	button that lost the focus in the labels in the center of the frame.</li>
+</ul>
+<p><font color="#FF0000"><b>The focusLost event handler method</b></font></p>
+<p>Listing 5 shows the remaining code in the anonymous focus listener class.</p>
+<table border="1" cols="1" width="400" bgcolor="#FFFF00">
+<tbody>
+<tr>
+<td>                     
+<pre>
+        public void <b>focusLost</b>(FocusEvent e){
+          labelA.setText(&quot;&quot;);
+          labelB.setText(&quot;&quot;);
+          Object lost = e.getSource();
+          if(lost != null &amp;&amp; lost instanceof
+                                        JButton){
+            labelA.setText(&quot;Lost: &quot; +
+                           ((JButton)lost).
+                             getActionCommand());
+          }//end if
+
+          Component gained =
+                        <b>e.getOppositeComponent()</b>;
+          if(gained != null &amp;&amp; gained instanceof
+                                        JButton){
+            labelB.setText(&quot;Gained: &quot; +
+                           ((JButton)gained).
+                             getActionCommand());
+          }//end if
+        }//end focusLost
+      }//end new FocusListener
+    );//end addFocusListener
+
+  }//end constructor
+}//end GUI
+
+<b>Listing 5</b>
+</pre>
+</td>
+</tr>
+</tbody>                                
+</table></p>
+<p>Listing 5 contains the entire <b>focusLost</b> event handler method.&nbsp; 
+</p>
+<p><font color="#FF0000"><b>Behavior of the focusLost method</b></font></p>
+<p>The behavior of the <b>focusLost</b> method is essentially the reverse of the 
+behavior of the <b>
+focusGained</b> method shown in Listing 4.</p>
+<p>Whenever the button at twelve o'clock loses the focus, the code in the <b>
+focusLost</b> method invokes the <b>getOppositeComponent</b> method to identify 
+the component that gained the focus.</p>
+<p>Then both components are displayed in 
+the labels in the center of the frame.</p>
+<p><font color="#FF0000"><b>End of constructor and GUI class</b></font></p>
+<p>Listing 5 also signals the end of the constructor for the <b>GUI</b> class 
+and the end of the <b>GUI</b> class.</p>
+<h2 align="center"><a name="Run_the_Programs">Run the Program</a></h2><p>I encourage you to copy, compile, and run the program provided in this lesson.&nbsp; 
+Experiment with it, making changes and observing the results of your changes.</p><h2 align="center"><a name="Summary">Summary</a></h2>
+<p>I showed you how to use a feature of the focus 
+subsystem to find the <i>opposite</i> component when a particular component gains or 
+loses the focus.</p>
+<p>If that particular component gains the focus, the <i>opposite</i> component is the 
+component that lost the focus.</p>
+<p>If that particular component loses the focus, the <i>opposite</i> component is the 
+component that gained the focus.</p>
+<h2 align="center"><a name="Whats Next">What's Next?</a></h2>
+<p>Future lessons will discuss other focus features including the 
+following:</p>
+<ul>
+	<li>The KeyEventDispatcher interface</li>
+	<li>The KeyEventPostProcessor interface</li>
+	<li>FocusEvent and WindowEvent</li>
+	<li>Event delivery</li>
+	<li>Temporary focus events</li>
+	<li>Focus and PropertyChangeListener</li>
+	<li>Focus and VetoableChangeListener<font face="Verdana, Arial, Helvetica" size="-1"> 
+	</li>
+</ul>
+</font>
+<h2 align="center"><a name="Complete_Program_Listings">Complete Program Listing</a></h2><p>
+A complete listing of the program discussed in this lesson is provided below.</p><p>
+<table border="1" cols="1" width="400" bgcolor="#FFFF00">
+<tbody>
+<tr>
+<td>                     
+<pre>
+/*File FocusOpposite01.java
+Copyright 2004 R.G.Baldwin
+
+This program illustrates the ability to determine
+the opposite component on a focusGained or
+focusLost event.
+
+A single JFrame object appears on the screen.
+Four JButton objects appear at the North, South,
+East, and West locations in the frame.  The
+buttons display the captions 03, 06, 09, and 12.
+(The positions of the buttons with their captions
+mimic four of the numbers on a clock.)
+
+Two blank JLabel objects appear in the center of
+the frame.  These labels are used to display
+focus information regarding the button in the
+twelve o'clock position.
+
+When the program first starts running, the
+button with the caption 12 has the focus.
+
+The default focus policy applies.  Successively
+pressing the tab key causes the focus to
+traverse the buttons left to right, top to
+bottom:  12, 09, 03, 06, and back to 12.
+
+Holding down the Shift key and successively
+pressing the tab key causes the focus to traverse
+the buttons in the reverse direction.
+
+Each time the button in the twelve o'clock
+position gains the focus for any reason, the
+"opposite" component that lost the focus is
+identified in one of the labels in the center
+of the frame.  The fact that the button in the
+twelve o'clock position gained the focus is also
+indicated in the other label in the center of
+the frame.
+
+Each time the button in the twelve o'clock
+position loses the focus for any reason, the
+"opposite" component that gained the focus is
+identified in one of the labels in the center
+of the frame.  The fact that the button in the
+twelve o'clock position lost the focus is also
+indicated in the other label in the center of
+the frame.
+
+Requires SDK V1.4 or later.  Tested using
+SDK 1.4.2 under WinXP
+************************************************/
+
+import java.awt.*;
+import java.awt.event.*;
+import javax.swing.*;
+
+public class FocusOpposite01 {
+  public static void main(String[] args){
+    new GUI();
+  }//end main
+}//end class FocusOpposite01
+//---------------------------------------------//
+
+class GUI extends JFrame{
+  JLabel labelA = new JLabel(
+                          "Display output here");
+  JLabel labelB = new JLabel("");
+  JPanel panel = new JPanel();
+  JButton button12 = new JButton("12");
+  JButton button03 = new JButton("03");
+  JButton button06 = new JButton("06");
+  JButton button09 = new JButton("09");
+  JFrame frame = this;
+
+  public GUI(){//constructor
+    setSize(250,100);
+    setTitle("Copyright 2004, R.G.Baldwin");
+    setDefaultCloseOperation(
+                           JFrame.EXIT_ON_CLOSE);
+
+    getContentPane().add(button12,"North");
+    getContentPane().add(button03,"East");
+    getContentPane().add(button06,"South");
+    getContentPane().add(button09,"West");
+    panel.add(labelA);
+    panel.add(labelB);
+    getContentPane().add(panel);
+
+    frame.setVisible(true);
+
+    //Register focus listener on the twelve
+    //o'clock button
+    button12.addFocusListener(
+      new FocusListener(){
+        public void focusGained(FocusEvent e){
+          labelA.setText("");
+          labelB.setText("");
+          Component lost =
+                        e.getOppositeComponent();
+          if(lost != null && lost instanceof
+                                        JButton){
+            labelA.setText("Lost: " +
+                           ((JButton)lost).
+                             getActionCommand());
+          }//end if
+
+          Object gained = e.getSource();
+          if(gained != null && gained instanceof
+                                        JButton){
+            labelB.setText("Gained: " +
+                           ((JButton)gained).
+                             getActionCommand());
+          }//end if
+        }//end focusGained
+
+        public void focusLost(FocusEvent e){
+          labelA.setText("");
+          labelB.setText("");
+          Object lost = e.getSource();
+          if(lost != null && lost instanceof
+                                        JButton){
+            labelA.setText("Lost: " +
+                           ((JButton)lost).
+                             getActionCommand());
+          }//end if
+
+          Component gained =
+                        e.getOppositeComponent();
+          if(gained != null && gained instanceof
+                                        JButton){
+            labelB.setText("Gained: " +
+                           ((JButton)gained).
+                             getActionCommand());
+          }//end if
+        }//end focusLost
+      }//end new FocusListener
+    );//end addFocusListener
+
+  }//end constructor
+}//end GUI
+
+<b>Listing 6</b>
+</pre></td></tr></tbody></table></p>
+<br>
+     
+<hr size="3" width="100%" align="center">    
+<p>Copyright 2004, Richard G. Baldwin.&nbsp; Reproduction in whole or in
+part in any form or medium without express written permission from Richard
+Baldwin is prohibited. </p>
+     
+<h4> <a name="About_the_author">About the author</a></h4><b>
+<a href="mailto:baldwin@dickbaldwin.com">Richard Baldwin</a></b><i>
+  is a college professor (at Austin Community College in Austin, TX) and
+private  consultant whose primary focus is a combination of Java, C#, and
+XML. In addition to the many platform and/or language independent benefits
+of Java and C# applications, he believes that a combination of Java, C#,
+and XML will become the primary driving force in the delivery of structured
+information on the Web.</i>    
+<p><i>Richard has participated in numerous consulting projects, and he frequently 
+ provides onsite training at the high-tech companies located in and around 
+ Austin, Texas.&nbsp; He is the author of Baldwin's Programming <a
+ href="http://www.dickbaldwin.com">Tutorials</a>,
+  which has gained a worldwide following among experienced and aspiring programmers.
+  He has also published articles in JavaPro magazine.</i> </p>
+     
+<p><i>In addition to his programming expertise, Richard has many years of 
+ practical experience in Digital Signal Processing (DSP).&nbsp; His first
+ job after he earned his Bachelor's degree was doing DSP in the Seismic Research 
+ Department of Texas Instruments.&nbsp; (TI is still a world leader in DSP.)&nbsp; 
+ In the following years, he applied his programming and DSP expertise to other
+ interesting areas including sonar and underwater acoustics.</i> </p>
+     
+<p><i>Richard holds an MSEE degree from Southern Methodist University and
+  has many years of experience in the application of computer technology
+to  real-world problems.</i> </p>
+     
+<p><i><a href="mailto:baldwin@dickbaldwin.com">Baldwin@DickBaldwin.com</a></i>
+  </p>
+     
+<p>-end- </p>
+   </body>
+</html>

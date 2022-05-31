@@ -1,0 +1,3049 @@
+<!doctype html public "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+   <meta name="GENERATOR" content="Mozilla/4.79 [en] (Windows NT 5.0; U) [Netscape]">
+   <title>... in Java by Richard G Baldwin</title>
+</head>
+<body link="#DD0000" vlink="#0000FF" alink="#FF0000" lang="EN-US">
+
+<h2>
+The ByteBuffer Class in Java</h2>
+<i>Baldwin explains the ByteBuffer class, which is fundamental to many
+of the new features in Java version 1.4.0.</i>
+<p><b>Published:</b>&nbsp; August 20, 2002
+<br><b>By <a href="#About the author">Richard G. Baldwin</a></b>
+<p>Java Programming Notes # 1782
+<ul >
+<li>
+<a href="#Preface">Preface</a></li>
+
+<li>
+<a href="#Discussion and Sample Programs">Discussion and Sample Code</a></li>
+
+<li>
+<a href="#Run the program">Run the Program</a></li>
+
+<li>
+<a href="#Complete Program Listings">Complete Program Listing</a></li>
+</ul>
+
+<hr size=3 width="100%" align=center>
+<center>
+<h2>
+<a NAME="Preface"></a>Preface</h2></center>
+<b><font color="#FF0000">New features in SDK Version 1.4.0</font></b>
+<p>The recently released Java<sup>TM</sup> 2 SDK, Standard Edition Version
+1.4.0 contains a number of new features.&nbsp; This article explains how
+to use some of those new features.
+<p>Among the new features is a new I/O API.&nbsp; Here is how Sun describes
+that API and the new features that it provides:
+<blockquote><i>"The new I/O (NIO) APIs introduced in v 1.4 provide new
+features and improved performance in the areas of buffer management, scalable
+network and file I/O, character-set support, and regular-expression matching.
+The NIO APIs supplement the I/O facilities in the java.io package."</i></blockquote>
+<b><font color="#FF0000">Basic classes</font></b>
+<p>The <i>abstract</i> <b>Buffer</b> class, and its subclasses, are basic
+to many of the new features in the NIO.&nbsp; The Sun documentation lists
+the following known subclasses of <b>Buffer</b>:
+<ul>
+<li>
+ByteBuffer</li>
+
+<li>
+CharBuffer</li>
+
+<li>
+DoubleBuffer</li>
+
+<li>
+FloatBuffer</li>
+
+<li>
+IntBuffer</li>
+
+<li>
+LongBuffer</li>
+
+<li>
+ShortBuffer</li>
+</ul>
+I explained the use of the <b>Buffer</b> class in a previous article entitled
+<a href="http://softwaredev.earthweb.com/java/sdjjavase/article/0,,12395_1367031,00.html">Understanding
+the Buffer class in Java</a>. As shown above, one of the subclasses of
+<b>Buffer</b>
+is named <b>ByteBuffer</b>.&nbsp; The <b>ByteBuffer</b> class is very important
+because it forms a basis for the use of channels in Java. <i>(The concept
+of I/O channels is another new feature of version 1.4, which I plan to
+cover in a future lesson.)</i>
+<p>The purpose of this lesson is to help you understand how to use the
+features of the <b>ByteBuffer</b> class.&nbsp; I will describe many of
+those features, and will illustrate the use of those features by explaining
+the code in a sample program.
+<p><b><font color="#FF0000">Caution: Dangerous Curves Ahead</font></b>
+<p>A caution is in order regarding the capabilities discussed in this lesson.&nbsp;
+Once you enter the domain of the <b>ByteBuffer</b> class, you have left
+the type-safe world normally associated with Java behind.&nbsp; You have
+entered a domain more akin to that normally enjoyed by adventuresome C
+and C++ programmers.
+<p>For example, there is nothing to prevent you from creating a buffer
+for <b>byte</b> data, populating it with <b>double</b> data, and then erroneously
+viewing and interpreting it as type <b>int</b>.&nbsp; Also, there is nothing
+to prevent you from interpreting LITTLE_ENDIAN data as BIG_ENDIAN, and
+vice versa.&nbsp; There are many other ways that you can go astray as well,
+and neither the compiler nor the virtual machine are of much help in preventing
+such programming errors.
+<p>I won't spend a lot of time discussing these matters, but I have provided
+a short sample program that illustrates the above sequence of events in
+Listing 38 near the end of the lesson.
+<p><b><font color="#FF0000">Viewing tip</font></b>
+<p>You may find it useful to open another copy of this lesson in a separate
+browser window.&nbsp; That will make it easier for you to scroll back and
+forth among the different listings and figures while you are reading about
+them.
+<p><b><font color="#FF0000">Supplementary material</font></b>
+<p>I recommend that you also study the other lessons in my extensive collection
+of online Java tutorials.&nbsp; You will find those lessons published at
+<a href="http://softwaredev.earthweb.com/java">Gamelan.com</a>.&nbsp;
+However, as of the date of this writing, Gamelan doesn't maintain a consolidated
+index of my Java tutorial lessons, and sometimes they are difficult to
+locate there.&nbsp; You will find a consolidated index at
+<a href="http://www.DickBaldwin.com">www.DickBaldwin.com</a><font color="#000000">.</font>
+<center>
+<h2>
+<a NAME="Discussion and Sample Programs"></a><font color="#000000">Discussion
+and Sample Code</font></h2></center>
+<b><font color="#FF0000">The inheritance model</font></b>
+<p>As mentioned above, the class named <b>ByteBuffer</b> extends the abstract
+class named <b>Buffer</b>.&nbsp; The Sun documentation lists the following
+known subclasses of <b>Buffer</b>:
+<ul>
+<li>
+ByteBuffer</li>
+
+<li>
+CharBuffer</li>
+
+<li>
+DoubleBuffer</li>
+
+<li>
+FloatBuffer</li>
+
+<li>
+IntBuffer</li>
+
+<li>
+LongBuffer</li>
+
+<li>
+ShortBuffer</li>
+</ul>
+<b><font color="#FF0000">Four common capabilities</font></b>
+<p>As you can see from the names of the subclasses, there is one subclass
+of the <b>Buffer</b> class for each non-boolean primitive type.&nbsp; If
+you compare the documentation for the seven subclasses of <b>Buffer</b>,
+you will find that they are very similar.&nbsp; In fact, each of the subclasses
+provides the following four capabilities for data of the type whose name
+appears in the subclass name.
+<ul>
+<li>
+<i>Absolute</i> and <i>relative</i> <b>get</b> and <b>put</b> methods that
+read and write single elements.</li>
+
+<li>
+<i>Relative</i> <b>get</b> methods that transfer contiguous sequences of
+elements from the buffer into an array.</li>
+
+<li>
+<i>Relative</i> <b>put</b> methods that transfer contiguous sequences of
+elements from an array <i>(of the same type)</i> or some other buffer
+<i>(of
+the same type)</i> into a buffer.</li>
+
+<li>
+Methods for <i>compacting, duplicating,</i> and <i>slicing</i> a buffer.</li>
+</ul>
+<i>(In addition, some of the subclasses provide capabilities that are specific
+to the type involved.&nbsp; For example, the <b>CharBuffer</b> class provides
+capabilities that are specific to the use of characters and strings, such
+as a method that wraps a <b>String</b> into a <b>CharBuffer</b> object.)</i>
+<p><b><font color="#FF0000">Additional capabilities of ByteBuffer class</font></b>
+<p>The <b>ByteBuffer</b> class also provides the following two additional
+capabilities.&nbsp; This makes the <b>ByteBuffer</b> class more general
+than the other five subclasses of <b>Buffer</b>.
+<ul>
+<li>
+Absolute and relative <b>get</b> and <b>put</b> methods that <i>read</i>
+and <i>write</i> values of primitive types other than <b>byte</b><i>.</i></li>
+
+<li>
+Methods for creating <i>view buffers,</i> which allow a byte buffer to
+be viewed as a buffer containing values of some other primitive type.</li>
+</ul>
+In addition, as I mentioned earlier, the <b>ByteBuffer</b> class is very
+important in understanding <i>I/O channels</i> in Java, which I intend
+to discuss in a future lesson.
+<p><b><font color="#FF0000">Will concentrate on the ByteBuffer class</font></b>
+<p>Therefore, I have singled out the
+<b>ByteBuffer</b> class for a detailed
+discussion in this lesson.&nbsp; Once you understand how to use objects
+of the <b>ByteBuffer</b> class, you should also understand how to use objects
+instantiated from the other subclasses of <b>Buffer</b>.
+<p><b><font color="#FF0000">A container for primitive data</font></b>
+<p>None of the container classes in the <i>Java Collections Framework</i>
+are designed to contain primitive data.&nbsp; Those containers are all
+designed to contain references to objects.&nbsp; Objects instantiated from
+subclasses of <b>Buffer</b> are containers for primitive data.
+<p><b><font color="#FF0000">Three important properties</font></b>
+<p>Every object instantiated from <b>Buffer</b> has the following three
+important properties:
+<ul>
+<li>
+<b>capacity</b>:&nbsp; The number of elements the buffer contains.</li>
+
+<li>
+<b>limit</b>:&nbsp; The index of the first element that should not be read
+or written.</li>
+
+<li>
+<b>position</b>:&nbsp; The next element to be read or written.</li>
+</ul>
+<font color="#000000">Various methods are provided by the <b>Buffer</b>
+class to deal with these properties, and these methods are inherited into
+the <b>ByteBuffer</b> class.&nbsp; I will use some of those methods in
+the sample program in this lesson.&nbsp; However, an earlier lesson <i>(see
+the link above)</i> that explained the use of the <b>Buffer</b> class also
+explained how to use all of the property-manipulating methods of the <b>Buffer</b>
+class.&nbsp; If you aren't familiar with those methods, you might want
+to refer back to that lesson.</font>
+<p><b><font color="#FF0000">Writing and reading data</font></b>
+<p>Subclasses of <b>Buffer</b> use <b>put</b> and <b>get</b> operations
+to store data into a buffer and to read data from the buffer <i>(to transfer
+data into and out of the buffer).</i>&nbsp; Each subclass defines two categories
+of <b>put</b> and <b>get</b> operations:
+<i>relative</i> and <i>absolute.</i>
+<p><b><font color="#FF0000">Relative put and get operations</font></b>
+<p><i>Relative</i> data transfer operations store or read one or more elements
+starting at the current <i>position.</i>&nbsp; The <i>position</i> is automatically
+incremented based on the number of items transferred and the type of data
+transferred.
+<p><b><font color="#FF0000">Absolute put and get operations</font></b>
+<p><i>Absolute</i> data transfer operations take an element index as a
+parameter and use that index to store or retrieve data.&nbsp; These operations
+do not affect the value of the <i>position</i> property.
+<p><b><font color="#FF0000">Method chaining</font></b>
+<p>Some of the methods of the <b>ByteBuffer</b> class return a reference
+to the buffer.&nbsp; This makes it possible to use <i>method invocation
+chaining</i> syntax such as that shown in Figure 1.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>buf5.putDouble(1.0/3.0).
+&nbsp;&nbsp;&nbsp;&nbsp; putFloat((float)(1.0/6.0)).
+&nbsp;&nbsp;&nbsp;&nbsp; putLong(Long.MAX_VALUE);
+
+<b>Figure 1</b></pre>
+</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">Read-only buffers</font></b>
+<p>It is possible to create read-only buffers, and I will do so in the
+sample program in this lesson.&nbsp; Methods that normally change the contents
+of a buffer will throw a <b>ReadOnlyBufferException</b> when invoked on
+a read-only buffer.
+<p>While a read-only buffer does not allow its content to be changed, its
+<i>mark,
+position, </i>and <i>limit</i> values may be changed. You can determine
+if a buffer is read-only by invoking its <b>isReadOnly</b> method.
+<p><b><font color="#FF0000">The sample program named ByteBuffer01</font></b>
+<p>The features of the <b>ByteBuffer</b> class are illustrated in the program
+named <b>ByteBuffer01</b>, which I will discuss in fragments.&nbsp; A complete
+listing of the program is provided in Listing 37 near the end of the lesson.
+<p><b><font color="#FF0000">Displaying buffer properties</font></b>
+<p>Listing 1 shows a convenience method that I wrote, whose purpose is
+to display the properties of a buffer.&nbsp; The reference to the buffer
+of interest and a <b>String</b> to identify the buffer are passed as parameters
+to the method.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp; static void <b>showBufferProperties</b>(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Buffer buf,String name){
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Buffer Properties for " + name
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; +"\n&nbsp; capacity="&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + <b>buf.capacity()
+</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + " limit="&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + <b>buf.limit()
+</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + " position="&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + <b>buf.position()</b>);
+&nbsp; }//end showBufferProperties
+
+<b><font face="Courier New,Courier">Listing 1</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>The method uses the three <i>getter</i> methods of the <b>Buffer</b>
+class to get and display the values of the following properties:
+<ul>
+<li>
+capacity</li>
+
+<li>
+limit</li>
+
+<li>
+position</li>
+</ul>
+<i>(Note that the property getter methods of the <b>Buffer</b> class do
+not conform to the JavaBeans design patterns for property getter methods.)</i>
+<p>The format of the output produced by Listing 1 is illustrated in Figure
+2.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Buffer Properties for buf5
+&nbsp; capacity=25 limit=25 position=0
+
+<b>Figure 2</b></pre>
+</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">Display byte data in the buffer</font></b>
+<p>Listing 2 shows a convenience method designed to display the byte data
+stored in the buffer, from the current value of the <i>position</i> property
+to the value of the <i>limit</i> property.&nbsp; The byte data is displayed
+12 bytes per row of output.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp; static void <b>showBufferData</b>(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ByteBuffer buf, String name){
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Buffer data for " + name);
+&nbsp;&nbsp;&nbsp; int cnt = 0;
+&nbsp;&nbsp;&nbsp; while(buf.<b>hasRemaining()</b>){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.print(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; buf.<b>get()</b> + " ");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cnt++;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(cnt%12 == 0)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println();//line
+&nbsp;&nbsp;&nbsp; }//end while loop
+&nbsp;&nbsp;&nbsp; System.out.println();//blank line
+&nbsp; }//end showBufferData
+
+<b><font face="Courier New,Courier">Listing 2</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>The code in Listing 2 invokes two important methods that are new to
+version 1.4.0 of the SDK:
+<ul>
+<li>
+The <b>hasRemaining</b> method of the <b>Buffer</b> class</li>
+
+<li>
+The <i>relative</i><b> get</b> method of the <b>ByteBuffer</b> class</li>
+</ul>
+<b><font color="#FF0000">The hasRemaining method</font></b>
+<p>The <b>hasRemaining</b> method is much like one of the methods of the
+<b>Iterator</b>
+and <b>Enumeration</b> interfaces, which are used to iterate on objects
+instantiated from the concrete classes of the <i>Java Collections Framework.</i>
+<p>The <b>hasRemaining</b> method tells whether there are any elements
+remaining between the current
+<i>position</i> and the <i>limit</i>.&nbsp;
+The method returns a <b>boolean</b>, which is <i>true </i>only if there
+is at least one element remaining in the buffer.&nbsp; Thus, this method
+works very nicely in the conditional clause of a <b>while</b> loop for
+the purpose of iterating on a buffer.
+<p><b><font color="#FF0000">The <i>relative</i> get method</font></b>
+<p>The relative
+<b>get</b> method of the <b>ByteBuffer</b> class reads
+and returns the byte at the buffer's current <i>position</i>, and then
+increments the position.&nbsp; Thus, it also works quite well in an iterator
+loop for a buffer <i>(provided you have exercised proper control over the
+values of the position and limit properties beforehand).</i>
+<p>The format of the output produced by the code in Listing 2 is illustrated
+in Figure 3.&nbsp; Each numeric value in figure three is the value of a
+single byte, and the values for twelve bytes are displayed on each row
+of output.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Buffer data for buf5
+0 0 0 1 0 0 0 2 0 0 0 4
+0 0 0 8 0 0 0 16 0 0 0 32
+0
+
+<b>Figure 3</b></pre>
+</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">Display array data</font></b>
+<p>Listing 3 is a convenience method designed simply to display the data
+in an array object of type <b>byte</b>.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp; static void <b>showArrayData</b>(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; byte[] array){
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Show array data");
+&nbsp;&nbsp;&nbsp; for(int cnt = 0;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cnt &lt; array.length; cnt++){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.print(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; array[cnt] + " ");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if((cnt+1)%12 == 0)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println();//line
+&nbsp;&nbsp;&nbsp; }//end for loop
+&nbsp;&nbsp;&nbsp; System.out.println();//blank line
+&nbsp; }//end showArrayData
+
+<b><font face="Courier New,Courier">Listing 3</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>I am assuming that you are already familiar with the use of array objects
+in Java, and therefore, I won't discuss this code in detail.&nbsp; If that
+is not the case, you can learn about array objects at <a href="http://www.DickBaldwin.com">www.DickBaldwin.com</a>.
+<p><b><font color="#FF0000">Create an array object</font></b>
+<p>There are several ways to create a buffer object in Java.&nbsp; One
+of those ways is to wrap an existing array object in a buffer object.&nbsp;
+To do that, we need an array object, which I will create using the code
+in Listing 4.&nbsp; <i>(I will discuss two other ways to create a buffer
+object later in this lesson.)</i>
+<p>Listing 4 shows the beginning of the <b>main</b> method.&nbsp; The code
+in Listing 4 creates, populates, and displays an eight-element array object
+containing data of type <b>byte</b>.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp; public static void <b>main</b>(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; String[] args){
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Wrap a byte array into a buffer
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Create and populate array");
+&nbsp;&nbsp;&nbsp; <b>byte[] a1 = {0,1,2,3,4,5,6,7}</b>;
+&nbsp;&nbsp;&nbsp; showArrayData(a1);
+
+<b><font face="Courier New,Courier">Listing 4</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>Again, I am assuming that you are already familiar with the use of array
+objects in Java, and therefore, I won't discuss this code in detail.&nbsp;
+The code in Listing 4 produces the output shown in Figure 4.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Create and populate array
+Show array data
+0 1 2 3 4 5 6 7
+
+<b>Figure 4</b></pre>
+</td>
+</tr>
+</table>
+
+<p>I show this here because we will want to compare it with the data stored
+in our buffer object later.
+<p><b><font color="#FF0000">Create a ByteBuffer object</font></b>
+<p>As mentioned above, there are several ways to create a buffer, and one
+of them is shown in Listing 5.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Wrap byte array in buffer");
+&nbsp;&nbsp;&nbsp; ByteBuffer buf1 =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ByteBuffer.<b>wrap(a1)</b>;
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Buffer is direct: "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + buf1.<b>isDirect()</b>);
+&nbsp;&nbsp;&nbsp; <b>showBufferData</b>(buf1, "buf1");
+
+<b><font face="Courier New,Courier">Listing 5</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>Listing 5 invokes the <i>static</i> <b>wrap</b> method of the <b>ByteBuffer</b>
+class to create a buffer that <i>wraps</i> the existing array object referred
+to by the reference variable named <b>a1</b>.
+<p><b><font color="#FF0000">Wrapping an array object</font></b>
+<p>There are two overloaded versions of the <b>wrap</b> method, one that
+requires incoming <i>offset</i> and <i>length</i> parameters, and one that
+doesn't.&nbsp;<i> (Both versions require an incoming reference to an array
+object.)</i>&nbsp; I used the simpler of the two versions, which does not
+require
+<i>offset</i> and <i>length.</i>
+<p><b><font color="#FF0000">A backing array</font></b>
+<p>For both versions, the new buffer is backed up by, or connected to,
+the byte array, which it wraps.&nbsp; Modifications to the buffer cause
+the array contents to be modified, and modifications to the array cause
+the buffer contents to be modified.&nbsp; <i>(It appears as though they
+are really the same set of data.&nbsp; Note that this is a common theme
+that will arise more than once in this lesson.)</i>
+<p><b><font color="#FF0000">Buffer property values</font></b>
+<p>For the version of the <b>wrap</b> method that I used, the <i>capacity</i>
+and <i>limit</i> properties of the new buffer are the same as <i>array.length.</i>&nbsp;
+The initial value of the <i>position</i> property of the new buffer is
+zero, and its <i>mark</i> is undefined.
+<p>For the more complex version, the initial values of the buffer properties
+are determined by the values of the <i>offset</i> and <i>length</i> parameters
+passed to the <b>wrap</b> method.
+<p><b><font color="#FF0000">Direct vs. non-direct buffers</font></b>
+<p>The code in Listing 5 also introduces you to the fact that a byte buffer
+is either <i>direct</i> or <i>non-direct</i>. I will have more to say about
+this later.&nbsp; For now, suffice it to say that a buffer created by wrapping
+an array object is <i>non-direct,</i> as indicated by the program output
+shown in Figure 5.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Wrap byte array in buffer
+Buffer is direct: false
+Buffer data for buf1
+0 1 2 3 4 5 6 7
+
+<b>Figure 5</b></pre>
+</td>
+</tr>
+</table>
+
+<p>Figure 5 also shows the byte contents of the buffer.&nbsp; If you compare
+this with the array contents shown in Figure 4, you will see that the buffer
+and its backing array contain the same values.
+<p><b><font color="#FF0000">Modifications are reflected ...</font></b>
+<p>Modifications to the buffer cause the array contents to be modified,
+and modifications to the array cause the buffer contents to be modified.&nbsp;
+This is partially illustrated in Listing 6.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Modify first array element");
+
+&nbsp;&nbsp;&nbsp; a1[0] = 10;
+&nbsp;&nbsp;&nbsp; showArrayData(a1);
+&nbsp;&nbsp;&nbsp; buf1.<b>position(0)</b>;
+&nbsp;&nbsp;&nbsp; showBufferData(buf1, "buf1");
+
+<b><font face="Courier New,Courier">Listing 6</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>The code in Listing 6 changes the value in the first array element from
+0 to 10, and then displays the modified contents of the array object and
+the buffer.&nbsp; You will see that this causes the value of the first
+element in the buffer to change accordingly.
+<p><b><font color="#FF0000">Set the position to zero</font></b>
+<p>Recall that the <b>showBufferData</b> method described earlier <i>(and
+invoked in Listing 6)</i> displays the contents of the buffer from the
+element specified by the value of the <i>position</i> property, to the
+element specified by the value of the <i>limit</i> property.
+<p>At this point, <i>(and at numerous other points in this program), </i>it
+is necessary to set the value of the <i>position</i> property to zero before
+invoking <b>showBufferData</b>.&nbsp; Otherwise, the contents of the entire
+buffer would not be displayed.&nbsp; This is accomplished by invoking the
+<b>position</b>
+method inherited from the <b>Buffer</b> class and passing zero as a parameter.
+<p>Figure 6 shows the output produced by the code in Listing 6.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Modify first array element
+Show array data
+10 1 2 3 4 5 6 7
+Buffer data for buf1
+10 1 2 3 4 5 6 7
+
+<b>Figure 6</b></pre>
+</td>
+</tr>
+</table>
+
+<p>The important thing to note in Figure 6 is that the value in the first
+element of the buffer was changed when the value in the first element of
+the backing array was changed.
+<p><b><font color="#FF0000">Absolute and relative put methods</font></b>
+<p>As I explained earlier, the <b>ByteBuffer</b> class provides both <i>absolute</i>
+and <i>relative</i> versions of the <b>put</b> and <b>get</b> methods.&nbsp;
+Listing 7 illustrates both categories of <b>put</b> methods.&nbsp; In addition,
+Listing 7 also illustrates the fact that modifications to the buffer cause
+the array contents to be modified accordingly.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Modify the buffer");
+&nbsp;&nbsp;&nbsp; buf1.put(3,(byte)20);
+&nbsp;&nbsp;&nbsp; buf1.position(4);
+&nbsp;&nbsp;&nbsp; buf1.put((byte)21);
+&nbsp;&nbsp;&nbsp; buf1.put((byte)22);
+&nbsp;&nbsp;&nbsp; buf1.position(0);
+&nbsp;&nbsp;&nbsp; showBufferData(buf1, "buf1");
+&nbsp;&nbsp;&nbsp; showArrayData(a1);
+
+<b><font face="Courier New,Courier">Listing 7</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">Invoke <i>absolute</i> put method</font></b>
+<p>The code in Listing 7 begins by using the <i>absolute</i> version of
+the <b>put</b> method to write the byte value 20 into the buffer at position
+3.&nbsp; This overwrites the value previously stored at that position.
+<i>(Note
+that the invocation of the absolute version of the <b>put</b> method has
+no effect on the value of the position property.)</i>
+<p><b><font color="#FF0000">Invoke <i>relative</i> put method</font></b>
+<p>Then the code in Listing 7 sets the value of the <i>position</i> property
+to 4, and invokes the <i>relative</i> version of the <b>put</b> method
+twice in succession.&nbsp; This causes the values 21 and 22 to overwrite
+the values previously stored in positions 4 and 5.
+<p><b><font color="#FF0000">Display the data</font></b>
+<p>Then Listing 7 sets the <i>position</i> to 0 and displays the contents
+of the buffer, followed by the contents of the array.&nbsp; The output
+produced by Listing 7 is shown in Figure 7.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Modify the buffer
+Buffer data for buf1
+10 1 2 20 21 22 6 7
+Show array data
+10 1 2 20 21 22 6 7
+
+<b>Figure 7</b></pre>
+</td>
+</tr>
+</table>
+
+<p>Perhaps the most important things to observe in this output are:
+<ul>
+<li>
+The values of the elements at positions 3, 4, and 5 in the buffer are changed
+to 20, 21, and 22 respectively.</li>
+
+<li>
+The values of the corresponding elements in the array are also changed
+accordingly.</li>
+</ul>
+<b><font color="#FF0000">Absolute get method</font></b>
+<p>The <i>relative</i> <b>get</b> method is illustrated in the <b>showBufferData</b>
+method discussed earlier.&nbsp; The <i>absolute</i> <b>get</b> method is
+illustrated in Listing 8.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp; System.out.println("Get absolute");
+&nbsp;&nbsp;&nbsp; System.out.println("Element 3 = "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + buf1.<b>get(3)</b>);
+&nbsp;&nbsp;&nbsp; System.out.println("Element 5 = "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + buf1.<b>get(5)</b>);
+&nbsp;&nbsp;&nbsp; System.out.println("Element 7 = "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + buf1.<b>get(7)</b>);
+
+<b><font face="Courier New,Courier">Listing 8</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>The code in Listing 8 gets and displays the values stored in positions
+3, 5, and 7.&nbsp; The output produced is shown in Figure 8.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Get absolute
+Element 3 = 20
+Element 5 = 22
+Element 7 = 7
+
+<b>Figure 8</b></pre>
+</td>
+</tr>
+</table>
+
+<p>You can verify these results by comparing them back against the buffer
+contents shown in Figure 7.
+<p><b><font color="#FF0000">Contiguous get and put operations</font></b>
+<p>In addition to reading and writing single elements from the buffer,
+the subclasses of the <b>Buffer</b> class <i>(including <b>ByteBuffer</b>)</i>
+allow for transferring contiguous blocks of elements into and out of the
+buffer.
+<p>The <b>ByteBuffer</b> class provides for the transfer of a block of
+bytes from the buffer into an array object of type <b>byte</b> <i>(contiguous
+<b>get</b>).</i>&nbsp;
+The class also provides for the transfer of a block of bytes from an array
+object <i>(of type <b>byte</b>),</i> or from another
+<b>ByteBuffer</b>
+object, into contiguous elements of a <b>ByteBuffer</b> object <i>(contiguous
+<b>put</b>).</i>
+<p><b><font color="#FF0000">A contiguous get to an array</font></b>
+<p>Listing 9 illustrates the use of the contiguous <b>get</b> method to
+transfer a block of contiguous bytes from the buffer to a new empty array
+object of type <b>byte</b>.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Contiguous get");
+&nbsp;&nbsp;&nbsp; buf1.position(0);
+&nbsp;&nbsp;&nbsp; showBufferData(buf1, "buf1");
+
+&nbsp;&nbsp;&nbsp; byte[] a2 = new byte[10];
+&nbsp;&nbsp;&nbsp; showArrayData(a2);
+
+&nbsp;&nbsp;&nbsp; buf1.<b>position(1)</b>;
+&nbsp;&nbsp;&nbsp; buf1.<b>get(a2, 3, 5)</b>;
+
+&nbsp;&nbsp;&nbsp; showArrayData(a2);
+
+<b><font face="Courier New,Courier">Listing 9</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">Create a new byte array</font></b>
+<p>The code in Listing 9 begins by displaying the contents of the buffer
+for later comparison with the array contents.&nbsp; Then it creates a new
+array object of type <b>byte</b> whose length is 10.&nbsp; This is larger
+than the capacity of the buffer.&nbsp; <i>(Recall that the initial value
+of each of the elements in a new byte array is zero unless purposely initialized
+using the syntax shown in Listing 4.)</i>
+<p><b><font color="#FF0000">Invoke the contiguous get method</font></b>
+<p>Then the code in Listing 9 sets the <i>position</i> of the buffer to
+1, and invokes the <b>get</b> method, passing the following parameters:
+<ul>
+<li>
+The array referred to by <b>a2</b> as the destination array into which
+bytes are to be written</li>
+
+<li>
+A value of 3 for the offset within the array of the first byte to be written</li>
+
+<li>
+A value of 5 for the maximum number of bytes to be written to the given
+array</li>
+</ul>
+This version of the <b>get</b> method copies the specified number of bytes
+from the buffer into the array, starting at the current <i>position</i>
+of the buffer and at the given offset in the array. The <i>position</i>
+of the buffer is then incremented by the specified number of bytes.
+<p><b><font color="#FF0000">Throwing exceptions</font></b>
+<p>As you have probably figured out already, various conditions involving
+the specified number of bytes, the remaining number of bytes in the buffer,
+and the length of the array can conflict, causing exceptions to be thrown.&nbsp;
+I won't attempt to explain those conditions here, but will simply refer
+you to the Sun documentation for those details.
+<p><b><font color="#FF0000">Display the data</font></b>
+<p>Finally, the code in Listing 9 displays the contents of the array into
+which the bytes were transferred.
+<p>The output produced by this section of the program is shown in Figure
+9.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Contiguous get
+Buffer data for buf1
+10 1 2 20 21 22 6 7
+Show array data
+0 0 0 0 0 0 0 0 0 0
+Show array data
+0 0 0 1 2 20 21 22 0 0
+
+<b>Figure 9</b></pre>
+</td>
+</tr>
+</table>
+
+<p>As you can see in Figure 9, after the transfer takes place, there are
+five non-zero values in the array, beginning at index 3.&nbsp; This matches
+the array offset value of 3 and the specified length of 5 passed as parameters
+to the contiguous <b>get</b> method.
+<p>Also, as you can see in Figure 9, the five values transferred from the
+buffer to the array began at <i>position</i> 1 in the buffer, corresponding
+to the fact that the <i>position</i> was set to 1 immediately prior to
+the invocation of the <b>get</b> method.
+<p><b><font color="#FF0000">Contiguous put from array as source of data</font></b>
+<p>Listing 10 illustrates the transfer of a block of bytes from an array
+into contiguous elements in a buffer.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Contiguous put from array");
+&nbsp;&nbsp;&nbsp; showArrayData(a2);
+
+&nbsp;&nbsp;&nbsp; buf1.<b>position(0)</b>;
+&nbsp;&nbsp;&nbsp; buf1.<b>put(a2, 1, 8)</b>;
+
+&nbsp;&nbsp;&nbsp; buf1.position(0);
+&nbsp;&nbsp;&nbsp; showBufferData(buf1, "buf1");
+
+<b><font face="Courier New,Courier">Listing 10</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>The code in Listing 10 begins by displaying the contents of the array
+for later comparison with the contents of the buffer.
+<p><b><font color="#FF0000">Invoke contiguous put method</font></b>
+<p>Then the code in Listing 10 sets the <i>position</i> of the buffer to
+0, and invokes the <b>put</b> method, passing the following parameters:
+<ul>
+<li>
+The array referred to by <b>a2</b> as the source array from which the bytes
+are to be read</li>
+
+<li>
+A value of 1 for the offset within the array of the first byte to be read</li>
+
+<li>
+A value of 8 for the maximum number of bytes to be read from the array</li>
+</ul>
+<b><font color="#FF0000">The output</font></b>
+<p>The output produced by the code in Listing 10 is shown in Figure 10.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Contiguous put from array
+Show array data
+0 0 0 1 2 20 21 22 0 0
+Buffer data for buf1
+0 0 1 2 20 21 22 0
+
+<b>Figure 10</b></pre>
+</td>
+</tr>
+</table>
+
+<p>Figure 10 shows that 8 bytes were transferred from the array to the
+buffer, beginning with the value at array index 1.&nbsp; These eight bytes
+were written into the buffer beginning at position 0, overwriting the eight
+values that previously existed in the buffer.
+<p><b><font color="#FF0000">Another non-direct buffer</font></b>
+<p>Here are some of the details from Sun regarding <i>direct</i> and <i>non-direct</i>
+buffers:
+<blockquote><i>"A byte buffer is either direct or non-direct. ... A direct
+byte buffer may be created by invoking the <b>allocateDirect</b> factory
+method of this class. ... Whether a byte buffer is direct or non-direct
+may be determined by invoking its <b>isDirect</b> method. This method is
+provided so that explicit buffer management can be done in performance-critical
+code."</i></blockquote>
+I will have more to say about <i>direct</i> buffers later on.
+<p>Listing 11 illustrates the creation of a <i>non-direct</i> buffer through
+allocation.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp; ByteBuffer buf2 =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ByteBuffer.<b>allocate(10)</b>;
+
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Buffer is direct: "
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + buf2.<b>isDirect()</b>);
+
+<b><font face="Courier New,Courier">Listing 11</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">Allocate the buffer</font></b>
+<p>Note that the code in Listing 11 invokes the <b>allocate</b> factory
+method of the <b>ByteBuffer</b> class <i>(and not the <b>allocateDirect</b>
+factory method, which would create a direct buffer).</i>
+<p>Then, for purpose of illustration, the code in Listing 11 invokes the
+<b>isDirect</b>
+method on the new buffer to determine if it is <i>direct</i> or <i>non-direct.</i>
+<p><b><font color="#FF0000">The output</font></b>
+<p>Figure 11 shows the output produced by the code in Listing 11.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Buffer is direct: false
+
+<b>Figure 11</b></pre>
+</td>
+</tr>
+</table>
+
+<p>As you can see from the output, this buffer is <i>non-direct.</i>
+<p><b><font color="#FF0000">Not a wrap</font></b>
+<p>This approach to creating a new buffer is different from the <i>wrapping</i>
+approach illustrated earlier in the program.&nbsp; This buffer is initially
+empty, and its <i>capacity</i> is 10 elements <i>(the value passed as a
+parameter to the factory method).&nbsp; </i>As an empty buffer of type
+<b>byte</b>,
+the initial value of each of its elements is zero.
+<p>The new buffer's initial <i>position</i> is 0, its <i>limit</i> is the
+same as its <i>capacity</i>, and its <i>mark</i> is undefined.
+<p>Although this buffer was not created by wrapping an existing array,
+the buffer does have a backing array, and the offset of the backing array
+is zero <i>(I will have more to say about the backing array later).</i>
+<p><b><font color="#FF0000">Contiguous put from buffer as source of data</font></b>
+<p>This new empty buffer is referred to by the reference variable named
+<b>buf2</b>.&nbsp;
+Listing 12 illustrates the transfer of a contiguous block of bytes from
+the buffer referred to by <b>buf1</b> to this new buffer.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp; showBufferData(buf2, "buf2");
+
+&nbsp;&nbsp;&nbsp; buf2.<b>position(1);
+</b>&nbsp;&nbsp;&nbsp; buf1.<b>position(0);
+</b>&nbsp;&nbsp;&nbsp; buf2.<b>put(buf1);
+
+</b>&nbsp;&nbsp;&nbsp; buf1.position(0);
+&nbsp;&nbsp;&nbsp; showBufferData(buf1, "buf1");
+&nbsp;&nbsp;&nbsp; buf2.position(0);
+&nbsp;&nbsp;&nbsp; showBufferData(buf2, "buf2");
+
+<b><font face="Courier New,Courier">Listing 12</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>The code in Listing 12 begins by displaying the contents of the new
+buffer.&nbsp; We will see shortly that each of the elements in the new
+buffer is initialized to a value of zero.
+<p><b><font color="#FF0000">Set positions and invoke contiguous put method</font></b>
+<p>Then the code in Listing 12 sets <i>position</i> values for each of
+the buffers and invokes the contiguous <b>put</b> method on <b>buf2</b>,
+passing <b>buf1</b> as a parameter.&nbsp; The parameter specifies the buffer
+that acts as a source for the data to be transferred.&nbsp; The <i>position</i>
+values of each of the buffers control the data that is actually transferred.
+<p><b><font color="#FF0000">What data is actually transferred?</font></b>
+<p>In particular, this version of the <b>put</b> method transfers the bytes
+remaining in the source buffer <i>(between position and limit)</i> into
+the destination buffer on which the method is invoked.&nbsp; The data is
+transferred into the destination buffer beginning at the current <i>position</i>
+for the destination buffer.&nbsp; Then the <i>position</i> properties of
+both buffers are incremented by the number of bytes transferred.
+<p><b><font color="#FF0000">Exceptions can be thrown</font></b>
+<p>Several conditions can cause exceptions to be thrown, but I will simply
+refer you to the Sun documentation for the details in that regard.
+<p><b><font color="#FF0000">The output</font></b>
+<p>After the data has been transferred, the contents of both buffers are
+displayed.&nbsp; The output produced by the code in Listing 12 is shown
+in Figure 12.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Buffer data for buf2
+0 0 0 0 0 0 0 0 0 0
+Buffer data for buf1
+0 0 1 2 20 21 22 0
+Buffer data for buf2
+0 0 0 <b>1 2 20 21 22 0 0
+
+Figure 12</b></pre>
+</td>
+</tr>
+</table>
+
+<p>As you can see, the initial values of each of the ten elements in the
+new empty buffer are zero.
+<p>All eight bytes of data are transferred from <b>buf1</b> <i>(beginning
+at position 0 in <b>buf1</b>)</i> to <b>buf2</b> <i>(beginning at position
+1 in <b>buf2</b>).</i>
+<p><i>(Note that the boldface values don't mean anything special here.&nbsp;
+I will refer back to them later.)</i>
+<p><b><font color="#FF0000">A backing array</font></b>
+<p>As I mentioned earlier, creation of a <i>non-direct</i> buffer using
+the <b>allocate</b> factory method also creates a backing array for the
+buffer.&nbsp; This is confirmed by the code in Listing 13.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp; if(buf2.<b>hasArray</b>())
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; showArrayData(buf2.<b>array</b>());
+
+<b><font face="Courier New,Courier">Listing 13</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>Listing 13 invokes the <b>hasArray</b> method of the <b>ByteBuffer</b>
+class to confirm the existence of a backing array, and then invokes the
+<b>array</b>
+method of that same class to get and display the contents of the array.&nbsp;
+The output produced by this code is shown in Figure 13.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Show array data
+0 0 0 1 2 20 21 22 0 0
+
+<b>Figure 13</b></pre>
+</td>
+</tr>
+</table>
+
+<p>As you should expect by now, the contents of the backing array shown
+in Figure 13 exactly match the contents of the buffer referred to by <b>buf2</b>
+shown in Figure 12.&nbsp; From this point forward, changes to the buffer
+will change the contents of the backing array, and changes to the backing
+array will change the contents of the buffer.
+<p><b><font color="#FF0000">Compacting a buffer</font></b>
+<p>The code in Listing 14 invokes the <b>compact</b> method on the buffer,
+after setting its position to 3.&nbsp; Then the code displays the contents
+of the buffer twice, first without setting the <i>position</i> to zero,
+and then again after setting the <i>position</i> to zero.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp; System.out.println("Compacting");
+&nbsp;&nbsp;&nbsp; buf2.position(3);
+&nbsp;&nbsp;&nbsp; buf2.<b>compact()</b>;
+&nbsp;&nbsp;&nbsp; showBufferData(buf2, "buf2");
+&nbsp;&nbsp;&nbsp; buf2.position(0);
+&nbsp;&nbsp;&nbsp; showBufferData(buf2, "buf2");
+
+<b><font face="Courier New,Courier">Listing 14</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">The compact method</font></b>
+<p>Basically, the invocation of the <b>compact</b> method on a buffer discards
+the bytes between the beginning and the <i>position,</i> and slides the
+remaining bytes forward to the beginning.
+<p>Note that the bytes vacated at the upper end continue to contain the
+values that were there before the <b>compact</b> method was invoked <i>(as
+opposed to filling in vacated elements with the value zero, for example).</i>
+<p>Here is a partial description of the behavior as provided by Sun:
+<blockquote><i>"The bytes between the buffer's current position and its
+limit, if any, are copied to the beginning of the buffer. ... The buffer's
+position is then set to n and its limit is set to its capacity."</i></blockquote>
+Sun goes on to explain:
+<blockquote><i>"The buffer's position is set to the number of bytes copied,
+rather than to zero, so that an invocation of this method can be followed
+immediately by an invocation of another relative put method."</i></blockquote>
+<b><font color="#FF0000">The output</font></b>
+<p>The output produced by the code in Listing 14 is shown in Figure 14.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Compacting
+Buffer data for buf2
+22 0 0
+Buffer data for buf2
+<b>1 2 20 21 22 0 0</b> 22 0 0
+
+<b>Figure 14</b></pre>
+</td>
+</tr>
+</table>
+
+<p>The row of data containing only three values is the result of invoking
+<b>showBufferData</b>
+without first setting the value of the <i>position</i> property to zero.&nbsp;
+In this case, these are the elements that were vacated when the <i>remaining</i>
+data in the buffer was copied to the beginning of the buffer.&nbsp; In
+other words, these are the last three elements in the buffer.&nbsp; Note
+that they still contain the values that were there before the <b>compact</b>
+method was invoked.
+<p>The row of data containing ten values is the result of invoking <b>showBufferData</b>
+after setting the value of the <i>position</i> property to zero.&nbsp;
+The boldface values in this row correspond to the boldface values in Figure
+12.&nbsp; As you can see, those values were slid to the left, leaving the
+original values in the three vacated bytes on the right.
+<p><b><font color="#FF0000">Duplicating a buffer</font></b>
+<p>The code in Listing 15 creates a new buffer that is a duplicate of the
+buffer referred to by <b>buf2</b>.&nbsp; Then it displays the contents
+of the original buffer and the new buffer.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp; System.out.println("Duplicating");
+&nbsp;&nbsp;&nbsp; ByteBuffer buf3 = <b>buf2.duplicate()</b>;
+&nbsp;&nbsp;&nbsp; buf2.position(0);
+&nbsp;&nbsp;&nbsp; showBufferData(buf2, "buf2");
+&nbsp;&nbsp;&nbsp; buf3.position(0);
+&nbsp;&nbsp;&nbsp; showBufferData(buf3, "buf3");
+
+<b><font face="Courier New,Courier">Listing 15</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">The duplicate method</font></b>
+<p>Invoking the <b>duplicate</b> method on a buffer creates a new buffer
+that shares the original buffer's content.&nbsp; In the same sense that
+we have seen backing arrays linked to buffers, this process causes two
+buffers to be similarly linked.&nbsp; Changes to the original buffer's
+content will be reflected in the new buffer, and vice versa.&nbsp; However,
+<i>position</i>,
+<i>limit</i>,
+and <i>mark</i> values for the two buffers are independent of one another.
+<p>The new buffer's initial <i>capacity</i>, <i>limit</i>, <i>position</i>,
+and <i>mark</i> values are identical to those of the original buffer. The
+new buffer will be <i>direct</i> if the original buffer is
+<i>direct</i>,
+and it will be read-only if the original buffer is read-only.
+<p><b><font color="#FF0000">The output</font></b>
+<p>Figure 15 shows the output produced by the code in Listing 15.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Duplicating
+Buffer data for buf2
+1 2 20 21 22 0 0 22 0 0
+Buffer data for buf3
+1 2 20 21 22 0 0 22 0 0
+
+<b>Figure 15</b></pre>
+</td>
+</tr>
+</table>
+
+<p>As you would expect from the name <i>duplicate,</i> the values in the
+two buffers are identical.
+<p><b><font color="#FF0000">Demonstrate that the buffers are linked</font></b>
+<p>The code in Listing 16 demonstrates that the two buffers are linked
+as described above.&nbsp; This code changes the value at <i>position</i>
+7 in one of the buffers, from 22 to 99, and then displays the contents
+of both buffers.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp; buf3.<b>put(7,(byte)99)</b>;
+&nbsp;&nbsp;&nbsp; buf2.position(0);
+&nbsp;&nbsp;&nbsp; showBufferData(buf2, "buf2");
+&nbsp;&nbsp;&nbsp; buf3.position(0);
+&nbsp;&nbsp;&nbsp; showBufferData(buf3, "buf3");
+
+<b><font face="Courier New,Courier">Listing 16</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">The output</font></b>
+<p>The output produced by Listing 16 is shown in Figure 16.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Buffer data for buf2
+1 2 20 21 22 0 0 <b>99</b> 0 0
+Buffer data for buf3
+1 2 20 21 22 0 0 <b>99</b> 0 0
+
+<b>Figure 16</b></pre>
+</td>
+</tr>
+</table>
+
+<p>As you can see, both buffers now contain the value 99 in <i>position</i>
+7.
+<p><b><font color="#FF0000">Slicing a buffer</font></b>
+<p>Listing 17 creates a new buffer, which contains a <i>slice</i> of the
+data contained in the buffer referred to by <b>buf2</b>.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp; System.out.println("Slice");
+&nbsp;&nbsp;&nbsp; buf2.position(3);
+&nbsp;&nbsp;&nbsp; ByteBuffer buf4 = <b>buf2.slice()</b>;
+&nbsp;&nbsp;&nbsp; buf2.position(0);
+&nbsp;&nbsp;&nbsp; showBufferData(buf2, "buf2");
+&nbsp;&nbsp;&nbsp; buf4.position(0);
+&nbsp;&nbsp;&nbsp; showBufferData(buf4, "buf4");
+
+<b><font face="Courier New,Courier">Listing 17</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">The slice method</font></b>
+<p>Invoking the <b>slice</b> method on a buffer creates a new buffer whose
+content is a shared subsequence of the original buffer's content.
+<p>The content of the new buffer starts at the original buffer's <i>position</i>
+at the time the <b>slice</b> method was invoked.
+<p>As was the case with the <b>duplicate</b> method, the content of the
+new buffer is linked to the content of the original buffer.&nbsp; Changes
+to the original buffer's content will be reflected in the new buffer, and
+vice versa.&nbsp; However, <i>position, limit,</i> and <i>mark</i> values
+for the two buffers are independent of one another.
+<p>The new buffer's initial <i>position</i> is zero.&nbsp; Its <i>capacity</i>
+and its <i>limit</i> is the number of bytes remaining in the original buffer.&nbsp;
+Its <i>mark</i> is undefined.
+<p>The new buffer will be <i>direct</i> if the original buffer is <i>direct</i>,
+and it will be read-only if the original buffer is read-only.
+<p>Note that the <i>position</i> of the original buffer was set to 3 in
+Listing 12.&nbsp; Therefore the new buffer should contain all of the elements
+from element 3 to the <i>limit.</i>
+<p><b><font color="#FF0000">The output</font></b>
+<p>Figure 17 shows the output produced by the code in Listing 17.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Slice
+Buffer data for buf2
+1 2 20 <b>21 22 0 0 99 0 0
+</b>Buffer data for buf4
+<b>21 22 0 0 99 0 0
+
+Figure 17</b></pre>
+</td>
+</tr>
+</table>
+
+<p>As you can see, the seven elements in the new buffer <i>(buf4)</i> consist
+of the seven boldface elements in the original buffer <i>(buf2).</i>
+<p><b><font color="#FF0000">Linked buffers</font></b>
+<p>Listing 18 demonstrates that the contents of the new buffer are linked
+to the contents of the buffer of which it is a slice.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp; buf4.<b>put(5,(byte)66)</b>;
+&nbsp;&nbsp;&nbsp; buf2.position(0);
+&nbsp;&nbsp;&nbsp; showBufferData(buf2, "buf2");
+&nbsp;&nbsp;&nbsp; buf4.position(0);
+&nbsp;&nbsp;&nbsp; showBufferData(buf4, "buf4");
+
+<b><font face="Courier New,Courier">Listing 18</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>Listing 18 changes the value of the element at <i>position</i> 5 in
+the new buffer from zero to 66, and then displays the contents of both
+buffers.&nbsp; The output is shown in Figure 18.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Buffer data for buf2
+1 2 20 21 22 0 0 99 <b>66</b> 0
+Buffer data for buf4
+21 22 0 0 99 <b>66</b> 0
+
+<b>Figure 18</b></pre>
+</td>
+</tr>
+</table>
+
+<p>As you can see, this change to the new buffer is reflected in the value
+of the corresponding element in the original buffer from which the new
+buffer is a slice.&nbsp; Note, however, that the element that is changed
+in the original buffer is the element from which the changed element in
+the new buffer was extracted.&nbsp; In this case, a change to the element
+at <i>position</i> 5 in the new buffer was reflected by a change in the
+element at <i>position</i> 8 in the original buffer.
+<p><b><font color="#FF0000">Direct buffers</font></b>
+<p>All of the buffers used thus far have been <i>non-direct</i> buffers.&nbsp;
+As mentioned earlier, a buffer is either <i>direct</i> or <i>non-direct.</i>&nbsp;
+The difference between the two is rather complex, so I will only scratch
+the surface in describing the differences.&nbsp; For additional information,
+you are encouraged to review the topic in the Sun documentation for the
+<b>ByteBuffer</b>
+class.
+<p>This information intended solely to expose the salient points regarding
+<i>direct</i>
+buffers.
+<p><b><font color="#FF0000">Avoid copying buffers</font></b>
+<p>The Java virtual machine will make a best effort to perform native I/O
+operations directly upon a <i>direct</i> buffer. According to Sun, the
+JVM <i>"will attempt to avoid copying the buffer's content to (or from)
+an intermediate buffer before (or after) each invocation of one of the
+underlying operating system's native I/O operations."</i>
+<p><b><font color="#FF0000">Possible garbage collector problems</font></b>
+<p>Also, according to Sun, <i>"The contents of direct buffers may reside
+outside of the normal garbage-collected heap, and so their impact upon
+the memory footprint of an application might not be obvious. It is therefore
+recommended that direct buffers be allocated primarily for large, long-lived
+buffers that are subject to the underlying system's native I/O operations.
+In general it is best to allocate direct buffers only when they yield a
+measurable gain in program performance."</i>
+<p><b><font color="#FF0000">Mapping a file to memory</font></b>
+<p>A direct byte buffer may also be created by mapping a region of a file
+directly into memory. I plan to discuss this possibility in a future lesson
+when I discuss the <b>FileChannel</b> class.
+<p><b><font color="#FF0000">Create a <i>direct</i> buffer</font></b>
+<p>The code in Listing 19 creates a 25-element <i>direct</i> buffer by
+invoking the <b>allocateDirect</b> factory method of the <b>ByteBuffer</b>
+class.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp; ByteBuffer buf5 =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ByteBuffer.<b>allocateDirect(25)</b>;
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Buffer is direct: "
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + buf5.<b>isDirect()</b>);
+&nbsp;&nbsp;&nbsp; System.out.println("Order = "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + buf5.<b>order()</b>);
+&nbsp;&nbsp;&nbsp; showBufferData(buf5, "buf5");
+&nbsp;&nbsp;&nbsp; if(buf5.<b>hasArray()</b>)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; showArrayData(buf5.array());
+&nbsp;&nbsp;&nbsp; else System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "No backing array");
+
+<b><font face="Courier New,Courier">Listing 19</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>Invocation of the <b>allocateDirect</b> method allocates a new <i>direct</i>
+byte buffer.&nbsp; The new buffer's <i>position</i> is zero, its <i>limit</i>
+is its <i>capacity</i>, and its <i>mark</i> is undefined.
+<p><b><font color="#FF0000">Does the buffer have a backing array?</font></b>
+<p>According to Sun, <i>"Whether or not it has a backing array is unspecified."</i>&nbsp;
+The code in Listing 19 checks to see if this buffer has a backing array
+by invoking <b>hasArray</b> method on the new buffer object.&nbsp; When
+we view the output, we will see that the answer is no when this program
+is executed on my machine.
+<p><b><font color="#FF0000">The byte order</font></b>
+<p>The next set of operations that we will investigate involves storing
+data of other primitive types in a buffer of type <b>ByteBuffer</b>.&nbsp;
+If we were populating the buffers from a source outside of Java, such as
+a disk file, we might be interested in the <i>order</i> of the bytes.&nbsp;
+The code in Listing 19 gets and displays the byte order the new buffer.
+<p>According to Sun, the <b>ByteBuffer</b> class <i>"defines methods for
+reading and writing values of all other primitive types, except boolean.
+Primitive values are translated to (or from) sequences of bytes according
+to the buffer's current byte order, which may be retrieved and modified
+via the <b>order</b> methods. Specific byte orders are represented by instances
+of the <b>ByteOrder</b> class."</i>
+<p><b><font color="#FF0000">BIG_ENDIAN or LITTLE_ENDIAN</font></b>
+<p>The <b>ByteOrder</b> class supports the following byte orders:
+<ul>
+<li>
+BIG_ENDIAN, in which the bytes of a multibyte value are ordered from most
+significant to least significant.</li>
+
+<li>
+LITTLE_ENDIAN, in which the bytes of a multibyte value are ordered from
+least significant to most significant.</li>
+</ul>
+The <b>ByteOrder</b> class also provides a static method named <b>nativeOrder</b>,
+which retrieves the native byte order of the underlying platform. <i>(For
+example, the machine that I am using to compose this lesson reports that
+its native byte order is LITTLE_ENDIAN).</i>
+<p>According to Sun, <i>"This method is defined so that performance-sensitive
+Java code can allocate direct buffers with the same byte order as the hardware.
+Native code libraries are often more efficient when such buffers are used."</i>
+<p>Also according to Sun, <i>" The initial order of a byte buffer is always
+<b>BIG_ENDIAN</b>."</i>
+<p><b><font color="#FF0000">Beyond the scope of this lesson ...</font></b>
+<p>Beyond this brief discussion, the topic of byte order for multi-byte
+values is beyond the scope of this lesson.&nbsp; If you would like to see
+about 8,000 online references to byte order, go to <a href="http://www.google.com/">http://www.google.com/</a>
+and search for <b>BIG_ENDIAN.</b>
+<p><b><font color="#FF0000">The output</font></b>
+<p>The code in Listing 19 invokes the <b>order</b> method on the new buffer
+to get and display the order of the buffer.&nbsp; The code also invokes
+the <b>isDirect</b> method to confirm that the new buffer is a <i>direct</i>
+buffer.
+<p>Figure 19 shows the output produced by the fragment of code in Listing
+19.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Buffer is direct: true
+Order = BIG_ENDIAN
+Buffer data for buf5
+0 0 0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0 0 0
+0
+No backing array
+
+<b>Figure 19</b></pre>
+</td>
+</tr>
+</table>
+
+<p>The output confirms that the buffer:
+<ul>
+<li>
+Is a <i>direct</i> buffer</li>
+
+<li>
+Is in <b>BIG_ENDIAN</b> order</li>
+
+<li>
+Has 25 elements, each with an initial value of zero</li>
+
+<li>
+Has no backing array</li>
+</ul>
+<b><font color="#FF0000">Operations specific to ByteBuffer</font></b>
+<p>Most of the operations that I have discussed so far can be performed
+on objects instantiated from any of the classes in the following list <i>(subclasses
+of <b>Buffer</b>):</i>
+<ul>
+<li>
+ByteBuffer</li>
+
+<li>
+CharBuffer</li>
+
+<li>
+DoubleBuffer</li>
+
+<li>
+FloatBuffer</li>
+
+<li>
+IntBuffer</li>
+
+<li>
+LongBuffer</li>
+
+<li>
+ShortBuffer</li>
+</ul>
+In each case, the behavior of the operation is appropriate for the type
+of data encapsulated in the object.
+<p>As I mentioned earlier in this lesson, the <b>ByteBuffer</b> class also
+provides several operations that are not available for the other classes
+in the above list.&nbsp; I will begin explaining those operations at this
+point.
+<p><b><font color="#FF0000">Encapsulating other primitive types</font></b>
+<p>In addition to encapsulating data of type <b>byte</b>, an object of
+the <b>ByteBuffer</b> class can also encapsulate a mixture of all of the
+other primitive types except for <b>boolean</b>.
+<p>For access to sequences of values of different types, the <b>ByteBuffer</b>
+class defines a family of <i>absolute</i> and <i>relative</i> <b>get</b>
+and <b>put</b> methods for each type.
+<p><b><font color="#FF0000">Index is by bytes and not by type</font></b>
+<p>It is important to note however, that the index parameters of the <i>absolute
+get</i> and <b>put</b> methods are in terms of bytes rather than in terms
+of the type being read or written.
+<blockquote><i>(For example, one value of type <b>int</b> requires four
+bytes in a byte buffer, so an <b>int</b> value that begins at index zero
+ends at index 3.&nbsp; The next value of some type would need to begin
+at index 4.)</i></blockquote>
+<b><font color="#FF0000">Invoke relative putDouble method</font></b>
+<p>Listing 20 illustrates storing a primitive <b>double</b> value in a
+buffer of type <b>ByteBuffer</b>.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp; buf5.<b>position(0)</b>;
+&nbsp;&nbsp;&nbsp; //...print statement deleted
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Put a double relative");
+&nbsp;&nbsp;&nbsp; buf5.<b>putDouble(1.0/3.0)</b>;
+&nbsp;&nbsp;&nbsp; System.out.println("position = "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + <b>buf5.position()</b>);
+
+<b><font face="Courier New,Courier">Listing 20</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>The code in Listing 20 starts by setting the <i>position</i> to zero.&nbsp;
+This specifies where the <b>putDouble</b> method will begin storing the
+sequence of bytes that represent the <b>double</b> value <i>(a <b>double</b>
+requires eight bytes).</i>
+<p><b><font color="#FF0000">The relative putDouble method</font></b>
+<p>The relative <b>putDouble</b> method is invoked to store a <b>double</b>
+value in the buffer beginning at <i>position.</i>&nbsp; Invocation of the
+method writes eight bytes containing the given <b>double</b> value, in
+the current byte <i>order</i>, into the buffer at the current <i>position</i>,
+and then increments the <i>position</i> by eight.
+<p><b><font color="#FF0000">The output</font></b>
+<p>Then the code in Listing 20 gets and displays the new value of <i>position.</i>
+<p>Figure 20 shows the output produced by the code fragment in Listing
+20.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Put a double relative
+position = <b>8
+
+Figure 20</b></pre>
+</td>
+</tr>
+</table>
+
+<p>As you can see, the new value for <i>position</i> is 8.
+<p><b><font color="#FF0000">Store a float and a long</font></b>
+<p>The code in Listing 21 stores two more primitive values, a <b>float</b>,
+and a <b>long</b>, by invoking the appropriate relative <b>put</b> method
+for the type of data being stored.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Put a float relative");
+&nbsp;&nbsp;&nbsp; buf5.<b>putFloat</b>((float)(1.0/6.0));
+&nbsp;&nbsp;&nbsp; System.out.println("position = "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + buf5.<b>position()</b>);
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Put a long relative");
+&nbsp;&nbsp;&nbsp; buf5.<b>putLong</b>(Long.MAX_VALUE);
+&nbsp;&nbsp;&nbsp; System.out.println("position = "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + buf5.<b>position()</b>);
+
+<b><font face="Courier New,Courier">Listing 21</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>In each case, the code in Listing 21 gets and displays the new value
+of <i>position</i> after storing the value.
+<p><b><font color="#FF0000">The output</font></b>
+<p>Figure 21 shows the output produced by the code in Listing 21.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Put a float relative
+position = <b>12
+</b>Put a long relative
+position = <b>20
+
+Figure 21</b></pre>
+</td>
+</tr>
+</table>
+
+<p>There should be no surprises in Figure 21.&nbsp; In each case, the value
+of <i>position</i> was incremented by the number of bytes required to store
+the value.
+<p><b><font color="#FF0000">Get and display primitive values</font></b>
+<p>The code in Listing 22 sets <i>position</i> to zero, and then invokes
+the appropriate relative <b>get</b> method to get and display each of the
+primitive values stored earlier in Listings 20 and 21.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp; buf5.<b>position(0)</b>;
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Get double relative");
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; buf5.<b>getDouble()</b>);
+&nbsp;&nbsp;&nbsp; System.out.println("position = "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + buf5.position());
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Get float relative");
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; buf5.<b>getFloat()</b>);
+&nbsp;&nbsp;&nbsp; System.out.println("position = "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + buf5.position());
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Get long relative");
+&nbsp;&nbsp;&nbsp; System.out.println(buf5.<b>getLong()</b>);
+&nbsp;&nbsp;&nbsp; System.out.println("position = "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + buf5.position());
+
+<b><font face="Courier New,Courier">Listing 22</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>Note that for data of mixed types, the program must know where to begin,
+and must know the type order in which to extract the values.
+<p><b><font color="#FF0000">The <i>relative</i> getDouble method</font></b>
+<p>The <i>relative</i> <b>getDouble</b> method, which is representative
+of similar methods of all the non-boolean types, reads the next eight bytes
+at the buffer's current <i>position</i>, composing them into a <b>double</b>
+value, according to the current byte <i>order.&nbsp; </i>Then it increments
+the
+<i>position</i> by eight.
+<p><b><font color="#FF0000">The output</font></b>
+<p>Figure 22 shows the output produced by the code in Listing 22.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Get double relative
+<b>0.3333333333333333
+</b>position = <b>8
+</b>Get float relative
+<b>0.16666667
+</b>position = <b>12
+</b>Get long relative
+<b>9223372036854775807
+</b>position = <b>20
+
+Figure 22</b></pre>
+</td>
+</tr>
+</table>
+
+<p>Again, there should be no surprises in Figure 22.&nbsp; In each case,
+the value stored earlier is retrieved and the <i>position</i> is incremented
+by the number of bytes appropriate for the type involved.
+<p>Perhaps the biggest problem to be faced with using this capability of
+mixed types is keeping track of what type is stored in which set of bytes
+so that they can be successfully retrieved later.
+<blockquote><i>If you would like to see the effect of having a mix-up in
+byte order, insert the following statement after the <b>put</b> code in
+Listing 21 and before the <b>get</b> code in Listing 22.&nbsp; This will
+cause the multibyte values to be stored as BIG_ENDIAN and retrieved as
+LITTLE_ENDIAN.&nbsp; Then examine the values that are displayed to see
+if they make sense.</i>
+<p><i>buf5.order(ByteOrder.LITTLE_ENDIAN);</i></blockquote>
+<b><font color="#FF0000">Absolute get and put methods for other types</font></b>
+<p>In addition to the <i>relative</i> <b>get</b> and <b>put</b> methods
+discussed above, the <b>ByteBuffer</b> class also provides <i>absolute
+</i><b>get</b>
+and <b>put</b> methods for all primitive types other than
+<b>boolean</b>.
+<p>Listing 23 uses the <i>absolute</i> version of the <b>getFloat</b> method
+to get and display the <b>float </b>value stored earlier in Listing 21.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Get float absolute");
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; buf5.<b>getFloat(8)</b>);
+&nbsp;&nbsp;&nbsp; System.out.println("position = "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + buf5.<b>position()</b>);
+
+<b><font face="Courier New,Courier">Listing 23</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">Don't use and don't modify the <i>position</i>
+property</font></b>
+<p>Note that the <i>absolute</i> versions of this family of methods don't
+use the value of <i>position</i> to read, and don't modify the value of
+<i>position.</i>&nbsp;
+Rather, the position from which the bytes should be read is provided by
+an incoming index parameter.
+<p>Listing 23 gets and displays the value of <i>position</i> after getting
+and displaying the <b>float</b> value beginning at element index 8.
+<p><b><font color="#FF0000">The output</font></b>
+<p>Figure 23 shown the output produced by the code in Listing 23.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Get float absolute
+<b>0.16666667
+</b>position = <b>20
+
+Figure 23</b></pre>
+</td>
+</tr>
+</table>
+
+<p>Note that the value of the <i>position</i> property is still 20, which
+is the value established earlier by the code in Listing 22.
+<p><b><font color="#FF0000">Put and get <i>absolute</i> for type int</font></b>
+<p>Listing 24 illustrates the use of the <i>absolute</i> <b>putInt</b>
+method to <b>put</b> a primitive <b>int</b> value into the buffer beginning
+at element index 20.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Put int absolute");
+&nbsp;&nbsp;&nbsp; buf5.<b>putInt(20,Integer.MAX_VALUE)</b>;
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Get int absolute");
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; buf5.<b>getInt(20)</b>);
+&nbsp;&nbsp;&nbsp; System.out.println("position = "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + buf5.position());
+
+<b><font face="Courier New,Courier">Listing 24</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>Then the code uses the <i>absolute</i> <b>getInt</b> method to get and
+display the <b>int</b> value stored at that location.
+<p>Figure 24 shows the output produced by the code in Listing 24.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Put int absolute
+Get int absolute
+<b>2147483647
+</b>position = <b>20
+
+Figure 24</b></pre>
+</td>
+</tr>
+</table>
+
+<p>By now, you should be able to understand this code, and the output that
+it produces with no further discussion on my part.
+<p><b><font color="#FF0000">Time for a break</font></b>
+<p>If you haven't taken a break since you first started reading this lesson,
+this would be a good time to do so.&nbsp; We are getting ready to switch
+gears and move in a somewhat different direction.
+<p><b><font color="#FF0000">Working with views</font></b>
+<p>Another major capability is provided by the <b>ByteBuffer</b> class
+for the case where the buffer contains types other than <b>byte</b> or
+<b>boolean</b>,
+and where all of the data stored in the buffer is of the same type.
+<p><b><font color="#FF0000">Methods to create view buffers</font></b>
+<p>The <b>ByteBuffer</b> class defines methods to create views of a given
+buffer, when all of the data in the buffer is of the same type.
+<blockquote><i>(Actually, all the data in the buffer doesn't have to be
+of the same type, but all of the data between the current position and
+the limit must be of the same type in order for the results to be meaningful.)</i></blockquote>
+A view buffer is another buffer <i>(of a type other than <b>ByteBuffer</b>)
+</i>whose
+content is backed by the buffer of type <b>ByteBuffer</b>.&nbsp; The data
+contained in the view buffer is the data contained in the byte buffer,
+between <i>position</i> and <i>limit,</i> when the view buffer is created.
+<p><b><font color="#FF0000">A backing buffer</font></b>
+<p>Changes made to the byte buffer's content will be reflected in the view
+buffer <i>(assuming that the change is made to an element that is common
+between the two),</i> and changes made to the view buffer will be reflected
+in the byte buffer.&nbsp; However, the values of the two buffers' <i>position,
+limit,</i> and <i>mark</i> properties are independent of one another.
+<p><b><font color="#FF0000">Advantages of a view buffer</font></b>
+<p>A view buffer is indexed in terms of the type-specific size of its values
+instead of being indexed in terms of the number of bytes.
+<p>A view buffer provides relative <b>get</b> and <b>put</b> methods for
+transferring contiguous sequences of values <i>(for types other than <b>byte</b>
+and <b>boolean</b>)</i> between a buffer and an array or some other buffer
+of the same type.
+<p>According to Sun, <i>"A view buffer is potentially much more efficient
+because it will be direct if, and only if, its backing byte buffer is direct."</i>
+<p><b><font color="#FF0000">Prepare some data in a buffer</font></b>
+<p>To begin working with views, we first need to put some data, all of
+the same type, in a byte buffer.&nbsp; The code in Listing 25 begins by
+clearing one of our existing byte buffers.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp; buf5.<b>clear()</b>;
+&nbsp;&nbsp;&nbsp; <b>showBufferProperties</b>(buf5, "buf5");
+&nbsp;&nbsp;&nbsp; buf5.<b>putInt</b>((int)<b>1</b>);
+&nbsp;&nbsp;&nbsp; buf5.<b>putInt</b>((int)<b>2</b>);
+&nbsp;&nbsp;&nbsp; buf5.<b>putInt</b>((int)<b>4</b>);
+&nbsp;&nbsp;&nbsp; buf5.<b>putInt</b>((int)<b>8</b>);
+&nbsp;&nbsp;&nbsp; buf5.<b>putInt</b>((int)<b>16</b>);
+&nbsp;&nbsp;&nbsp; buf5.<b>putInt</b>((int)<b>32</b>);
+&nbsp;&nbsp;&nbsp; buf5.position(0);
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Raw byte data");
+&nbsp;&nbsp;&nbsp; <b>showBufferData</b>(buf5, "buf5");
+
+<b><font face="Courier New,Courier">Listing 25</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">The clear method</font></b>
+<p>As the name of the method implies, when the <b>clear</b> method is invoked
+on a buffer, the <i>position</i> is set to zero, the <i>limit</i> is set
+to the <i>capacity</i>, and the <i>mark</i> is discarded.
+<p>However, according to Sun, <i>"This method does not actually erase the
+data in the buffer, but it is named as if it did because it will most often
+be used in situations in which that might as well be the case."</i>
+<p>After the buffer is cleared, the code in Listing 25 invokes the <b>showBufferProperties</b>
+method to confirm that the values of the properties are as explained above.
+<p><b><font color="#FF0000">Invoke the <i>relative</i> putInt method</font></b>
+<p>Then the code in Listing 25 invokes the <b>putInt</b> method six times
+in succession to store six different <b>int</b> values in the buffer.
+<p>Recall that an <b>int</b> value in Java is stored in 32 bits <i>(four
+bytes)</i> in two's complement notation.&nbsp; The <b>int</b> values stored
+in the buffer in Listing 25 were chosen so that each of the six values
+was small enough to reside in the least significant byte of its four-byte
+group.&nbsp; You will see why I did this in Figure 25, which shows the
+output produced by the code in Listing 25.
+<p><b><font color="#FF0000">The output</font></b>
+<p>After storing the six <b>int</b> values in the buffer, <i>(which requires
+24 bytes), </i>the code in Listing 25 displays the buffer in raw byte format.&nbsp;
+The output is shown in Figure 25.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Buffer Properties for buf5
+&nbsp; capacity=25 limit=25 position=0
+Raw byte data
+Buffer data for buf5
+<b><font color="#FF0000">0 0 0 1</font> <font color="#3333FF">0 0 0 2</font> <font color="#FF0000">0 0 0 4
+</font><font color="#3333FF">0 0 0 8</font> <font color="#FF0000">0 0 0 16</font> <font color="#3333FF">0 0 0 32
+</font>0
+
+Figure 25</b></pre>
+</td>
+</tr>
+</table>
+
+<p>For purposes of this presentation, I colored each of the four-byte groups
+that constitute the six <b>int</b> values in alternating colors of red
+and blue.&nbsp; You should be able to correlate the values in those bytes
+with the <b>int</b> values stored in the buffer by the code in Listing
+25.
+<p>The final byte in the buffer was not used in the storage of the six
+<b>int</b>
+values.&nbsp; Therefore, I left it black.
+<p><b><font color="#FF0000">ByteBuffer is indexed on bytes</font></b>
+<p>Even though it is possible to store primitive values other than <b>byte</b>
+in a buffer of type <b>ByteBuffer</b>, it isn't always easy to work with
+them later because the buffer is always indexed on the number of bytes.
+<p>For example, we would like to be able to iterate on the buffer to gain
+access to each primitive <b>int</b> value in succession.&nbsp; We saw earlier
+<i>(in
+the method named <b>showBufferData</b>)</i> that it is very to use the
+<b>hasRemaining</b>
+method and the relative <b>get</b> method to iterate on a byte buffer containing
+data of type <b>byte</b>.
+<p><b><font color="#FF0000">This approach doesn't always work</font></b>
+<p>However, an attempt to use that same approach when the type of data
+is something other than <b>byte</b> only works if the <i>capacity</i> of
+the buffer is an even multiple of the byte size of the data type stored
+in the buffer.&nbsp; For example, the code shown in Listing 26 is similar
+to the <b>showBufferData</b> method <i>(with <b>get</b> replaced by <b>getInt</b>)</i>
+but it won't work properly in this case.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp; buf5.position(0);
+&nbsp;&nbsp;&nbsp; showBufferProperties(buf5, "buf5");
+/******
+&nbsp;&nbsp;&nbsp; while(buf5.<b>hasRemaining</b>()){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.print(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; buf5.<b>getInt</b>() + " ");
+&nbsp;&nbsp;&nbsp; }//end while loop
+******/
+
+<b><font face="Courier New,Courier">Listing 26</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>The code in Listing 26 throws an exception after retrieving each of
+the six <b>int</b> values.&nbsp; <i>(Therefore it was necessary for me
+to put it in comments to cause the program to run successfully without
+throwing an exception.)</i>
+<p>The problem is that the six <b>int</b> values only consume 24 of the
+25 bytes in the buffer.&nbsp; After all six of the <b>int</b> values have
+been read, the 25th byte is left dangling.&nbsp; This causes the <b>hasRemaining</b>
+method to return <i>true</i> when in fact, there are no more <b>int</b>
+values remaining in the buffer.&nbsp; This causes the <b>getInt</b> method
+to be invoked one more time, and an attempt to invoke <b>getInt</b> at
+this point causes an exception to be thrown.
+<p><b><font color="#FF0000">A more complex approach</font></b>
+<p>Of course, it is possible to iterate over the <b>int</b> values stored
+in the buffer using more complex code, as shown in Listing 27.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp; int cnt = 0;
+&nbsp;&nbsp;&nbsp; while(cnt &lt; buf5.limit()-4){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.print(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; buf5.getInt(cnt) + " ");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cnt += 4;
+&nbsp;&nbsp;&nbsp; }//end while loop
+
+<b><font face="Courier New,Courier">Listing 27</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>However, it would be nice if a simpler approach were available <i>(and
+a view provides the simpler approach).</i>
+<p><b><font color="#FF0000">The output</font></b>
+<p>Figure 27 shows the output produced by the code in Listing 27.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>1 2 4 8 16 32
+
+<b>Figure 27</b></pre>
+</td>
+</tr>
+</table>
+
+<p>As you might expect, the code in Listing 27 displays the six <b>int</b>
+values stored in the buffer by the code in Listing 25.
+<p><b><font color="#FF0000">Get a view buffer</font></b>
+<p>The code in Listing 28 invokes the <b>asIntBuffer</b> method on the
+byte buffer to create a view buffer of type <b>IntBuffer</b>.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp; buf5.position(0);
+&nbsp;&nbsp;&nbsp; <b>IntBuffer</b> buf6 =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; buf5.<b>asIntBuffer()</b>;
+&nbsp;&nbsp;&nbsp; <b>showBufferProperties</b>(buf6, "buf6");
+&nbsp;&nbsp;&nbsp; System.out.println("Read-only = "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + buf6.<b>isReadOnly</b>());&nbsp;
+
+<b><font face="Courier New,Courier">Listing 28</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">The asIntBuffer method</font></b>
+<p>Invocation of <b>asIntBuffer</b> on a byte buffer creates a view object
+of the byte buffer as type <b>IntBuffer</b> <i>(another subclass of <b>Buffer</b>).</i>&nbsp;
+This causes the methods of the <b>IntBuffer</b> class to become available
+for performing operations on the new view buffer.
+<blockquote><i>(Note that the invocation of <b>asIntBuffer</b> on a byte
+buffer only makes sense when the byte buffer contains a sequence of <b>int</b>
+values between the current value of the <b>position</b> property and the
+value of the <b>limit</b> property.&nbsp; However, I don't believe there
+are any safety nets to keep you from invoking the <b>asIntBuffer</b> method
+on a byte buffer even when it isn't appropriate.&nbsp; You won't get a
+compiler error, and you probably won't get a runtime error either, unless
+there is a buffer overflow or buffer underflow.&nbsp; Viewing the data
+through the view buffer simply won't make any sense.&nbsp; From the viewpoint
+of safety, these new programming capabilities are more like programming
+in C or C++ than programming in Java.)</i></blockquote>
+<b><font color="#FF0000">The view buffer</font></b>
+<p>The content of the view buffer starts at the byte buffer's current <i>position</i>.
+<p>Once the view buffer has been created, changes to the byte buffer's
+content will be reflected in the view buffer, and vice versa.&nbsp; However,
+the values of the two buffers' <i>position, limit,</i> and <i>mark</i>
+properties will be independent.
+<p>The view buffer's initial <i>position</i> is zero.&nbsp; Its <i>capacity</i>
+and its
+<i>limit</i> are the number of bytes remaining in the byte buffer
+divided by four <i>(for type <b>int</b>).</i>&nbsp; Its <i>mark</i> is
+undefined.
+<p>The view buffer will be <i>direct</i> if the byte buffer is <i>direct</i>,
+and it will be read-only if the byte buffer is read-only.
+<p><b><font color="#FF0000">The output</font></b>
+<p>After creating the view buffer, the code in Listing 28 displays its
+properties and checks to see if it is a read-only buffer.&nbsp; Figure
+28 shows the output produced by the code in Listing 28.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Buffer Properties for buf6
+&nbsp; capacity=6 limit=6 position=0
+Read-only = false
+
+<b>Figure 28</b></pre>
+</td>
+</tr>
+</table>
+
+<p>The <i>capacity</i> and the <i>limit</i> for the view buffer are equal
+to the number of <b>int</b> values reflected in the buffer, and the <i>position</i>
+is set to zero.
+<p><b><font color="#FF0000">Iterate on the view buffer</font></b>
+<p>The code in Listing 29 uses the relative <b>get</b> method of the <b>IntBuffer</b>
+class, along with the <b>hasRemaining</b> method of the <b>Buffer</b> class
+to get and to display each of the <b>int</b> values reflected in the view
+buffer.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp; while(buf6.<b>hasRemaining</b>()){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.print(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; buf6.<b>get</b>() + " ");
+&nbsp;&nbsp;&nbsp; }//end while loop
+
+<b><font face="Courier New,Courier">Listing 29</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>Note the simplicity of the code in Listing 29, as compared to the code
+in Listing 27.
+<p><b><font color="#FF0000">The output</font></b>
+<p>The output produced by the code in Listing 29 <i>(shown in Figure 29)</i>
+is exactly the same as the output produced by the more complex code in
+Listing 27.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>1 2 4 8 16 32
+
+<b>Figure 29</b></pre>
+</td>
+</tr>
+</table>
+
+<p>In both cases, the code gets and displays the six <b>int</b> values
+stored in the buffer of type <b>ByteBuffer</b>.&nbsp; However, the code
+in Listing 29 operates on a view buffer of type <b>IntBuffer</b>, whereas
+the code in Listing 27 operates on the original buffer of type <b>ByteBuffer</b>.
+<p><b><font color="#FF0000">Get an int value with the <i>absolute</i> get
+method</font></b>
+<p>Listing 30 illustrates another major advantage of using a view buffer.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp; System.out.println("Element 4 = "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + buf6.<b>get(4)</b>);
+
+<b><font face="Courier New,Courier">Listing 30</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>The code in Listing 30 gets and displays the <b>int</b> value at <i>position</i>
+4 in the view buffer.&nbsp; Note that when invoking the <i>absolute get</i>
+method on the view buffer, it isn't necessary to take into account the
+number of bytes required to form each <b>int</b> value.&nbsp; In other
+words, the view buffer of type <b>IntBuffer</b> is indexed by byte groups
+<i>(where
+each group consists of the number of bytes required to store a value of
+type <b>int</b>)</i> and not by raw byte numbers.
+<p>To access the same <b>int</b> value from the byte buffer, it would be
+necessary to invoke the <b>getInt</b> method on the buffer and to specify
+the proper index, taking into account that each <b>int</b> value requires
+four bytes.
+<p>Figure 30 shows the output produced by the code in Listing 30.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Element 4 = 16
+
+<b>Figure 30</b></pre>
+</td>
+</tr>
+</table>
+
+<p>You can confirm that this is correct by comparing the value with that
+shown in Figure 29.
+<p><b><font color="#FF0000">Using <i>absolute</i> put method on the view
+object</font></b>
+<p>New <b>int</b> values can be stored in the underlying buffer of type
+<b>ByteBuffer</b>
+by invoking the <i>absolute</i> put method on the view object.&nbsp; This
+is illustrated in Listing 31, which invokes the <i>absolute</i><b>put</b>
+method on the view object to store the <b>int</b> value 99 at
+<i>position</i>
+4.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp; buf6.<b>put(4,99)</b>;
+
+&nbsp;&nbsp;&nbsp; buf6.position(0);
+&nbsp;&nbsp;&nbsp; //...print statement deleted
+&nbsp;&nbsp;&nbsp; while(buf6.<b>hasRemaining</b>()){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.print(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; buf6.<b>get</b>() + " ");
+&nbsp;&nbsp;&nbsp; }//end while loop
+
+<b><font face="Courier New,Courier">Listing 31</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>After storing the new value, the code in Listing 31 iterates on the
+view object to display the contents of the shared byte buffer, as reflected
+in the view object.&nbsp; Figure 31 shows the output produced by the code
+in Listing 31.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>1 2 4 8 <b>99</b> 32
+
+<b>Figure 31</b></pre>
+</td>
+</tr>
+</table>
+
+<p>Note that the <b>int</b> value of 16 previously stored in <i>position</i>
+4 has now been replaced by an <b>int</b> value of 99.
+<p><b><font color="#FF0000">Show the backing buffer</font></b>
+<p>Keep in mind that changes made to the view are also reflected in the
+backing buffer, which is the original buffer of type <b>ByteBuffer</b>.
+<p>The code in Listing 32 displays the contents of the original buffer
+of type <b>ByteBuffer</b> in raw byte form, twelve bytes per line.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp; buf5.position(0);
+&nbsp;&nbsp;&nbsp; showBufferData(buf5, "buf5");
+
+<b><font face="Courier New,Courier">Listing 32</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>Figure 32 shows the output from the code in Listing 32.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Buffer data for buf5
+<font color="#FF0000">0 0 0 1</font> <font color="#3333FF">0 0 0 2</font> <font color="#FF0000">0 0 0 4
+</font><font color="#3333FF">0 0 0 8</font> <b><font color="#FF0000">0 0 0 99</font></b> <font color="#3333FF">0 0 0 32
+</font>0
+
+<b>Figure 32</b></pre>
+</td>
+</tr>
+</table>
+
+<p>Once again, I have colored the four-byte groups that constitute the
+six <b>int</b> values in alternating colors of red and blue.&nbsp; Note
+in particular the boldface red group that now contains the value 99 in
+the least significant byte.&nbsp; If you refer back to Figure 25, you will
+see that the least significant byte of this group contained 16 before the
+change was made to the view object.
+<p><b><font color="#FF0000">A read-only view of type byte</font></b>
+<p>Each of the seven subclasses of the <b>Buffer</b> class provide a method
+named <b>asReadOnlyBuffer</b>, which can be used to create a read-only
+view buffer for that buffer type.&nbsp; This is illustrated in Listing
+33.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp; buf5.position(0);
+&nbsp;&nbsp;&nbsp; ByteBuffer buf7 =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; buf5.<b>asReadOnlyBuffer()</b>;
+&nbsp;&nbsp;&nbsp; System.out.println("Read-only = "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + buf7.<b>isReadOnly</b>());
+
+<b><font face="Courier New,Courier">Listing 33</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">The asReadOnlyBuffer method</font></b>
+<p>Invocation of the <b>asReadOnlyBuffer</b> method on a buffer creates
+a new, read-only buffer that shares the original buffer's content.
+<p>The content of the new buffer is the same as the content of the original
+buffer <i>(regardless of the value of position when the <b>asReadOnlyBuffer</b>
+method is invoked).</i>
+<p>Changes to the original buffer's content are reflected in the new buffer.&nbsp;
+However, the new buffer is read-only and its content cannot be modified.&nbsp;
+Therefore, the shared content cannot be modified by making changes to the
+read-only buffer.&nbsp; The values of the two buffers' <i>position, limit,
+</i>and
+<i>mark</i>
+properties are independent of one another
+<p>The new buffer's initial <i>capacity, limit, position,</i> and <i>mark</i>
+values are identical to those of the original buffer.
+<p><b><font color="#FF0000">The output</font></b>
+<p>Figure 33 shows the output produced by the code in Listing 33.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Read-only = true
+
+<b>Figure 33</b></pre>
+</td>
+</tr>
+</table>
+
+<p>As you can see from Figure 33, invocation of the <b>isReadOnly</b> method
+on the new buffer confirms that it is a read-only buffer.
+<p><b><font color="#FF0000">Compare the two buffers</font></b>
+<p>The code in Listing 34 displays the contents of the original buffer
+and the read-only view buffer to confirm that they have the same contents.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Show backing buffer");
+&nbsp;&nbsp;&nbsp; showBufferData(buf5, "buf5");
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Show view data");
+&nbsp;&nbsp;&nbsp; showBufferData(buf7, "buf7");
+
+<b><font face="Courier New,Courier">Listing 34</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>The output shown in Figure 34 confirms that the two buffers do have
+the same contents.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Show backing buffer
+Buffer data for buf5
+0 0 0 1 0 0 0 2 0 0 0 4
+0 0 0 8 0 0 0 99 0 0 0 32
+0
+Show view data
+Buffer data for buf7
+0 0 0 1 0 0 0 2 0 0 0 4
+0 0 0 8 0 0 0 99 0 0 0 32
+0
+
+<b>Figure 34</b></pre>
+</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">Modify the backing buffer</font></b>
+<p>The code in Listing 35 modifies the value in the first byte of the original
+backing buffer, and then displays the contents of both buffers to confirm
+that changes to the original buffer are reflected in the read-only view
+buffer.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp; buf5.<b>put(0,(byte)66)</b>;
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Show backing buffer");
+&nbsp;&nbsp;&nbsp; buf5.position(0);
+&nbsp;&nbsp;&nbsp; showBufferData(buf5, "buf5");
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Show view data");
+&nbsp;&nbsp;&nbsp; buf7.position(0);
+&nbsp;&nbsp;&nbsp; showBufferData(buf7, "buf7");
+
+<b><font face="Courier New,Courier">Listing 35</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>Figure 35 shows the output produced by the code in Listing 35, and does
+confirm that changes made to the backing buffer are reflected in the view
+buffer.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Show backing buffer
+Buffer data for buf5
+<b>66</b> 0 0 1 0 0 0 2 0 0 0 4
+0 0 0 8 0 0 0 99 0 0 0 32
+0
+Show view data
+Buffer data for buf7
+<b>66</b> 0 0 1 0 0 0 2 0 0 0 4
+0 0 0 8 0 0 0 99 0 0 0 32
+0
+
+<b>Figure 35</b></pre>
+</td>
+</tr>
+</table>
+
+<p>In particular, when the value in the first byte in the original buffer
+was changed to 66, this new value was reflected in the first byte of the
+view buffer.
+<p><b><font color="#FF0000">Modify the view buffer - oops, not possible</font></b>
+<p>An attempt to execute the statement shown as a comment in Listing 36
+causes the program to throw an exception
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp; //buf7.<b>put(0,(byte)66)</b>;
+
+<b><font face="Courier New,Courier">Listing 36</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>This confirms that this view buffer really is a read-only buffer.
+<p><b><font color="#FF0000">That's it for now</font></b>
+<p>By now you should understand a quite a lot about the <b>ByteBuffer</b>
+class in the new <b>java.nio</b> package.
+<p>Future articles will discuss channels and other new I/O features introduced
+in Java version 1.4.0.&nbsp; Those discussions will depend heavily on an
+understanding of the <b>Buffer</b> class and its subclasses, including
+<b>ByteBuffer</b>.
+<center>
+<h2>
+<a NAME="Run the program"></a>Run the Program</h2></center>
+If you haven't already done so, I encourage you to copy the code from Listing
+37 into your text editor, compile it, and execute it.&nbsp; Experiment
+with it, making changes, and observing the results of your changes.
+<p>Remember, however, that you must be running Java version 1.4.0 or later
+to compile and execute this program.
+<center>
+<h2>
+<a NAME="Complete Program Listings"></a>Complete Program Listing</h2></center>
+Complete listings of the programs discussed in this lesson are shown in
+Listing 37 and 38 below.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>/* File ByteBuffer01.java
+Copyright 2002, R.G.Baldwin
+
+Illustrates most of the features of
+the ByteBuffer class.
+
+Tested using JDK 1.4.0 under Win 2000.
+
+The output is:
+
+Create and populate array
+Show array data
+0 1 2 3 4 5 6 7
+
+Wrap byte array in buffer
+Buffer is direct: false
+Buffer data for buf1
+0 1 2 3 4 5 6 7
+
+Modify first array element
+Show array data
+10 1 2 3 4 5 6 7
+Buffer data for buf1
+10 1 2 3 4 5 6 7
+
+Modify the buffer
+Buffer data for buf1
+10 1 2 20 21 22 6 7
+Show array data
+10 1 2 20 21 22 6 7
+
+Get absolute
+Element 3 = 20
+Element 5 = 22
+Element 7 = 7
+
+Contiguous get
+Buffer data for buf1
+10 1 2 20 21 22 6 7
+Show array data
+0 0 0 0 0 0 0 0 0 0
+Show array data
+0 0 0 1 2 20 21 22 0 0
+
+Contiguous put from array
+Show array data
+0 0 0 1 2 20 21 22 0 0
+Buffer data for buf1
+0 0 1 2 20 21 22 0
+
+Contiguous put from buffer
+Buffer is direct: false
+Buffer data for buf2
+0 0 0 0 0 0 0 0 0 0
+Buffer data for buf1
+0 0 1 2 20 21 22 0
+Buffer data for buf2
+0 0 0 1 2 20 21 22 0 0
+Show array data
+0 0 0 1 2 20 21 22 0 0
+
+Compacting
+Buffer data for buf2
+22 0 0
+Buffer data for buf2
+1 2 20 21 22 0 0 22 0 0
+
+Duplicating
+Buffer data for buf2
+1 2 20 21 22 0 0 22 0 0
+Buffer data for buf3
+1 2 20 21 22 0 0 22 0 0
+Buffer data for buf2
+1 2 20 21 22 0 0 99 0 0
+Buffer data for buf3
+1 2 20 21 22 0 0 99 0 0
+
+Slice
+Buffer data for buf2
+1 2 20 21 22 0 0 99 0 0
+Buffer data for buf4
+21 22 0 0 99 0 0
+Buffer data for buf2
+1 2 20 21 22 0 0 99 66 0
+Buffer data for buf4
+21 22 0 0 99 66 0
+
+Other primitive types
+Buffer is direct: true
+Order = BIG_ENDIAN
+Buffer data for buf5
+0 0 0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0 0 0
+0
+No backing array
+Put and get primitive types
+Put a double relative
+position = 8
+Put a float relative
+position = 12
+Put a long relative
+position = 20
+
+Get double relative
+0.3333333333333333
+position = 8
+Get float relative
+0.16666667
+position = 12
+Get long relative
+9223372036854775807
+position = 20
+
+Get float absolute
+0.16666667
+position = 20
+
+Put int absolute
+Get int absolute
+2147483647
+position = 20
+
+Work with views
+Clear buf5
+Buffer Properties for buf5
+&nbsp; capacity=25 limit=25 position=0
+Raw byte data
+Buffer data for buf5
+0 0 0 1 0 0 0 2 0 0 0 4
+0 0 0 8 0 0 0 16 0 0 0 32
+0
+
+This won't always work
+
+More complex approach
+1 2 4 8 16 32
+
+Get a view
+Buffer Properties for buf6
+&nbsp; capacity=6 limit=6 position=0
+Read-only = false
+
+Get relative from view
+1 2 4 8 16 32
+Get absolute from view
+Element 4 = 16
+
+Put absolute in view
+Show modified view
+1 2 4 8 99 32
+Show backing buffer
+Buffer data for buf5
+0 0 0 1 0 0 0 2 0 0 0 4
+0 0 0 8 0 0 0 99 0 0 0 32
+0
+
+Create read-only view
+Read-only = true
+Show backing buffer
+Buffer data for buf5
+0 0 0 1 0 0 0 2 0 0 0 4
+0 0 0 8 0 0 0 99 0 0 0 32
+0
+Show view data
+Buffer data for buf7
+0 0 0 1 0 0 0 2 0 0 0 4
+0 0 0 8 0 0 0 99 0 0 0 32
+0
+
+Modify backing buffer
+Show backing buffer
+Buffer data for buf5
+66 0 0 1 0 0 0 2 0 0 0 4
+0 0 0 8 0 0 0 99 0 0 0 32
+0
+Show view data
+Buffer data for buf7
+66 0 0 1 0 0 0 2 0 0 0 4
+0 0 0 8 0 0 0 99 0 0 0 32
+0
+
+Modify view oops!
+
+**************************************/
+
+import java.nio.*;
+
+class ByteBuffer01{
+&nbsp; static void showBufferProperties(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Buffer buf,String name){
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Buffer Properties for " + name
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; +"\n&nbsp; capacity="&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + buf.capacity()
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + " limit="&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + buf.limit()
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + " position="&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + buf.position());
+&nbsp; }//end showBufferProperties
+&nbsp; //---------------------------------//
+&nbsp;&nbsp;
+&nbsp; static void showBufferData(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ByteBuffer buf, String name){
+&nbsp;&nbsp;&nbsp; //Displays buffer contents from&nbsp;
+&nbsp;&nbsp;&nbsp; // current position to limit using
+&nbsp;&nbsp;&nbsp; // relative get method, twelve&nbsp;
+&nbsp;&nbsp;&nbsp; // elements per row.
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Buffer data for " + name);
+&nbsp;&nbsp;&nbsp; int cnt = 0;
+&nbsp;&nbsp;&nbsp; while(buf.hasRemaining()){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.print(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; buf.get() + " ");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cnt++;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(cnt%12 == 0)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println();//line
+&nbsp;&nbsp;&nbsp; }//end while loop
+&nbsp;&nbsp;&nbsp; System.out.println();//blank line
+&nbsp; }//end showBufferData
+&nbsp; //---------------------------------//
+
+&nbsp; static void showArrayData(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; byte[] array){
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Show array data");
+&nbsp;&nbsp;&nbsp; for(int cnt = 0;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cnt &lt; array.length; cnt++){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.print(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; array[cnt] + " ");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if((cnt+1)%12 == 0)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println();//line
+&nbsp;&nbsp;&nbsp; }//end for loop
+&nbsp;&nbsp;&nbsp; System.out.println();//blank line
+&nbsp; }//end showArrayData
+&nbsp; //---------------------------------//
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp; public static void main(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; String[] args){
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Wrap a byte array into a buffer
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Create and populate array");
+&nbsp;&nbsp;&nbsp; byte[] a1 = {0,1,2,3,4,5,6,7};
+&nbsp;&nbsp;&nbsp; showArrayData(a1);
+&nbsp;&nbsp;&nbsp; System.out.println();//blank line
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Wrap byte array in buffer");
+&nbsp;&nbsp;&nbsp; ByteBuffer buf1 =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ByteBuffer.wrap(a1);
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Buffer is direct: "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + buf1.isDirect());
+&nbsp;&nbsp;&nbsp; showBufferData(buf1, "buf1");
+&nbsp;&nbsp;&nbsp; System.out.println();//blank line
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Mods to the buffer will cause the
+&nbsp;&nbsp;&nbsp; // array to be modified and vice&nbsp;
+&nbsp;&nbsp;&nbsp; // versa.
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Modify first array element");
+&nbsp;&nbsp;&nbsp; a1[0] = 10;
+&nbsp;&nbsp;&nbsp; showArrayData(a1);
+&nbsp;&nbsp;&nbsp; buf1.position(0);
+&nbsp;&nbsp;&nbsp; showBufferData(buf1, "buf1");
+&nbsp;&nbsp;&nbsp; System.out.println();//blank line
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Modify the buffer");
+&nbsp;&nbsp;&nbsp; buf1.put(3,(byte)20);
+&nbsp;&nbsp;&nbsp; buf1.position(4);
+&nbsp;&nbsp;&nbsp; buf1.put((byte)21);
+&nbsp;&nbsp;&nbsp; buf1.put((byte)22);
+&nbsp;&nbsp;&nbsp; buf1.position(0);
+&nbsp;&nbsp;&nbsp; showBufferData(buf1, "buf1");
+&nbsp;&nbsp;&nbsp; showArrayData(a1);
+&nbsp;&nbsp;&nbsp; System.out.println();//blank line
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; System.out.println("Get absolute");
+&nbsp;&nbsp;&nbsp; System.out.println("Element 3 = "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + buf1.get(3));
+&nbsp;&nbsp;&nbsp; System.out.println("Element 5 = "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + buf1.get(5));
+&nbsp;&nbsp;&nbsp; System.out.println("Element 7 = "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + buf1.get(7));
+&nbsp;&nbsp;&nbsp; System.out.println();//blank line
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Contiguous get");
+&nbsp;&nbsp;&nbsp; buf1.position(0);
+&nbsp;&nbsp;&nbsp; showBufferData(buf1, "buf1");
+&nbsp;&nbsp;&nbsp; byte[] a2 = new byte[10];
+&nbsp;&nbsp;&nbsp; showArrayData(a2);
+&nbsp;&nbsp;&nbsp; buf1.position(1);
+&nbsp;&nbsp;&nbsp; buf1.get(a2, 3, 5);
+&nbsp;&nbsp;&nbsp; showArrayData(a2);
+&nbsp;&nbsp;&nbsp; System.out.println();//blank line
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Contiguous put from array");
+&nbsp;&nbsp;&nbsp; showArrayData(a2);
+&nbsp;&nbsp;&nbsp; buf1.position(0);
+&nbsp;&nbsp;&nbsp; buf1.put(a2, 1, 8);
+&nbsp;&nbsp;&nbsp; buf1.position(0);
+&nbsp;&nbsp;&nbsp; showBufferData(buf1, "buf1");
+&nbsp;&nbsp;&nbsp; System.out.println();//blank line
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Contiguous put from buffer");
+&nbsp;&nbsp;&nbsp; ByteBuffer buf2 =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ByteBuffer.allocate(10);
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Buffer is direct: "
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + buf2.isDirect());
+&nbsp;&nbsp;&nbsp; showBufferData(buf2, "buf2");
+&nbsp;&nbsp;&nbsp; buf2.position(1);
+
+&nbsp;&nbsp;&nbsp; buf1.position(0);
+&nbsp;&nbsp;&nbsp; buf2.put(buf1);
+&nbsp;&nbsp;&nbsp; buf1.position(0);
+&nbsp;&nbsp;&nbsp; showBufferData(buf1, "buf1");
+&nbsp;&nbsp;&nbsp; buf2.position(0);
+&nbsp;&nbsp;&nbsp; showBufferData(buf2, "buf2");
+&nbsp;&nbsp;&nbsp; if(buf2.hasArray())
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; showArrayData(buf2.array());
+&nbsp;&nbsp;&nbsp; System.out.println();//blank line
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; System.out.println("Compacting");
+&nbsp;&nbsp;&nbsp; buf2.position(3);
+&nbsp;&nbsp;&nbsp; buf2.compact();
+&nbsp;&nbsp;&nbsp; showBufferData(buf2, "buf2");
+&nbsp;&nbsp;&nbsp; buf2.position(0);
+&nbsp;&nbsp;&nbsp; showBufferData(buf2, "buf2");
+&nbsp;&nbsp;&nbsp; System.out.println();//blank line
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; System.out.println("Duplicating");
+&nbsp;&nbsp;&nbsp; ByteBuffer buf3 = buf2.duplicate();
+&nbsp;&nbsp;&nbsp; buf2.position(0);
+&nbsp;&nbsp;&nbsp; showBufferData(buf2, "buf2");
+&nbsp;&nbsp;&nbsp; buf3.position(0);
+&nbsp;&nbsp;&nbsp; showBufferData(buf3, "buf3");
+&nbsp;&nbsp;&nbsp; buf3.put(7,(byte)99);
+&nbsp;&nbsp;&nbsp; buf2.position(0);
+&nbsp;&nbsp;&nbsp; showBufferData(buf2, "buf2");
+&nbsp;&nbsp;&nbsp; buf3.position(0);
+&nbsp;&nbsp;&nbsp; showBufferData(buf3, "buf3");
+&nbsp;&nbsp;&nbsp; System.out.println();//blank line
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; System.out.println("Slice");
+&nbsp;&nbsp;&nbsp; buf2.position(3);
+&nbsp;&nbsp;&nbsp; ByteBuffer buf4 = buf2.slice();
+&nbsp;&nbsp;&nbsp; buf2.position(0);
+&nbsp;&nbsp;&nbsp; showBufferData(buf2, "buf2");
+&nbsp;&nbsp;&nbsp; buf4.position(0);
+&nbsp;&nbsp;&nbsp; showBufferData(buf4, "buf4");
+&nbsp;&nbsp;&nbsp; buf4.put(5,(byte)66);
+&nbsp;&nbsp;&nbsp; buf2.position(0);
+&nbsp;&nbsp;&nbsp; showBufferData(buf2, "buf2");
+&nbsp;&nbsp;&nbsp; buf4.position(0);
+&nbsp;&nbsp;&nbsp; showBufferData(buf4, "buf4");
+&nbsp;&nbsp;&nbsp; System.out.println();//blank line
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //The above operations are common
+&nbsp;&nbsp;&nbsp; // to most of the subclasses of
+&nbsp;&nbsp;&nbsp; // Buffer.&nbsp; The following&nbsp;
+&nbsp;&nbsp;&nbsp; // operations are specific to
+&nbsp;&nbsp;&nbsp; // ByteBuffer.
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Other primitive types");
+&nbsp;&nbsp;&nbsp; ByteBuffer buf5 =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ByteBuffer.allocateDirect(25);
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Buffer is direct: "
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + buf5.isDirect());
+&nbsp;&nbsp;&nbsp; System.out.println("Order = "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + buf5.order());
+&nbsp;&nbsp;&nbsp; showBufferData(buf5, "buf5");
+&nbsp;&nbsp;&nbsp; if(buf5.hasArray())
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; showArrayData(buf5.array());
+&nbsp;&nbsp;&nbsp; else System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "No backing array");
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; buf5.position(0);
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Put and get primitive types");
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Put a double relative");
+&nbsp;&nbsp;&nbsp; buf5.putDouble(1.0/3.0);
+&nbsp;&nbsp;&nbsp; System.out.println("position = "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + buf5.position());
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Put a float relative");
+&nbsp;&nbsp;&nbsp; buf5.putFloat((float)(1.0/6.0));
+&nbsp;&nbsp;&nbsp; System.out.println("position = "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + buf5.position());
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Put a long relative");
+&nbsp;&nbsp;&nbsp; buf5.putLong(Long.MAX_VALUE);
+&nbsp;&nbsp;&nbsp; System.out.println("position = "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + buf5.position());
+&nbsp;&nbsp;&nbsp; System.out.println();//blank line
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; buf5.position(0);
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Get double relative");
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; buf5.getDouble());
+&nbsp;&nbsp;&nbsp; System.out.println("position = "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + buf5.position());
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Get float relative");
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; buf5.getFloat());
+&nbsp;&nbsp;&nbsp; System.out.println("position = "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + buf5.position());
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Get long relative");
+&nbsp;&nbsp;&nbsp; System.out.println(buf5.getLong());
+&nbsp;&nbsp;&nbsp; System.out.println("position = "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + buf5.position());
+&nbsp;&nbsp;&nbsp; System.out.println();//blank line
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Get float absolute");
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; buf5.getFloat(8));
+&nbsp;&nbsp;&nbsp; System.out.println("position = "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + buf5.position());
+&nbsp;&nbsp;&nbsp; System.out.println();//blank line
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Put int absolute");
+&nbsp;&nbsp;&nbsp; buf5.putInt(20,Integer.MAX_VALUE);
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Get int absolute");
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; buf5.getInt(20));
+&nbsp;&nbsp;&nbsp; System.out.println("position = "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + buf5.position());
+&nbsp;&nbsp;&nbsp; System.out.println();//blank line
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Work with views");
+&nbsp;&nbsp;&nbsp; System.out.println("Clear buf5");
+&nbsp;&nbsp;&nbsp; buf5.clear();
+&nbsp;&nbsp;&nbsp; showBufferProperties(buf5, "buf5");
+&nbsp;&nbsp;&nbsp; buf5.putInt((int)1);
+&nbsp;&nbsp;&nbsp; buf5.putInt((int)2);
+&nbsp;&nbsp;&nbsp; buf5.putInt((int)4);
+&nbsp;&nbsp;&nbsp; buf5.putInt((int)8);
+&nbsp;&nbsp;&nbsp; buf5.putInt((int)16);
+&nbsp;&nbsp;&nbsp; buf5.putInt((int)32);
+&nbsp;&nbsp;&nbsp; buf5.position(0);
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Raw byte data");
+&nbsp;&nbsp;&nbsp; showBufferData(buf5, "buf5");
+&nbsp;&nbsp;&nbsp; System.out.println();//blank line
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "This won't always work");
+&nbsp;&nbsp;&nbsp; //The following works only if the
+&nbsp;&nbsp;&nbsp; // size of the buffer is a&nbsp;
+&nbsp;&nbsp;&nbsp; // multiple of the number of bytes
+&nbsp;&nbsp;&nbsp; // for the type.
+&nbsp;&nbsp;&nbsp; buf5.position(0);
+/*
+&nbsp;&nbsp;&nbsp; showBufferProperties(buf5, "buf5");
+&nbsp;&nbsp;&nbsp; while(buf5.hasRemaining()){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.print(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; buf5.getInt() + " ");
+&nbsp;&nbsp;&nbsp; }//end while loop
+*/
+&nbsp;&nbsp;&nbsp; System.out.println();//blank line
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "More complex approach");
+&nbsp;&nbsp;&nbsp; int cnt = 0;
+&nbsp;&nbsp;&nbsp; while(cnt &lt; buf5.limit()-4){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.print(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; buf5.getInt(cnt) + " ");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cnt += 4;
+&nbsp;&nbsp;&nbsp; }//end while loop
+&nbsp;&nbsp;&nbsp; System.out.println();//blank line
+&nbsp;&nbsp;&nbsp; System.out.println();//blank line
+
+&nbsp;&nbsp;&nbsp; System.out.println("Get a view");
+&nbsp;&nbsp;&nbsp; buf5.position(0);
+&nbsp;&nbsp;&nbsp; IntBuffer buf6 =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; buf5.asIntBuffer();
+&nbsp;&nbsp;&nbsp; showBufferProperties(buf6, "buf6");
+&nbsp;&nbsp;&nbsp; System.out.println("Read-only = "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + buf6.isReadOnly());
+&nbsp;&nbsp;&nbsp; System.out.println();//blank line&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Get relative from view");
+&nbsp;&nbsp;&nbsp; while(buf6.hasRemaining()){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.print(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; buf6.get() + " ");
+&nbsp;&nbsp;&nbsp; }//end while loop
+&nbsp;&nbsp;&nbsp; System.out.println();//blank line
+
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Get absolute from view");
+&nbsp;&nbsp;&nbsp; System.out.println("Element 4 = "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + buf6.get(4));
+&nbsp;&nbsp;&nbsp; System.out.println();//blank line
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Put absolute in view");
+&nbsp;&nbsp;&nbsp; buf6.put(4,99);
+&nbsp;&nbsp;&nbsp; buf6.position(0);
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Show modified view");
+&nbsp;&nbsp;&nbsp; while(buf6.hasRemaining()){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.print(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; buf6.get() + " ");
+&nbsp;&nbsp;&nbsp; }//end while loop
+&nbsp;&nbsp;&nbsp; System.out.println();//blank line
+
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Show backing buffer");
+&nbsp;&nbsp;&nbsp; buf5.position(0);
+&nbsp;&nbsp;&nbsp; showBufferData(buf5, "buf5");
+
+&nbsp;&nbsp;&nbsp; System.out.println();//blank line
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Create read-only view");
+&nbsp;&nbsp;&nbsp; buf5.position(0);
+&nbsp;&nbsp;&nbsp; ByteBuffer buf7 =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; buf5.asReadOnlyBuffer();
+&nbsp;&nbsp;&nbsp; System.out.println("Read-only = "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + buf7.isReadOnly());
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Show backing buffer");
+&nbsp;&nbsp;&nbsp; showBufferData(buf5, "buf5");
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Show view data");
+&nbsp;&nbsp;&nbsp; showBufferData(buf7, "buf7");
+&nbsp;&nbsp;&nbsp; System.out.println();//blank line
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Modify backing buffer");
+&nbsp;&nbsp;&nbsp; buf5.put(0,(byte)66);
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Show backing buffer");
+&nbsp;&nbsp;&nbsp; buf5.position(0);
+&nbsp;&nbsp;&nbsp; showBufferData(buf5, "buf5");
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Show view data");
+&nbsp;&nbsp;&nbsp; buf7.position(0);
+&nbsp;&nbsp;&nbsp; showBufferData(buf7, "buf7");
+&nbsp;&nbsp;&nbsp; System.out.println();//blank line
+
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Modify view oops!");
+&nbsp;&nbsp;&nbsp; //Following statement throws&nbsp;
+&nbsp;&nbsp;&nbsp; // exception
+&nbsp;&nbsp;&nbsp; //buf7.put(0,(byte)66);
+&nbsp;&nbsp;
+&nbsp; }// end main
+
+}//end class ByteBuffer01 definition
+
+<b><font face="Courier New,Courier">Listing 37</font></b></pre>
+</td>
+</tr>
+</table>
+
+<br>&nbsp;
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>/* File ByteBuffer02.java
+Copyright 2002, R.G.Baldwin
+
+Illustrates lack of type safety when
+using views of a ByteBuffer object.
+
+Creates a ByteBuffer object having 17
+elements.
+
+Populates the buffer with two double
+values.
+
+Displays the individual bytes in the
+buffer.
+
+Views the buffer as type double.
+
+Views the buffer as type int.
+
+Tested using JDK 1.4.0 under Win 2000.
+
+The output is:
+&nbsp;&nbsp;
+Show empty byte buffer
+Buffer data for buf1
+0 0 0 0 0 0 0 0&nbsp;
+0 0 0 0 0 0 0 0&nbsp;
+0&nbsp;
+Populate with double values
+Show populated buffer as bytes
+Buffer data for buf1
+63 -16 0 0 0 0 0 0&nbsp;
+64 0 0 0 0 0 0 0&nbsp;
+0&nbsp;
+View buffer as type double
+1.0 2.0&nbsp;
+View buffer as type int
+1072693248 0 1073741824 0
+**************************************/
+
+import java.nio.*;
+
+class ByteBuffer02{
+&nbsp;&nbsp;
+&nbsp; static void showBufferData(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ByteBuffer buf, String name){
+&nbsp;&nbsp;&nbsp; //Displays byte buffer contents
+&nbsp;&nbsp;&nbsp; // eight bytes per row.
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Save position
+&nbsp;&nbsp;&nbsp; int pos = buf.position();
+&nbsp;&nbsp;&nbsp; //Set position to zero
+&nbsp;&nbsp;&nbsp; buf.position(0);
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Buffer data for " + name);
+&nbsp;&nbsp;&nbsp; int cnt = 0;
+&nbsp;&nbsp;&nbsp; while(buf.hasRemaining()){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.print(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; buf.get() + " ");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cnt++;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(cnt%8 == 0)//start new row
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println();
+&nbsp;&nbsp;&nbsp; }//end while loop
+&nbsp;&nbsp;&nbsp; System.out.println();//new line
+&nbsp;&nbsp;&nbsp; //Restore position and return
+&nbsp;&nbsp;&nbsp; buf.position(pos);
+&nbsp; }//end showBufferData
+&nbsp; //---------------------------------//
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp; public static void main(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; String[] args){
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; ByteBuffer buf1 =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ByteBuffer.allocate(17);
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Show empty byte buffer");
+&nbsp;&nbsp;&nbsp; showBufferData(buf1,"buf1");
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Populate with double values");
+&nbsp;&nbsp;&nbsp; buf1.putDouble(1.0);
+&nbsp;&nbsp;&nbsp; buf1.putDouble(2.0);
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp; "Show populated buffer as bytes");
+&nbsp;&nbsp;&nbsp; showBufferData(buf1,"buf1");
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "View buffer as type double");
+&nbsp;&nbsp;&nbsp; buf1.position(0);
+&nbsp;&nbsp;&nbsp; DoubleBuffer buf2 = //view object
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; buf1.asDoubleBuffer();
+&nbsp;&nbsp;&nbsp; while(buf2.hasRemaining()){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.print(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; buf2.get() + " ");
+&nbsp;&nbsp;&nbsp; }//end while loop
+&nbsp;&nbsp;&nbsp; System.out.println();//blank line
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "View buffer as type int");
+&nbsp;&nbsp;&nbsp; IntBuffer buf3 = //view object
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; buf1.asIntBuffer();
+&nbsp;&nbsp;&nbsp; while(buf3.hasRemaining()){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.print(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; buf3.get() + " ");
+&nbsp;&nbsp;&nbsp; }//end while loop
+&nbsp;&nbsp;&nbsp; System.out.println();//blank line
+&nbsp; }// end main
+
+}//end class ByteBuffer02 definition
+
+<b><font face="Courier New,Courier">Listing 38</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>
+<hr size=3 width="100%" align=center>
+<p>Copyright 2002, Richard G. Baldwin.&nbsp; Reproduction in whole or in
+part in any form or medium without express written permission from Richard
+Baldwin is prohibited.
+<h4>
+<a NAME="About the author"></a>About the author</h4>
+<b><a href="mailto:baldwin@DickBaldwin.com">Richard Baldwin</a></b><i>
+is a college professor (at Austin Community College in Austin, TX) and
+private consultant whose primary focus is a combination of Java, C#, and
+XML. In addition to the many platform and/or language independent benefits
+of Java and C# applications, he believes that a combination of Java, C#,
+and XML will become the primary driving force in the delivery of structured
+information on the Web.</i>
+<p><i>Richard has participated in numerous consulting projects, and he
+frequently provides onsite training at the high-tech companies located
+in and around Austin, Texas.&nbsp; He is the author of Baldwin's Programming
+<a href="http://www.DickBaldwin.com">Tutorials</a>,
+which has gained a worldwide following among experienced and aspiring programmers.
+He has also published articles in JavaPro magazine.</i>
+<p><i>Richard holds an MSEE degree from Southern Methodist University and
+has many years of experience in the application of computer technology
+to real-world problems.</i>
+<p><i><a href="mailto:baldwin@DickBaldwin.com">baldwin@DickBaldwin.com</a></i>
+<p>-end-
+<br>&nbsp;
+</body>
+</html>

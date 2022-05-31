@@ -1,0 +1,1941 @@
+<!DOCTYPE doctype PUBLIC "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+  <meta http-equiv="Content-Type"
+ content="text/html; charset=iso-8859-1">
+  <title>... in Java by Richard G Baldwin</title>
+</head>
+<body link="#0000ff" vlink="#666666" alink="#ff0000" lang="EN-US">
+<h2>Understanding the Lempel-Ziv Data Compression Algorithm in Java</h2>
+<i>Learn how to write a Java program that illustrates lossless data compression 
+according to the Lempel-Ziv Compression Algorithm commonly known as LZ77.&nbsp; 
+Also learn about the characteristics of the algorithm that result in data 
+compression.</i><p><b>Published:</b>&nbsp; February 21, 2006<br>
+<b>By <a href="mailto:Baldwin@DickBaldwin.com">Richard G. Baldwin</a></b>
+</p>
+<p>Java Programming Notes # 2440</p>
+<ul>
+  <li> <a href="#Preface">Preface</a></li>
+  <li> <a href="#General%20Background%20Information">General
+Background Information</a></li>
+  <li> <a href="#Preview">Preview</a></li>
+  <li> <a href="#Discussion%20and%20Sample%20Programs">Discussion and
+Sample Code</a></li>
+  <li> <a href="#Run%20the%20program">Run the Program</a></li>
+  <li> <a href="#Summary">Summary</a></li>
+  <li> <a href="#Whats%20Next">What's Next?</a></li>
+  <li> <a href="#Complete%20Program%20Listings">Complete Program
+Listing</a></li>
+</ul>
+<hr size="3" width="100%" align="center">
+<center>
+<h2> <a name="Preface"></a>Preface</h2>
+</center>
+<p> This is the first lesson in a new series of lessons that will teach you 
+about data and image compression.&nbsp; The series begins with the Lempel-Ziv Lossless Data Compression Algorithm, commonly known as LZ77.</p>
+<p> Future lessons will cover a variety of compression schemes, including:</p>
+<ul>
+	<li>Huffman data encoding</li>
+	<li>Run-length data encoding</li>
+	<li>GIF image compression</li>
+	<li>JPEG image compression</li>
+</ul>
+<p> The programs that I will provide in these lessons are provided for 
+educational purposes only.&nbsp; If you use these programs for any purpose, you are 
+using them at your own risk.&nbsp; I accept no responsibility for any 
+damages that you may incur as a result of the use of these programs.</p>
+<p> <b><font color="#ff0000">Viewing tip</font></b> </p>
+<p>You may find it useful to open another copy of this lesson in a
+separate browser window.&nbsp; That will make it easier for you to
+scroll back
+and forth among the different listings and figures while you are
+reading
+about them.</p>
+<p><b><font color="#ff0000">Supplementary material</font></b> </p>
+<p>I recommend that you also study the other lessons in my extensive
+collection of online Java tutorials.&nbsp; You will find those lessons
+published
+at <a href="http://softwaredev.earthweb.com/java">Gamelan.com</a>.&nbsp;
+However, as of the date of this writing, Gamelan doesn't maintain a
+consolidated index of my Java tutorial lessons, and sometimes they are
+difficult to locate there.&nbsp; You will find a consolidated index at <font
+ color="#000000"> <a href="http://www.dickbaldwin.com/">www.DickBaldwin.com</a>.</font>
+</p>
+<h2 align="center"><font color="#000000"> <a
+ name="General Background Information">General Background Information</a></font></h2>
+<p>Most of us use data or image compression on a daily basis without even thinking 
+about it.&nbsp; If you use one of the popular zip programs to archive your data, 
+you are using a program that typically implements several different data 
+compression algorithms in combination.&nbsp; If you take pictures with a digital 
+camera, you are creating files that describe images using the JPEG image 
+compression format.&nbsp; 
+You may be able to adjust the parameters on your camera to provide a tradeoff 
+between image quality on one hand and image compression on the other.</p>
+<p><font color="#FF0000"><b>The Lempel-Ziv algorithm</b></font></p>
+<p>LZ77 is the name commonly given to a lossless data compression algorithm published in 
+papers by Abraham Lempel and Jacob Ziv in 1977.&nbsp; This algorithm forms the 
+basis for many LZ variations including LZW, LZSS and others.</p>
+<p><font color="#FF0000"><b>A lossless compression algorithm</b></font></p>
+<p>LZ77 is a <i>lossless</i> compression algorithm.&nbsp; What this means is 
+that if you compress a document using the algorithm, and then decompress the 
+compressed version, the result will be an exact copy of the original document.&nbsp; 
+Not all compression algorithms are lossless.&nbsp; The JPEG image compression 
+algorithm, for example, does not produce an exact copy of an image that has been 
+compressed using the algorithm.</p>
+<p><font color="#FF0000"><b>A dictionary encoding algorithm</b></font></p>
+<p>LZ77 is known as a dictionary encoding algorithm, as opposed for example to 
+the Huffman encoding algorithm, which is a statistical encoding algorithm.&nbsp; 
+Compression in the LZ77 algorithm is based on the notion that strings of 
+characters <i>(words, phrases, etc.)</i> occur repeatedly in the message being 
+compressed.&nbsp; Compression with the Huffman encoding algorithm is based on 
+the probability of occurrence of individual characters in the message.</p>
+<p><font color="#FF0000"><b>Combinations of compression algorithms</b></font></p>
+<p>Different variations of the LZ algorithms, the Huffman algorithm, and other 
+compression algorithms are often combined in data and image compression 
+programs.&nbsp; For example, numerous sources on the web indicate that 
+commercially available zip programs often incorporate something called <b>
+DEFLATE</b>.&nbsp; According to
+<a href="http://en.wikipedia.org/wiki/DEFLATE_(algorithm)">Wikipedia</a>,</p>
+<blockquote>
+	<p><i>&quot;<b>DEFLATE</b> is a lossless data compression algorithm that uses a 
+	combination of the LZ77 algorithm and Huffman coding.&nbsp; It was 
+	originally defined by
+	<a title="Phil Katz" href="http://en.wikipedia.org/wiki/Phil_Katz">Phil Katz</a> 
+	for version 2 of his
+	<a title="PKZIP" href="http://en.wikipedia.org/wiki/PKZIP">PKZIP</a> 
+	archiving tool, and was later specified in
+	<a title="Request for Comments" href="http://en.wikipedia.org/wiki/Request_for_Comments">
+	RFC</a> 1951.&quot;</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Search for Lempel and Ziv on the Internet</b></font></p>
+<p>Beyond this brief background description, if you go to
+<a href="http://www.google.com">Google</a> and search for the keywords <b>Lempel</b> 
+and <b>Ziv</b>, you will find more online material than you can possibly have 
+the time to read.&nbsp; A particularly useful resource is the animated program 
+named LZ that you can download from
+<a href="http://www.mathcs.sjsu.edu/faculty/khuri/animation.html">Sami Khuri's 
+Visualization and Animation Packages</a>.</p>
+<h2 align="center"><font color="#000000"><a name="Preview">Preview</a></font></h2>
+<p>As mentioned above, LZ77 is the name commonly given to a lossless data 
+compression algorithm published in papers by Abraham Lempel and Jacob Ziv in 
+1977.</p>
+<p><font color="#FF0000"><b>Explaining how LZ77 works</b></font></p>
+<p>The Java program named <b>LZ77v01</b> that I will present and explain in this lesson 
+implements a <i>very close approximation</i> to theLZ77 compression algorithm.&nbsp; 
+While this program may not match that algorithm in every respect, the match is 
+close enough to satisfy the primary purpose of the program, which is to explain 
+how the LZ77 algorithm works.</p>
+<p><font color="#FF0000"><b>Not a production compression program</b></font></p>
+<p>The program was specifically designed to serve its primary purpose of 
+education.&nbsp; No thought or effort was given to speed, efficiency, memory 
+utilization, or any other factor that would be important in a program written 
+for production data compression purposes.&nbsp; In some cases, the program was 
+purposely made less efficient <i>(in the name of clarity)</i> by using two or 
+more statements to accomplish a task that could be accomplished by a single more 
+complex statement.</p>
+<p><font color="#FF0000"><b>Sample messages</b></font></p>
+<p>Two sample messages are hard-coded into the program.&nbsp; You can switch 
+between those messages by enabling and disabling one or the other using comments 
+and then recompiling the program.&nbsp; You can also insert your own message and 
+recompile the program to use your message if you choose to do so.</p>
+<p><font color="#FF0000"><b>A collection of Tuple objects</b></font></p>
+<p>The program first encodes a message into a collection of <b>Tuple</b> objects 
+stored in an <b>ArrayList</b> object using a very close approximation to the 
+LZ77 lossless data compression algorithm.&nbsp; Then the program decodes the 
+message by extracting the information from the <b>Tuple</b> objects and using 
+that information to reconstruct the original message.</p>
+<blockquote>
+	<p><i>(<b>Tuple</b> is the name of a class that I used to encapsulate a 
+	three-element <a href="http://en.wikipedia.org/wiki/Tuple">tuple</a> 
+	containing three values that occur repeatedly in the LZ77 algorithm.&nbsp; I 
+	will use the uppercase version, Tuple, to refer to the class or an object of 
+	the class, and use the lowercase version, tuple, to refer to the three 
+	elements in a more general sense.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>No conversion to a bit stream</b></font></p>
+<p>The program does not actually convert the encoded <i>(compressed)</i> message 
+into a stream of bits, although it wouldn't be difficult to do so.&nbsp; Since the 
+purpose of the effort was to illustrate the behavior of the LZ77algorithm, and 
+not to write a production data compression program, converting the compressed 
+data into a bit stream was considered to be superfluous.&nbsp; However, the program does provide a theoretical analysis of the amount of 
+compression that would be achieved if the results were converted into a 
+bit stream.</p>
+<p><font color="#FF0000"><b>Program output</b></font></p>
+<p>Quite a lot of output material is displayed on the screen while this program 
+is running.&nbsp; This material is designed to be used in this tutorial lesson 
+to explain the behavior of the LZ data compression algorithm.</p>
+<p><font color="#FF0000"><b>Program testing</b></font></p>
+<p>This program was tested against the demonstration Java program named LZ that 
+can be downloaded from
+<a href="http://www.mathcs.sjsu.edu/faculty/khuri/animation.html">Sami Khuri's 
+Visualization and Animation Packages</a>.&nbsp; Although the source code for 
+that program was not consulted during the development of my program, the animated interactive nature of 
+<a href="http://www.mathcs.sjsu.edu/faculty/khuri/animation.html">Khuri's</a> program was extremely helpful 
+to me in understanding the LZ77 algorithm.</p>
+<p>The output from my program matches the output from 
+<a href="http://www.mathcs.sjsu.edu/faculty/khuri/animation.html">Khuri's</a> program for 60 characters of input data and values of 10 for <b>
+searchWindowLen</b> and <b>lookAheadWindowLen</b>.&nbsp; <i>(<a href="http://www.mathcs.sjsu.edu/faculty/khuri/animation.html">Khuri's</a> 
+program is limited to an input data length of 60 characters.)</i></p>
+<p>The program was tested using J2SE 5.0 and WinXP.&nbsp; J2SE 5.0 or later is 
+required due to the use of generics in the program.</p>
+<center>
+<h2> <a name="Discussion and Sample Programs"></a><font color="#000000">Discussion
+and Sample Code</font></h2>
+</center>
+<p><font color="#FF0000"><b>The LZ77v01 program</b></font></p>
+<p>The program named LZ77v01 is presented in its entirety in Listing 24 near the 
+end of the lesson.</p>
+<p>I will discuss the program in fragments.&nbsp; The class definition begins 
+in Listing 1.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>class LZ77v01{
+  //Use comments to enable and disable and to select 
+  //between the following demonstration messages.
+/*  
+  String rawData = "BAGHDAD, Iraq Violence increased "
+  + "across Iraq after a lull following the Dec. 15 "
+  + "parliamentary elections, with at least two dozen "
+  + "people including a U.S. soldier killed Monday in "
+  + "shootings and bombings mostly targeting the Shiite-"
+  + "dominated security services. The Defense Ministry "
+  + "director of operations, Brig. Gen. Abdul Aziz "
+  + "Mohammed-Jassim, blamed increased violence in the "
+  + "past two days on insurgents trying to deepen the "
+  + "political turmoil following the elections. The "
+  + "violence came as three Iraqi opposition groups "
+  + "threatened another wave of protests and civil "
+  + "disobedience if allegations of fraud are not "
+  + "properly investigated.";
+*/
+  String rawData = "Miss Kalissippi from Mississippi is a "
+  + "cowgirl who yells yippi when she rides her horse in "
+  + "the horse show in Mississippi.";<br><br><b><font face="Courier New,Courier">Listing 1</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The class begins by hard-coding two sample messages into the program.&nbsp; 
+The first message is a news message copied directly from an Internet web site.&nbsp; 
+The second message is a message from my own imagination that was designed 
+specifically to illustrate important concepts of the LZ77 algorithm.</p>
+<p>You 
+can select between these two messages by disabling one or the other through the 
+use of comments and then recompiling the program.&nbsp; Alternately, you can 
+insert your own message and test the behavior of the algorithm with a message of 
+your choosing.</p>
+<p><font color="#FF0000"><b>Miscellaneous instance variables</b></font></p>
+<p>Several instance variables are declared in Listing 2.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  //A collection of Tuple objects
+  ArrayList &lt;Tuple&gt;encodedData = new ArrayList&lt;Tuple&gt;();
+  
+  //A reference to a single Tuple object
+  Tuple thisTuple;
+  
+  //A substring that represents the search window.
+  String searchSubstring;
+  
+  //Working variables
+  int matchLen;
+  int matchLoc;
+  int charCnt;
+  int searchWindowStart;
+  int lookAheadWindowEnd;<br><br><b><font face="Courier New,Courier">Listing 2</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The class named <b>Tuple</b> is a simple wrapper class for which you can find 
+the source code in Listing 24.&nbsp; The purpose of an object of the <b>Tuple</b> class is to encapsulate three 
+values that are critical to the behavior of the LZ77 algorithm.&nbsp; I will 
+have more to say about this later.</p>
+<p><font color="#FF0000"><b>The search window and the lookAhead window</b></font></p>
+<p>The LZ77 algorithm is based on the use of two sliding contiguous windows on 
+the data being compressed.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  //Modify the following values to change the length of
+  // the search window and/or the lookAhead window. 
+  // Optimum values are one less than even powers of 2.
+  int searchWindowLen = 31;
+  int lookAheadWindowLen = 7;<br><br><b><font face="Courier New,Courier">Listing 3</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>You can modify the size of those windows by modifying the initialization 
+values of the two variables shown in Listing 3.&nbsp; I will have more to say 
+about setting the respective sizes of the two windows shortly.</p>
+<p><font color="#FF0000"><b>Compression on-the-fly</b></font></p>
+<p>The LZ77 algorithm compresses the message <i>on-the-fly</i> as a pointer 
+to the current location moves through the message from beginning to end.</p>
+<p><font color="#FF0000"><b>The lookAhead window</b></font></p>
+<p>The <i>lookAhead window</i> consists of a specified number of characters ahead of 
+the current location.&nbsp; The lookAhead window has an initial size as 
+specified in Listing 3 and decreases to zero as the <i>current-location pointer</i> 
+approaches the end of the message.</p>
+<p><font color="#FF0000"><b>The search window</b></font></p>
+<p>The search window consists of a specified number of characters, <i>(which 
+have already been traversed)</i>, behind the current location.&nbsp; The search 
+window has an initial size of zero characters and increases to the specified 
+value shown in Listing 3 as the current-location pointer moves through the data.</p>
+<p><font color="#FF0000"><b>The output is a collection of Tuple objects</b></font></p>
+<p>As each new character is examined, a <b>Tuple</b> object is created in the 
+output containing three values.&nbsp; Thus, the output from the compression 
+process consists of a collection of <b>Tuple</b> objects.</p>
+<blockquote>
+	<p><i>(Alternatively, each output tuple could consist of a group of bits of 
+	a specified size that encapsulate the three required values.)</i></p>
+</blockquote>
+<p>If the message is compressible <i>(meaning that the message 
+consists of a sequence of repetitive matching strings)</i>, the number of tuples in the output will be less than the number of characters in 
+the message.&nbsp; This is accomplished by causing the contents of each tuple 
+to point to the previous occurrence of a matching string of characters rather 
+than to simply repeat the string of characters.&nbsp; Upon encountering such a
+tuple, the decompression process retrieves the matching string of 
+characters from the previously-reconstructed output characters, and appends the 
+matching string onto the end of the output character stream.</p>
+<p><font color="#FF0000"><b>The compression factor</b></font></p>
+<p>An output tuple always contains one character plus two other values.&nbsp; 
+Thus, the size of a tuple <i>(consisting of a group of bits of a specified size)</i> 
+will always be larger than the number of bits required for a single character in 
+the input message.</p>
+<blockquote>
+	<p><i>(The hope is that each output tuple will contain sufficient 
+	information, in addition to the character that it contains, to cause several 
+	characters to be created in the decompressed output.&nbsp; This will only be true if the input 
+	message contains repetitive strings, such as repetitive words or phrases.&nbsp; 
+	For example, messages composed in the English language often contain many 
+	occurrences of words such as <b>the</b>, <b>and</b>, <b>in</b>, <b>but</b>,
+	<b>for</b>, <b>to</b>, <b>be</b>, <b>than</b>, etc.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Compression greater than 1.0</b></font></p>
+<p>In order for the compression factor to be greater than 1.0, the 
+number of tuples in the output must be less than the number of characters in the 
+input.&nbsp; Further, that difference must be sufficiently large to compensate 
+for the fact that the size of a tuple is greater than the size of a single 
+character.</p>
+<blockquote>
+	<p><i>(I will show you examples later where the compression factor is 
+	greater than 1.0 a well as an example where the compression factor is less 
+	than 1.0.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>The LZ77 compression algorithm</b></font></p>
+<p>The implementation of the compression algorithm is rather straightforward and can 
+be described in the following steps.</p>
+<p>1. Set the <i>current-location pointer</i> to the beginning of the message.</p>
+<p>2. Find the longest match that occurs in the <i>search window</i> for the beginning 
+sequence of characters in the <i>lookAhead window</i>.</p>
+<p>3. Process the possible match:</p>
+<blockquote>
+	<p>a. If there is no match for even the first character in the lookAhead 
+	window, output a tuple containing the following 
+	three values and increment the current-location pointer by 1:</p>
+	<ul>
+		<li><b>offset:</b> 0</li>
+		<li><b>stringLen:</b> 0</li>
+		<li><b>nextChar:</b> The unmatched first character in the lookAhead 
+		window.</li>
+	</ul>
+	<p>b. If there is a match, output a tuple containing the following 
+	three values and increment the current-location pointer by the length of the 
+	match plus 1:</p>
+	<ul>
+		<li><b>offset:</b> The location of the beginning of the match in the <i>
+		search window</i> relative to the current location.&nbsp; <i>(Note that 
+		even though this pointer is pointing backwards towards the beginning of 
+		the message, it is recorded as a positive value.)</i></li>
+		<li><b>stringLen:</b> The length of the match.</li>
+		<li><b>nextChar:</b> The first non-matching character in the <i>
+		lookAhead window</i> following the characters that match.</li>
+	</ul>
+</blockquote>
+<p>4. Go back to step 2 and repeat the process until the end of the message is 
+encountered, saving the collection of output tuples in some appropriate 
+container.</p>
+<p><font color="#FF0000"><b>The compressed message</b></font></p>
+<p>When the end of the message is reached, the collection of tuples contains the compressed 
+message.&nbsp; The information in the <b>Tuple</b> 
+objects can be converted into a stream of bits, written into a file, or otherwise 
+disposed of in whatever way is appropriate.</p>
+<blockquote>
+	<p><i>(In a production compression program, the tuples could be written into 
+	a stream of output bits on-the-fly without the use of an intermediate 
+	collection of <b>Tuple</b> objects.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Decompressing the compressed message</b></font></p>
+<p>Decompression of the compressed message is even easier than compressing the 
+message.&nbsp; I will describe the decompression process in more detail later.</p>
+<p><font color="#FF0000"><b>The required number of bits for a tuple</b></font></p>
+<p>The number of bits required for the first two values in the tuple depends on the respective sizes of the <i>search window</i> and the <i>
+lookAhead window</i>.</p>
+<blockquote>
+	<p><i>(I am assuming that eight bits are required for the third value in the 
+	tuple, which is an eight-bit character.)</i></p>
+</blockquote>
+<p>For example, the number of bits required for the first value in the tuple depends 
+on the maximum possible value of the pointer that points to the matching string 
+in the search window relative to the current location.&nbsp; This, in turn, 
+depends on the size of the search window.</p>
+<p>Similarly, the number of bits required for the second value in the tuple 
+depends on the maximum value of the length of the matching string.&nbsp; This, 
+in turn, depends on the size of the lookAhead widow.</p>
+<p><font color="#FF0000"><b>Optimizing the window sizes for bit size 
+considerations</b></font></p>
+<p>From the viewpoint of the number of bits required for the first two values in 
+the tuple, the optimum values for these two window sizes are one less 
+than an even power of two.&nbsp; For example, a window size of 7 can be stored in 
+three bits whereas a window size of 8 requires four bits.&nbsp; If you are going 
+to set the size to 8, you might as well set it to 15.</p>
+<p><font color="#FF0000"><b>Optimizing the <i>lookAhead window</i> size for 
+compression</b></font></p>
+<p>From a compression viewpoint, the optimum sizes for the two sliding windows depend 
+on the nature of the data being compressed.&nbsp; In general, I would think that 
+the lookAhead window needn't be very large for a message written in the English 
+language.&nbsp; Except in rare cases, the probable length of a matching string 
+in such a message is unlikely to be greater than about eleven characters <i>
+(Mississippi for example)</i>.&nbsp; In that case, a lookAhead window size of 
+fifteen characters <i>(four bits)</i> might be appropriate.</p>
+<p><font color="#FF0000"><b>Optimizing the <i>search window</i> size for 
+compression</b></font></p>
+<p>The optimum size of the search window is more difficult to predict.&nbsp; On one 
+hand, for long messages, the larger the search window, the greater is the probability that a match 
+will be found in many cases.&nbsp; On the other hand, the larger the search 
+window, the more bits will be required for the first value in the tuple 
+regardless of whether or not a match is found.</p>
+<p>This is clearly a situation where a tradeoff is in order.&nbsp; Increasing 
+the probability of finding a match improves the compression, but increasing 
+the required size for all tuples decreases the compression.&nbsp; A 
+balance must be found between the two.</p>
+<p><font color="#FF0000"><b>Some experimental results</b></font></p>
+<p>At this point, I'm going to show you some experimental results to help you 
+understand the explanation of the compression algorithm given above.&nbsp; These 
+experimental results were produced by using the program named <b>LZ77v01</b> to compress the 
+message shown in <a name="Figure_1">Figure 1</a>.</p>
+
+
+
+
+
+
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre>Miss Kalissippi from Missi<font color="#FF0000"><b>ssippi is a cowgirl who yells y</b></font><b><font color="#0000FF">ip
+pi wh</font></b>en she rides her horse in the horse show in Mississipp
+i.<br></pre>
+      <pre><b>Figure 1</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The message in Figure 1 was displayed with 59 characters per line.</p>
+<p><font color="#FF0000"><b>The experimental output</b></font></p>
+<p><a name="Figure_2">Figure 2</a> shows three consecutive lines of screen 
+output near the middle of the run.</p>
+
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><b><font color="#FF0000">ssippi is a cowgirl who yells y</font></b> - <b><font color="#0000FF">ippi wh</font></b> - 29,5,w - <b><font color="#008000">ippi w</font></b>
+ is a cowgirl who yells yippi w - hen she - 16,1,e - he
+s a cowgirl who yells yippi whe - n she r - 0,0,n  - n<br></pre>
+      <pre><b>Figure 2</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>The search window contents</b></font></p>
+<p>The red text in the first line in <a href="#Figure_2">Figure 2</a> shows the 
+contents of the 31-character search window at that point in the program.&nbsp; 
+The position of the search window in the message corresponds to the red text shown in
+<a href="#Figure_1">Figure 1</a>.</p>
+<p><font color="#FF0000"><b>The lookAhead window contents</b></font></p>
+<p>The blue text in the first line in <a href="#Figure_2">Figure 2</a> shows the 
+contents of the 7-character lookAhead window at that point in the program.&nbsp; 
+The position of the lookAhead window in the message corresponds to the blue text shown in
+<a href="#Figure_1">Figure 1</a>.</p>
+<blockquote>
+	<p><i>(The dash and the spaces on either side of the dash between the red 
+	text and the blue text in <a href="#Figure_2">Figure 2</a> were placed there 
+	to provide a visual separation between the contents of the search window on 
+	the left and the contents of the lookAhead window on the right.&nbsp; They 
+	are not part of the message.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>The position of the <i>current-location pointer</i></b></font></p>
+<p>The <i>current-location pointer</i> is at the juncture of the red and blue 
+characters in <a href="#Figure_1">Figure 1</a> at that point in the program.</p>
+<p><font color="#FF0000"><b>Tracing the algorithm</b></font></p>
+<p>For this iteration of the program, the algorithm begins with the first blue <b>&quot;i&quot;</b> in the 
+lookAhead window 
+in <a href="#Figure_2">Figure 2</a> and determines how many consecutive 
+characters in the lookAhead window can be matched up with a string of 
+characters in the red search window of <a href="#Figure_2">Figure 2</a>.</p>
+<p><font color="#FF0000"><b>Where is the match?</b></font></p>
+<p>The result is that beginning with the third red character in
+<a href="#Figure_2">Figure 2</a>, there are five consecutive characters, <i>(ippi 
+)</i>,&nbsp; that match the first five characters in the blue lookAhead window
+<i>(including the space character)</i>.</p>
+<p>The first of those five matching characters occurs 29 characters to the left 
+of the current location.</p>
+<p>Finally, the first character in the lookAhead window that doesn't match the 
+string in the search window is the <b>&quot;w&quot;</b> character.</p>
+<p><font color="#FF0000"><b>Create a Tuple object</b></font></p>
+<p>The program creates a <b>Tuple</b> object that encapsulates the following 
+three values and saves the <b>Tuple</b> object in the collection of <b>Tuple</b> 
+objects:</p>
+<ul>
+	<li><b>offset:</b> 29 <i>(distance back to the matching string relative to 
+	the current location)</i></li>
+	<li><b>stringLen:</b> 5 <i>(length of the matching string)</i></li>
+	<li><b>nextChar:</b> w <i>(first non-matching character in the lookAhead 
+	window)</i></li>
+</ul>
+<p>The material in <a href="#Figure_2">Figure 2</a> is separated into 
+four columns with the columns separated by dashes.&nbsp; The three values 
+encapsulated in the <b>tuple</b> are shown in black in the first line, third 
+column of <a href="#Figure_2">Figure 2</a>.</p>
+<p><font color="#FF0000"><b>Reconstructing from the tuple information</b></font></p>
+<p>The fourth column in <a href="#Figure_2">Figure 2</a> shows the result of 
+using the information contained in the tuple to reconstruct a small 
+portion of the original message.&nbsp; These are the characters that will be 
+appended to the output when the tuple is used later to decompress the 
+entire compressed message.</p>
+<p><font color="#FF0000"><b>A very fruitful tuple</b></font></p>
+<p>This particular tuple was a very fruitful tuple from a 
+compression viewpoint.&nbsp; The expansion of the contents of this tuple 
+would cause six new characters, <i>(ippi w),</i> to be appended to the output when the message is 
+decompressed.</p>
+<p><font color="#FF0000"><b>Move the current-location pointer</b></font></p>
+<p>Because those six characters of input data have now been handled, the <i>
+current-location</i> pointer is moved six characters to the right in the 
+execution of the compression algorithm.&nbsp; The new position for the <i>
+current-location</i> <i>pointer</i> is between the <b>&quot;w&quot;</b> and the <b>&quot;h&quot;</b> 
+characters near the left side of the second line in <a href="#Figure_1">Figure 1</a>.</p>
+<blockquote>
+	<p><i>(You can also see that by looking at the last character in the search window and 
+the first character of the lookAhead window for the second line in Figure 2.&nbsp; Once again, the dashes in
+	<a href="#Figure_2">Figure 2</a> are there 
+	solely to separate the columns.&nbsp; They are not part of the message 
+	data.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Not quite as fruitful</b></font></p>
+<p>The processing of the data in the lookAhead window for the second line in
+<a href="#Figure_2">Figure 2</a> wasn't nearly as fruitful as for the first 
+line.&nbsp; Only the <b>&quot;h&quot;</b> character matched a character in the search 
+window as indicated by the middle value of <b>&quot;1&quot;</b> in the tuple 
+contents in the fourth column in <a href="#Figure_2">Figure 2</a>.&nbsp; In this 
+case, the tuple contents were:</p>
+<ul>
+	<li><b>offset:</b> 16</li>
+	<li><b>stringLen:</b> 1</li>
+	<li><b>nextChar:</b> e</li>
+</ul>
+<p>The fourth column in the second line of <a href="#Figure_2">Figure 2</a> 
+shows that upon decompression, this tuple would cause the string <b>&quot;he&quot;</b> 
+to be appended to the output.</p>
+<p><font color="#FF0000"><b>A break-even proposition</b></font></p>
+<p>For <i>search window</i> and <i>lookAhead window</i> sizes of 31 characters and 7 characters 
+respectively, sixteen bits would be 
+required to contain the data stored in this tuple <i>(assuming 8-bit 
+character data)</i>.&nbsp; From a compression viewpoint, a 16-bit tuple 
+that produces two characters in the output is a break-even proposition.</p>
+<p><font color="#FF0000"><b>A net loss of 8 bits</b></font></p>
+<p>The third line in <a href="#Figure_2">Figure 2</a> shows the worst of all 
+worlds.&nbsp; The first character, <b>&quot;n&quot;</b>, in the lookAhead window doesn't match 
+even one character in the search window.&nbsp; Thus, a tuple was 
+constructed that encapsulates the following values:</p>
+<ul>
+	<li><b>offset:</b> 0</li>
+	<li><b>stringLen:</b> 0</li>
+	<li><b>nextChar:</b> n</li>
+</ul>
+<p><font color="#FF0000"><b>Only one character is produced</b></font></p>
+<p>The fourth column in the third line of <a href="#Figure_2">Figure 2</a> shows 
+that upon decompression, this tuple would cause only the single character
+<b>&quot;n&quot;</b> to be appended to the output.&nbsp; In terms of compression, a 16-bit 
+tuple that transfers only one 8-bit character to the decompressed output 
+represents a net loss of eight bits.</p>
+<p>Now let's get back to a discussion of the program code.</p>
+<p><font color="#FF0000"><b>The main method</b></font></p>
+<p>Listing 4 shows the <b>main</b> method in its entirety.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  public static void <b>main</b>(String[] args){
+    new LZ77v01().doIt();
+  }//end main<br><br><b><font face="Courier New,Courier">Listing 4</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The <b>main</b> method simply instantiates a new object of the class and 
+invokes the <b>doIt</b> method on the object.</p>
+<p><font color="#FF0000"><b>The doIt method</b></font></p>
+<p>The <b>doIt</b> method begins in Listing 5.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  void <b>doIt</b>(){
+    
+    //Display a scale on the screen.
+    System.out.println("123456789012345678901234567890"
+                     + "12345678901234567890123456789");
+
+    //Display the raw data, 59 characters to the line.
+    <b>display59</b>(rawData);
+    System.out.println();//blank line<br><br><b><font face="Courier New,Courier">Listing 5</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Listing 5 displays a numeric scale across the top of the screen <i>(to assist 
+me in my publication efforts)</i> and then invokes the method named <b>display59</b> 
+to cause the message being compressed to be displayed 59 characters to the line
+<i>(as shown in <a href="#Figure_1">Figure 1</a>)</i>.</p>
+<p><font color="#FF0000"><b>The display59 method</b></font></p>
+<p>The method named <b>display59</b> can be viewed in Listing 24 near the end of 
+the lesson.&nbsp; This is a very simple utility method that shouldn't require an 
+explanation.</p>
+<p><font color="#FF0000"><b>Process the message</b></font></p>
+<p><a name="Listing_6">Listing 6</a> shows the beginning of a <b>while</b> loop 
+that is used to step through and compress the message one character <i>(or 
+hopefully one substring)</i> at a time.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    charCnt = 0;
+    while(charCnt &lt; rawData.length()){<br><br><b><font face="Courier New,Courier">Listing 6</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<blockquote>
+	<p><i>(If it is necessary to compress the message one character at a time, 
+	the compressed output will be larger then the uncompressed input.&nbsp; In 
+	order for compression to be fruitful, it must be possible to frequently 
+	include substrings in the output tuples that constitute the compressed 
+	message so that the number of output tuples will be less than the number of 
+	input characters.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>The beginning of the search window</b></font></p>
+<p>Listing 7 establishes the beginning of the search window during each 
+iteration of the <b>while</b> loop.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>      searchWindowStart = <b>(charCnt-searchWindowLen &gt;=0)</b> 
+                                 <b>?</b> charCnt-searchWindowLen 
+                                 <b>:</b> 0;<br><br><b><font face="Courier New,Courier">Listing 7</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<blockquote>
+	<p><i>(In case you don't recognize this syntax, this statement is sometimes called a
+	<b>conditional</b> statement.&nbsp; I often call it a <b>cheap if</b> statement.)</i></p>
+</blockquote>
+<p>If the expression in the parentheses evaluates to true, the entire expression 
+on the right of the assignment operator returns 
+the value produced by the expression following the question mark.&nbsp; 
+Otherwise, the expression on the right of the assignment operator returns the value produced by the expression following 
+the colon.</p>
+<p><font color="#FF0000"><b>A sliding search window</b></font></p>
+<p>The purpose of using a conditional statement in this case is to cause the 
+beginning of the search window to be the first character in the message until 
+the search window reaches the specified size given by the value of <b>
+searchWindowLen</b>.&nbsp; Following that, the beginning of the search window 
+follows the <i>current-location pointer</i> at a fixed distance from the <i>
+current-location pointer</i> causing the size of the search 
+window to remain constant.</p>
+<p><font color="#FF0000"><b>A sliding lookAhead window</b></font></p>
+<p>Listing 8 does the same thing for the lookAhead window, except in reverse.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>      lookAheadWindowEnd = 
+           (charCnt+lookAheadWindowLen &lt; rawData.length())
+                              ? charCnt+lookAheadWindowLen
+                              :rawData.length();<br><br><b><font face="Courier New,Courier">Listing 8</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The lookAhead window starts out at full size <i>(assuming the length of the 
+message exceeds the size of the lookAhead window)</i> and then shrinks to zero 
+at the end of the message.</p>
+<p><font color="#FF0000"><b>Display search window and lookAhead window contents</b></font></p>
+<p>Listing 9 displays the material shown in red and blue in the first line of 
+<a href="#Figure_2">Figure 2</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>      //Display the contents of the search window.      
+      System.out.print(rawData.substring(
+                       searchWindowStart,charCnt) + " - ");
+
+      //Display the contents of the lookAheadWindow on the
+      // same line as the search window, separated by a
+      // dash.
+      System.out.print(rawData.substring(
+                      charCnt,lookAheadWindowEnd) + " - ");<br><br><b><font face="Courier New,Courier">Listing 9</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>One line of material like the first line in <a href="#Figure_2">Figure 2</a> is displayed during each iteration of the <b>
+while</b> loop that began in <a href="#Listing_6">Listing 6</a>.</p>
+<blockquote>
+	<p><i>(Obviously 
+this display is for educational purposes only and has nothing to do with the 
+actual compression of the message.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Get a search window substring</b></font></p>
+<p>Listing 10 extracts a substring from the message that contains the same data 
+as the search window.&nbsp; The purpose is to make it easier to write the code 
+that searches for a match to the characters in the lookAhead window.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>      if(charCnt == 0){
+        //Begin with an empty search window.
+        searchSubstring = "";
+      }else{
+        searchSubstring = rawData.substring(
+                                searchWindowStart,charCnt);
+      }//end else<br><br><b><font face="Courier New,Courier">Listing 10</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>This is one of those cases where I purposely made the program less efficient 
+in order to make the code less cryptic.&nbsp; I could have performed 
+the search on the search window portion of the message itself, but the indexing would 
+have been more cryptic.</p>
+<p><font color="#FF0000"><b>Search for a match in the search window</b></font></p>
+<p><a name="Listing_11">Listing 11</a> searches to determine the longest 
+substring from the lookAhead window, <i>(beginning with the first character in 
+the lookAhead window)</i>, for which there is a matching substring in the search 
+window.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>      matchLen = 1;
+      String searchTarget = rawData.substring(
+                               charCnt,charCnt + matchLen);
+      if(searchSubstring.indexOf(searchTarget) != -1){
+        //A match was found for the one-character string.
+        // See if the match extends beyond one character.
+        //Limit the length of the possible match to
+        // lookAheadWindowLen
+        matchLen++;//Increment length of searchTarget.
+        <b>while</b>(matchLen &lt;= lookAheadWindowLen){
+          //Keep testing and extending the length of the
+          // string being tested for a match until the
+          // test fails.
+          searchTarget = rawData.substring(
+                                 charCnt,charCnt+matchLen);
+          matchLoc = searchSubstring.indexOf(searchTarget);
+          //Be careful to avoid searching beyond the end
+          // of the raw data.
+          if((matchLoc != -1) && ((charCnt + matchLen) 
+                                      &lt; rawData.length())){
+            matchLen++;
+          }else{
+            //The matching test failed.  Break out of the
+            // loop.
+            break;
+          }//end else
+        }//end while<br><br><b><font face="Courier New,Courier">Listing 11</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The <b>while</b> loop in Listing 11 continues looping until the matching test 
+fails.&nbsp; When the matching test fails, control breaks out of the loop.</p>
+<p><font color="#FF0000"><b>Go back one step</b></font></p>
+<p>When control breaks out of the <b>while</b> loop in Listing 11, the value for
+<b>matchLen</b> has been incremented one time too many, causing the matching 
+test to fail.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>        //Reduce matchLen to the longest length that
+        // matched.
+        matchLen--;
+          
+        //We went one step too far increasing matchLen. Go
+        // back and get the location in the search window
+        // where the last match occurred.
+        matchLoc = searchSubstring.indexOf(
+              rawData.substring(charCnt,charCnt+matchLen));<br><br><b><font face="Courier New,Courier">Listing 12</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Listing 12 begins by reducing the value of <b>matchLen</b> by one character 
+to compensate for the overshoot described above.</p>
+<p><font color="#FF0000"><b>Get the matching location</b></font></p>
+<p>Then Listing 12 uses that corrected value of <b>matchLen</b> to perform one 
+more search, <i>(which is guaranteed to succeed)</i>, to determine the location 
+in the search window that matches the beginning of the substring from the 
+lookAhead window.</p>
+<p><font color="#FF0000"><b>Skip matchLen characters in the input message</b></font></p>
+<p>Listing 13 increases the value of the conditional control variable <i>
+(otherwise referred to herein as the current-location pointer)</i> for the outer <b>while</b> 
+loop to cause the process to skip over all of the characters included in the 
+matching substring from the lookAhead window.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>        charCnt += matchLen;<br><br><b><font face="Courier New,Courier">Listing 13</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<blockquote>
+	<p><i>(Hopefully, such increases will occur often and cause the number of iterations performed by 
+the outer <b>while</b> loop to be much less than the number of characters in the 
+input message.&nbsp; One <b>Tuple</b> object is produced for every iteration of the 
+outer <b>while</b> loop.&nbsp; For compression to be fruitful, the number of <b>
+	Tuple</b> objects produced must be much less than the number of characters 
+	in the message being compressed.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Instantiate a Tuple object</b></font></p>
+<p>As a result of finding a match between the substring in the lookAhead window 
+and the characters in the search window, Listing 14 instantiates an object of 
+the <b>Tuple</b> class that encapsulates the following information:</p>
+<ul>
+	<li><b>offset:</b> Distance from the current location back to the location of the 
+	beginning of the match in the search window.</li>
+	<li><b>stringLen:</b> Length of the match.</li>
+	<li><b>nextChar:</b> First non-matching character in the lookAhead window 
+	following the matching substring</li>
+</ul>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>        //Calculate the offset
+        int offset = 
+                   (charCnt &lt; (searchWindowLen + matchLen))
+                            ? charCnt - matchLoc - matchLen
+                            :searchWindowLen - matchLoc;
+        //Get and save the next non-matching character in
+        // the lookAhead window.
+        String nextChar = 
+                      rawData.substring(charCnt,charCnt+1);
+        //Instantiate and populate the Tuple object.
+        thisTuple = new Tuple(offset,matchLen,nextChar);<br><br><b><font face="Courier New,Courier">Listing 14</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>This is the fruitful form of tuple</b></font></p>
+<p>This is the form of the <b>Tuple</b> object that is instantiated for 
+situations like the ones illustrated by the first and second lines in
+<a href="#Figure_2">Figure 2</a>.</p>
+<p>The offset calculation in Listing 14 is a little cryptic, but shouldn't be 
+beyond the capabilities of those persons who regularly study my Java programming 
+lessons.</p>
+<p><font color="#FF0000"><b>The Tuple class</b></font></p>
+<p>You can view the <b>Tuple</b> class in its entirety in Listing 24.&nbsp; The 
+class is a simple wrapper class designed to encapsulate the three values listed 
+above and shouldn't require further explanation.</p>
+<p><font color="#FF0000"><b>Save the Tuple object</b></font></p>
+<p>Listing 13 saves the <b>Tuple</b> object in a collection of type <b>ArrayList</b>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>        encodedData.add(thisTuple);<br><br><b><font face="Courier New,Courier">Listing 15</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>No match was found</b></font></p>
+<p>Listing 16 shows the <b>else</b> clause that goes with the <b>if</b> 
+statement at the top of <a href="#Listing_11">Listing 11</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>      }else{
+        //A match was not found for the next character.
+        //Encapsulate the following information in a Tuple
+        // object.
+        //1. 0
+        //2. 0
+        //3. The non-matching character.
+        String nextChar = rawData.substring(
+                                        charCnt,charCnt+1);
+        thisTuple = new Tuple(0,0,nextChar);
+        encodedData.add(thisTuple);
+      }//end else<br><br><b><font face="Courier New,Courier">Listing 16</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The code in the <b>else</b> clause in Listing 16 is executed when the first 
+character in the lookAhead window doesn't match any of the characters in the 
+search window.</p>
+<p><font color="#FF0000"><b>An unfruitful tuple</b></font></p>
+<p>Listing 16 instantiates a <b>Tuple</b> object containing the information 
+shown in the comments and saves the <b>Tuple</b> object in the <b>ArrayList</b> 
+collection.&nbsp; This is the form of the <b>Tuple</b> object that is 
+instantiated for situations like the one illustrated in the third line in
+<a href="#Figure_2">Figure 2</a>.&nbsp; This form of tuple represents a net loss 
+in terms of compression.</p>
+<p><font color="#FF0000"><b>Increment the loop counter</b></font></p>
+<p>Listing 17 increments the counter <i>(the current-location pointer)</i> that controls the outer <b>while</b> loop 
+that began in <a href="#Listing_6">Listing 6</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>      charCnt++;<br><br><b><font face="Courier New,Courier">Listing 17</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Display the Tuple contents</b></font></p>
+<p>Listing 18 displays the contents of the <b>Tuple</b> object on the same line as the search window and the lookAhead window 
+as shown in <a href="#Figure_2">
+Figure 2</a>.&nbsp; 
+The contents of the <b>Tuple</b> object are shown in the third column in <a href="#Figure_2">
+Figure 2</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>      System.out.print(thisTuple + " - ");<br><br><b><font face="Courier New,Courier">Listing 18</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Display text represented by the Tuple object</b></font></p>
+<p><a name="Listing_19">Listing 19</a> displays the text represented by the 
+contents of the <b>Tuple</b> as shown in <a href="#Figure_2">Figure 2</a>.&nbsp; 
+This is the material shown in the fourth column in <a href="#Figure_2">Figure 2</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>      if(thisTuple.stringLen &gt; 0){
+        //The Tuple contains a pointer to a character or
+        // string in the search window.  Expand and
+        // display it.
+        int start = charCnt - 1 - thisTuple.stringLen 
+                                        - thisTuple.offset;
+        int end = charCnt - 1 - thisTuple.offset;
+        System.out.println(rawData.substring(
+                          start,end) + thisTuple.nextChar);
+      }else{
+        //The tuple contains a character for which no
+        // match was found.  Display it.
+        System.out.println(thisTuple.nextChar);
+      }//end else
+      
+    }//end while loop<br><br><b><font face="Courier New,Courier">Listing 19</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The comments in Listing 19 should speak for 
+themselves.</p>
+<p>Listing 19 also signals the end of the <b>while</b> 
+loop that began in <a href="#Listing_6">Listing 6</a>.</p>
+<p><font color="#FF0000"><b>Message has been compressed</b></font></p>
+<p>When the <b>while</b> that extends from <a href="#Listing_6">Listing 6</a> 
+through <a href="#Listing_19">Listing 19</a> terminates, the message has been 
+compressed.</p>
+<p>The original message has been encoded into a collection of tuples where each 
+tuple contains the following <a name="information">
+information</a>:</p>
+<ul>
+	<li><b>offset:</b> Points backwards in the original message to the beginning 
+	of a match relative to the current location.&nbsp; Has a value of 0 if there 
+	is no match for the next character <i>(the first character in the lookAhead 
+	window)</i>.</li>
+	<li><b>stringLen:</b> Specifies the length of the match or 0 if there is no 
+	match for the next character.</li>
+	<li><b>nextChar:</b> The first non-matching character following a match, or 
+	the next character if there is no match.</li>
+</ul>
+<p><font color="#FF0000"><b>A compressed stream of bits</b></font></p>
+<p>It would not be particularly difficult at this point to iterate on the 
+collection of <b>Tuple</b> objects and to produce a binary bit stream containing these three values.</p>
+<p>For example, depending on the values specified for <b>searchWindowLen</b> and <b>
+lookAheadWindowLen</b>, the first two values listed above could be encoded into 
+the number of bits required to contain the largest possible <b>offset</b> value 
+and the largest possible <b>stringLen</b> value.&nbsp; The character from the <b>
+Tuple</b> object could be encoded into eight bits.&nbsp; Then, the set of bits 
+required to describe the tuple could be inserted into a stream of bits.</p>
+<p>However, this demonstration program does not produce such a compressed binary 
+bit stream.</p>
+<p><font color="#FF0000"><b>Decompress and display the message</b></font></p>
+<p>Listing 20 shows the beginning of the code used to decompress and to display 
+the compressed message.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    StringBuffer reconData = new StringBuffer();<br><br><b><font face="Courier New,Courier">Listing 20</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The decompressed message is reconstructed into the <b>StringBuffer</b> 
+object that is declared in Listing 20.</p>
+<p><font color="#FF0000"><b>The form of the compressed message</b></font></p>
+<p>The compressed message is represented by a set of tuples where each tuple is 
+a simple structure containing the three values listed <a href="#information">
+above</a>.</p>
+<p>Each tuple could be stored in an object, as is the case in this program.&nbsp; </p>
+<p>Alternately, each tuple could be stored in a set of contiguous bits in a 
+stream of bits as might be read from a disk file.&nbsp; As near as I have been 
+able to determine, the LZ77 algorithm is not intended to be used with variable 
+length data.&nbsp; Thus, each set of bits that encapsulates a tuple would need 
+to be the same length.</p>
+<p>In this program, the tuples are stored in objects instantiated from the class 
+named <b>Tuple</b>, so the following explanation of the decompression process 
+will be based on the use of such objects.</p>
+<p><font color="#FF0000"><b>The decompression process</b></font></p>
+<p>The simplicity of the decompression process is one of the strengths of the 
+LZ77 algorithm.&nbsp; The process iterates through the set of <b>Tuple</b> 
+objects, sequentially processing one <b>Tuple</b> object at a time.&nbsp; For 
+each <b>Tuple</b> object, there are two possibilities.</p>
+<p><font color="#FF0000"><b>First possibility, no match was found</b></font></p>
+<p>This is the simpler of the two possibilities.&nbsp; <i>(However, it doesn't help 
+the compression factor.)</i>&nbsp; As mentioned earlier, this possibility probably 
+represents a net loss insofar as compression is concerned.</p>
+<p>If the value of <b>stringLen</b> encapsulated in the <b>Tuple</b> object is 
+0, simply extract the character referred to by <b>nextChar</b> and append it 
+onto the end of the message that is being reconstructed.</p>
+<p><font color="#FF0000"><b>Second possibility, a match was found</b></font></p>
+<p>If the value of <b>stringLen</b> encapsulated in the <b>Tuple</b> object is not 0, 
+this indicates that the <b>Tuple</b> object can be used to produce a substring plus the character referred to by <b>nextChar</b>.&nbsp; <i>(Large 
+values for <b>stringLen</b> have a positive impact insofar as compression is 
+concerned.)</i></p>
+<p><font color="#FF0000"><b>Where is the substring stored?</b></font></p>
+<p>The substring already exists in the message that is being 
+constructed.&nbsp; <i>(The required substring was constructed earlier in the decompression 
+process.)&nbsp; </i>All that is necessary at this point is to get a copy of that 
+substring and to append that copy onto the end of the message that is being 
+constructed.</p>
+<p>The beginning of the existing substring <i>(relative to the current location)</i> 
+is pointed to by the value of <b>offset</b>.&nbsp; Just count characters in the 
+direction of the beginning of the message.&nbsp; When you have counted a number 
+of characters equal to the value of <b>offset</b>, you will have reached the 
+beginning of the required substring.</p>
+<p>The length of the substring is specified by the value of <b>stringLen</b>.</p>
+<p><font color="#FF0000"><b>Get a copy of the substring</b></font></p>
+<p>Use the values of <b>offset</b> and <b>stringLen</b> to extract a copy of the 
+substring from the portion of the message that has already been constructed and 
+append the copy onto the end of the message being constructed.</p>
+<p><font color="#FF0000"><b>The single character</b></font></p>
+<p>Then get the single character from the <b>Tuple</b> object and append it onto the 
+end of the message being constructed.</p>
+<p><font color="#FF0000"><b>Repeat the process</b></font></p>
+<p>Repeat the processing of individual tuples until you run out of <b>Tuple</b> 
+objects.&nbsp; When you have processed the last <b>Tuple</b> object, you will 
+have reconstructed a copy of the original message from the compressed 
+representation of the message.</p>
+<p><font color="#FF0000"><b>The decompression code</b></font></p>
+<p>The code to accomplish the decompression process is shown in Listing 21.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    //Get an iterator on the collection of Tuple objects.
+    Iterator &lt;Tuple&gt;iterator = encodedData.iterator();
+    
+    //Iterate on the collection
+    while(iterator.hasNext()){
+      Tuple nextTuple = iterator.next();
+      if(nextTuple.stringLen == 0){
+        //There was no match for this character.  Just
+        // append it to the StringBuffer.
+        reconData.append(nextTuple.nextChar);
+      }else{
+        //This Tuple contains information about a match.
+        // Use that information to reconstruct and append
+        // the matching data.
+        for(int cnt = 0;cnt &lt; nextTuple.stringLen;cnt++){
+          //Iterate once for each character in the string
+          // that must be reconstructed.
+          //Obtain the matching characters from the
+          // previously constructed part of the output
+          // based on an offset value and a stringLen value
+          // that are stored in the Tuple.
+          char workingChar = reconData.charAt(
+                    reconData.length() - nextTuple.offset);
+          //Append the character to the StringBuffer. Note
+          // that this increases the length of the
+          // StringBuffer object. Thus, the next iteration
+          // of the for loop will get the next character
+          // that is already in the StringBuffer object.
+          reconData.append(workingChar);
+        }//end for loop
+        //Now append the non-matching character that is
+        // stored in the Tuple.
+        reconData.append(nextTuple.nextChar);
+      }//end else
+    }//end while<br><br><b><font face="Courier New,Courier">Listing 21</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Knowing what you now know about the decompression process, no explanation 
+beyond the comments in Listing 21 should be required.</p>
+<p><font color="#FF0000"><b>Display the decompressed message</b></font></p>
+<p>A copy of the original message has now been constructed.&nbsp; The code in 
+Listing 22 displays the message 59 characters to the line.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    //Display a scale on the screen.
+    System.out.println("\n123456789012345678901234567890"
+                       + "12345678901234567890123456789");
+    
+    //Now display the reconstructed message 59 characters
+    // to the line.
+    display59(new String(reconData));<br><br><b><font face="Courier New,Courier">Listing 22</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>If all went according to plan, the decompressed message should be an exact 
+replica of the original message.&nbsp; That is why LZ77 is referred to as a <b>
+<i>lossless</i></b> compression algorithm.</p>
+<p><font color="#FF0000"><b>Analyze the compression factor</b></font></p>
+<p>The following analysis <a name="assumes_">assumes</a> that it is not necessary for the length of an 
+individual binary tuple to be a multiple of eight bits.&nbsp; Thus, it assumes 
+that the number of bits used to store a tuple can be optimized on the basis of 
+the size of the search window and the size of the lookAhead window.</p>
+<p>The analysis also assumes that all characters require eight bits for storage 
+and that the number of bits used to store every tuple is the same as the number 
+of bits used to store every other tuple.</p>
+<p><font color="#FF0000"><b>Calculate and display the compression factor</b></font></p>
+<p>Given those assumptions, the code in <a name="Listing_23">Listing 23</a> calculates and displays the 
+compression factor for a given message and a given pair of sizes for the search 
+window and the lookAhead window.</p><p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    //Analyze the compression
+    System.out.println("\nAnalyze the compression.");
+    System.out.println("Assume:");
+    System.out.println(
+               " 8 bits required per raw data character.");
+    
+    //Calculate the number of bits required to contain the
+    // largest values that can occur in the values for
+    // offset and stringLen in the Tuple.  Assume that the
+    // character in the Tuple is contained in 8 bits.
+    int offsetBitsRequired = getBitsRequired(
+                                          searchWindowLen);
+    int stringLenBitsRequired = getBitsRequired(
+                                       lookAheadWindowLen);
+    int tupleBitsRequired = 8 + offsetBitsRequired 
+                                   + stringLenBitsRequired;
+    
+    System.out.println(" Maximum offset value of " 
+                      + searchWindowLen + " char requires "
+                      + offsetBitsRequired + " bits.");
+    System.out.println(" Maximum stringLen value of " 
+                   + lookAheadWindowLen + " char requires "
+                   + stringLenBitsRequired + " bits.");
+    System.out.println(
+                   " Character in Tuple requires 8 bits.");
+    
+    System.out.println(" " + tupleBitsRequired 
+                            + " bits required per Tuple.");
+    int msgLength = rawData.length()*8;
+    System.out.println("Raw data length = " + msgLength 
+                                            + " bits.");
+    System.out.println("Number Tuples: " 
+                                     + encodedData.size());
+    int tupleLength = encodedData.size()*tupleBitsRequired;
+    System.out.println("Total Tuple length = " 
+                                 + tupleLength + " bits.");
+    System.out.println("Compression factor = " 
+                          + (double)msgLength/tupleLength);
+    
+  }//end doIt<br><br><b><font face="Courier New,Courier">Listing 23</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Straightforward code</b></font></p>
+<p>Although the code in Listing 23 is rather long, the only thing in Listing 23 
+that is even half way complicated is the invocation of the method named <b>
+getBitsRequired</b> to determine the number of bits required to contain the 
+maximum possible values for <b>offset</b> and <b>stringLen</b>.&nbsp; The 
+maximum possible value in each case depends on the size of the corresponding 
+search window and lookAhead window.</p>
+<p><font color="#FF0000"><b>The method named getBitsRequired</b></font></p>
+<p>You can view the method named <b>getBitsRequired</b> in its entirety in 
+Listing 24.&nbsp; Hopefully you will be able to understand that method without 
+the need for additional explanation.</p>
+<p><font color="#FF0000"><b>Formatting code</b></font></p>
+<p>Most of the code in <a href="#Listing_23">Listing 23</a> involves formatting the output that is shown 
+in Figure 3.</p>
+<p><font color="#FF0000"><b>The program output</b></font></p>
+<p>Figure 3 shows the reconstructed message followed by the results of the 
+compression analysis.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre>Miss Kalissippi from Mississippi is a cowgirl who yells yip
+pi when she rides her horse in the horse show in Mississipp
+i.
+
+Analyze the compression.
+Assume:
+8 bits required per raw data character.
+Maximum offset value of 31 char requires 5 bits.
+Maximum stringLen value of 7 char requires 3 bits.
+Character in Tuple requires 8 bits.
+16 bits required per Tuple.
+Raw data length = 960 bits.
+Number Tuples: 53
+Total Tuple length = 848 bits.
+Compression factor = 1.1320754716981132<br></pre>
+      <pre><b>Figure 3</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>The bottom line</b></font></p>
+<p>The bottom line in Figure 3 is that according to the <a href="#assumes_">assumptions</a> described above, a 
+binary version of the compressed message would be 1.132 times <i><b>smaller</b></i> 
+than the original version of the message.&nbsp; Stated differently, the size of 
+the compressed message would be 88.3 percent of the size of the 
+original message.</p>
+<p><font color="#FF0000"><b>Vary some parameters and rerun</b></font></p>
+<p>Increasing the size of the search window from 31 characters to 63 characters 
+doesn't help with the compression.&nbsp; In fact, the change causes the 
+compression factor to be reduced from 1.132 to 1.107.</p>
+<p>Increasing the size of the lookAhead window from 7 characters to 15 
+characters while leaving the size of the search window at 63 characters reduces 
+the compression factor even further, from 1.107 to 1.046.</p>
+<p>However, decreasing the size of the lookAhead window from 7 characters to 3 
+characters while 
+setting the size of the search window back to 31 increases the compression 
+factor slightly from 1.132 to 1.143.</p>
+<p><font color="#FF0000"><b>A different message</b></font></p>
+<p>As you may have guessed by now, the message about the cowgirl from 
+Mississippi was designed to cause it to contain lots of repetitive substrings.</p>
+<p>Figure 4 shows the compression results for a news story written in English 
+and taken directly from an Internet web site.&nbsp; Nothing was done to cause 
+this message to be well-suited or poorly-suited for compression using the LZ77 
+algorithm</p>
+
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre>BAGHDAD, Iraq Violence increased across Iraq after a lull f
+ollowing the Dec. 15 parliamentary elections, with at least
+two dozen people including a U.S. soldier killed Monday in
+shootings and bombings mostly targeting the Shiite-dominat
+ed security services. The Defense Ministry director of oper
+ations, Brig. Gen. Abdul Aziz Mohammed-Jassim, blamed incre
+ased violence in the past two days on insurgents trying to
+deepen the political turmoil following the elections. The v
+iolence came as three Iraqi opposition groups threatened an
+other wave of protests and civil disobedience if allegation
+s of fraud are not properly investigated.
+
+Analyze the compression.
+Assume:
+8 bits required per raw data character.
+Maximum offset value of 31 char requires 5 bits.
+Maximum stringLen value of 7 char requires 3 bits.
+Character in Tuple requires 8 bits.
+16 bits required per Tuple.
+Raw data length = 5048 bits.
+Number Tuples: 329
+Total Tuple length = 5264 bits.
+Compression factor = 0.958966565349544<br></pre>
+      <pre><b>Figure 4</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>A net loss in compression</b></font></p>
+<p>As you can see from Figure 4, for a search window size of 31 characters and a lookAhead 
+window size of 7 characters, the compression factor was only 0.9589 for this 
+news story.&nbsp; This means that the compressed message was larger than the 
+original message.&nbsp; That's certainly not how we want a compression algorithm 
+to behave.</p>
+<p><font color="#FF0000"><b>Change the sizes of the sliding windows</b></font></p>
+<p>Increasing the search window size from 31 characters to 255 characters, and 
+decreasing the lookAhead window size from 7 characters to 3 characters increased 
+the compression factor from 0.9589 to 1.154.&nbsp; At least now the factor is 
+greater than 1 and we're no longer in the red.</p>
+<p><font color="#FF0000"><b>Double the length of the message</b></font></p>
+<p>Doubling the length of the message by simply concatenating the message onto 
+itself and leaving everything else the same increased the compression factor 
+from 1.154 to 1.206.</p>
+<blockquote>
+	<p><i>(However, I'm not sure just how meaningful that test 
+is since the new message not only contains repetitive substrings but also 
+contains a complete second copy of the original message.)</i></p>
+</blockquote>
+<p>Doubling the length of the message again in the same way increased the 
+compression factor from 1.206 to 1.234.</p>
+<p>Doubling the length of the message one more time increased the compression factor 
+from 1.234 to 1.248.</p>
+<p>Continuing to double the length of the message a few more times produced very 
+small gains in the compression factor but the gain was less each time.&nbsp; It 
+looked like the compression factor would top out at around 1.26.</p>
+<center>
+<h2><a name="Run the program"></a>Run the Program</h2>
+</center>
+<p>I encourage you to copy the code from Listing 24 into your text
+editor, compile it, and execute it.&nbsp; Experiment with the code, making
+changes, and observing the results of your changes.</p>
+<p>Create and compress your own messages.&nbsp; Experiment with the sizes of the 
+search window and the lookAhead window to see how those parameters affect the 
+compression factor for messages of your own design.</p>
+<h2 align="center"><a name="Summary">Summary</a></h2>
+<p>In this lesson, I showed you how to write a Java program that illustrates 
+lossless data compression according to the Lempel-Ziv Data Compression Algorithm 
+commonly known as LZ77.&nbsp; I also explained the characteristics of the 
+algorithm that result in data compression.</p>
+<ul>
+</ul>
+<h2 align="center"><a name="Whats Next">What's Next?</a></h2>
+<p>Future lessons in this series will explain the inner workings behind several 
+data and image compression schemes, including the following:</p>
+<ul>
+	<li>Huffman data encoding</li>
+	<li>Run-length data encoding</li>
+	<li>GIF image compression</li>
+	<li>JPEG image compression</li>
+</ul>
+<center>
+<h2> <a name="Complete Program Listings"></a>Complete Program Listing</h2>
+</center>
+A complete listing of the program discussed in this lesson is shown in Listing 
+24 below. <br>
+&nbsp;
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>/*File LZ77v01.java 
+Copyright 2006, R.G.Baldwin
+
+LZ77 is the name given to a lossless data compression 
+algorithm published in papers by Abraham Lempel and Jacob 
+Ziv in 1977. This algorithm forms the basis for many LZ 
+variations including LZW, LZSS and others. LZ77 is known 
+as a dictionary encoding algorithm.
+
+This program implements a very close approximation to the 
+LZ77 compression algorithm.  While it may not match that 
+algorithm exactly, the match is close enough to satisfy 
+the primary purpose of the program, which is to explain 
+how the LZ77 algorithm works.
+
+This program is provided for educational purposes only. If
+you use the program for any purpose, you use it at your
+own risk.  The author of the program accepts no
+responsibility for any damages that may result from your
+use of the program.
+
+The program was specifically designed to serve its primary
+purpose of education.  No thought was given to speed, 
+efficiency, memory utilization, or any other factor that 
+would be important in a program written for production 
+data compression purposes.  In some cases, the program was
+purposely made less efficient by using two or more 
+statements to accomplish a task that could be accomplished
+by a single more complex statement.
+
+Several sample messages are hard-coded into the program.  
+You can switch between those messages by enabling and 
+disabling specific messages using comments and then 
+recompiling the program.  You can also insert your own 
+message and recompile the program to use your message if 
+you choose to do so.
+
+The program first encodes a message into a collection of 
+Tuple objects stored in an ArrayList object using a very 
+close approximation to the LZ77 lossless data compression 
+algorithm.
+
+Then the program decodes the message by extracting the 
+information from the Tuple objects and using that 
+information to reconstruct the original message.
+
+The program does not actually convert the encoded 
+(compressed) message into a bit stream, although it 
+wouldn't be difficult to do so.  Since the purpose of the 
+effort was to illustrate the behavior of the LZ77 
+algorithm, and not to write a production data compression 
+program, converting the compressed data into a bit stream 
+was considered to be superfluous to the purpose.  However,
+the program does provide a theoretical analysis of the 
+amount of compression that should be achieved if the 
+results were converted into a bit stream.
+
+This program was tested against the demonstration Java 
+program named LZ that can be downloaded from 
+http://www.mathcs.sjsu.edu/faculty/khuri/animation.html
+
+Neither the source code from that program nor the source 
+code from any other existing Java program was consulted 
+during the development of the code for this program.  
+Although numerous technical descriptions of the LZ77 
+algorithm were consulted, all of the source code in this 
+program is the original work of this author.
+
+The animated interactive nature of the demonstration
+program mentioned above was extremely helpful in helping 
+this author to understand the LZ77 algorithm.
+
+The output from this program matches the output from the 
+above mentioned demonstration program for 60 characters of
+input data and values of 10 for searchWindowLen and 
+lookAheadWindowLen. (The demonstration program is limited 
+to an input data length of 60 characters.)
+
+Quite a lot of output material is displayed on the screen 
+when this program is running.  This material is designed to
+be used in a tutorial lesson to explain the behavior of 
+the LZ lossless data compression algorithm.
+
+The program was tested using J2SE 5.0 and WinXP.  J2SE 5.0
+or later is required due to the use of generics.
+**********************************************************/
+import java.util.*;
+
+class LZ77v01{
+  //Use comments to enable and disable and to select 
+  //between the following demonstration messages.
+/*  
+  String rawData = "BAGHDAD, Iraq Violence increased "
+  + "across Iraq after a lull following the Dec. 15 "
+  + "parliamentary elections, with at least two dozen "
+  + "people including a U.S. soldier killed Monday in "
+  + "shootings and bombings mostly targeting the Shiite-"
+  + "dominated security services. The Defense Ministry "
+  + "director of operations, Brig. Gen. Abdul Aziz "
+  + "Mohammed-Jassim, blamed increased violence in the "
+  + "past two days on insurgents trying to deepen the "
+  + "political turmoil following the elections. The "
+  + "violence came as three Iraqi opposition groups "
+  + "threatened another wave of protests and civil "
+  + "disobedience if allegations of fraud are not "
+  + "properly investigated.";
+*/
+  String rawData = "Miss Kalissippi from Mississippi is a "
+  + "cowgirl who yells yippi when she rides her horse in "
+  + "the horse show in Mississippi.";
+
+  //A collection of Tuple objects
+  ArrayList &lt;Tuple&gt;encodedData = new ArrayList&lt;Tuple&gt;();
+  
+  //A reference to a single Tuple object
+  Tuple thisTuple;
+  
+  //A substring that represents the search window.
+  String searchSubstring;
+  
+  //Working variables
+  int matchLen;
+  int matchLoc;
+  int charCnt;
+  int searchWindowStart;
+  int lookAheadWindowEnd;
+  
+  //Modify the following values to change the length of
+  // the search window and/or the lookAhead window. 
+  // Optimum values are one less than even powers of 2.
+  int searchWindowLen = 31;
+  int lookAheadWindowLen = 7;
+  //-----------------------------------------------------//
+  
+  public static void main(String[] args){
+    new LZ77v01().doIt();
+  }//end main
+  //-----------------------------------------------------//
+  
+  void doIt(){
+    
+    //Display a scale on the screen.
+    System.out.println("123456789012345678901234567890"
+                     + "12345678901234567890123456789");
+
+    //Display the raw data, 59 characters to the line.
+    display59(rawData);
+    System.out.println();//blank line
+    
+    //Process the message, one char at a time.
+    charCnt = 0;
+    while(charCnt &lt; rawData.length()){
+      //Establish the beginning of the search window.
+      searchWindowStart = (charCnt-searchWindowLen &gt;=0) 
+                                 ? charCnt-searchWindowLen 
+                                 : 0;
+      //Establish the end of the lookAhead window.
+      lookAheadWindowEnd = 
+           (charCnt+lookAheadWindowLen &lt; rawData.length())
+                              ? charCnt+lookAheadWindowLen
+                              :rawData.length();
+      
+      //Display the contents of the search window.      
+      System.out.print(rawData.substring(
+                       searchWindowStart,charCnt) + " - ");
+      //Display the contents of the lookAheadWindow on the
+      // same line as the search window, separated by a
+      // dash.
+      System.out.print(rawData.substring(
+                      charCnt,lookAheadWindowEnd) + " - ");
+      
+      //Get a substring from the search window to search 
+      // for a match.
+      if(charCnt == 0){
+        //Begin with an empty search window.
+        searchSubstring = "";
+      }else{
+        searchSubstring = rawData.substring(
+                                searchWindowStart,charCnt);
+      }//end else
+
+      //Search the search window for a match to the next
+      // character in the lookAhead window.
+      matchLen = 1;
+      String searchTarget = rawData.substring(
+                               charCnt,charCnt + matchLen);
+      if(searchSubstring.indexOf(searchTarget) != -1){
+        //A match was found for the one-character string.
+        // See if the match extends beyond one character.
+        //Limit the length of the possible match to
+        // lookAheadWindowLen
+        matchLen++;//Increment length of searchTarget.
+        while(matchLen &lt;= lookAheadWindowLen){
+          //Keep testing and extending the length of the
+          // string being tested for a match until the
+          // test fails.
+          searchTarget = rawData.substring(
+                                 charCnt,charCnt+matchLen);
+          matchLoc = searchSubstring.indexOf(searchTarget);
+          //Be careful to avoid searching beyond the end
+          // of the raw data.
+          if((matchLoc != -1) && ((charCnt + matchLen) 
+                                      &lt; rawData.length())){
+            matchLen++;
+          }else{
+            //The matching test failed.  Break out of the
+            // loop.
+            break;
+          }//end else
+        }//end while
+        //Reduce matchLen to the longest length that
+        // matched.
+        matchLen--;
+          
+        //We went one step too far increasing matchLen. Go
+        // back and get the location in the search window
+        // where the last match occurred.
+        matchLoc = searchSubstring.indexOf(
+              rawData.substring(charCnt,charCnt+matchLen));
+        
+        //Increase the character counter to cause the
+        // outer loop to skip the matching characters.
+        charCnt += matchLen;
+        
+        //Encapsulate the following information in a Tuple
+        // object.
+        //1. Offset distance back to the location of the
+        //   match in the search window.
+        //2. Length of the match.
+        //3. First non-matching character in the lookAhead
+        //   window
+
+        //Calculate the offset
+        int offset = 
+                   (charCnt &lt; (searchWindowLen + matchLen))
+                            ? charCnt - matchLoc - matchLen
+                            :searchWindowLen - matchLoc;
+        //Get and save the next non-matching character in
+        // the lookAhead window.
+        String nextChar = 
+                      rawData.substring(charCnt,charCnt+1);
+        //Instantiate and populate the Tuple object.
+        thisTuple = new Tuple(offset,matchLen,nextChar);
+
+        //Save the Tuple object in a Collection object of
+        // type ArrayList.
+        encodedData.add(thisTuple);
+
+      }else{
+        //A match was not found for the next character.
+        //Encapsulate the following information in a Tuple
+        // object.
+        //1. 0
+        //2. 0
+        //3. The non-matching character.
+        String nextChar = rawData.substring(
+                                        charCnt,charCnt+1);
+        thisTuple = new Tuple(0,0,nextChar);
+        encodedData.add(thisTuple);
+      }//end else
+      
+      //Increment the character counter that controls the
+      // outer loop.
+      charCnt++;
+      
+      //Display the contents of the Tuple on the same line
+      // as the search window and the lookAhead window,
+      // separated by a dash.
+      System.out.print(thisTuple + " - ");
+      
+      //Display the text represented by the Tuple on the
+      // same line as above, separated by a dash.
+      if(thisTuple.stringLen &gt; 0){
+        //The Tuple contains a pointer to a character or
+        // string in the search window.  Expand and
+        // display it.
+        int start = charCnt - 1 - thisTuple.stringLen 
+                                        - thisTuple.offset;
+        int end = charCnt - 1 - thisTuple.offset;
+        System.out.println(rawData.substring(
+                          start,end) + thisTuple.nextChar);
+      }else{
+        //The tuple contains a character for which no
+        // match was found.  Display it.
+        System.out.println(thisTuple.nextChar);
+      }//end else
+      
+    }//end while loop
+    
+/**********************************************************
+The original message has been encoded into a collection of 
+ Tuple objects where each object contains the following 
+ information:
+1. offset points backwards to the beginning of a
+   match relative to the current location. Has a
+   value of 0 if there is no match for the next
+   character.
+2. stringLen specifies the length of the match or 0
+   if there is no match for the next character.
+3. nextChar is the first non-matching character
+   following a match, or the next character if there
+   is no match.
+    
+It would not be particularly difficult at this point
+ to iterate on the collection and to produce a binary
+ stream containing these three values.  For example,
+ depending on the values specified for searchWindowLen
+ and lookAheadWindowLen, the first two values listed above
+ could be encoded into the number of bits required to 
+ contain the largest possible offset value and the
+ largest possible stringLen value.  The character from the
+ Tuple object could be encoded into eight bits.  Then,
+ the set of bits required to describe the Tuple could be
+ inserted into a stream of bits.  
+    
+This demonstration program does not produce such a
+ compressed binary file.
+**********************************************************/
+    
+    //Now decode the encoded data from the Tuple objects.
+    //Reconstruct and display the original message.
+    
+    //Reconstruct the message into the following
+    // StringBuffer object.
+    StringBuffer reconData = new StringBuffer();
+    
+    //Get an iterator on the collection of Tuple objects.
+    Iterator &lt;Tuple&gt;iterator = encodedData.iterator();
+    
+    //Iterate on the collection
+    while(iterator.hasNext()){
+      Tuple nextTuple = iterator.next();
+      if(nextTuple.stringLen == 0){
+        //There was no match for this character.  Just
+        // append it to the StringBuffer.
+        reconData.append(nextTuple.nextChar);
+      }else{
+        //This Tuple contains information about a match.
+        // Use that information to reconstruct and append
+        // the matching data.
+        for(int cnt = 0;cnt &lt; nextTuple.stringLen;cnt++){
+          //Iterate once for each character in the string
+          // that must be reconstructed.
+          //Obtain the matching characters from the
+          // previously constructed part of the output
+          // based on an offset value and a stringLen value
+          // that are stored in the Tuple.
+          char workingChar = reconData.charAt(
+                    reconData.length() - nextTuple.offset);
+          //Append the character to the StringBuffer. Note
+          // that this increases the length of the
+          // StringBuffer object. Thus, the next iteration
+          // of the for loop will get the next character
+          // that is already in the StringBuffer object.
+          reconData.append(workingChar);
+        }//end for loop
+        //Now append the non-matching character that is
+        // stored in the Tuple.
+        reconData.append(nextTuple.nextChar);
+      }//end else
+    }//end while
+    
+    //The original message has been reconstructed.
+
+    //Display a scale on the screen.
+    System.out.println("\n123456789012345678901234567890"
+                       + "12345678901234567890123456789");
+    
+    //Now display the reconstructed message 59 characters
+    // to the line.
+    display59(new String(reconData));
+    
+    //Analyze the compression
+    System.out.println("\nAnalyze the compression.");
+    System.out.println("Assume:");
+    System.out.println(
+               " 8 bits required per raw data character.");
+    
+    //Calculate the number of bits required to contain the
+    // largest values that can occur in the values for
+    // offset and stringLen in the Tuple.  Assume that the
+    // character in the Tuple is contained in 8 bits.
+    int offsetBitsRequired = getBitsRequired(
+                                          searchWindowLen);
+    int stringLenBitsRequired = getBitsRequired(
+                                       lookAheadWindowLen);
+    int tupleBitsRequired = 8 + offsetBitsRequired 
+                                   + stringLenBitsRequired;
+    
+    System.out.println(" Maximum offset value of " 
+                      + searchWindowLen + " char requires "
+                      + offsetBitsRequired + " bits.");
+    System.out.println(" Maximum stringLen value of " 
+                   + lookAheadWindowLen + " char requires "
+                   + stringLenBitsRequired + " bits.");
+    System.out.println(
+                   " Character in Tuple requires 8 bits.");
+    
+    System.out.println(" " + tupleBitsRequired 
+                            + " bits required per Tuple.");
+    int msgLength = rawData.length()*8;
+    System.out.println("Raw data length = " + msgLength 
+                                            + " bits.");
+    System.out.println("Number Tuples: " 
+                                     + encodedData.size());
+    int tupleLength = encodedData.size()*tupleBitsRequired;
+    System.out.println("Total Tuple length = " 
+                                 + tupleLength + " bits.");
+    System.out.println("Compression factor = " 
+                          + (double)msgLength/tupleLength);
+    
+  }//end doIt
+  //-----------------------------------------------------//
+  
+  //Method to display a String 59 characters to the line.
+  void display59(String data){
+    for(int cnt = 0;cnt &lt; data.length();cnt += 59){
+      if((cnt + 59) &lt; data.length()){
+        //Display 59 characters.
+        System.out.println(data.substring(cnt,cnt+59));
+      }else{
+        //Display the final line, which may be short.
+        System.out.println(data.substring(cnt));
+      }//end else
+    }//end for loop
+  }//end display59
+  //-----------------------------------------------------//
+  
+  //Method to return the number of bits required to
+  // contain a given integer value.  (There must be a
+  // better way to do this, such as finding the log to the
+  // base 2.)
+  int getBitsRequired(int value){
+    if(value &lt; 2){
+      return 1;
+    }else if(value &lt; 4){
+      return 2;
+    }else if(value &lt; 8){
+      return 3;
+    }else if(value &lt; 16){
+      return 4;
+    }else if(value &lt; 32){
+      return 5;
+    }else if(value &lt; 64){
+      return 6;
+    }else if(value &lt; 128){
+      return 7;
+    }else if(value &lt; 256){
+      return 8;
+    }else{
+      System.out.println(
+         "Bit conversion too large, terminating program.");
+      System.exit(1);
+      return 0;//Make compiler happy.
+    }//end else
+  }//end getBitsRequired
+  //-----------------------------------------------------//
+  
+  //The purpose of this inner class is to provide a
+  // wrapper for the three critical data values that 
+  // are produced during implementation of the LZ77
+  // compression algorithm.
+  class Tuple{
+    //offset points to the beginning of a match relative
+    // to the current location.  Has a value of 0 if there
+    // is no match.
+    int offset;
+    //stringLen specifies the length of the match or 0 if
+    // there is no match
+    int stringLen;
+    //nextChar is the first non-matching character
+    // following the match, or the only character if there
+    // is no match.
+    String nextChar;
+    //---------------------------------------------------//
+    
+    //Constructor
+    Tuple(int offset,int stringLen,String nextChar){
+      this.offset = offset;
+      this.stringLen = stringLen;
+      this.nextChar = nextChar;
+    }//end constructor
+    //---------------------------------------------------//
+    
+    //Overridden toString method
+    public String toString(){
+      return offset + "," + stringLen + "," + nextChar;
+    }//end toString
+  }//end class Tuple
+  //-----------------------------------------------------//
+}//end class LZ77v01<br><br><b><font face="Courier New,Courier">Listing 24</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<p> </p>
+<p>&nbsp;</p>
+<hr align="center" size="3" width="100%">
+<p>Copyright 2006, Richard G. Baldwin.&nbsp; Reproduction in whole or in part in any 
+form or medium without express written permission from Richard Baldwin is 
+prohibited. </p>
+<h4>About the author</h4>
+<b><a href="mailto:Baldwin@DickBaldwin.com">Richard Baldwin</a></b><i> is a 
+college professor (at Austin Community College in Austin, TX) and private 
+consultant whose primary focus is a combination of Java, C#, and XML. In 
+addition to the many platform and/or language independent benefits of Java and 
+C# applications, he believes that a combination of Java, C#, and XML will become 
+the primary driving force in the delivery of structured information on the Web.</i>    
+<p><i>Richard has participated in numerous consulting projects and he 
+frequently provides onsite training at the high-tech companies located in and 
+around Austin, Texas.&nbsp; He is the author of Baldwin's Programming
+<a href="http://www.dickbaldwin.com">Tutorials</a>, which have gained a 
+worldwide following among experienced and aspiring programmers. He has also 
+published articles in JavaPro magazine.</i> </p>
+<p><i>In addition to his programming expertise, Richard has many years of 
+practical experience in Digital Signal Processing (DSP).&nbsp; His first job after he 
+earned his Bachelor's degree was doing DSP in the Seismic Research Department of 
+Texas Instruments.&nbsp; (TI is still a world leader in DSP.)&nbsp; In the following 
+years, he applied his programming and DSP expertise to other interesting areas 
+including sonar and underwater acoustics.</i> </p>
+<p><i>Richard holds an MSEE degree from Southern Methodist University and has 
+many years of experience in the application of computer technology to real-world 
+problems.</i> </p>
+<p><i><a href="mailto:baldwin@dickbaldwin.com">Baldwin@DickBaldwin.com</a></i>
+</p>
+<p><b>Keywords</b><br>
+java Lempel Ziv LZ77 lossless compression algorithm&nbsp; LZW LZSS DEFLATE tuple </p>
+<p>-end- </p>
+<p>&nbsp;</p>
+<p> <br>
+&nbsp; </p>
+<br>
+<br>
+<br>
+<br>
+</body>
+</html>

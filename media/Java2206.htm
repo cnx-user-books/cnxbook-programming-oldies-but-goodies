@@ -1,0 +1,2593 @@
+<!DOCTYPE doctype PUBLIC "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+  <meta http-equiv="Content-Type"
+ content="text/html; charset=iso-8859-1">
+  <title>... in Java by Richard G Baldwin</title>
+</head>
+<body link="#dd0000" vlink="#0000ff" alink="#ff0000" lang="EN-US">
+<h2>Java JAXP, Implementing Default XSLT Behavior in Java<br>
+</h2>
+<p style="font-style: italic;">Baldwin explains default XSLT behavior,
+and shows you how to write Java code that mimics that behavior.&nbsp;
+The resulting Java code serves as a skeleton for more advanced
+transformation programs.<br>
+</p>
+<p><b>Published:</b>&nbsp; February 17, 2004<br>
+<b>By <a href="mailto:Baldwin@DickBaldwin.com">Richard G. Baldwin</a></b>
+</p>
+<p>Java Programming Notes # 2206</p>
+<ul>
+  <li> <a href="#Preface">Preface</a></li>
+  <li> <a href="#Preview">Preview</a></li>
+  <li><a href="#Some_Details_Regarding_XSLT">Some Details Regarding XSLT</a></li>
+  <li> <a href="#Discussion%20and%20Sample%20Programs">Discussion and
+Sample Code</a></li>
+  <li> <a href="#Run%20the%20program">Run the Program</a></li>
+  <li> <a href="#Summary">Summary</a></li>
+  <li> <a href="#Whats%20Next">What's Next?</a></li>
+  <li> <a href="#Complete%20Program%20Listings">Complete Program
+Listings</a></li>
+</ul>
+<hr size="3" width="100%" align="center">
+<center>
+<h2> <a name="Preface"></a>Preface</h2>
+</center>
+<p>In this lesson, I will explain default XSLT behavior,
+and will show you how to write Java code that mimics that
+behavior.&nbsp;
+The resulting Java code serves as a skeleton for more advanced
+transformation programs.</p>
+<p><font color="#ff0000"><b>What is JAXP?</b></font><br>
+</p>
+<p>JAXP is an
+API designed
+to help you write programs for creating and processing XML
+documents.&nbsp; JAXP is
+very important for many reasons, not the least of which is the
+fact that it is a critical part of Sun's Java Web Services Developer
+Pack
+(JWSDP).&nbsp; As you are probably already aware, web services is
+expected by many to be a very important aspect of the Internet of the
+future<br>
+</p>
+<p>This lesson is one in a series designed to help you
+understand how to use JAXP and how to use the JWSDP.</p>
+<p><big><font><font size="-1"><big>The first lesson in this series was
+entitled <a
+ href="http://www.developer.com/java/other/article.php/3099751">Java
+API for XML Processing (JAXP), Getting Started</a></big></font></font>.</big>&nbsp;
+The
+previous lesson was entitled <a
+ href="http://www.developer.com/java/other/article.php/3292751">Java
+JAXP, Exposing a DOM Tree</a>.<br>
+</p>
+<p><font color="#ff0000"><b>What is XML?</b></font></p>
+XML is an acronym for the&nbsp;e<b>X</b>tensible <b>M</b>arkup <b>L</b>anguage.&nbsp;
+I will assume that you already
+understand
+XML, and will teach you how to use JAXP to write programs for
+creating and processing XML documents.<br>
+<br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">What are XSL
+and XSLT?</span><br>
+<br>
+I provided quite a lot of background material on XSL and XSLT
+in a previous lesson in this series.&nbsp; A brief review of
+that
+material follows.<br>
+<br>
+<a href="http://www.w3.org/TR/xsl/">XSL</a> is an acronym for <span
+ style="font-style: italic;">Extensible Stylesheet language.</span>&nbsp;
+<a href="http://www.w3.org/TR/xslt">XSLT</a> is an acronym for <span
+ style="font-style: italic;">XSL Transformations.</span>
+<font color="#000000">The </font><a href="http://www.w3.org/">W3C</a><font
+ color="#000000"> is a
+governing body that has published many important documents on XML, XSL,
+and
+XSLT.</font>
+<p> </p>
+<center> </center>
+The uses of XSLT include the following:<br>
+<ul>
+  <li>Transforming non-XML documents into XML documents.</li>
+  <li>Transforming XML documents into other XML documents.</li>
+  <li>Transforming XML documents into non-XML documents.</li>
+</ul>
+<b><font color="#ff0000">Viewing tip</font></b>
+<p> </p>
+<p>You may find it useful to open another copy of this lesson in a
+separate browser window.&nbsp; That will make it easier for you to
+scroll back and forth among the different listings and figures while
+you are reading about them. </p>
+<p><b><font color="#ff0000">Supplementary material</font></b></p>
+<p>I recommend that you also study the other lessons in my extensive
+collection of online Java and XML tutorials.&nbsp; You will find those
+lessons
+published at <a href="http://softwaredev.earthweb.com/java">Gamelan.com</a>.&nbsp;
+As of the date of this writing, Gamelan doesn't maintain a
+consolidated index of my tutorial lessons, and sometimes
+they are difficult to locate there.&nbsp; You will find a consolidated
+index at <font color="#000000"> <a href="http://www.dickbaldwin.com/">www.DickBaldwin.com</a>.</font></p>
+<h2 align="center"><font color="#000000"><a name="Preview">Preview</a></font></h2>
+<p><font color="#ff0000"><b>A tree structure in memory</b></font><br>
+</p>
+<p>A DOM parser can be used to
+create a tree structure in memory that represents an XML
+document.&nbsp; In Java, that tree structure is encapsulated in an
+object of the interface type <b>Document</b>.&nbsp; <b>Document</b>
+and its superinterface <b>Node</b> declare numerous methods that can
+be used to navigate, extract information from, modify, and otherwise
+manipulate the DOM tree.&nbsp; As
+is always the case, classes that implement <b>Document</b> must
+provide concrete definitions of those methods.<br>
+</p>
+<p><font color="#ff0000"><b>Many operations are possible</b></font><br>
+</p>
+<p>Given an object of type <b>Document</b>, there are many
+methods that
+can be invoked on the object to perform a variety of operations.&nbsp;
+For example, it is possible to write Java code to move nodes from one
+location in the tree
+to another location in the tree, thus rearranging the structure of the
+XML document represented by the <b>Document</b> object.&nbsp; It is
+possible to delete nodes, and to insert new nodes.&nbsp; It is
+also possible
+to
+recursively traverse the tree, extracting information about the nodes
+along
+the way.<br>
+</p>
+<p><span style="font-weight: bold; color: rgb(255, 0, 0);">Two ways to
+transform an XML document</span><br>
+</p>
+<p>There are at least two ways to transform the contents of an XML
+document into another document:<br>
+</p>
+<ul>
+  <li>By writing Java code to manipulate the DOM and perform the
+transformation.</li>
+  <li>By using XSLT to perform the transformation.</li>
+</ul>
+<p>It should be possible to write Java code to perform any
+transformation that can be performed using XSLT, but the reverse may
+not be true.<br>
+</p>
+<p><span style="font-weight: bold; color: rgb(255, 0, 0);">General
+description of XSLT</span><br>
+</p>
+<p>Here is a partial quotation from <a
+ href="http://www.oreilly.com/catalog/xmlnut/">XML In A Nutshell</a>, <span
+ style="font-style: italic;">(which I highly recommend),</span> by
+Elliotte Rusty Harold and
+W. Scott Means.&nbsp; This quotation provides a general description of
+XSLT:<br>
+</p>
+<p style="margin-left: 40px;"><span style="font-style: italic;">"...
+(XSLT) is a functional programming language used to specify how an
+input XML document is converted into another text document -- possibly,
+though not necessarily, another XML document.&nbsp; An XSLT processor
+reads both an input XML document and an XSLT stylesheet (which is
+itself an XML document because XSLT is an XML application) and produces
+a result tree as output. ... Documents can be transformed using a
+standalone program or as part of a larger program that communicates
+with the XSLT processor through its API."<br>
+</span></p>
+<p>In this lesson, I will provide and explain a <span
+ style="font-style: italic;">larger program</span> that communicates
+with the XSLT processor through its API.&nbsp; The program will also
+execute Java code that mimics the transformation provided by XSLT.<br>
+</p>
+<p><span style="font-weight: bold; color: rgb(255, 0, 0);">Advantages
+and disadvantages</span><br>
+</p>
+<p>As is usually the case, there are advantages and disadvantages to
+both approaches to
+document transformation.<br>
+</p>
+<p>As an example of an advantage provided by XSLT, if it is possible to
+perform the required
+transformation using XSLT, that approach will probably require you to
+write less code than would be required to perform the same
+transformation by writing a Java program from scratch.<br>
+</p>
+<p><span style="font-weight: bold; color: rgb(255, 0, 0);">A large
+library of functions</span><br>
+</p>
+<p>With the XSLT transformation process, you write a stylesheet, which
+is somewhat analogous to a driver program in a more conventional
+programming environment.&nbsp; That driver program accesses and
+uses functions from a large library of pre-written functions to perform
+a series of well-defined operations on the DOM tree to produce
+the desired transformation.<br>
+</p>
+<p style="margin-left: 40px;"><span style="font-style: italic;">(XSLT
+authors don't call them functions.&nbsp; Rather, they are called XSLT
+elements.&nbsp; According to <span style="text-decoration: underline;">XML
+In A Nutshell</span>, there are 37 standard
+XSLT
+elements.&nbsp; Also according to <span
+ style="text-decoration: underline;">XML In A Nutshell</span>, most
+XSLT
+processors also provide various nonstandard extension elements and
+allow you to write your own extension elements in languages such as
+Java.)</span><br>
+</p>
+<p><span style="font-weight: bold; color: rgb(255, 0, 0);">Is there a
+similar library of Java methods?</span><br>
+</p>
+<p>I am not aware of a library of Java methods in the public domain
+that emulates the 37 standard XSLT Elements.&nbsp; However, I freely
+admit that such a library may exist and I may simply not know
+about it.<br>
+</p>
+<p>Therefore, to write a Java program that emulates an XSLT
+transformation, you need to either<br>
+</p>
+<ul>
+  <li>Create your own library of Java
+methods and use that library with your Java code to perform the
+transformation, or </li>
+  <li>Start from scratch each time and write a
+custom program to perform the transformation.</li>
+</ul>
+<p></p>
+<p><span style="font-weight: bold; color: rgb(255, 0, 0);">A skeleton
+library of Java methods</span><br>
+</p>
+<p>This lesson, and several lessons to follow this one, will show you
+how to write the skeleton of a Java library containing methods that
+emulate the most common XSLT elements.&nbsp; Once you have the library,
+writing Java code to transform XML documents consists simply of writing
+a short driver program to access and use those methods.&nbsp; Thus,
+given the proper library of methods, it is no more difficult to write a
+driver Java program to perform the transformation than it is to write
+an
+XSLT stylesheet.<br>
+</p>
+<p><span style="font-weight: bold; color: rgb(255, 0, 0);">Library is
+not my primary purpose</span><br>
+</p>
+<p>However, my primary purpose in these lessons is not to provide such
+a library, but rather is to help you understand how to use a DOM
+tree to create, modify, and manipulate XML documents.&nbsp; By
+comparing Java code that manipulates a DOM tree with similar XSLT
+operations, you will have an opportunity to learn a little about XSLT
+in the process of learning how to manipulate a DOM tree using Java code.<br>
+</p>
+<p>If you already know a lot about XSLT, you may learn a little
+about Java by studying these lessons.&nbsp; If you already know a lot
+about Java, you may learn a little about XSLT.&nbsp; If you don't
+already know either
+Java or XSLT, you may learn a little about both.<br>
+</p>
+<p><span style="font-weight: bold; color: rgb(255, 0, 0);">Debugging
+XSLT can be difficult</span><br>
+</p>
+<p>While writing a Java program to emulate an XSLT Transformation may
+require you to write more code than writing a stylesheet, in my
+opinion, it is much easier to debug a Java program that fails to
+deliver the desired result than it is to debug an XSL stylesheet that
+fails to deliver.&nbsp; This is an advantage of
+using Java code over XSLT.&nbsp; I find XSLT to be extremely difficult
+to debug <span style="font-style: italic;">(but I haven't attempted to
+use a fancy XSLT debugger, several of which are freely available on the
+Internet).</span><br>
+</p>
+<p><span style="font-weight: bold; color: rgb(255, 0, 0);">Java
+provides more detailed control</span><br>
+</p>
+<p>Another difference in using Java code relative to XSLT has to do
+with
+the detailed control of the transformation process.&nbsp; I
+believe, <span style="font-style: italic;">(but cannot prove),</span>
+that it is possible to write Java programs
+to provide transformations that are not possible using standard XSLT
+elements.&nbsp; If I am correct, this may be another
+advantage of writing Java code over using XSLT.<br>
+</p>
+<h2 style="text-align: center;"><a name="Some_Details_Regarding_XSLT"></a>Some
+Details Regarding XSLT</h2>
+<p></p>
+<p>The following is a partial quotation from <span
+ style="text-decoration: underline;">XML In A Nutshell</span><span
+ style="font-style: italic;">.&nbsp; (Note that I will be referring to
+this excellent book several more times in this lesson.&nbsp; For
+brevity, I will refer to it simply as Nutshell.)</span> <br>
+</p>
+<p style="margin-left: 40px;"><span style="font-style: italic;">"XSLT
+is an XML application for specifying rules by which one XML document is
+transformed into another XML document.&nbsp; An XSLT document -- that
+is, an XSLT stylesheet -- contains template rules.&nbsp; Each template
+rule has a pattern and a template.&nbsp; An XSLT processor compares the
+elements and other nodes in an input XML document to the template-rule
+patterns in a stylesheet.&nbsp; When one matches, it writes the
+template from that rule into the output tree.&nbsp; ... XSLT uses the
+XPath syntax to identify matching nodes."</span><br>
+</p>
+<p><span style="font-weight: bold; color: rgb(255, 0, 0);">My
+explanation</span><br>
+</p>
+<p>Let's see if I can explain this process in my own words.&nbsp;
+Assume that an XML document has been parsed so as to produce a DOM tree
+in memory that represents the XML document.&nbsp; <span
+ style="font-style: italic;">(The creation of a DOM tree in this manner
+was discussed in several previous lessons
+in this series.)</span><br>
+</p>
+<p>An XSLT processor starts examining the DOM tree at its root
+node.&nbsp; It
+obtains instructions from the XSLT stylesheet telling it how to
+navigate the
+tree, and what to do with each node that it encounters along the way.<br>
+</p>
+<p><span style="font-weight: bold; color: rgb(255, 0, 0);">Finding
+matching template rules</span><br>
+</p>
+<p>As each node is encountered, the processor searches the stylesheet
+looking for instructions on how to treat that node.&nbsp; <span
+ style="font-style: italic;">(These instructions will be referred to
+later as template rules.)</span>&nbsp; If the processor finds
+instructions that match the node type, it performs the operations
+indicated by the
+instructions.&nbsp; If it doesn't find matching instructions, it
+executes built-in instructions appropriate to that node.<br>
+</p>
+<p style="margin-left: 40px;"><span style="font-style: italic;">(An XML
+document can contain seven different types of nodes.&nbsp; The
+different types will be identified later.&nbsp; This lesson will
+describe and explain the built-in
+instructions for six of those seven node types.&nbsp; Java code will be
+developed that emulates the built-in
+instructions for each of the six types of nodes.)</span><br>
+</p>
+<p><span style="font-weight: bold; color: rgb(255, 0, 0);">Establishing
+the context node</span><br>
+</p>
+<p>An <a href="http://www.w3.org/TR/xpath">XPath</a> expression can be
+used to point to a specific node and to
+establish that node as the context node.&nbsp; Once a context node is
+established, there are at least two XSLT elements that can be used to
+manage the traversal among children of that node:<br>
+</p>
+<ul>
+  <li>xsl:apply-templates<br>
+&nbsp; select, optional attribute<br>
+&nbsp; mode, optional attribute<br>
+&nbsp; xsl:sort, optional XSLT element<br>
+  </li>
+  <li>xsl:for-each<br>
+&nbsp; select, required attribute<br>
+&nbsp; xsl:sort, optional XSLT element<br>
+  </li>
+</ul>
+<p><span style="font-weight: bold; color: rgb(255, 0, 0);">The
+xsl:apply-templates XSLT element</span><br>
+</p>
+<p>The first of these, <span style="font-weight: bold;">xsl:apply-templates</span><span
+ style="font-style: italic;">,</span>
+examines and processes all child nodes of the context node that match
+an optional select
+attribute.<br>
+</p>
+<p style="margin-left: 40px;"><span style="font-style: italic;">(When
+combined with a default template rule to be discussed later, this often
+results in a recursive examination and processing of all descendant
+nodes of the context node.)</span><br>
+</p>
+<p>According to Nutshell,</p>
+<p style="margin-left: 40px;"><span style="font-style: italic;">"The
+xsl:apply-templates instruction tells the processor to search for and
+apply the highest-priority template in the stylesheet that matches each
+node identified by the select attribute."</span><br>
+</p>
+<p><span style="font-weight: bold; color: rgb(255, 0, 0);">Applying
+template rules</span><br>
+</p>
+<p>As each node is examined, the processor searches the stylesheet to
+determine if the XSLT programmer has provided a template rule that
+matches the node and defines how that
+node should be treated.&nbsp; If a matching template rule is found, the
+node is treated in the manner prescribed by the template rule.<br>
+</p>
+<p><span style="font-weight: bold; color: rgb(255, 0, 0);">Literal text
+in the XSLT stylesheet elements</span><br>
+</p>
+<p>You can think of the XSLT process as operating on an input DOM tree
+to produce an output DOM tree.&nbsp; If the template rule being applied
+contains literal text, that literal text is used to
+create a text node in the output tree.<br>
+</p>
+<p style="margin-left: 40px;"><span style="font-style: italic;">(I will
+explain how this feature is used to transform XML documents into XHTML
+documents in a future lesson.)</span><br>
+</p>
+<p><span style="font-weight: bold; color: rgb(255, 0, 0);">If no match
+is found</span><br>
+</p>
+<p>If a matching template rule is not found, the processor executes a
+built-in template rule appropriate to the type of node involved.&nbsp;
+Built-in template rules are provided by the XSLT processor to handle
+the seven different types of nodes in an XML document:<br>
+</p>
+<ol>
+  <li>root node</li>
+  <li>element node</li>
+  <li>attribute node</li>
+  <li>text node</li>
+  <li>comment node</li>
+  <li>processing instruction node</li>
+  <li>namespace node</li>
+</ol>
+<p>This lesson will explain the built-in rules that handle the first
+six types of nodes in the above list.<br>
+</p>
+<p><span style="font-weight: bold; color: rgb(255, 0, 0);">Recursion is
+common</span><br>
+</p>
+<p>As mentioned earlier, the combination of <span
+ style="font-weight: bold;">xsl:apply-templates</span> and a built-in
+template rule often produces recursion.&nbsp; Assuming that there is
+nothing in a matching template rule that stops
+the recursion operation, recursion continues until all descendant nodes
+of the original context node have been examined and processed.<br>
+</p>
+<p><span style="font-weight: bold; color: rgb(255, 0, 0);">The mode
+attribute</span><br>
+</p>
+<p>The <span style="font-style: italic;">mode </span>attribute of <span
+ style="font-weight: bold;">xsl:apply-templates</span> makes it
+possible to cause different template
+rules to match nodes of the same type at different places in the DOM
+tree.<br>
+</p>
+<p><span style="font-weight: bold; color: rgb(255, 0, 0);">Sorting</span><br>
+</p>
+<p>The optional <span style="font-weight: bold;">xsl:sort</span>
+element makes it possible to modify the
+order in which the nodes are examined.<br>
+</p>
+<p><span style="font-weight: bold; color: rgb(255, 0, 0);">Iterative
+operation</span><br>
+</p>
+<p>The second XSLT element in the above list, <span
+ style="font-weight: bold;">xsl:for-each</span>, executes an iterative
+examination and processing of all child nodes of the context node that
+match the required <span style="font-style: italic;">select </span>attribute.&nbsp;
+According to Nutshell,<br>
+</p>
+<p style="margin-left: 40px;"><span style="font-style: italic;">"The
+xsl:for-each instruction iterates over the nodes identified by its
+select attribute and applies templates to each one."</span><br>
+</p>
+<p>In other words, the processor will examine all child nodes of the
+context node that match the <span style="font-style: italic;">select</span>
+attribute.&nbsp; As each child node is examined, the processor will
+search the stylesheet looking for a template rule that matches the
+child node.&nbsp; If a matching template rule is found, the matching
+template rule will be used to process that
+node.&nbsp;
+If a matching template rule is not found, a built-in template rule
+appropriate for the type of node will be used to process the node.<br>
+</p>
+<p>As before, the optional <span style="font-weight: bold;">xsl:sort</span>
+element makes it possible to modify the
+order in which the nodes are examined.&nbsp; I will explain this in
+detail in a future lesson.<br>
+</p>
+<p><span style="font-weight: bold; color: rgb(255, 0, 0);">Combined
+operations</span><br>
+</p>
+<p>Frequently a stylesheet will combine recursive and iterative
+operations to produce more complex operations.<br>
+</p>
+<p style="font-weight: bold; color: rgb(255, 0, 0);">Enough talk, let's
+see some code</p>
+<p>I will begin by discussing the XML file named <span
+ style="font-weight: bold;">Dom11.xml</span> <span
+ style="font-style: italic;">(shown in Listing 29)</span> along with
+the XSL
+stylesheet file named <span style="font-weight: bold;">Dom11.xsl</span>
+<span style="font-style: italic;">(shown in Listing 30).</span>&nbsp;
+These two listings are provided near the end of the lesson.<br>
+<br>
+After explaining the transformation produced by applying this
+stylesheet to this XML document, I will explain the transformation
+produced by applying the empty stylesheet
+named <span style="font-weight: bold;">Dom11a.xsl</span>, <span
+ style="font-style: italic;">(shown in Listing 33),</span> to a nearly
+identical XML document.<br>
+</p>
+<div style="margin-left: 40px;"><span style="font-style: italic;">(The
+two XML files are the
+same except that they refer to different stylesheet files, one of which
+is empty.)</span>&nbsp; <br>
+</div>
+<br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">A Java program
+named Dom11</span><br>
+<br>
+Following that, I will explain a Java program <span
+ style="font-style: italic;">(shown in Listing 31)</span> that
+emulates the behavior of the stylesheets shown in Listings 30 and 33
+when
+applied to the XML file shown in Listing 29.<br>
+<br>
+I will explain that the Java program shown in Listing 31 emulates
+the behavior of the empty stylesheet shown in Listing 33, and will
+explain why that is true.
+<p></p>
+<center>
+<h2><a name="Discussion and Sample Programs"></a><font color="#000000">Discussion
+and Sample Code</font></h2>
+</center>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">The XML
+file named Dom11.xml</span><br>
+<br>
+The XML file shown in Listing 29 is relatively straightforward.&nbsp; A
+tree view of that XML file is shown in Figure 1.<br>
+<br>
+<div style="margin-left: 40px;"><span style="font-style: italic;">(The
+program named DomTree02, discussed in an earlier lesson, was used to
+produce this tree view of the XML file.<br>
+<br>
+The values of the text nodes in Figure 1 were manually highlighted in
+red to make it easier to refer to those values later in this lesson.)</span><br>
+</div>
+<br>
+<table border="1" cols="1" width="400" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre>#document DOCUMENT_NODE<br>  top DOCUMENT_TYPE_NODE<br>  #comment COMMENT_NODE<br>  #comment COMMENT_NODE<br>  dummy-target PROCESSING_INSTRUCTION_NODE<br>  xml-stylesheet PROCESSING_INSTRUCTION_NODE<br>  false-target PROCESSING_INSTRUCTION_NODE<br>  top ELEMENT_NODE<br>    theData ELEMENT_NODE<br>        Attribute: attr=Dummy Attr Value<br>      title ELEMENT_NODE<br>        #text <span
+ style="color: rgb(255, 0, 0); font-weight: bold;">Java</span><br
+ style="font-weight: bold;"><br>        subtitle ELEMENT_NODE<br>            Attribute: position=Low<br>          #text <span
+ style="color: rgb(255, 0, 0); font-weight: bold;">really</span><br
+ style="color: rgb(255, 0, 0); font-weight: bold;">        #text <span
+ style="color: rgb(255, 0, 0); font-weight: bold;">rules</span><br
+ style="color: rgb(255, 0, 0); font-weight: bold;"><br>      author ELEMENT_NODE<br>        #text <span
+ style="font-weight: bold; color: rgb(255, 0, 0);">R.Baldwin</span><br>      price ELEMENT_NODE<br>        #text <span
+ style="font-weight: bold; color: rgb(255, 0, 0);">$9.95</span><br>    theData ELEMENT_NODE<br>      title ELEMENT_NODE<br>        #text <span
+ style="font-weight: bold; color: rgb(255, 0, 0);">Python</span><br>      author ELEMENT_NODE<br>        #text <span
+ style="font-weight: bold; color: rgb(255, 0, 0);">R.Baldwin</span><br>      price ELEMENT_NODE<br>        #text <span
+ style="font-weight: bold; color: rgb(255, 0, 0);">$15.42</span><br>    theData ELEMENT_NODE<br>      title ELEMENT_NODE<br>        #text <span
+ style="font-weight: bold; color: rgb(255, 0, 0);">XML</span><br>      author ELEMENT_NODE<br>        #text <span
+ style="font-weight: bold; color: rgb(255, 0, 0);">R.Baldwin</span><br>      price ELEMENT_NODE<br>        #text <span
+ style="font-weight: bold; color: rgb(255, 0, 0);">$19.60</span><br></pre>
+      <pre><b>Figure 1</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<br>
+<span style="color: rgb(0, 0, 0);"><span
+ style="font-weight: bold; color: rgb(255, 0, 0);">A database of books</span><br>
+<br>
+As you may already </span><span style="color: rgb(0, 0, 0);">have </span><span
+ style="color: rgb(0, 0, 0);">figured out,
+this XML document represents a small database containing information
+about books.&nbsp; However, the structure and content of this XML file
+was not intended to have any purpose other than to illustrate the
+default
+behavior of the built-in XSLT template rules.<br>
+<br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">The XSL
+stylesheet file named Dom11.xsl</span><br>
+<br>
+The stylesheet file shown in Listing 30 is very important relative to
+the purpose
+of this lesson, so I will discuss it in detail.<br>
+<br>
+Recall that an XSL stylesheet is itself an XML file, and can therefore
+be represented as a tree.&nbsp; I will begin by showing you an
+abbreviated version of a tree view of the stylesheet, as shown in
+Figure 2.</span><br>
+<br>
+<table border="1" cols="1" width="400" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre>#document DOCUMENT_NODE<br>  xsl:stylesheet ELEMENT_NODE<br>      Attribute: xmlns:xsl=http:<br>                 //www.w3.org/1999/XSL/Transform<br>      Attribute: version=1.0<br><br>    xsl:template ELEMENT_NODE<br>        Attribute: match=*|/<br>      xsl:apply-templates ELEMENT_NODE<br><br>    xsl:template ELEMENT_NODE<br>        Attribute: match=text()|@*<br>      xsl:value-of ELEMENT_NODE<br>          Attribute: select=.<br></pre>
+      <pre><b>Figure 2</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<br>
+<span style="color: rgb(0, 0, 0);"><span
+ style="font-weight: bold; color: rgb(255, 0, 0);">Why abbreviated?</span><br>
+<br>
+The reason that I refer to this as
+an abbreviated version is because I manually deleted comment nodes and
+extraneous text nodes in order to emphasize the important elements in
+the document.<br>
+<span style="font-style: italic;"><br>
+</span></span>
+<div style="margin-left: 40px;"><span style="color: rgb(0, 0, 0);"><span
+ style="font-style: italic;">(Note that I also manually entered a line
+break in the third line to force the material to fit into this narrow
+publication format.)</span></span><br>
+</div>
+<span style="color: rgb(0, 0, 0);"><br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">The root element</span><br>
+<br>
+The root node of all XML documents is the document node.&nbsp; However,
+in addition to the root node, there is also a root element.<br>
+<br>
+As you can see from Figure 2, the root element in the XSL document is
+of type <span style="font-weight: bold;">xsl:stylesheet</span>.&nbsp;
+The root element has two attributes, each of which is standard for XSL
+stylesheets.<br>
+<br>
+The first attribute points to the XSLT namespace URI, which you can
+read about in the <a href="http://www.w3.org/TR/xslt">W3C
+Recommendation</a>.&nbsp; The second attribute provides the XSLT
+version.&nbsp; According to Nutshell, the version must be 1.0.&nbsp;
+Also, according to Nutshell,<br>
+<br>
+</span>
+<div style="margin-left: 40px;"><span style="color: rgb(0, 0, 0);"><span
+ style="font-style: italic;">"The namespace URI must be exactly
+correct.&nbsp; If even so much as a single character is wrong, the
+stylesheet processor will output the stylesheet itself instead of
+either the input document or the transformed input document."</span></span><br>
+</div>
+<span style="color: rgb(0, 0, 0);"><br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">Unable to
+verify this behavior</span><br>
+<br>
+I have been unable to verify this behavior experimentally.&nbsp; When I
+delete a character from the XSL namespace URI and then load the XML
+file into IE 6.0, there is simply no output.&nbsp; The browser screen
+remains blank.&nbsp; When I modify the XSL namespace URI and attempt to
+use JAXP to apply the stylesheet to the XML file, the system throws
+several errors and the program aborts.&nbsp; Neither approach seems to <span
+ style="font-style: italic;">"output the stylesheet itself"</span> as
+indicated by Nutshell.<br>
+<br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">Children of the
+root element node</span><br>
+<br>
+As you can see from Figure 2, the root element node has two child
+nodes, both of which are of type <span style="font-weight: bold;">xsl:template</span>.&nbsp;
+Here is what <a
+ href="http://www.wileyeurope.com/WileyCDA/WileyTitle/productCd-0764547763.html">XSLT
+and XPath On The Edge</a> by Jeni Tennison has to say about <span
+ style="font-weight: bold;">xsl:template</span>:<br>
+<br>
+</span>
+<div style="margin-left: 40px;"><span style="color: rgb(0, 0, 0);"><span
+ style="font-style: italic;">"This element defines a template, which
+can be applied (if a match pattern is specified) or called (if a name
+is specified)."</span></span><br>
+</div>
+<span style="color: rgb(0, 0, 0);"><br>
+As you can see from the attribute values in Figure 2, a match pattern
+is provided for both of the <span style="font-weight: bold;">xsl:template</span>
+nodes in Figure 2.<br>
+<br>
+</span>
+<div style="margin-left: 40px;"><span style="color: rgb(0, 0, 0);"><span
+ style="font-style: italic;">(The child nodes shown in Figure 2 are
+also called template rules.)</span></span><br>
+</div>
+<span style="color: rgb(0, 0, 0);"><br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">Back to basics</span><br>
+<br>
+Getting back to XSLT basics, whenever the XSLT processor encounters a
+node while traversing the DOM tree, it will examine all of the template
+rules in the stylesheet searching for one whose match pattern matches
+the node.&nbsp; If it finds a matching template rule, it will execute
+the instructions contained as elements within the template rule.&nbsp;
+If it doesn't find a match, it will execute a built-in template rule
+that matches the node.<br>
+<br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">An explicit
+representation of a built-in template rule</span><br>
+<br>
+Consider the first child node of the <span style="font-weight: bold;">xsl:stylesheet</span>
+root element in Figure 2.&nbsp; Listing 1 shows this template rule in
+XSL syntax, <span style="font-style: italic;">(extracted from Listing
+30).</span><br>
+</span>
+<p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  &lt;xsl:template match="*|/"&gt;<br>    &lt;xsl:apply-templates/&gt;<br>  &lt;/xsl:template&gt;<br><br><b><font
+ face="Courier New,Courier">Listing 1</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<span style="color: rgb(0, 0, 0);">The template rule shown in Listing 1
+is an explicit representation of one of the built-in template
+rules.&nbsp; <br>
+<br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">Matching the
+root node and element nodes</span><br>
+<br>
+Consider the match pattern for this template rule <span
+ style="font-style: italic;">(the text value of the attribute named
+match).</span>&nbsp; </span>According to Nutshell,<br>
+<br>
+<div style="margin-left: 40px;"><span style="font-style: italic;">"The
+asterisk * is an XPath wild-card pattern that matches all element
+nodes, regardless of what name they have or what namespace they're in.<br>
+<br>
+The forward slash / is an XPath pattern that matches the root
+node.&nbsp; <br>
+<br>
+This is the first node the processor selects for processing, and
+therefore this is the first template rule the processor executes
+(unless a nondefault template rule also matches the root node). <br>
+<br>
+... the vertical bar combines these two expressions so that it matches
+both the root node and element nodes."&nbsp; </span><br>
+</div>
+<span style="font-style: italic;"><br>
+</span><span style="font-weight: bold; color: rgb(255, 0, 0);">The
+&lt;xsl:apply-templates/&gt; element</span><br>
+<br>
+Now consider the<span style="font-style: italic;"> </span><span
+ style="font-weight: bold;">&lt;xsl:apply-templates/&gt;</span> element
+that makes up the body of this template rule.&nbsp; This element causes
+the processor to process all child nodes of each matching node,
+examining nodes, searching for matching template rules, and executing
+the elements embedded in matching template rules along the way.&nbsp;
+Again, according to Nutshell, still speaking of the template rule in
+Listing 1,<span style="font-style: italic;"><br>
+<br>
+</span>
+<div style="margin-left: 40px;"><span style="font-style: italic;">"In
+isolation, this rule means that the XSLT processor eventually finds and
+applies templates to all nodes except attribute and namespace nodes
+because every nonattribute, non-namespace node is either the root node,
+a child of the root node, or a child of an element.&nbsp; Only
+attribute and namespace nodes are not children of their parents."</span><br>
+</div>
+<br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">An explicit
+representation of a built-in template rule</span><br>
+<br>
+Once again, the template rule shown in Listing 1 is an explicit
+representation of one of the built-in template rules.&nbsp; If I were
+to remove this template rule from the stylesheet, and then apply the
+stylesheet to the XML document, this template rule would still be
+applied where appropriate by the XSLT processor, because it is built
+into the processor.<br>
+<br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">Handling text
+nodes by default</span><br>
+<br>
+Listing 2 shows the template rule, in XSL syntax that corresponds to
+the second child node of the root element node in Figure 2.&nbsp; Once
+again, this is a template rule with a match pattern.&nbsp; This
+template rule is also an explicit representation of one of the built-in
+rules, which copies the value of text and attribute nodes into the
+output document.<br>
+<p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  &lt;xsl:template match="text()|@*"&gt;<br>    &lt;xsl:value-of select="."/&gt;<br>  &lt;/xsl:template&gt;<br><br><b><font
+ face="Courier New,Courier">Listing 2</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">The match
+pattern</span><br>
+<br>
+The <span style="font-style: italic;">text()</span> in the value of
+the attribute named match is an XPath pattern matching all text
+nodes.&nbsp; The <span style="font-style: italic;">@*</span> is
+an XPath pattern matching all attribute nodes.&nbsp; The vertical bar
+combines the two patterns.&nbsp; Hence, the template rule matches all
+text and all attribute nodes.<br>
+<br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">The
+xsl:value-of element</span><br>
+<br>
+Once a match is made, the behavior of the rule is governed by the
+single element that is embedded in the rule.&nbsp; The <span
+ style="font-weight: bold;">xsl:value-of</span> element, with a <span
+ style="font-style: italic;">select</span> value of "." returns the
+text value of the context or current node.&nbsp; <span
+ style="font-style: italic;">(This is similar to the use of a single
+period to represent the current directory in some file management
+systems such as MSDOS.)</span><br>
+<br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">Text value to
+the output</span><br>
+<br>
+Therefore, whenever the XSLT processor applies this template rule to a
+text or attribute node, the text value of that node is sent to the
+output document <span style="font-style: italic;">(a text node is
+created in the output tree).</span><br>
+<br>
+If the node is a text node, the value is simply the text in the node.<br>
+<br>
+If the node is an attribute node, the value is the attribute value, but
+not the attribute name.<br>
+<br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">The output</span><br>
+<br>
+Now it's time for the big question.&nbsp; What does the output look
+like when the stylesheet shown in Listing 30 is used to transform the
+XML document shown in Listing 29?&nbsp; The result of such a
+transformation is shown in Figure 3. <span style="font-style: italic;"><br>
+<br>
+</span>
+<div style="margin-left: 40px;"><span style="font-style: italic;">(Note
+that I manually inserted a line break near the end of the fourth line
+in Figure 3 to force the material to fit in this narrow publication
+format.&nbsp; This caused the text $19.60 to move down to the fifth
+line.)</span><br>
+</div>
+<br>
+<table border="1" cols="1" width="400" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre>&lt;?xml version="1.0" encoding="UTF-8"?&gt;<br>Java<br>reallyrules<br>R.Baldwin$9.95PythonR.Baldwin$15.42XMLR.Baldwin<br>$19.60<br></pre>
+      <pre><b>Figure 3</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<br>
+<span style="color: rgb(0, 0, 0);"><span
+ style="font-weight: bold; color: rgb(255, 0, 0);">The XML declaration</span><br>
+<br>
+The first line in Figure 3 is an XML declaration that was placed there
+by the XSLT processor independent of the content of the XML file.</span><br>
+<span style="color: rgb(0, 0, 0);"><br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">The text in the
+output</span><br>
+<br>
+If you compare the text in Figure 3 with the material highlighted in
+red in Figure 1, you will see that the output produced by this
+stylesheet containing only explicit representations of default template
+rules is <span style="font-weight: bold;">the concatenation of text
+values for all the element nodes in the XML document</span>.<br>
+<br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">Line breaks in
+the output</span><br>
+<br>
+The two line breaks following the words <span
+ style="font-style: italic;">Java</span> and <span
+ style="font-style: italic;">rules</span> in Figure 3 correspond to the
+line breaks in the text portion of the <span style="font-weight: bold;">title</span>
+element shown in Listing 3.&nbsp; <span style="font-style: italic;">(This
+element was extracted from the original XML file in Listing 29.)</span><br>
+</span>
+<p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>&lt;title&gt;Java<br>&lt;subtitle position="Low"&gt;really&lt;/subtitle&gt;rules<br>&lt;/title&gt;<br><br><b><font
+ face="Courier New,Courier">Listing 3</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+Because these two line breaks occur within the text portion of the
+element, they also appear in the output in Figure 3.&nbsp; In other
+words, the line breaks are considered by the XSLT processor to be a
+legitimate part of the text content of the element.<br>
+<br>
+The remaining line breaks in the XML file shown in Listing 29 occur
+between XML tags.&nbsp; Therefore, they are not considered to be a part
+of the text content of any element and they do not appear in Figure 3.<br>
+<span style="color: rgb(0, 0, 0);"><br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">No attribute
+values in the output</span><br>
+<br>
+You may have noticed that even though a couple of the elements in the
+XML file have attributes <span style="font-style: italic;">(see Figure
+1), </span>and one of the template rules matches attribute nodes, the
+attribute values do not appear in the output shown in Figure 3.&nbsp;
+Nutshell explains this in the following way:<br>
+<br>
+</span>
+<div style="margin-left: 40px;"><span style="color: rgb(0, 0, 0);"><span
+ style="font-style: italic;">"... although this template rule says what
+should happen when an attribute node is reached, by default the XSLT
+processor never reaches attribute nodes and, therefore, never outputs
+the value of an attribute."</span></span><br>
+</div>
+<span style="color: rgb(0, 0, 0);"><br>
+Nutshell goes on to tell us,<br>
+<br>
+</span>
+<div style="margin-left: 40px;"><span style="color: rgb(0, 0, 0);"><span
+ style="font-style: italic;">"Attribute values are output according to
+this template only if a specific rule applies templates to them, and
+none of the default rules do this because attributes are not considered
+to be children of their parents.&nbsp; In other words, if element E has
+an attribute A, then E is the parent of A, but A is not the child of E."</span></span><br>
+</div>
+<span style="color: rgb(0, 0, 0);"><br>
+Finally, Nutshell tells us,<br>
+<br>
+</span>
+<div style="margin-left: 40px;"><span style="color: rgb(0, 0, 0);"><span
+ style="font-style: italic;">"Applying templates to the children of an
+element with &lt;xsl:apply-templates/&gt;" does not apply templates to
+attributes of the element.&nbsp; To do that, the xsl:apply-templates
+element must contain an XPath expression specifically selecting
+attributes."</span></span><br>
+</div>
+<span style="color: rgb(0, 0, 0);"><br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">Applying an
+empty stylesheet</span><br>
+<br>
+Now consider the stylesheet shown in Listing 33, as shown in
+abbreviated tree format in Figure 4.<br>
+<br>
+</span>
+<div style="margin-left: 40px;"><span style="color: rgb(0, 0, 0);"><span
+ style="font-style: italic;">(As was the case with Figure 2, comment
+nodes and extraneous text nodes were manually removed from Figure 4.)</span></span><br>
+</div>
+<br>
+<table border="1" cols="1" width="400" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre>#document DOCUMENT_NODE<br>  xsl:stylesheet ELEMENT_NODE<br>      Attribute: xmlns:xsl=http:<br>                 //www.w3.org/1999/XSL/Transform<br>      Attribute: version=1.0<br></pre>
+      <pre><b>Figure 4</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<br>
+<span style="color: rgb(0, 0, 0);">Unlike Figure 2, the stylesheet
+represented by Figure 4 doesn't contain any template rules.&nbsp; In
+fact, except for the root <span style="font-style: italic;">(document)</span>
+node and the <span style="font-weight: bold;">xsl:stylesheet</span>
+root
+element node, the stylesheet is completely empty.<br>
+<br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">Produces
+exactly the same output</span><br>
+<br>
+However, the result of applying the empty stylesheet to the XML file
+discussed earlier produces exactly the same result as was produced by
+applying the stylesheet shown in Listing 30 and Figure 2 to that XML
+file.<br>
+<br>
+This is because the two template rules shown in Listing 30 and Figure 2
+replicate the behavior of two of the built-in template rules.&nbsp;
+Therefore, removing them from the stylesheet has no impact on the
+result produced by applying the stylesheet to the XML file.&nbsp; If
+they are needed, they are available as built-in rules of the XSLT
+processor.<br>
+<br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">Transformation
+behavior of an empty stylesheet</span><br>
+<br>
+</span><span style="color: rgb(0, 0, 0);">Because the two template
+rules in the previous stylesheet replicate the behavior of two of the
+built-in template rules, removing those template rules from the
+stylesheet to produce an empty stylesheet had absolutely no impact on
+the transformation result.&nbsp; The transformation result produced by
+the previous stylesheet was identical to those produced by the empty
+stylesheet.<br>
+<br>
+According to Nutshell, when you transform an XML document using an
+empty stylesheet,<br>
+<br>
+</span>
+<div style="margin-left: 40px;"><span style="color: rgb(0, 0, 0);"><span
+ style="font-style: italic;">"... the output consists of a text
+declaration plus the text of the input document. ... Markup from the
+input document has been stripped.&nbsp; The net effect of applying an
+empty stylesheet ... to any input XML document is to reproduce the
+content but not the markup of the input document.&nbsp; To change that,
+we'll need to add template rules to the stylesheet telling the XSLT
+processor how to handle the specific elements in the input
+document.&nbsp; In the absence of explicit template rules, an XSLT
+processor falls back on built-in rules ..."</span></span><br>
+</div>
+<span style="color: rgb(0, 0, 0);"><br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">Combined output</span><br>
+<br>
+Whenever the XSLT processor
+encounters a node for which you haven't defined a matching template
+rule, the default template rule for that type of node will be
+applied.&nbsp;
+Therefore, the total output is often a combination of output produced
+by template rules that you provide and built-in template rules.</span><br>
+<span style="color: rgb(0, 0, 0);"><br>
+Therefore, if you are going to create a stylesheet containing template
+rules of your own design, it is very important for you to understand
+the default behavior provided by the built-in template rules.&nbsp; The
+total output produced by your stylesheet is very likely to be a
+combination of the output produced by your template rules and the
+output produced by the built-in template rules.<br>
+<br>
+<span style="color: rgb(255, 0, 0); font-weight: bold;">Other built-in
+template rules</span><br>
+<br>
+I have explained the behavior of the built-in template rules that cover
+the following four types of nodes:</span><br>
+<ul>
+  <li>root node</li>
+  <li>element node</li>
+  <li>attribute node</li>
+  <li>text node</li>
+</ul>
+<span style="color: rgb(0, 0, 0);">I will explain the behavior of the
+built-in template rules that cover the following two types of nodes
+later in this lesson:</span><br>
+<ul>
+  <li>comment node</li>
+  <li>processing instruction node</li>
+</ul>
+I will also have some comments about namespace nodes later in this
+lesson as well.<br>
+<br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">A Java program
+that emulates the built-in template rules</span><br>
+<span style="color: rgb(0, 0, 0);"><br>
+Now let's change direction and concentrate on Java code rather than
+XSLT elements.&nbsp; The
+following paragraphs describe a Java program named <span
+ style="font-weight: bold;">Dom11</span>.<br>
+<br>
+The primary purposes of
+this lesson are to:<br>
+</span>
+<ul>
+  <li><span style="color: rgb(0, 0, 0);">Demonstrate Java code that
+replicates the behavior of the built-in template rules for six of
+the seven possible types of nodes.</span></li>
+  <li><span style="color: rgb(0, 0, 0);">Provide a skeleton program
+that can be expanded later to provide more complex behavior.</span></li>
+</ul>
+<span style="color: rgb(0, 0, 0);">This program implements six built-in
+template rules for an XML processor.&nbsp; In addition, it implements
+several other template rules that are required to support the built-in
+rules, such as </span><span style="color: rgb(0, 0, 0);"><span
+ style="font-weight: bold;">xsl:value-of </span></span><span
+ style="color: rgb(0, 0, 0);">and <span style="font-weight: bold;">xsl:apply-templates</span>.&nbsp;
+<br>
+<br>
+As such, the program serves as the skeleton for the definition of
+custom template rules.<br>
+<br>
+</span><span style="color: rgb(0, 0, 0);"><span
+ style="font-weight: bold; color: rgb(255, 0, 0);">Behavior of the
+program</span><br>
+<br>
+As written, this program extracts and concatenates all text values from
+a specified XML file, and writes that text into a result file, using
+two different approaches:<br>
+</span>
+<ul>
+  <li><span style="color: rgb(0, 0, 0);">An XSLT transformation
+operating under program control.</span></li>
+  <li><span style="color: rgb(0, 0, 0);">Program code that emulates the
+behavior of the XSLT transformation.</span></li>
+</ul>
+<span style="color: rgb(0, 0, 0);">In particular, this program
+illustrates Java code that emulates the XSLT templates in the files
+named <span style="font-weight: bold;">Dom11.xsl</span> and <span
+ style="font-weight: bold;">Dom11a.xsl</span>.&nbsp; These two XSL
+files differ in terms of their dependence on the built-in templates.<br>
+<br>
+As you saw in the earlier discussion, both XSL files produce the same
+result when processed against the XML files named <span
+ style="font-weight: bold;">Dom11.xml</span> and <span
+ style="font-weight: bold;">Dom11a.xml</span>, demonstrating the
+behavior of the built-in template rules.&nbsp; The execution of these
+built-in template rules causes the contents of every text node to be
+concatenated and written into the result file.<br>
+<br>
+The program code in this program emulates those built-in template rules
+and produces the same results.<br>
+<br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">Usage
+instructions</span><br>
+<br>
+The program requires three command line arguments in the following
+order:<br>
+</span>
+<ul>
+  <li><span style="color: rgb(0, 0, 0);">The name of the input XML file
+- must be Dom11.xml or Dom11a.xml.</span></li>
+  <li><span style="color: rgb(0, 0, 0);">The name of the output file to
+be produced by the XSLT transformation.</span></li>
+  <li><span style="color: rgb(0, 0, 0);">The name of the output file to
+be produced by the program code that emulates the XSLT transformation.</span></li>
+</ul>
+<span style="color: rgb(0, 0, 0);"><span
+ style="font-weight: bold; color: rgb(255, 0, 0);">Order of execution</span><br>
+<br>
+The program begins by executing code to transform the incoming XML file
+in a way that mimics the XSLT transformation.&nbsp; Along the way, it
+saves the processing instructions, <span style="font-style: italic;">(one
+of which contains the name of the stylesheet file),</span> for later
+use by the code that governs the XSLT transformation process.&nbsp; <span
+ style="font-style: italic;">(</span></span><span
+ style="color: rgb(0, 0, 0);"><span style="font-style: italic;">Otherwise,
+the code that performs the XSLT transformation later would have to
+search the DOM tree for the XSL stylesheet file name.)</span><br>
+<br>
+</span><span style="color: rgb(0, 0, 0);">The name of the XSL
+stylesheet file is extracted from the processing instruction in the XML
+file.&nbsp; </span><span style="color: rgb(0, 0, 0);">Then the program
+uses the XSL style sheet to transform the XML file into a result file.<br>
+<br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">Errors,
+exceptions, and testing</span><br>
+<br>
+No effort was made to provide meaningful information about errors and
+exceptions.&nbsp; If an error or exception occurs, the default behavior
+for that error or exception will occur.<br>
+<br>
+The program was tested using SDK 1.4.2 under WinXP. <br>
+<br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">Will discuss in
+fragments</span></span><br>
+<span style="color: rgb(0, 0, 0);"><br>
+I will discuss this program in fragments.&nbsp; A complete listing of
+the program is shown in Listing 31 near the end of the lesson.<br>
+<br>
+Listing 4 shows the beginning of the class named <span
+ style="font-weight: bold;">Dom11</span> and the beginning of the <span
+ style="font-weight: bold;">main</span> method.<br>
+</span>
+<p></p>
+<p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>public class Dom11{<br><br>  PrintWriter out;//output stream<br>  //Save processing instruction nodes here<br>  <span
+ style="font-weight: bold;">static Vector procInstr = new Vector();</span><br><br>  public static void main(String argv[]){<br>    if (argv.length != 3){<br>      System.err.println(<br>        "usage: java Dom11 "<br>        + "xmlFileIn "<br>        + "xformFileOut "<br>        + "codeFileOut");<br>      System.exit(0);<br>    }//end if<br><br><b><font
+ face="Courier New,Courier">Listing 4</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+The code in Listing 4 declares a couple of variables, one of
+which will be used later to save processing instruction nodes.<br>
+<br>
+Then the code in Listing 4 provides usage instructions based on
+command-line arguments.<br>
+<br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">Parse the input
+XML file</span><br>
+<p></p>
+The code in Listing 5 parses the input XML file, producing an object of
+type <span style="font-weight: bold;">Document</span>, which is a DOM
+tree in memory.<br>
+<p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    try{<br>      //Get a factory object for DocumentBuilder<br>      // objects<br>      DocumentBuilderFactory factory =<br>            DocumentBuilderFactory.newInstance();<br><br>      //Configure the factory object.  Change<br>      // the following parameter to false for a<br>      // non-validating parser.<br>      factory.setValidating(true);<br>      factory.setNamespaceAware(false);<br>      //The following statement causes the parser<br>      // to ignore cosmetic whitespace between<br>      // elements.<br>      factory.<br>       setIgnoringElementContentWhitespace(true);<br><br>      //Get a DocumentBuilder (parser) object<br>      DocumentBuilder builder =<br>                    factory.newDocumentBuilder();<br><br>      //Parse the XML input file to create a<br>      // Document object that represents the<br>      // input XML file.<br>      Document document = builder.parse(<br>                              new File(argv[0]));<br><br><b><font
+ face="Courier New,Courier">Listing 5</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<font color="#ff0000"><b>Steps for creating a Document object</b></font><br>
+<br>
+There is nothing new in the code in Listing 5.&nbsp; I have discussed
+the code required to create a <span style="font-weight: bold;">Document</span>
+object in several previous lessons beginning with the lesson entitled <big><a
+ href="zz"><font><font size="-1"><big><a
+ href="http://www.developer.com/java/other/article.php/3099751">Java
+API for XML Processing (JAXP), Getting Started</a>.</big></font></font></a></big><br>
+<br>
+As you saw in those earlier lessons, creating a <b>Document</b>
+object involves three steps:<br>
+<ol>
+  <li>Create a <b>DocumentBuilderFactory </b>object</li>
+  <li>Use the&nbsp;<b>DocumentBuilderFactory </b>object to create a <b>DocumentBuilder
+    </b>object</li>
+  <li>Use the <b>DocumentBuilder </b>object to create a <b>Document</b>
+object</li>
+</ol>
+Both the <b>DocumentBuilderFactory</b> class and the <b>DocumentBuilder</b>
+class belong to the <b>javax.xml.parsers</b> package.&nbsp; As of this
+writing, this package is part of J2SE 1.4.2.<br>
+<br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">Transformation
+through program code</span><br>
+<br>
+The code in Listing 6 begins the process of transforming the DOM tree
+into an output file through the execution of program code <span
+ style="font-style: italic;">(as opposed to an XSLT transformation).</span><br>
+<br>
+The code begins by instantiating a new object of the <span
+ style="font-weight: bold;">Dom11</span> class.<br>
+<p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>      Dom11 thisObj = new Dom11();<br><br>      thisObj.out = new PrintWriter(<br>                  new FileOutputStream(argv[2]));<br><br><b><font
+ face="Courier New,Courier">Listing 6</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">Get an output
+stream</span><br>
+<br>
+Then the program gets an output stream for the output produced by the
+program code.&nbsp; This stream points to an output file that was
+specified by the third command- line parameter.<br>
+<br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">Process the DOM
+tree</span><br>
+<br>
+The code in listing 7 invokes the <span style="font-weight: bold;">processDocumentNode</span>
+method to process the DOM tree.&nbsp; This method <span
+ style="font-style: italic;">(and the methods that it calls)</span>
+begins with the <span style="font-weight: bold;">Document </span>node,
+and processes all
+the nodes in the DOM tree to produce the required output.<br>
+<p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>      thisObj.processDocumentNode(document);<br><br><b><font
+ face="Courier New,Courier">Listing 7</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<span style="color: rgb(0, 0, 0);">Note that the code in listing 7
+passes the <span style="font-weight: bold;">Document</span> object's
+reference to the method named <span style="font-weight: bold;">processDocumentNode</span>.&nbsp;
+This is the root node of the entire DOM tree, and can be treated as
+type <span style="font-weight: bold;">Node</span>, because the <span
+ style="font-weight: bold;">Document</span> interface extends the <span
+ style="font-weight: bold;">Node</span> interface.<br>
+</span><span style="font-weight: bold; color: rgb(255, 0, 0);"><br>
+Set the main method aside</span><br>
+<br>
+My explanation of this program will follow the execution thread through
+the program.&nbsp; At this point, I will set the discussion of the <span
+ style="font-weight: bold;">main </span>method aside temporarily and
+come back to it later when the&nbsp; <span style="font-weight: bold;">processDocumentNode</span>
+method returns control to the <span style="font-weight: bold;">main</span>
+method.<br>
+<br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">The
+processDocumentNode method</span><br>
+<br>
+The entire <span style="font-weight: bold;">processDocumentNode</span>
+method is shown in Listing 8.<br>
+<p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  void processDocumentNode(Node node){<br>    //Write one line of text into the output.<br>    out.println("&lt;?xml version=\"1.0\" "<br>                       + "encoding=\"UTF-8\"?&gt;");<br><br>    <span
+ style="font-weight: bold;">processNode(node);</span><br><br>    out.flush();<br>  }//end processDocumentNode<br><br><b><font
+ face="Courier New,Courier">Listing 8</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+This method is used to produce any text required in the output at
+the document level, such as the XML declaration for an XML
+document.&nbsp; <span style="font-style: italic;">(As you can see from
+Listing 8, the code in this method writes an XML declaration into the
+output.)</span><br>
+<br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">Invoke the
+processNode method</span><br>
+<br>
+Despite the name that I chose to give to the <span
+ style="font-weight: bold;">processDocumentNode</span> method, it
+doesn't actually process the document node directly.&nbsp; Rather after
+sending any required text to the output, it invokes the
+method named <span style="font-weight: bold;">processNode</span> to
+actually process the document node.<br>
+<br>
+<div style="margin-left: 40px;"><span style="font-style: italic;">(Note
+that the <span style="font-weight: bold;">Document</span> object's
+reference is passed to the method named <span
+ style="font-weight: bold;">processNode</span> in Listing 8.)</span><br>
+</div>
+<br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">When the DOM
+tree has been processed ...</span><br>
+<br>
+When the <span style="font-weight: bold;">processNode</span> method
+returns, <span style="font-style: italic;">(after the entire DOM tree
+has been processed),</span> the <span style="font-weight: bold;">processDocumentNode</span>
+method flushes the output stream and returns control to the <span
+ style="font-weight: bold;">main</span> method.&nbsp; <br>
+<br>
+As you will see
+later, subsequent code in the <span style="font-weight: bold;">main</span>
+method invokes a method that will perform an XSLT transformation on the
+XML file and write the output into a different output file.&nbsp; I
+will discuss that method later in this lesson.<br>
+<br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">The processNode
+method</span><br>
+<br>
+There are seven possible types of nodes in an XML document:<br>
+<ol>
+  <li>root or document node</li>
+  <li>element node</li>
+  <li>attribute node</li>
+  <li>text node</li>
+  <li>comment node</li>
+  <li>processing instruction node</li>
+  <li>namespace node<br>
+  </li>
+</ol>
+The <span style="font-weight: bold;">processNode</span> method handles
+the first six types and ignores namespace nodes.<br>
+<br>
+<div style="margin-left: 40px;"><span style="font-style: italic;">(Apparently
+it is not possible to handle namespace nodes in a Java program because
+there is no constant in the </span><span
+ style="font-weight: bold; font-style: italic;">Node </span><span
+ style="font-style: italic;">class that can be used to identify
+namespace nodes.&nbsp; This will become clearer later as we examine the
+code in the <span style="font-weight: bold;">processNode</span>
+method.)</span><br>
+</div>
+<br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">Get and save
+the node type</span><br>
+<br>
+The beginning of the <span style="font-weight: bold;">processNode</span>
+method is shown in Listing 9.&nbsp; Note that the method receives an
+incoming parameter, which is a reference to an object as type <span
+ style="font-weight: bold;">Node</span>.&nbsp; This can include any of
+the seven node types that can occur in a DOM tree.<br>
+<br>
+If the parameter doesn't point to an actual object, the method simply
+returns, as opposed to throwing a <span style="font-weight: bold;">NullPointerException</span>.<br>
+<p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  void <span style="font-weight: bold;">processNode</span>(Node node){<br><br>    try{<br>      if (node == null){<br>        System.err.println(<br>                  "Nothing to do, node is null");<br>        return;<br>      }//end if<br><br>      //Process the incoming node based on its<br>      // type.<br>      <span
+ style="font-weight: bold;">int type = node.getNodeType();<br></span><br><br><b><font
+ face="Courier New,Courier">Listing 9</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+The final statement in Listing 9 invokes the <span
+ style="font-weight: bold;">getNodeType</span> method to get and save
+the type of the node whose reference was received as an incoming
+parameter.<br>
+<br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">Process the node</span><br>
+<br>
+Each time the <span style="font-weight: bold;">processNode</span>
+method is invoked, it receives a <span style="font-weight: bold;">Node</span>
+object's reference as an incoming parameter.&nbsp; The code in Listing
+9 determines the type of the incoming node.&nbsp; Listing 10 shows the
+beginning of a <span style="font-weight: bold;">switch</span>
+statement that is used to initiate the processing of each incoming node
+based on its type.<br>
+<p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>      switch (type){<br>        case <span
+ style="font-weight: bold;">Node.DOCUMENT_NODE</span>:{<br>          if(false){<br>            //cannot be reached in this example<br>          }else{//invoke default behavior<br>            defElOrRtNodeTemp(node);<br>          }//end else<br>          break;<br>        }//end case DOCUMENT_NODE<br><br><b><font
+ face="Courier New,Courier">Listing 10</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+The <span style="font-weight: bold;">switch</span> statement has six
+cases to handle six types of nodes, plus a default case to ignore
+namespace nodes.<br>
+<br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">The
+DOCUMENT_NODE case</span><br>
+<br>
+The code in Listing 10 will be executed whenever the incoming method
+parameter points to a document node.<br>
+<br>
+<div style="margin-left: 40px;"><span style="font-style: italic;">(Note
+that this will happen only once during the processing of a DOM
+tree.&nbsp; The first node processed will always be the document node,
+and there is only one document node in a DOM tree.)</span><br>
+</div>
+<br>
+<span style="font-weight: bold;">DOCUMENT_NODE</span> is a constant <span
+ style="font-style: italic;">(public static final variable)</span> that
+is defined in the <span style="font-weight: bold;">Node</span>
+interface.&nbsp; <span style="font-style: italic;">(The interface
+provides similar constants for all node types other than namespace
+nodes.)</span>&nbsp; These constants can be used to distinguish between
+different node types.<br>
+<br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">Will invoke
+default behavior in this case</span><br>
+<br>
+Note that the code in the case in Listing 10 is an <span
+ style="font-weight: bold;">if/else</span> construct.&nbsp; If the
+conditional clause in the <span style="font-weight: bold;">if </span>statement
+evaluates to true <span style="font-style: italic;">(which is not
+possible in this case),</span> the code in the <span
+ style="font-weight: bold;">if</span> statement will be executed.&nbsp;
+<span style="font-style: italic;">(This is where I will place the code
+for custom template rules in subsequent lessons.)<br>
+<br>
+</span>If the conditional clause in the <span
+ style="font-weight: bold;">if</span> statement does not evaluate to
+true, the code in the <span style="font-weight: bold;">else</span>
+statement will be executed.&nbsp; <span style="font-style: italic;">(This
+is where I have placed the code that mimics the built-in template
+rules.)</span><br>
+<br>
+Note that the code in the <span style="font-weight: bold;">else</span>
+statement in Listing 10 invokes a method named <span
+ style="font-weight: bold;">defElOrRtNodeTemp</span>.&nbsp; When I
+discuss this method momentarily, you will see that its behavior mimics
+one of the built-in template rules that I discussed earlier in this
+lesson.&nbsp; Before getting to that, however, I want to give you a
+preview of how I will define custom template rules in future lessons.<br>
+<br>
+<span style="color: rgb(0, 0, 0);"><span
+ style="font-weight: bold; color: rgb(255, 0, 0);">Creating custom
+template rules</span><br>
+<br>
+As you will see in subsequent lessons, the process for creating a
+custom template rule is as follows:<br>
+</span>
+<ul>
+  <li><span style="color: rgb(0, 0, 0);">Go to the method named <span
+ style="font-weight: bold;">processNode</span>, which I am
+discussing right now.</span></li>
+  <li><span style="color: rgb(0, 0, 0);">Identify the case for the node
+type in the <span style="font-weight: bold;">switch</span> statement.</span></li>
+  <li><span style="color: rgb(0, 0, 0);">Change the conditional clause
+in the <span style="font-weight: bold;">if</span> statement for that
+case to
+implement a match for a particular node of that type.</span></li>
+  <li><span style="color: rgb(0, 0, 0);">Write code in the body of the <span
+ style="font-weight: bold;">if</span> statement to implement the custom
+template rule.</span></li>
+</ul>
+<span style="color: rgb(0, 0, 0);">If the modified conditional clause
+evaluates to true, the custom template rule will be executed.&nbsp; If
+false, the
+default rule will be executed.</span><br>
+<br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">The
+ELEMENT_NODE case</span><br>
+<br>
+Before getting to the discussion of the method named <span
+ style="font-weight: bold;">defElOrRtNodeTemp</span>, I want to show
+you the <span style="font-weight: bold;">ELEMENT_NODE</span> case in
+Listing 11.<br>
+<br>
+<div style="margin-left: 40px;"><span style="font-style: italic;">(This
+is still part of the <span style="font-weight: bold;">switch</span>
+statement that was begun in Listing 10)</span><br>
+</div>
+<p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>        case Node.<span style="font-weight: bold;">ELEMENT_NODE</span>:{<br>          if(false){<br>            //unreachable in this example<br>          }else{//invoke default behavior<br>            <span
+ style="font-weight: bold;">defElOrRtNodeTemp(node)</span>;<br>          }//end else<br>          break;<br>        }//end case ELEMENT_NODE<br><br><b><font
+ face="Courier New,Courier">Listing 11</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+Except for the type of node in the first line in Listing 11, the code
+in this case is identical to the code in the <span
+ style="font-weight: bold;">DOCUMENT_NODE</span> case shown in Listing
+10.&nbsp; Note in particular that the default behavior for this case
+invokes the same method as the default behavior for the document node
+case.<br>
+<br>
+As before, the code in the <span style="font-weight: bold;">if</span>
+statement is not reachable in this program.<br>
+<br>
+<div style="margin-left: 40px;"><span style="font-style: italic;">(That
+will be true for every case in this program, because this program is
+designed specifically to exhibit the same behavior as the built-in XSLT
+template rules.)</span><br>
+</div>
+<br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">The method
+named defElOrRtNodeTemp</span><br>
+<br>
+Still following the execution thread, I will set my discussion of the <span
+ style="font-weight: bold;">switch</span>
+statement aside temporarily and discuss the method named <span
+ style="font-weight: bold;">defElOrRtNodeTemp</span>.&nbsp; As
+mentioned above, this method is invoked
+as the default behavior for document nodes and element nodes in
+Listings 10 and 11.<br>
+<br>
+I will return to my discussion of the <span style="font-weight: bold;">switch</span>
+statement shortly.<br>
+<br>
+The entire method named <span style="font-weight: bold;">defElOrRtNodeTemp</span>
+is shown in Listing 12.<br>
+<p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  void <span style="font-weight: bold;">defElOrRtNodeTemp</span>(Node node)<br>                                throws Exception{<br>    int nodeType = node.getNodeType();<br>    if((nodeType == Node.ELEMENT_NODE) ||<br>               (nodeType == Node.DOCUMENT_NODE)){<br><br>      <span
+ style="font-weight: bold;">applyTemplates</span>(node,null);<br>    }else{<br>      throw new Exception(<br>                "Bad call to defElOrRtNodeTemp");<br>    }//end else<br>  }//end defElOrRtNodeTemp<br><br><b><font
+ face="Courier New,Courier">Listing 12</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">Behavior of the
+method named defElOrRtNodeTemp</span><br>
+<br>
+This method mimics the behavior of the built-in XSLT template rule
+shown in Listing 1, and repeated in Figure 5 below for convenient
+viewing.<br>
+<br>
+<table border="1" cols="1" width="400" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  &lt;xsl:template match="*|/"&gt;<br>    &lt;xsl:apply-templates/&gt;<br>  &lt;/xsl:template&gt;</pre>
+      <pre><b>Figure 5</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<br>
+<span style="color: rgb(0, 0, 0);">As I indicated earlier, the match
+pattern for this template rule matches the document node and all
+element nodes.<br>
+<br>
+</span>
+<div style="margin-left: 40px;"><span style="color: rgb(0, 0, 0);"><span
+ style="font-style: italic;">(Hence, this method is invoked by the two
+cases in the <span style="font-weight: bold;">switch</span> statement
+corresponding to the document node and an element node.)</span></span><br>
+</div>
+<span style="color: rgb(0, 0, 0);"><br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">Code is
+straightforward</span><br>
+<br>
+The code in this method is relatively straightforward.&nbsp; First it
+tests to confirm that the incoming parameter points to a node of the
+correct type, and throws an exception if the incoming parameter is not
+of the correct type.<br>
+<br>
+If the incoming parameter is of the correct type, the code in the
+method invokes a method named <span style="font-weight: bold;">applyTemplates</span>
+passing the node as a parameter to that method.<br>
+<br>
+</span>
+<div style="margin-left: 40px;"><span style="color: rgb(0, 0, 0);"><span
+ style="font-style: italic;">(Note the similarity between the code in
+Listing 12 and the XSLT template rule in Figure 5.)</span></span><br>
+</div>
+<br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">The method
+named applyTemplates</span><br>
+<br>
+Continuing to follow the execution thread, I will now discuss the
+method named <span style="font-weight: bold;">applyTemplates</span>,
+shown in Listing 13.<br>
+<p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  void <span style="font-weight: bold;">applyTemplates</span>(Node node,String select){<br>    NodeList children = node.getChildNodes();<br>    if (children != null){<br>      int len = children.getLength();<br>      //Iterate on NodeList of child nodes.<br>      for (int i = 0; i &lt; len; i++){<br>        if((select == null) ||<br>              (select.equals(children.item(i).<br>                                getNodeName()))){<br><br>          //Recursive method call<br>          <span
+ style="font-weight: bold;">processNode(children.item(i));<br></span><br>        }//end if<br>      }//end for loop<br>    }//end if children != null<br><br>  }//end applyTemplates<br><br><b><font
+ face="Courier New,Courier">Listing 13</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">Behavior of the
+apply-templates rule</span><br>
+<br>
+The <span style="font-weight: bold;">applyTemplates</span> method
+partially emulates the XSLT <span style="font-weight: bold;">apply-templates</span>
+rule discussed earlier in this lesson, and shown in Figure 6.<br>
+<br>
+<table border="1" cols="1" width="400" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre>&lt;xsl:apply-templates<br>  optional attribute select="..."<br>  optional attribute mode="..."<br>/&gt;</pre>
+      <pre><b>Figure 6</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<br>
+<span style="color: rgb(0, 0, 0);">The <span style="font-weight: bold;">apply-templates</span>
+rule has two attributes, <span style="font-style: italic;">select </span>and
+<span style="font-style: italic;">mode.</span>&nbsp; <br>
+<br>
+</span>
+<div style="margin-left: 40px;"><span style="color: rgb(0, 0, 0);"><span
+ style="font-style: italic;">(The </span><span
+ style="font-weight: bold; font-style: italic;">applyTemplates</span><span
+ style="font-style: italic;"> method shown in Listing 13 does not
+support the mode attribute.&nbsp; Perhaps I will update the method in a
+future lesson to support this attribute.)</span></span><br>
+</div>
+<span style="color: rgb(0, 0, 0);"><br>
+As I explained earlier in this lesson,<br>
+<br>
+</span>
+<div style="margin-left: 40px;"><span style="color: rgb(0, 0, 0);"><span
+ style="font-style: italic;">"</span></span><span
+ style="font-style: italic;">The </span><span
+ style="font-weight: bold; font-style: italic;">xsl:apply-templates</span><span
+ style="font-style: italic;">
+rule processes all child nodes of the context node that match
+an optional <span style="font-weight: bold;">select
+</span>attribute.</span><span style="color: rgb(0, 0, 0);"><span
+ style="font-style: italic;">&nbsp; If the <span
+ style="font-weight: bold;">select</span> attribute is omitted, all
+child nodes are processed."</span></span><br>
+</div>
+<span style="color: rgb(0, 0, 0);"><br>
+</span><span style="font-weight: bold; color: rgb(255, 0, 0);">Behavior
+of the method named applyTemplates</span><br>
+<span style="color: rgb(0, 0, 0);"><br>
+The <span style="font-weight: bold;">applyTemplates</span> method
+shown in Listing 13 receives two incoming parameters:<br>
+</span>
+<ul>
+  <li><span style="color: rgb(0, 0, 0);">The context node.</span></li>
+  <li><span style="color: rgb(0, 0, 0);">The <span
+ style="font-weight: bold;">select</span> parameter.</span></li>
+</ul>
+<span style="color: rgb(0, 0, 0);">If the <span
+ style="font-weight: bold;">select</span> parameter is null, the method
+examines and processes all child nodes of the context node.&nbsp;
+Otherwise, it processes only those child nodes that match the <span
+ style="font-weight: bold;">select </span>parameter.<br>
+<br>
+The code in Listing 13 invokes the <span style="font-weight: bold;">getChildNodes</span>
+method on the context node to get a list of all child nodes of the
+context node.&nbsp; If there are no child nodes, it quietly returns.<br>
+<br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">A recursive
+method call</span><br>
+<br>
+</span><span style="color: rgb(0, 0, 0);">If there are child nodes, the
+method uses a <span style="font-weight: bold;">for</span> loop to
+process all child nodes that match the <span style="font-weight: bold;">select</span>
+parameter as described above.<br>
+<br>
+</span>
+<div style="margin-left: 40px;"><span style="color: rgb(0, 0, 0);"><span
+ style="font-style: italic;">(Note that the match or lack thereof is
+based on the name of the node obtained by invoking the method named <span
+ style="font-weight: bold;">getNodeName</span> on the child node being
+examined.)</span></span><br>
+</div>
+<span style="color: rgb(0, 0, 0);"><br>
+For each matching child node, the <span style="font-weight: bold;">applyTemplates</span>
+method makes a <span style="font-style: italic;"><span
+ style="font-weight: bold;">recursive</span></span> call to the method
+named <span style="font-weight: bold;">processNode</span>, passing the
+child node's reference as a parameter to the <span
+ style="font-weight: bold;">processNode</span> method.</span><br>
+<span style="color: rgb(0, 0, 0);"><br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">Return to
+defElOrRtNodeTemp method</span><br>
+<br>
+Eventually, the recursive process will end, and control will return to
+the <span style="font-weight: bold;">defElOrRtNodeTemp</span> method
+shown in Listing 12.&nbsp; From there, control will return to either
+the </span><span style="color: rgb(0, 0, 0);"><span
+ style="font-weight: bold;">DOCUMENT_NODE</span> case or the</span><span
+ style="color: rgb(0, 0, 0);"> <span style="font-weight: bold;">ELEMENT_NODE</span>
+case in the <span style="font-weight: bold;">switch</span> statement
+in Listing 10 or Listing 11 from which the </span><span
+ style="color: rgb(0, 0, 0);"><span style="font-weight: bold;">defElOrRtNodeTemp</span>
+method was called.<br>
+<br>
+That, in turn, brings us back to a discussion of the other cases in the
+<span style="font-weight: bold;">switch</span> statement.<br>
+</span><span style="color: rgb(0, 0, 0);"><br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">The TEXT_NODE
+and ATTRIBUTE_NODE cases</span></span><br>
+<br>
+The next two cases from the <span style="font-weight: bold;">switch</span>
+statement that I will discuss are shown in Listing 14.&nbsp; <span
+ style="font-style: italic;">(The <span style="font-weight: bold;">switch
+</span>statement began in Listing 10)</span><br>
+<br>
+Listing 14 shows the cases for text nodes and attribute nodes.&nbsp; I
+have grouped these two cases together because the default behavior of
+both cases is to invoke the method named <span
+ style="font-weight: bold;">defTextOrAttrTemp</span>, and to send the <span
+ style="font-weight: bold;">String</span> returned by that method to
+the output.<br>
+<p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>        case Node.<span style="font-weight: bold;">TEXT_NODE</span>:{<br>          if(false){<br>            //unreachable in this program<br>          }else{//invoke default behavior<br>            out.print(<span
+ style="font-weight: bold;">defTextOrAttrTemp</span>(node));<br>          }//end else<br>          break;<br>        }//end case Node.TEXT_NODE<br><br>        case Node.<span
+ style="font-weight: bold;">ATTRIBUTE_NODE</span>:{<br>          if(false){<br>            //unreachable in this program<br>          }else{//invoke default behavior<br>            out.print(<span
+ style="font-weight: bold;">defTextOrAttrTemp</span>(node));<br>          }//end else<br>          break;<br>        }//end case Node.ATTRIBUTE_NODE<br><br><b><font
+ face="Courier New,Courier">Listing 14</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">The
+defTextOrAttrTemp method</span><br>
+<br>
+Once again, following the execution thread, I will now discuss the
+method named <span style="font-weight: bold;">defTextOrAttrTemp</span>
+method.&nbsp; This method is called whenever:
+<ul>
+  <li>The <span style="font-weight: bold;">processNode</span> method
+is called with a reference to either a text node or an attribute node,
+and.</li>
+  <li>The default behavior for the node type is executed.</li>
+</ul>
+Listing 15 shows the entire method named <span
+ style="font-weight: bold;">defTextOrAttrTemp</span>.<br>
+<p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  String defTextOrAttrTemp(Node node)<br>                                throws Exception{<br>    int nodeType = node.getNodeType();<br>    if((nodeType == Node.ATTRIBUTE_NODE)<br>                || (nodeType == Node.TEXT_NODE)){<br><br>      //Get and return value of context node.<br>      return <span
+ style="font-weight: bold;">valueOf(node,".")</span>;<br>    }else{<br>      throw new Exception(<br>         "Bad call to defaultTextOrAttr method");<br>    }//end else<br>  }//end defaultTextOrAttr<br><br><b><font
+ face="Courier New,Courier">Listing 15</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">Emulates a
+built-in XSLT template rule</span><br>
+<br>
+This method emulates the built-in XSLT template rule shown in Listing 2
+and repeated in Figure 7 below for convenient viewing.<br>
+<br>
+<table border="1" cols="1" width="400" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  &lt;xsl:template match="text()|@*"&gt;<br>    &lt;xsl:value-of select="."/&gt;<br>  &lt;/xsl:template&gt;</pre>
+      <pre><b>Figure 7</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<br>
+<span style="color: rgb(0, 0, 0);">As I told you earlier, this template
+rule matches all text nodes and all attribute nodes.&nbsp; Therefore,
+the </span><span style="font-weight: bold;">defTextOrAttrTemp</span>
+method is invoked by the default behavior of either the <span
+ style="font-weight: bold;">TEXT_NODE</span> case or the <span
+ style="font-weight: bold;">ATTRIBUTE_NODE</span> case in the <span
+ style="font-weight: bold;">switch </span>statement in Listing 14.<br>
+<br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">Similar behavior</span><br>
+<br>
+Once again, note the similarity between the method named <span
+ style="font-weight: bold;">defTextOrAttrTemp</span> in Listing 15 and
+the template rule shown in Figure 7.<br>
+<br>
+In Figure 7, the template rule executes the <span
+ style="font-weight: bold;">xsl:value-of</span> XSLT element to send
+the value of the context node to the output.<br>
+<br>
+The method shown in Listing 15 invokes a method named <span
+ style="font-weight: bold;">valueOf</span>,
+passing "." as a parameter <span style="font-style: italic;">(note the
+period between the quotation marks).</span>&nbsp; The value returned by
+that method is
+sent to the output by the code in the default behaviors of the two
+cases in Listing 14.<br>
+<br>
+<span style="color: rgb(0, 0, 0);"><span
+ style="font-weight: bold; color: rgb(255, 0, 0);">The method named
+valueOf</span><br>
+<br>
+The method named <span style="font-weight: bold;">valueOf</span>,
+which begins in Listing 16, is
+fairly complex.&nbsp; I will discuss portions of this method
+in this lesson and will discuss the remainder of the method in
+subsequent lessons.</span><br>
+<br>
+This method emulates an <span style="font-weight: bold;">&lt;xsl:value-of
+select="???"/&gt;</span> XSLT element.<br>
+<br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">Three forms of
+method call</span><br>
+<br>
+The method requires two parameters.&nbsp; The first parameter is of
+type <span style="font-weight: bold;">Node</span>, and is the context
+node.&nbsp; The second parameter is of type <span
+ style="font-weight: bold;">String</span> and is a <span
+ style="font-style: italic;">select</span> parameter.<br>
+<br>
+The <span style="font-weight: bold;">valueOf</span> method recognizes
+three forms of call:<br>
+<ol>
+  <li>valueOf(Node theNode,String "@attrName")</li>
+  <li>valueOf(Node theNode,String ".")</li>
+  <li>valueOf(Node theNode,String "nodeName")</li>
+</ol>
+In the first form, the method returns the text value of the named
+attribute of theNode.&nbsp; An attribute is specified by a select value
+that begins with @.&nbsp; If the attribute doesn't
+exist, the method returns an empty string.<br>
+<br>
+In the second form, which is the only form actually used in this
+program, the value of the select parameter is a <span
+ style="font-weight: bold;">String</span> containing a single
+period.&nbsp; In this form, the method returns the concatenated text
+values of the context node and all
+descendants
+of the context node <span style="font-style: italic;">(including text
+nodes that are children of the context node).</span><br>
+<br>
+In the third form, the method returns the concatenated text values of
+all descendants of a specified child node of the context node.&nbsp; If
+the context node has more than one child node with
+the specified name, only the first one found is processed.&nbsp;
+The others are ignored.<br>
+<br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">Features not
+supported</span><br>
+<br>
+The <span style="font-weight: bold;">valueOf</span> method does not
+support the following features, which are standard features of the <span
+ style="font-weight: bold;">xsl:value-of</span> XSLT element:<br>
+<ul>
+  <li>disable-output-escaping</li>
+  <li>processing instruction nodes</li>
+  <li>comment nodes</li>
+  <li>namespace nodes</li>
+</ul>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">Will discuss
+the second form only</span><br>
+<br>
+Since the second form of call listed above is the only form actually
+used in this program, I will discuss only those portions of the method
+that support that form.&nbsp; I will defer discussion of the other
+portions of the method until they are used in subsequent lessons.<br>
+<br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">Process the
+context node</span><br>
+<br>
+The code in Listing 16 picks up at the point where it is determined
+that the incoming value for <span style="font-weight: bold;">select</span>
+is a <span style="font-weight: bold;">String</span> object's reference
+with a value of "." <span style="font-style: italic;">(note the period
+between the quotation marks).</span>&nbsp; This is a request to return
+the value of the context node.<br>
+<br>
+This method supports two possibilities for the context node:<br>
+<ol>
+  <li>Element node - return the concatenated text values of all
+descendant nodes of the context node.</li>
+  <li>Text node - return the text value of the text node.</li>
+</ol>
+<ul>
+</ul>
+Clearly the first possibility is the more complex of the two, but as
+you will see, recursion makes it easy to accomplish.<br>
+<br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">When the
+context node is an element node ...</span><br>
+<br>
+The code in Listing 16 shows the beginning of the code required to
+process the context node as an element node.<br>
+<p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  public String valueOf(Node node,String select){<br><br>    //code deleted for brevity<br><br>    else if(select != null<br>                          &amp;&amp; select.equals(".")){<br><br>      int nodeType = node.getNodeType();<br>      if(nodeType == Node.<span
+ style="font-weight: bold;">ELEMENT_NODE</span>){<br>        //Process the context node as an element<br>        // node.<br><br><b><font
+ face="Courier New,Courier">Listing 16</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">Get list of
+child nodes</span><br>
+<br>
+In preparation for processing all descendant nodes of the context node,
+the code in Listing 17 gets a list of child nodes, along with the
+length of the list.<br>
+<br>
+In addition, the code in Listing 17 initializes a <span
+ style="font-weight: bold;">String</span> variable named <span
+ style="font-weight: bold;">nodeTextValue</span> that will be used to
+collect the concatenated text values of the descendant nodes.&nbsp;
+Note that this variable is initialized to contain an empty string.<br>
+<p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>        NodeList childNodes =<br>                            node.getChildNodes();<br>        int listLen = childNodes.getLength();<br><br>        String nodeTextValue = "";//result<br><br><b><font
+ face="Courier New,Courier">Listing 17</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">Process child
+nodes of context node</span><br>
+<br>
+Having gotten a list of child nodes of the context node, all that is
+required to accomplish the objective is to make a series of recursive
+calls to the <span style="font-weight: bold;">valueOf </span>method,
+passing each child
+node in turn to the <span style="font-weight: bold;">valueOf </span>method
+as shown in Listing 18.<br>
+<p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>        for(int j = 0; j &lt; listLen; j++){<br>          nodeTextValue +=<br>               <span
+ style="font-weight: bold;">valueOf</span>(childNodes.item(j),".");<br>        }//end for loop<br><br>        return nodeTextValue;<br><br><b><font
+ face="Courier New,Courier">Listing 18</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+Each child node becomes the new context node upon re-entry into the <span
+ style="font-weight: bold;">valueOf </span>method, and each call
+requests the value of the context node <span
+ style="font-style: italic;">(the current child node)</span> by passing
+"." for the select parameter.<br>
+<br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">Concatenation</span><br>
+<br>
+The code in Listing 18 also deals with concatenation.&nbsp; The value
+returned from each call to the <span style="font-weight: bold;">valueOf</span>
+method is concatenated with the text value already stored in the
+variable named <span style="font-weight: bold;">nodeTextValue</span>.<br>
+<br>
+Finally, after all child nodes have been processed, the code in Listing
+18 returns the concatenated value stored
+in the variable named <span style="font-weight: bold;">nodeTextValue</span>.<br>
+<span style="font-weight: bold;"><br>
+</span><span style="font-weight: bold; color: rgb(255, 0, 0);">When the
+context node is a text node ...</span><br>
+<br>
+If you understood all of the above, <span style="font-style: italic;">(including
+the recursion),</span>
+you should find it easy to
+understand the code shown in Listing 19.&nbsp; Listing 19 shows the
+case where the context node is a text node.<br>
+<p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>      }else if(nodeType == Node.<span
+ style="font-weight: bold;">TEXT_NODE</span>){<br>        return node.<span
+ style="font-weight: bold;">getNodeValue</span>();<br><br><b><font
+ face="Courier New,Courier">Listing 19</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+In this case, the method simply returns the value obtained by invoking <span
+ style="font-weight: bold;">getNodeValue</span> on the text node.<br>
+<br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">One other
+possibility</span><br>
+<br>
+There is one other possibility that is handled by the code in Listing
+20.&nbsp; That possibility is that the context node is neither a text
+node nor an element node.&nbsp; In that case, the <span
+ style="font-weight: bold;">valueOf</span> method returns an empty
+string.<br>
+<p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>      }else{<br>        //ignore all other context node types<br>      }//end else<br>    }//end if for context node<br><br>    //code deleted for brevity<br><br>    return "";//empty string<br>  }//end method valueOf<br><br><b><font
+ face="Courier New,Courier">Listing 20</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">Other types of
+nodes in the switch statement</span><br>
+<br>
+Returning to the <span style="font-weight: bold;">switch</span>
+statement that began in Listing 10, we find two additional cases, each
+of which invokes the same method by default:<br>
+<ul>
+  <li>COMMENT_NODE</li>
+  <li>PROCESSING_INSTRUCTION_NODE</li>
+</ul>
+The default behavior of the cases corresponding to both of these node
+types is to invoke the method named <span style="font-weight: bold;">defComOrProcInstrTemp</span>.<br>
+<p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>        case Node.<span style="font-weight: bold;">COMMENT_NODE</span>:{<br>          if(false){<br>            //unreachable in this program<br>          }else{//invoke default behavior<br>            <span
+ style="font-weight: bold;">defComOrProcInstrTemp</span>(node);<br>          }//end else<br>          break;<br>        }//end case COMMENT_NODE<br><br>        case Node.<span
+ style="font-weight: bold;">PROCESSING_INSTRUCTION_NODE</span>:{<br>          if(false){<br>            //unreachable in this program<br>          }else{//invoke default behavior<br>            //First save proc instr for later<br>            // use.<br>            procInstr.add(node);<br>            //Now invoke default behavior.<br>            <span
+ style="font-weight: bold;">defComOrProcInstrTemp</span>(node);<br>          }//end else<br>          break;<br>        }//end case PROCESSING_INSTRUCTION_NODE<br><br><b><font
+ face="Courier New,Courier">Listing 21</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">Save all
+processing instructions</span><br>
+<br>
+I will discuss the <span style="font-weight: bold;">defComOrProcInstrTemp</span>
+method shortly.&nbsp; First, however, I will explain the extra code
+that appears in the default portion of the processing instruction node
+case in Listing 21.<br>
+<br>
+The purpose of a processing instruction in an XML file is to provide
+instructions to processing programs such as this one.&nbsp; The XML
+file shown in Listing 29 contains the three processing instructions
+shown in Listing 22.<br>
+<p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>&lt;?dummy-target dummy-data="def"?&gt;<br>&lt;?xml-stylesheet <br>  type="text/xsl" href="<span
+ style="font-weight: bold;">Dom11.xsl</span>"?&gt;<br>&lt;?false-target false-data="ghi"?&gt;<br><br><b><font
+ face="Courier New,Courier">Listing 22</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">Stylesheet
+identified in a processing instruction</span><br>
+<br>
+The first and third of the three processing instructions are dummy
+processing instructions put there
+to test the capabilities of this program.&nbsp; However, the
+processing instruction in the middle is a real processing instruction
+that specifies the name of the file containing a stylesheet.&nbsp; That
+stylesheet will be used later when this program causes an XSLT
+transformation to take place using the XML file in Listing 29, and the
+stylesheet file identified in Listing 22.&nbsp; <span
+ style="font-style: italic;">(That
+stylesheet actually appears in Listing 30.)</span><br>
+<br>
+In order to use that processing instruction to identify the stylesheet
+file, this program must capture the processing instruction and extract
+the file name from the processing instruction.&nbsp; A statement in the
+second case in Listing 21 causes references to all processing
+instruction nodes to be added to and saved in static variable of the
+Dom11 class named <span style="font-weight: bold;">procInstr</span>.<br>
+<br>
+That information will be used later to extract the name of the
+stylesheet file from the processing instruction.<br>
+<br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">The
+defComOrProcInstrTemp method</span><br>
+<br>
+Both of the <span style="font-weight: bold;">switch</span> cases shown
+in Listing 21 invoke this method as their default behavior.&nbsp; A
+complete listing of the <span style="font-weight: bold;">defComOrProcInstrTemp</span>
+method is shown in Listing 23.<br>
+<p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  String defComOrProcInstrTemp(Node node)<br>                                throws Exception{<br>    int nodeType = node.getNodeType();<br>    if((nodeType == Node.COMMENT_NODE) ||<br>            (nodeType ==<br>              Node.PROCESSING_INSTRUCTION_NODE)){<br><br>      return "";//empty string<br>    }else{<br>      throw new Exception("Bad call to " +<br>            "defalutCommentOrProcInstrTemplate");<br>    }//end else<br>  }//end defComOrProcInstrTemp<br><br><b><font
+ face="Courier New,Courier">Listing 23</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+The <span style="font-weight: bold;">defComOrProcInstrTemp</span>
+method emulates the built-in template rule shown in Figure 8.<br>
+<br>
+<table border="1" cols="1" width="400" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre>&lt;xsl:template<br>  match="processing-instruction()|comment()"<br></pre>
+      <pre><b>Figure 8</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<br>
+<span style="color: rgb(0, 0, 0);">According to Nutshell, the built-in
+template rule for comments and processing instructions doesn't output
+anything into the output tree.&nbsp; Therefore, the </span><span
+ style="font-weight: bold;">defComOrProcInstrTemp</span> method shown
+in Listing 23 simply returns an empty string.<br>
+<br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">The namespace
+node case</span><br>
+<span style="color: rgb(0, 0, 0);"><br>
+The default case for the <span style="font-weight: bold;">switch</span>
+statement begun in Listing 10 is shown in Listing 24.</span><br>
+<p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>        default:{<br>          //Ignore all other node types.<br>        }//end default<br><br>      }//end switch<br><br><b><font
+ face="Courier New,Courier">Listing 24</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+Since the <span style="font-weight: bold;">switch</span> statement
+contains explicit cases for six of the seven possible types of nodes in
+a Dom tree, the default case will be activated only in the case of
+namespace nodes.&nbsp; As I mentioned earlier, the <span
+ style="font-weight: bold;">Node</span> interface doesn't provide a
+constant that can be used to identify namespace nodes, so it isn't
+possible to create an explicit case for namespace nodes.<br>
+<br>
+Also, here is what Nutshell has to say about the built-in template rule
+for namespace nodes:<br>
+<br>
+<div style="margin-left: 40px;"><span style="font-style: italic;">"A
+... template rule ... instructs the processor not to copy any part of
+the namespace node to the output."</span><br>
+</div>
+<br>
+Therefore, the default case in Listing 24, which catches all namespace
+nodes, doesn't send anything to the output.<br>
+<br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">End of the
+processNode method</span><br>
+<br>
+I have discussed everything of significance in the <span
+ style="font-weight: bold;">processNode</span> method.&nbsp; Continuing
+to follow the execution thread, I will now turn my attention back to
+the main method.<br>
+<br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">Perform an XSLT
+transformation</span><br>
+<br>
+After the code has been executed to process the document using program
+code <span style="font-style: italic;">(beginning with the invocation
+of the <span style="font-weight: bold;">processDocumentNode</span>
+method in Listing 7), </span>the
+statement in Listing 25 invokes the <span style="font-weight: bold;">doXslTransform</span>
+method to cause the XML document to be transformed using the stylesheet
+identified in one of the processing instructions in the XML file.<br>
+<p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>      thisObj.<span style="font-weight: bold;">doXslTransform</span>(<br>                     document,argv[1],procInstr);<br><br><b><font
+ face="Courier New,Courier">Listing 25</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">Stylesheet
+reference has been saved</span><br>
+<br>
+The success of the method call in Listing 25 depends on the
+stylesheet processing instruction having been saved while the document
+was being processed.&nbsp; Otherwise, it would be necessary to add code
+in this method to search the DOM tree for the stylesheet processing
+instruction.<br>
+<br>
+All processing instructions are saved in a <span
+ style="font-weight: bold;">Vector </span>object by this
+program.&nbsp; The <span style="font-weight: bold;">Vector</span>
+object's reference is passed as the third parameter to this
+method.&nbsp; The first parameter is a reference to the <span
+ style="font-weight: bold;">Document</span> or root node in the DOM
+tree.&nbsp; The second parameter is the name of the output file.<br>
+<br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">The
+doXslTransform method</span><br>
+<br>
+The <span style="font-weight: bold;">doXslTransform</span> method
+begins in Listing 26.&nbsp; This method uses an XSLT stylesheet file to
+transform an incoming <span style="font-weight: bold;">Document </span>object
+into an output file.&nbsp; A large portion of the code in this method
+is dedicated to:<br>
+<ul>
+  <li>Identifying the processing instruction containing the stylesheet
+information.</li>
+  <li>Extracting the stylesheet information from the processing
+instruction.</li>
+</ul>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">Identify the
+processing instruction containing the stylesheet reference</span><br>
+<br>
+The code in Listing 26 searches the <span style="font-weight: bold;">Vector</span>
+object seeking a processing instruction node that contains a stylesheet
+reference.<br>
+<p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  void <span style="font-weight: bold;">doXslTransform</span>(Document document,<br>                      String outFile,<br>                      Vector procInstr)<br>                                throws Exception{<br>    try{<br>      //Get stylesheet ID from proc instr.<br>      ProcessingInstruction pi = null;<br>      boolean piFlag = false;<br>      int size = procInstr.size();<br><br>      //Search for a stylesheet in the Vector<br>      // containing processing instruction nodes.<br>      for(int i = 0; i &lt; size; i++){<br>        pi = (ProcessingInstruction)procInstr.<br>                                          get(i);<br>        if(pi.<span
+ style="font-weight: bold;">getTarget</span>().startsWith(<br>               "xml-stylesheet") &amp;&amp; pi.<span
+ style="font-weight: bold;">getData</span>().<br>                startsWith("type=\"text/xsl\"")){<br>          //Looks like a good stylesheet.<br>          piFlag = true;<br>          break;<br>        }//end if<br>      }//end for loop<br>      if(piFlag == false){//still false?<br>        throw new Exception(<br>                          "No valid stylesheet");<br>      }//end if<br><br><b><font
+ face="Courier New,Courier">Listing 26</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">How does this
+work?</span><br>
+<br>
+To see how this code works, first take a look at the processing
+instruction in the XML file that contains the stylesheet
+reference.&nbsp; This processing instruction was shown in Listing 22,
+and is repeated below in Figure 9 for convenient viewing.<br>
+<br>
+<table border="1" cols="1" width="400" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre>&lt;?xml-stylesheet <br>  type="text/xsl" href="Dom11.xsl"?&gt;</pre>
+      <pre><b>Figure 9</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<br>
+The purpose of a processing instruction is to provide information to
+processing programs that will be used to process the XML file.<br>
+<br>
+<span style="color: rgb(0, 0, 0);"><span
+ style="font-weight: bold; color: rgb(255, 0, 0);">Format of a
+processing instruction</span><br>
+<br>
+According to Nutshell,<br>
+<br>
+</span>
+<div style="margin-left: 40px;"><span style="color: rgb(0, 0, 0);"><span
+ style="font-style: italic;">"A processing instruction begins with
+&lt;? and ends with ?&gt;.&nbsp; Immediately following the &lt;? is an
+XML name called the target, possibly the name of the application for
+which this processing instruction is intended or possibly just an
+identifier for this particular processing instruction.&nbsp; The rest
+of the processing instruction contains text in a format appropriate for
+the application for which the instruction is intended."</span></span><br>
+</div>
+<span style="color: rgb(0, 0, 0);"><br>
+Applying this knowledge to the stylesheet processing instruction in
+Figure 9, you can see that the target consists of the following
+text:&nbsp; <span style="font-weight: bold;">xml-stylesheet</span>.<br>
+<br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">Accessing the
+target and the data</span><br>
+<br>
+The target of a processing instruction node can be accessed in Java by
+invoking the <span style="font-weight: bold;">getTarget </span>method
+on the processing
+instruction node's reference.<br>
+<br>
+The remainder of the text in the processing instruction can be accessed
+by invoking the <span style="font-weight: bold;">getData</span> method
+on the same reference.<br>
+<br>
+The code in Listing 26 examines each of the objects in the <span
+ style="font-weight: bold;">Vector</span>, invoking <span
+ style="font-weight: bold;">getTarget</span> and <span
+ style="font-weight: bold;">getData</span>, searching for a processing
+instruction whose target and data match that which is known to be true
+for a stylesheet.&nbsp; When a match is found, the code breaks out of
+the <span style="font-weight: bold;">for</span> loop.<br>
+<br>
+If no match is found, the code in Listing 26 throws an exception.<br>
+<br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">Extract the
+stylesheet file name</span></span><br>
+Having identified the processing instruction that contains the
+stylesheet reference, the code in Listing 27 uses the <span
+ style="font-weight: bold;">getData </span>method of the <span
+ style="font-weight: bold;">ProcessingInstruction </span>interface,
+along with some methods of the <span style="font-weight: bold;">String</span>
+class to extract the name of the file containing the stylesheet.<br>
+<p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>      String xslFile = pi.getData().<br>                  substring(pi.getData().indexOf(<br>                                     "href=")+6);<br>      //Eliminate the quotation mark at the end<br>      xslFile = xslFile.substring(<br>                           0,xslFile.length()-1);<br><br><b><font
+ face="Courier New,Courier">Listing 27</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+The ability to extract the file name is based on the known format of
+the stylesheet processing instruction.<br>
+<br>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">Do the XSLT
+transformation</span><br>
+<br>
+The remaining code in the <span style="font-weight: bold;">doXslTransform</span>
+method is shown in Listing 28.<br>
+<p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>      //Get a TransformerFactory object<br>      TransformerFactory xformFactory =<br>                TransformerFactory.newInstance();<br><br>      //Get an XSL Transformer object based on<br>      // the XSL file discovered above.<br>      Transformer transformer =<br>                     xformFactory.<span
+ style="font-weight: bold;">newTransformer</span>(<br>                         new StreamSource(<br>                             new File(xslFile)));<br><br>      //Get a DOMSource object that represents<br>      // the DOM tree.<br>      DOMSource source = new DOMSource(document);<br><br>      //Get an output stream for the output<br>      // file.<br>      PrintWriter xformStream = new PrintWriter(<br>                  new FileOutputStream(outFile));<br><br>      //Get a StreamResult object that points to<br>      // the output file.  Then transform the DOM<br>      // sending text to the output file.<br>      StreamResult xformResult =<br>                   new StreamResult(xformStream);<br><br>      //Do the transform<br>      <span
+ style="font-weight: bold;">transformer.transform(source,xformResult);</span><br>    }catch(Exception e){<br>      e.printStackTrace(System.err);<br>    }//end catch<br><br>  }//end doXslTransform<br><br><b><font
+ face="Courier New,Courier">Listing 28</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">You have seen
+this code before</span><br>
+<br>
+The code in Listing 28 is not new to this series of lessons.&nbsp; This
+code was discussed in detail in the earlier lesson entitled <big><font><font
+ size="-1"><big> <a
+ href="http://www.developer.com/xml/article.php/3113351">Getting
+Started with Java JAXP and XSL Transformations (XSLT)</a></big></font></font></big>.<a
+ href="zz"><font><font face="Verdana, Arial, Helvetica" size="-1"><a
+ href="http://www.developer.com/xml/article.php/3113351"></a></font></font></a>&nbsp;
+Therefore, other than to point out one
+difference relative to the previous code, and to review the steps
+involved, I won't discuss the code in Listing 28 further in this lesson.<br>
+<br>
+<font color="#ff0000"><b>Steps for creating a Transformer object</b></font><br>
+<br>
+The following two steps
+are required to create a <b>Transformer</b> object.&nbsp; Once a <span
+ style="font-weight: bold;">Transformer</span> object is available, it
+can be used to transform one DOM tree into another DOM tree.<br>
+<ol>
+  <li>Create a <b>TransformerFactory </b>object by invoking the
+static <b>newInstance </b>method of the <b>TransformerFactory </b>class.</li>
+  <li>Invoke the <b>newTransformer</b> method on the <b>TransformerFactory</b>
+object.</li>
+</ol>
+<span style="font-weight: bold; color: rgb(255, 0, 0);">One important
+difference</span><br>
+<br>
+There is one important difference between the code in Listing
+28 and the code in the earlier lesson.&nbsp; The two programs invoke
+different overloaded versions of the <span style="font-weight: bold;">newTransformer
+</span>method of the <span style="font-weight: bold;">TransformerFactory
+</span>class.<br>
+<br>
+The earlier lesson entitled <a
+ href="file:///C:/Baldwin/AA-School/JavaAdv/notes/zz"><big><font><font
+ size="-1"><big><a
+ href="http://www.developer.com/xml/article.php/3113351">Getting
+Started with Java JAXP and XSL Transformations (XSLT)</a></big></font></font></big></a>
+invoked a version that took no parameters and returned a <span
+ style="font-weight: bold;">Transformer </span>object that simply
+copies a source tree to a result tree.<br>
+<br>
+The code in Listing 28 invokes a version of the <span
+ style="font-weight: bold;">newTransformer </span>method that takes
+the stylesheet file as an input parameter and returns a <span
+ style="font-weight: bold;">Transformer </span>object that uses the
+stylesheet file to perform an XSLT transformation.<br>
+<br>
+That concludes the discussion of the program named <span
+ style="font-weight: bold;">Dom11</span>.<span
+ style="font-weight: bold;"><br>
+</span>
+<center>
+<h2><a name="Run the program"></a>Run the Program</h2>
+</center>
+<p>I encourage you to copy the Java code, XML files, and XSL files from
+the listings near the end of this lesson.&nbsp; Compile and execute the
+programs.&nbsp; Experiment with them, making changes, and observing the
+results
+of your
+changes.</p>
+<h2 align="center"><a name="Summary">Summary</a></h2>
+I explained default XSLT behavior
+and showed you how to write Java code that mimics that behavior.&nbsp;
+The resulting Java code serves as a skeleton for more advanced
+transformation programs.
+<ul>
+</ul>
+<ul>
+</ul>
+<h2 align="center"><a name="Whats Next">What's Next?</a></h2>
+<p>In the next lesson, I will show you&nbsp;
+how <span style="color: rgb(255, 0, 0);"><span
+ style="color: rgb(0, 0, 0);">to
+write a Java program that mimics an XSLT transformation for converting
+an XML file into a text file.</span></span><span
+ style="color: rgb(0, 0, 0);">&nbsp; I will also show that once you
+have a
+library of Java
+methods that
+emulate XSLT elements, it is no more difficult to
+write a Java program to transform an XML document than it is to
+write an XSL stylesheet to transform the same document.</span>
+</p>
+<center>
+<h2> <a name="Complete Program Listings"></a>Complete Program Listings</h2>
+</center>
+Complete listings of the various files discussed in this lesson are
+contained in the listings that follow.<br>
+<p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>&lt;?xml version="1.0"?&gt;<br><br>&lt;!DOCTYPE top [<br>&lt;!ELEMENT top (theData)*&gt;<br>&lt;!ELEMENT theData (title,author,price)*&gt;<br>&lt;!ELEMENT title (#PCDATA | subtitle)*&gt;<br>&lt;!ELEMENT author (#PCDATA)&gt;<br>&lt;!ELEMENT price (#PCDATA)&gt;<br>&lt;!ELEMENT subtitle (#PCDATA)&gt;<br>&lt;!ATTLIST theData attr CDATA #IMPLIED&gt;<br>&lt;!ATTLIST subtitle position CDATA #IMPLIED&gt;<br>]&gt;<br><br>&lt;!-- File Dom11.xml<br>Copyright 2003 R. G. Baldwin<br>Illustrates built-in template rules.<br>--&gt;<br><br>&lt;!--Two of the following proc instr were included<br>to test the ability of the program to find the<br>actual stylesheet proc instr.--&gt;<br>&lt;?dummy-target dummy-data="def"?&gt;<br>&lt;?xml-stylesheet <br>  type="text/xsl" href="Dom11.xsl"?&gt;<br>&lt;?false-target false-data="ghi"?&gt;<br><br>&lt;top&gt;<br><br>&lt;theData attr="Dummy Attr Value"&gt;<br>&lt;title&gt;Java<br>&lt;subtitle position="Low"&gt;really&lt;/subtitle&gt;rules<br>&lt;/title&gt;<br>&lt;author&gt;R.Baldwin&lt;/author&gt;<br>&lt;price&gt;$9.95&lt;/price&gt;<br>&lt;/theData&gt;<br><br>&lt;theData&gt;<br>&lt;title&gt;Python&lt;/title&gt;<br>&lt;author&gt;R.Baldwin&lt;/author&gt;<br>&lt;price&gt;$15.42&lt;/price&gt;<br>&lt;/theData&gt;<br><br>&lt;theData&gt;<br>&lt;title&gt;XML&lt;/title&gt;<br>&lt;author&gt;R.Baldwin&lt;/author&gt;<br>&lt;price&gt;$19.60&lt;/price&gt;<br>&lt;/theData&gt;<br><br>&lt;/top&gt;<br><br><b><font
+ face="Courier New,Courier">Listing 29</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<br>
+<p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>&lt;?xml version='1.0'?&gt;<br>&lt;!-- File Dom11.xsl<br>Copyright 2003 R. G. Baldwin<br>Illustrates extraction of text from an XML file.<br><br>This version specifies a template rule that<br>guarantees that the root and all child nodes<br>are processed.<br><br>It also specifies a template rule that copies<br>the value of text and attribute nodes into the<br>output.  However, attribute nodes are not copied.<br>See Nutshell page 147 for the reason.<br>--&gt;<br>&lt;xsl:stylesheet <br>xmlns:xsl="http://www.w3.org/1999/XSL/Transform"<br>version="1.0"&gt;<br><br>  &lt;!--According to Nutshell, this matches a<br>  default template.--&gt;<br>  &lt;xsl:template match="*|/"&gt;<br>    &lt;xsl:apply-templates/&gt;<br>  &lt;/xsl:template&gt;<br>  <br>  &lt;!--According to Nutshell, this matches a<br>  default template.--&gt;<br>  &lt;xsl:template match="text()|@*"&gt;<br>    &lt;xsl:value-of select="."/&gt;<br>  &lt;/xsl:template&gt;<br><br>&lt;/xsl:stylesheet&gt;<br><br><b><font
+ face="Courier New,Courier">Listing 30</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<br>
+<p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>/*File Dom11.java<br>Copyright 2003 R.G.Baldwin<br><br>This program implements all six built-in default<br>template rules for an XML processor.  In<br>addition, it implements a couple of other<br>template rules that are required to support<br>the built-in rules, such as xsl:value-of.<br><br>As such, the program serves as the skeleton for<br>the definition of custom template rules.<br><br>To create a custom temtlate rule:<br>1.  Go to the processNode method.<br>2.  Identify the node type.<br>3.  Change the conditional clause in the if<br>    statement to implement the match.<br>4.  Write code in the body of the if statement to<br>    implement the custom rule.<br><br>If the modified conditional clause evaluates to<br>true, the custom rule will be executed.  If<br>false,the default rule will be executed.<br><br>As written, this program extracts and<br>concatenates all text values from a specified<br>XML file, and writes that text into a result<br>file, using two different approaches:<br><br>1. An XSLT style sheet and transformation.<br>2. Program code that emulates the behavior of the<br>   XSL transformation.<br><br>In particular, this program illustrates Java code<br>that emulates the XSLT templates in the files<br>named Dom11.xsl and Dom11.xsl.  These two XSL<br>files differ in terms of their dependence on the<br>built-in templates.<br><br>Dom11.xsl explicitly includes template rules that<br>replicate the built-in rules for text, nodes, and<br>documents.<br><br>Dom11.xsl doesn't explicitly include any<br>template rules, but depends entirely on built-in<br>rules for proper operation.<br><br>Both XSL files produce the same result when<br>processed against the XML files named Doc11.xml<br>and Dom11.xml, demonstrating the behavior of<br>the built-in template rules.<br><br>The execution of these template rules causes the<br>explicit template rules, or the built-in template<br>rules to be executed on every node, thereby<br>causing the contents of every text node to be<br>concatenated and written into the result file.<br><br><br>The program requires three command line<br>parameters in the following order:<br>1, The name of the input XML file - must be<br>   Dom11.xml or Dom11.xml.<br>2. The name of the output file to be<br>   produced by the XSL transformation.<br>3. The name of the output file to be<br>   produced by the program code that emulates<br>   the XSL transformation.<br><br>The name of the XSL stylesheet file is extracted<br>from the processing instruction in the XML file.<br><br>The program begins by executing code to transform<br>the incoming XML file in a way that mimics the<br>XSL Transformation.  Along the way, it saves the<br>processing instructions containing the ID of the<br>stylesheet file for use by the XSLT process<br>later.  Otherwise, the code that performs the<br>XSL transformation later would have to search the<br>DOM tree for the XSL stylesheet file.<br><br>Then the program uses the XSLT style sheet to<br>transform the XML file into a result file.<br><br>No effort was made to provide meaningful<br>information about errors and exceptions.<br><br>Tested with SDK 1.4.2 under WinXP.<br>************************************************/<br><br>import javax.xml.parsers.DocumentBuilderFactory;<br>import javax.xml.parsers.DocumentBuilder;<br><br>import org.w3c.dom.*;<br><br>import javax.xml.transform.Transformer;<br>import javax.xml.transform.TransformerFactory;<br>import javax.xml.transform.dom.DOMSource;<br>import javax.xml.transform.stream.*;<br><br>import java.util.*;<br>import java.io.*;<br><br>public class Dom11{<br><br>  PrintWriter out;//output stream<br>  //Save processing instruction nodes here<br>  static Vector procInstr = new Vector();<br><br>  public static void main(String argv[]){<br>    if (argv.length != 3){<br>      System.err.println(<br>        "usage: java Dom11 "<br>        + "xmlFileIn "<br>        + "xformFileOut "<br>        + "codeFileOut");<br>      System.exit(0);<br>    }//end if<br><br>    try{<br>      //Get a factory object for DocumentBuilder<br>      // objects<br>      ///<br>      DocumentBuilderFactory factory =<br>            DocumentBuilderFactory.newInstance();<br><br>      //Configure the factory object.  Change<br>      // the following parameter to false for a<br>      // non-validating parser.<br>      ///<br>      factory.setValidating(true);<br>      factory.setNamespaceAware(false);<br>      //The following statement causes the parser<br>      // to ignore cosmetic whitespace between<br>      // elements.<br>      ///<br>      factory.<br>       setIgnoringElementContentWhitespace(true);<br><br>      //Get a DocumentBuilder (parser) object<br>      ///<br>      DocumentBuilder builder =<br>                    factory.newDocumentBuilder();<br><br>      //Parse the XML input file to create a<br>      // Document object that represents the<br>      // input XML file.<br>      ///<br>      Document document = builder.parse(<br>                              new File(argv[0]));<br><br>      //Instantiate an object of this class<br>      ///<br>      Dom11 thisObj = new Dom11();<br><br>      //TRANSFORMATION THROUGH PROGRAM CODE<br>      //Use program code to transform the<br>      // DOM tree into an output file.<br>      //<br>      //Get an output stream for the output<br>      // produced by the program code.  This<br>      // stream object is used by several<br>      // methods, so it was instantiated at this<br>      // point and saved as an instance variable<br>      // of the object.<br>      ///<br>      thisObj.out = new PrintWriter(<br>                  new FileOutputStream(argv[2]));<br><br>      //Process the DOM tree, beginning with the<br>      // Document node to produce the output.<br>      // Invocation of processDocumentNode starts<br>      // a recursive process that processes the<br>      // entire DOM tree.<br>      ///<br>      thisObj.processDocumentNode(document);<br><br><br>      //XSLT TRANSFORMATION<br>      //Use XSLT to transform the DOM tree into<br>      // an output file.  Note that the success<br>      // of this method call depends on the<br>      // stylesheet processing instruction having<br>      // been saved while the transformation was<br>      // being performed using program code<br>      // above.  Otherwise, it would be necessary<br>      // to include the code in this method to<br>      // search the DOM tree for the stylesheet<br>      // processing instruction. All processing<br>      // instructions are saved in a Vector<br>      // object, which is passed as the third<br>      // parameter to this method.<br>      ///<br>      thisObj.doXslTransform(<br>                     document,argv[1],procInstr);<br><br>    }catch(Exception e){<br>      //Note that no effort was made to provide<br>      // meaningful results in the event of an<br>      // exception or error.<br>      ///<br>      e.printStackTrace(System.err);<br>    }//end catch<br>  }// end main()<br>  //-------------------------------------------//<br><br>  //This method is used to produce any text<br>  // required in the output at the document<br>  // level, such as the XML declaration for an<br>  // XML document.<br>  ///<br>  void processDocumentNode(Node node){<br>    //Write one line of text into the output.<br>    ///<br>    out.println("&lt;?xml version=\"1.0\" "<br>                       + "encoding=\"UTF-8\"?&gt;");<br><br>    //Go process the root (document) node. This<br>    // method call triggers a recursive process<br>    // that processes the entire DOM tree.<br>    ///<br>    processNode(node);<br><br>    out.flush();<br>  }//end processDocumentNode<br>  //-------------------------------------------//<br><br>  //There are seven kinds of nodes:<br>  // root or document<br>  // element<br>  // attribute<br>  // text<br>  // comment<br>  // processing instruction<br>  // namespace<br>  //<br>  //This method handles the first six.<br>  // Apparently it is not possible to handle<br>  // namespace nodes in Java because there is<br>  // no constant in the Node class to identify<br>  // namespace nodes<br>  ///<br>  void processNode(Node node){<br><br>    try{<br>      if (node == null){<br>        System.err.println(<br>                  "Nothing to do, node is null");<br>        return;<br>      }//end if<br><br>      //Process the incoming node based on its<br>      // type.<br>      ///<br>      int type = node.getNodeType();<br><br>      //To define an overriding template rule,<br>      // insert the matching condition in the<br>      // conditional clause of the if statement,<br>      // and provide code to implement the rule<br>      // in the body of the if statement.  If the<br>      // conditional clause evaluates to true,<br>      // the default rule for that element type<br>      // will not be processed.<br>      ///<br>      switch (type){<br>        case Node.TEXT_NODE:{<br>          if(false){<br>            //Change conditional and write<br>            // overriding handler here<br>            ///<br>          }else{//invoke default behavior<br>            out.print(defTextOrAttrTemp(node));<br>          }//end else<br>          break;<br>        }//end case Node.TEXT_NODE<br><br>        case Node.ATTRIBUTE_NODE:{<br>          if(false){<br>            //Change conditional and write<br>            // overriding handler here<br>            ///<br>          }else{//invoke default behavior<br>            out.print(defTextOrAttrTemp(node));<br>          }//end else<br>          break;<br>        }//end case Node.ATTRIBUTE_NODE<br><br>        case Node.ELEMENT_NODE:{<br>          if(false){<br>            //Change conditional and write<br>            // overriding handler here<br>            ///<br>          }else{//invoke default behavior<br>            defElOrRtNodeTemp(node);<br>          }//end else<br>          break;<br>        }//end case ELEMENT_NODE<br><br>        case Node.DOCUMENT_NODE:{<br>          if(false){<br>            //Change conditional and write<br>            // overriding handler here<br>            ///<br>          }else{//invoke default behavior<br>            defElOrRtNodeTemp(node);<br>          }//end else<br>          break;<br>        }//end case DOCUMENT_NODE<br><br>        case Node.COMMENT_NODE:{<br>          if(false){<br>            //Change conditional and write<br>            // overriding handler here<br>            ///<br>          }else{//invoke default behavior<br>            defComOrProcInstrTemp(node);<br>          }//end else<br>          break;<br>        }//end case COMMENT_NODE<br><br>        case Node.PROCESSING_INSTRUCTION_NODE:{<br>          if(false){<br>            //Change conditional and write<br>            // overriding handler here<br>            ///<br>            //Save proc instr for later use<br>            procInstr.add(node);<br>          }else{//invoke default behavior<br>            //First save proc instr for later<br>            // use.<br>            ///<br>            procInstr.add(node);<br>            //Now invoke default behavior.<br>            ///<br>            defComOrProcInstrTemp(node);<br>          }//end else<br>          break;<br>        }//end case PROCESSING_INSTRUCTION_NODE<br><br>        default:{<br>          //Ignore all other node types.<br>        }//end default<br><br>      }//end switch<br><br>    }catch(Exception e){<br>      e.printStackTrace(System.err);<br>    }//end catch<br>  }//end processNode(Node)<br>  //-------------------------------------------//<br><br>  //This method emulates the following default<br>  // template rule:<br>  //  &lt;xsl:template match="text()|@*"&gt;<br>  //   &lt;xsl:value-of select="."/&gt;<br>  //  &lt;/xsl:template&gt;<br>  ///<br>  String defTextOrAttrTemp(Node node)<br>                                throws Exception{<br>    int nodeType = node.getNodeType();<br>    if((nodeType == Node.ATTRIBUTE_NODE)<br>                || (nodeType == Node.TEXT_NODE)){<br>      //Get and return the value of the context<br>      // node.<br>      ///<br>      return valueOf(node,".");<br>    }else{<br>      throw new Exception(<br>         "Bad call to defaultTextOrAttr method");<br>    }//end else<br>  }//end defaultTextOrAttr<br>  //-------------------------------------------//<br><br>  //This method emulates the following default<br>  // template rule:<br>  //  &lt;xsl:template match="*|/"&gt;<br>  //   &lt;xsl:apply-templates/&gt;<br>  //  &lt;/xsl:template&gt;<br>  ///<br>  void defElOrRtNodeTemp(Node node)<br>                                throws Exception{<br>    int nodeType = node.getNodeType();<br>    if((nodeType == Node.ELEMENT_NODE) ||<br>               (nodeType == Node.DOCUMENT_NODE)){<br>      //Note that the following is a recursive<br>      // method call.<br>      ///<br>      applyTemplates(node,null);<br>    }else{<br>      throw new Exception(<br>                "Bad call to defElOrRtNodeTemp");<br>    }//end else<br>  }//end defElOrRtNodeTemp<br>  //-------------------------------------------//<br><br>  //This method emulates the following default<br>  // template rule:<br>  // &lt;xsl:template<br>  //   match="processing-instruction()|comment()"<br>  ///<br>  String defComOrProcInstrTemp(Node node)<br>                                throws Exception{<br>    int nodeType = node.getNodeType();<br>    if((nodeType == Node.COMMENT_NODE) ||<br>            (nodeType ==<br>              Node.PROCESSING_INSTRUCTION_NODE)){<br>      //According to page Nutshell pg 148, the<br>      // default rule for comments and processing<br>      // instructions doesn't output anything<br>      // into the result tree.<br>      ///<br>      return "";//empty string<br>    }else{<br>      throw new Exception("Bad call to " +<br>            "defalutCommentOrProcInstrTemplate");<br>    }//end else<br>  }//end defComOrProcInstrTemp<br>  //-------------------------------------------//<br><br>  //See Nutshell, pg 148 for an explanation as to<br>  // why it is not possible to write a Java<br>  // method that emulates the default namespace<br>  // template.<br>  ///<br>  void defaultNamespaceTemplate(Node node)<br>                                throws Exception{<br>    throw new Exception("See Nutshell pg 148" +<br>              "regarding default behavior for " +<br>              "namespace template.");<br>  }//end defaultNamespaceTemplate<br>  //-------------------------------------------//<br><br>  //Simulates an XSLT apply-templates rule.<br>  //  &lt;xsl:apply-templates<br>  //    optional select = "..."<br>  //    optional mode = "..."<br>  //   &gt;<br>  //Note that the mode attribute is not supported<br>  // in this version.<br>  //If the select parameter is null, all child<br>  // nodes are processed.<br>  void applyTemplates(Node node,String select){<br>    NodeList children = node.getChildNodes();<br>    if (children != null){<br>      int len = children.getLength();<br>      //Iterate on NodeList of child nodes.<br>      for (int i = 0; i &lt; len; i++){<br>        if((select == null) ||<br>              (select.equals(children.item(i).<br>                                getNodeName()))){<br>          //Note that the following is a<br>          // recursive method call.<br>          ///<br>          processNode(children.item(i));<br>        }//end if<br>      }//end for loop<br>    }//end if children != null<br><br>  }//end applyTemplates<br>  //-------------------------------------------//<br><br>  //This method simulates an XSLT<br>  //   &lt;xsl:value-of select="???"/&gt;<br>  // The general form of the method call is<br>  //   valueOf(Node theNode,String select)<br>  //<br>  //The method recognizes three forms of call:<br>  //  valueOf(Node theNode,String "@attrName")<br>  //  valueOf(Node theNode,String ".")<br>  //  valueOf(Node theNode,String "nodeName")<br>  //<br>  //In the first form, the method returns the<br>  // text value of the named attribute of<br>  // theNode.  An attribute is specified by a<br>  // select value that begins with @.  If the<br>  // attribute doesn't exist, the method returns<br>  // an empty string.<br>  //<br>  //In the second form, the method returns the<br>  // concatenated text values of descendants of<br>  // the context node.<br>  //<br>  //In the third form, the method returns the<br>  // concatenated text values of all descendants<br>  // of a specified child node of the context<br>  // node.  If the context node has more than one<br>  // child node with the specified name, only the<br>  // first one found is processed.  The others<br>  // are ignored.<br>  //<br>  //The method does not support the following,<br>  // which are standard features of xsl:value-of:<br>  //   disable-output-escaping<br>  //   processing instruction nodes<br>  //   comment nodes<br>  //   namespace nodes<br>  ///<br><br>  public String valueOf(Node node,String select){<br><br>    if(select != null<br>                     &amp;&amp; select.charAt(0) == '@'){<br>      //This is a request for the value of an<br>      // attribute. Returns empty string if the<br>      // attribute doesn't exist on the element.<br>      String attrName = select.substring(1);<br>      NamedNodeMap attrList =<br>                            node.getAttributes();<br>      Node attrNode = attrList.getNamedItem(<br>                                       attrName);<br>      if(attrNode != null){<br>        return attrNode.getNodeValue();<br>      }else{<br>        return "";//empty string<br>      }//end else<br>    }//end if on @<br><br>    else if(select != null<br>                          &amp;&amp; select.equals(".")){<br>      //This is a request to process the context<br>      // node<br>      int nodeType = node.getNodeType();<br>      if(nodeType == Node.ELEMENT_NODE){<br>        //Process the context node as an element<br>        // node.  Return the concatenated text<br>        // values of all descendants of the<br>        // context node.<br>        NodeList childNodes =<br>                            node.getChildNodes();<br>        int listLen = childNodes.getLength();<br>        String nodeTextValue = "";//result<br><br>        for(int j = 0; j &lt; listLen; j++){<br>          nodeTextValue +=<br>               valueOf(childNodes.item(j),".");<br>        }//end for loop<br>        return nodeTextValue;<br>      }else if(nodeType == Node.TEXT_NODE){<br>        //Process the context node as a text<br>        // node.  Simply get and return its<br>        // value.<br>        return node.getNodeValue();<br>      }else{<br>        //ignore all other context node types<br>      }//end else<br>    }//end if for context node<br><br>    else if(select != null){<br>      //Process a child node whose name is<br>      // specified by the value of the incoming<br>      // parameter named select.  Get and return<br>      // the concatenated text values of all<br>      // descendants of the specified child node.<br>      //This process assumes that there is only<br>      // one child node with the specified name<br>      // and processes the first one that it<br>      // finds.<br>      NodeList children = node.getChildNodes();<br>      int len = children.getLength();<br>      for (int i = 0; i &lt; len; i++){<br>        //Trap the specified child node<br>        if(children.item(i).getNodeName().<br>                                 equals(select)){<br>          //Make a recursive call and let<br>          // existing code do the work.<br>          return valueOf(children.item(i),".");<br>          //The above return statement causes any<br>          // additional child nodes having the<br>          // same name to be ignored.<br>        }//end if getNodeName == select<br>      }//end for loop on all child nodes<br>    }//end else if(select != null)<br>    //Will reach here only if value of select<br>    // is null.<br>    ///<br>    return "";//empty string<br>  }//end method valueOf<br>  //-------------------------------------------//<br><br>  //This method uses an incoming XSLT stylesheet<br>  // file to transform an incoming Document<br>  // object into an output file.  Note that the<br>  // successful invocation of this method depends<br>  // on the processing instruction containing the<br>  // stylesheet having been saved in a Vector<br>  // object that is received as an incoming<br>  // parameter.  Otherwise, this method would<br>  // have to search the DOM for the stylesheet<br>  // processing instruction.<br>  ///<br>  void doXslTransform(Document document,<br>                      String outFile,<br>                      Vector procInstr)<br>                                throws Exception{<br>    try{<br>      //Get stylesheet ID from proc instr.<br>      ProcessingInstruction pi = null;<br>      boolean piFlag = false;<br>      int size = procInstr.size();<br>      //Search for a stylesheet in the Vector<br>      // containing processing instruction nodes.<br>      ///<br>      for(int i = 0; i &lt; size; i++){<br>        pi = (ProcessingInstruction)procInstr.<br>                                          get(i);<br>        if(pi.getTarget().startsWith(<br>               "xml-stylesheet") &amp;&amp; pi.getData().<br>                startsWith("type=\"text/xsl\"")){<br>          //Looks like a good stylesheet.<br>          ///<br>          piFlag = true;<br>          break;<br>        }//end if<br>      }//end for loop<br>      if(piFlag == false){//still false?<br>        throw new Exception(<br>                          "No valid stylesheet");<br>      }//end if<br>      //Get the stylesheet file reference<br>      ///<br>      String xslFile = pi.getData().<br>                  substring(pi.getData().indexOf(<br>                                     "href=")+6);<br>      //Eliminate the quotation mark at the end<br>      ///<br>      xslFile = xslFile.substring(<br>                           0,xslFile.length()-1);<br><br>      //Get a TransformerFactory object<br>      ///<br>      TransformerFactory xformFactory =<br>                TransformerFactory.newInstance();<br>      //Get an XSL Transformer object based on<br>      // the XSL file discovered above.<br>      ///<br>      Transformer transformer =<br>                     xformFactory.newTransformer(<br>                         new StreamSource(<br>                             new File(xslFile)));<br>      //Get a DOMSource object that represents<br>      // the DOM tree.<br>      ///<br>      DOMSource source = new DOMSource(document);<br><br>      //Get an output stream for the output<br>      // file.<br>      ///<br>      PrintWriter xformStream = new PrintWriter(<br>                  new FileOutputStream(outFile));<br><br>      //Get a StreamResult object that points to<br>      // the output file.  Then transform the DOM<br>      // sending text to the output file.<br>      ///<br>      StreamResult xformResult =<br>                   new StreamResult(xformStream);<br><br>      //Do the transform<br>      ///<br>      transformer.transform(source,xformResult);<br>    }catch(Exception e){<br>      e.printStackTrace(System.err);<br>    }//end catch<br><br>  }//end doXslTransform<br><br>}// class Dom11<br><br><b><font
+ face="Courier New,Courier">Listing 31</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<br>
+<p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>&lt;?xml version="1.0"?&gt;<br><br>&lt;!DOCTYPE top [<br>&lt;!ELEMENT top (theData)*&gt;<br>&lt;!ELEMENT theData (title,author,price)*&gt;<br>&lt;!ELEMENT title (#PCDATA | subtitle)*&gt;<br>&lt;!ELEMENT author (#PCDATA)&gt;<br>&lt;!ELEMENT price (#PCDATA)&gt;<br>&lt;!ELEMENT subtitle (#PCDATA)&gt;<br>&lt;!ATTLIST theData attr CDATA #IMPLIED&gt;<br>&lt;!ATTLIST subtitle position CDATA #IMPLIED&gt;<br>]&gt;<br><br>&lt;!-- File Dom11a.xml<br>Copyright 2003 R. G. Baldwin<br>Illustrates built-in template rules.<br>Same as Dom11.xml except for stylesheet <br>specification.<br>--&gt;<br><br>&lt;!--Two of the following proc instr were included<br>to test the ability of the program to find the<br>actual stylesheet proc instr.--&gt;<br>&lt;?dummy-target dummy-data="def"?&gt;<br>&lt;?xml-stylesheet <br>  type="text/xsl" href="Dom11a.xsl"?&gt;<br>&lt;?false-target false-data="ghi"?&gt;<br><br>&lt;top&gt;<br><br>&lt;theData attr="Dummy Attr Value"&gt;<br>&lt;title&gt;Java<br>&lt;subtitle position="Low"&gt;really&lt;/subtitle&gt;rules<br>&lt;/title&gt;<br>&lt;author&gt;R.Baldwin&lt;/author&gt;<br>&lt;price&gt;$9.95&lt;/price&gt;<br>&lt;/theData&gt;<br><br>&lt;theData&gt;<br>&lt;title&gt;Python&lt;/title&gt;<br>&lt;author&gt;R.Baldwin&lt;/author&gt;<br>&lt;price&gt;$15.42&lt;/price&gt;<br>&lt;/theData&gt;<br><br>&lt;theData&gt;<br>&lt;title&gt;XML&lt;/title&gt;<br>&lt;author&gt;R.Baldwin&lt;/author&gt;<br>&lt;price&gt;$19.60&lt;/price&gt;<br>&lt;/theData&gt;<br><br>&lt;/top&gt;<br><br><b><font
+ face="Courier New,Courier">Listing 32</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<br>
+<p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>&lt;?xml version='1.0'?&gt;<br>&lt;!-- File Dom11a.xsl<br>Copyright 2003 R. G. Baldwin<br>Illustrates extraction of text from an XML file.<br><br>This version accepts a built-in template rule <br>that guarantees that the root and all child nodes<br>are processed.<br><br>It also accepts the built-in template rule<br>that copies the value of text and attribute nodes<br>into the output.  However, attribute nodes are<br>not copied.  See Nutshell page 147 for the <br>reason.<br><br>As a result, the stylesheet is completely<br>empty.<br>--&gt;<br>&lt;xsl:stylesheet <br>xmlns:xsl="http://www.w3.org/1999/XSL/Transform"<br>version="1.0"&gt;<br><br>&lt;/xsl:stylesheet&gt;<br><br><b><font
+ face="Courier New,Courier">Listing 33</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<br>
+<p> </p>
+<p>
+</p>
+<p> </p>
+<hr width="100%" size="2">
+<p>Copyright 2004, Richard G. Baldwin.&nbsp; Reproduction in whole or
+in
+part in any form or medium without express written permission from
+Richard
+Baldwin is prohibited. </p>
+<h4> <a name="About the author"></a>About the author</h4>
+<b><a href="mailto:Baldwin@DickBaldwin.com">Richard Baldwin</a></b><i>
+is a college professor (at Austin Community College in Austin, TX) and
+private consultant whose primary focus is a combination of Java, C#,
+and XML. In addition to the many platform and/or language independent
+benefits of Java and C# applications, he believes that a combination of
+Java, C#, and XML will become the primary driving force in the delivery
+of structured information on the Web.</i>
+<p><i>Richard has participated in numerous consulting projects, and he
+frequently provides onsite training at the high-tech companies located
+in and around Austin, Texas.&nbsp; He is the author of Baldwin's
+Programming <a href="http://www.dickbaldwin.com/">Tutorials</a>, which
+has gained a worldwide following among experienced and aspiring
+programmers. He has also published articles in JavaPro magazine.</i> </p>
+<p><i>Richard holds an MSEE degree from Southern Methodist University
+and has many years of experience in the application of computer
+technology to real-world problems.</i> </p>
+<p><i><a href="mailto:Baldwin@DickBaldwin.com">Baldwin@DickBaldwin.com</a></i>
+</p>
+<p>-end- <br>
+&nbsp; </p>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+</body>
+</html>

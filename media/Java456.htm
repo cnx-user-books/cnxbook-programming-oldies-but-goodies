@@ -1,0 +1,1841 @@
+<!DOCTYPE doctype PUBLIC "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+  <meta http-equiv="Content-Type"
+ content="text/html; charset=iso-8859-1">
+  <title>... in Java by Richard G Baldwin</title>
+</head>
+<body link="#0000ff" vlink="#666666" alink="#ff0000" lang="EN-US">
+<h2 align="center">Using the Java 2D LookupOp Filter Class to Scramble and 
+Unscramble Images</h2>
+<i>Learn how to use the <b>LookupOp</b> image-filtering class from the Java 2D 
+API, along with the <b>Random</b> class from the <b>java.util</b> package to 
+write a pair of easy-to-use programs to scramble and unscramble images in a 
+reasonably secure fashion.</i><p><b>Published:</b>&nbsp; June 5, 2007<br>
+<b>By <a href="mailto:Baldwin@DickBaldwin.com">Richard G. Baldwin</a></b>
+</p>
+<p>Java Programming Notes # 456</p>
+<ul>
+  <li> <a href="#Preface">Preface</a></li>
+  <li> <a href="#Preview">Preview</a></li>
+  <li> <a href="#Discussion%20and%20Sample%20Programs">Discussion and
+Sample Code</a></li>
+	<ul><li> <a href="#The_program_named_ImgMod47">The Program Named ImgMod47</a></li>
+	<li> <a href="#The_Program_Named_ImgMod46a">The Program Named ImgMod46a</a></li>
+	<li> <a href="#The_Program_Named_ImgMod46b">The Program Named ImgMod46b</a></li></ul>
+  <li> <a href="#Run%20the%20program">Run the Program</a></li>
+  <li> <a href="#Summary">Summary</a></li>
+	<li> <a href="#References">References</a></li>
+  <li> <a href="#Complete%20Program%20Listings">Complete Program
+Listing</a></li>
+</ul>
+<hr size="3" width="100%" align="center">
+<center>
+<h2> <a name="Preface"></a>Preface</h2>
+</center>
+<p> <font color="#FF0000"><b>The scenario</b></font></p>
+<p> Pretend for a moment that you are a fashion designer, or perhaps an 
+automotive designer.&nbsp; You and your colleagues around the world 
+frequently need to exchange high quality images on a timely basis via email.&nbsp; 
+Because the design world is highly competitive, you would prefer to exchange those images in a reasonably secure manner to prevent them from falling 
+into the hands of your competitors who might steal your ideas.&nbsp; On the 
+other hand, you would like the effort required to achieve a reasonable degree of 
+security to be minimal.</p>
+<p> <font color="#FF0000"><b>Scrambling and unscrambling images</b></font></p>
+<p> In this lesson, I will show you how to use the <b>LookupOp</b> 
+image-filtering class from the Java 2D API, along with the <b>Random</b> class 
+from the <b>java.util</b> package to write a pair of easy-to-use programs to 
+scramble and unscramble images in a reasonably secure fashion.</p>
+<p> <font color="#FF0000"><b>How secure are the images?</b></font></p>
+<p> Clearly, this method of protecting images wouldn't survive the code breakers 
+at the <a href="http://www.nsa.gov/">National Security Agency</a>.&nbsp; It 
+probably also wouldn't survive the code breakers at a number of universities and 
+research consortiums that specialize in cryptography.&nbsp; However, I believe that it 
+would survive for 
+quite some time against less accomplished members of the industrial espionage 
+community, particularly if a different scrambling key is used for every image 
+that is exchanged.</p>
+<p> <font color="#FF0000"><b>A disclaimer</b></font></p>
+<p> On the other hand, <b>I have no expertise in cryptography</b>, so I may be 
+surprised to learn that the images can be unscrambled by the teenager next door 
+using a hand calculator.&nbsp; Therefore, I am providing these programs for 
+<b>educational use only</b>.&nbsp; If you use them for any purpose, you are using 
+them at your own risk.&nbsp; I will not be responsible for any damages that you 
+may incur through the use of these programs.</p>
+<p> <font color="#FF0000"><b>A useful educational exercise</b></font></p>
+<p> In any event, regardless of the degree of security that these two programs 
+may or may not provide, they do provide a 
+useful learning experience in the use of the <b>LookupOp</b> image-filtering class of the 
+Java 2D API.</p>
+<p> <b><font color="#ff0000">Viewing tip</font></b> </p>
+<p>You may find it useful to open another copy of this lesson in a
+separate browser window.&nbsp; That will make it easier for you to
+scroll back
+and forth among the different listings and figures while you are
+reading
+about them.</p>
+<p><b><font color="#ff0000">Supplementary material</font></b> </p>
+<p>I recommend that you also study the other lessons in my extensive
+collection of online Java tutorials.&nbsp; You will find those lessons
+published
+at <a href="http://softwaredev.earthweb.com/java">Gamelan.com</a>.&nbsp;
+However, as of the date of this writing, Gamelan doesn't maintain a
+consolidated index of my Java tutorial lessons, and sometimes they are
+difficult to locate there.&nbsp; You will find a consolidated index at <font
+ color="#000000"> <a href="http://www.dickbaldwin.com/">www.DickBaldwin.com</a>.</font></p>
+<p>I also recommend that you pay particular attention to the lessons listed in 
+the <a href="#References">References</a> section of this document.</p>
+<h2 align="center"><font color="#000000"><a name="Preview">Preview</a></font></h2>
+<p>In this lesson, I will provide the following 
+three <a name="ListOfPrograms">programs</a>:</p>
+<ul>
+	<li><b>ImgMod47</b> - Image display program.</li>
+	<li><b>ImgMod46a</b> - Image scrambling program.</li>
+	<li><b>ImgMod46b</b> - Image unscrambling program.</li>
+</ul>
+<p>I will explain the code for the last two programs in the above list.</p>
+<p><font color="#FF0000"><b>A utility program</b></font></p>
+<p>The first program in the list, <i>(named <b>ImgMod47</b>)</i><b>,</b> is a utility program that I wrote because I 
+didn't already have a utility program <i>(other than a web browser)</i> that would display image files in the
+<a href="http://www.w3.org/Graphics/PNG/">Portable Network Graphics (PNG)</a> 
+format.&nbsp; I needed to be able to display those files in order to write this 
+lesson.&nbsp; I decided to write the program so that it would display two images 
+in the same frame as shown in <a href="#Figure_1">Figure 1</a>.</p>
+<p>This program should be able to display
+<a href="http://en.wikipedia.org/wiki/JPEG">JPEG</a>,
+<a href="http://en.wikipedia.org/wiki/GIF">GIF</a>,
+<a href="http://en.wikipedia.org/wiki/BMP">BMP</a>, and
+<a href="http://en.wikipedia.org/wiki/PNG">PNG</a> files, and possibly some 
+other file types as well.&nbsp; Although I am providing this program for your 
+use, <i>(see <a href="#Listing_11">Listing 11</a> near the end of the lesson)</i>, I won't attempt to 
+explain the code.&nbsp; Hopefully the comments in the code will suffice for that 
+purpose.</p>
+<p><font color="#FF0000"><b>What is the PNG format?</b></font></p>
+<p>According to the <a href="http://www.w3.org/Graphics/PNG/" name="w3c">W3C</a>:</p>
+<blockquote>
+	<p><i>&quot;<a href="http://en.wikipedia.org/wiki/PNG">PNG</a> is an extensible file format for the lossless, portable, 
+	well-compressed storage of raster images. PNG provides a patent-free 
+	replacement for GIF and can also replace many common uses of TIFF. 
+	Indexed-color, grayscale, and truecolor images are supported, plus an 
+	optional alpha channel for transparency. Sample depths range from 1 to 16 
+	bits per component (up to 48bit images for RGB, or 64bit for RGBA).&quot;</i></p>
+</blockquote>
+<p>The PNG format seems to be reasonably well-supported by Java.&nbsp; I elected to use it 
+because I needed to be able to store scrambled images in a lossless file format.</p>
+<p><font color="#FF0000"><b>Scrambling and unscrambling programs</b></font></p>
+<p>The program named <b>ImgMod46a</b> can be used to scramble an image and to 
+store the scrambled image in an output PNG file.&nbsp; The program named <b>
+ImgMod46b</b> can be used to read the PNG file, to unscramble the image, and to 
+write the unscrambled image into an output JPEG file.&nbsp; <i>(See 
+<a href="#Figure_1">Figure 1</a> for 
+an example of a scrambled image and the unscrambled version of the same image.)</i></p>
+<p><font color="#FF0000"><b>Scrambling quality</b></font></p>
+<p>As you will see in the examples that follow, if the input image is a high 
+quality image containing lots of different colors <i>(such as 24-bit RGB with 
+more than 16-million colors)</i>, the scrambled image has very little 
+resemblance to the original image.&nbsp; On the other hand, if the input image 
+is a low quality image <i>(such a <a href="http://en.wikipedia.org/wiki/GIF">GIF</a> 
+image with only 256 colors)</i>, the major features of the original image are 
+often revealed by the scrambled image.</p>
+<p><font color="#FF0000"><b><a name="A_shared_key">A shared key</a></b></font></p>
+<p>A user-provided key, <i>(which is a <b>long</b> integer)</i>, is used to seed the 
+random number generator that is used to scramble the image.&nbsp; As a <b>long</b> 
+integer, the value of the key can range:</p>
+<p><a name="rangeOfKeys">From</a> 
+-9223372036854775808 to 9223372036854775807</p>
+<p>Given the large number of possible keys, the likelihood of 
+someone guessing the value of the key is rather remote.</p>
+<p><font color="#FF0000"><b>Not like horseshoes and hand grenades...</b></font></p>
+<p>Unlike playing 
+horseshoes and tossing hand grenades, guessing close to the actual key value doesn't count.&nbsp; As 
+you will see later, a key 
+value that differs from the actual key by only two units in the least significant digit is of no 
+value 
+in an attempt to unscramble the image.</p>
+<p>
+<p><font color="#FF0000"><b>The scrambling algorithm</b></font></p>
+</p>
+<p>The scrambling algorithm is very simple.&nbsp; However, because of the use of the shared key to scramble and unscramble the image, 
+simply knowing the algorithm that was used to scramble the image should be of no 
+particular value to an attacker who is attempting to unscramble the image 
+without knowing the key.</p>
+<p>
+<table width="275" cellpadding="0" cellspacing="0" border="0" align="right">
+<tr>
+<td width="10">
+<td>
+  <table width="100%" cellpadding="5" cellspacing="0" border="1">
+  <tr><td bgcolor="#eeeeee">
+  <b>The random number generator.</b><br />
+  This all hinges on the quality of the pseudo-random number sequences produced 
+	by the Random class of the java.util package.
+</td></tr></table>
+</td>
+</tr>
+</table>
+
+Although I can certainly be proven wrong, I believe that 
+it would be extremely difficult, if not impossible, to unscramble the image without knowing both the 
+algorithm and the key that was used to scramble the original image.&nbsp; Once 
+again, this assumes that a different key is used to scramble every image, 
+thereby eliminating the possibility of making comparisons between different 
+images that were scrambled using the same key.</p>
+<p>
+<table width="275" cellpadding="0" cellspacing="0" border="0" align="right">
+<tr>
+<td width="10">
+<td>
+  <table width="100%" cellpadding="5" cellspacing="0" border="1">
+  <tr><td bgcolor="#eeeeee">
+  <b>No expertise in cryptography.</b><br />
+  Once again, however, I have no expertise in cryptography, so I may be 
+	surprised to learn that the images can be unscrambled by the teenager next 
+	door using a hand calculator, so if you use these programs for any purpose, 
+	you are using them at your own risk.</td></tr></table>
+</td>
+</tr>
+</table>
+
+<font color="#FF0000"><b>A brute force attack</b></font></p>
+<p>
+
+
+Of course, given enough time and computer resources, an attacker could use a brute force approach and try every 
+possible key within the allowable range of keys given <a href="#rangeOfKeys">
+above</a>.&nbsp; <i>(There are a lot of possible keys within the allowable range.)</i>&nbsp; 
+However, the only way for an attacker to know if an attack was successful would 
+be to view the unscrambled image to see if it makes any sense.&nbsp; This would require the attacker to examine every resulting 
+image to determine if the attack was successful.&nbsp; Given the wide range of 
+allowable keys, this would probably require more time, effort, and eyestrain than most people would be willing to invest.</p>
+<p><font color="#FF0000"><b>Key management</b></font></p>
+<p>As with all security systems that make use of shared keys, key management 
+could be a problem.&nbsp; That is the main reason that
+<a href="http://www.developer.com/java/ent/article.php/3447491">public key 
+cryptography</a> was invented.&nbsp; In my hypothetical scenario involving 
+fashion designers, the group of designers who are collaborating on the swimwear design 
+for the next summer season could simply exchange several hundred numbered keys 
+via postal mail in advance.&nbsp; Then they could use and identify one of the 
+numbered keys each time an image is scrambled and shared among them via email.&nbsp;
+<i>(Each time an image is scrambled and shared, all members of the group would 
+scratch that key off the list to make certain that it isn't used again later.)</i></p>
+<p><font color="#FF0000"><b>Format for example images</b></font></p>
+<p>In the following examples, I am going to show you the scrambled image at the 
+top and the unscrambled image at the bottom as shown in <a href="#Figure_1">
+Figure 1</a>.&nbsp; To avoid redundancy, I won't show you the original 
+image.&nbsp; I will simply ask you to trust me when I tell you that the 
+unscrambled image matches the original.</p>
+<p><font color="#FF0000"><b>Some example images</b></font></p>
+<p><a href="#Figure_1">Figure 1</a> shows an example for which this image-scrambling technique is well
+<a name="Figure_1">suited</a>.</p>
+
+
+
+
+
+
+<p>
+<table border="1" cols="1" bgcolor="#ffffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><img border="0" src="java456a01.jpg" width="305" height="674"><br></pre>
+      <pre><b><a href="#Figure_1">Figure 1</a></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The top panel in <a href="#Figure_1">Figure 1</a> shows the scrambled image and the bottom panel 
+shows the unscrambled image.&nbsp; The unscrambled image is a good visual match 
+for the original image.</p>
+<p><font color="#FF0000"><b>A digital photograph</b></font></p>
+<p>This image is the result of a digital photograph 
+that I took somewhere while on vacation and extracted from the camera as a JPEG 
+file.&nbsp; The color depth for this image is large with the possibility of more 
+than sixteen-million different colors.</p>
+<p>The following key was used both to scramble and to unscramble the image:</p>
+<p><pre>Scrambling Key:   -9223372036854775808
+Unscrambling Key: -9223372036854775808</pre></p>
+<p><font color="#FF0000"><b>A slightly different unscrambling key</b></font></p>
+<p>The bottom panel in <a href="#Figure_2">Figure 2</a> shows the result of attempting to unscramble the same scrambled image using an 
+unscrambling key that differs from the actual scrambling key by only two units in the 
+least significant <a name="Figure_2">digit</a>.</p>
+
+<p>
+<table border="1" cols="1" bgcolor="#ffffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><img border="0" src="java456a02.jpg" width="305" height="674"><br></pre>
+      <pre><b><a href="#Figure_2">Figure 2</a></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The scrambling and unscrambling keys in this case were:</p>
+<p><pre>Scrambling Key:   -9223372036854775808
+Unscrambling Key: -9223372036854775806</pre></p>
+<p>Despite the similarity of the two keys, the bottom image in 
+<a href="#Figure_2">Figure 2</a> 
+doesn't reveal much if anything about the original image.</p>
+<p>
+
+<p><font color="#FF0000"><b>The effect of color depth on the scrambling process</b></font></p>
+<p><a href="#Figure_3">Figure 3</a> compares the scrambling and unscrambling of a starfish image in a JPEG file <i>(on 
+the left)</i> with the scrambling and unscrambling of a GIF version of the same starfish image <i>
+(on the right)</i>.&nbsp; <i>(Note that I purposely reduced the size of both pairs 
+of images so that I could display them side-by-side in this narrow 
+publication <a name="Figure_3">format</a>.)</i></p>
+
+
+
+<p>
+<table border="1" bgcolor="#ffffff">
+	<tr>
+		<td><img border="0" src="java456a03.jpg" width="225" height="465"></td>
+		<td><img border="0" src="java456a04.jpg" width="225" height="465"></td>
+	</tr>
+	<tr>
+	<td colspan="2" >
+<pre><b><a href="#Figure_3">Figure 3</a></b></pre></td>
+	</tr>
+</table>
+<p>As you can see, the scrambled JPEG image on the left reveals very little about the 
+original image.&nbsp; On the other hand, the scrambled GIF image on 
+the right reveals quite a lot about the original image.</p>
+<p>Even though every 
+color in the original image was replaced by a different color <i>(chosen 
+randomly)</i> in the 
+scrambled image, because the number of colors in the GIF image was small, the 
+scrambled GIF image is still recognizable as a starfish.</p>
+<p><font color="#FF0000"><b>Large areas with pixels of the exactly same color</b></font></p>
+<p>When the number of actual colors in the image is small, <i>(such as in a GIF 
+image)</i>, there are many areas in the image where large numbers of adjacent 
+pixels are exactly the same color.&nbsp; Simply changing the colors of the sets 
+of same-colored adjacent pixels leaves patterns in the scrambled image that the 
+human eye/mind combination is able to recognize.&nbsp; <i>(This speaks well of 
+the pattern-recognition capability of the human eye/mind.)</i>&nbsp; The 
+result of scrambling the GIF image <i>(with shallow color depth)</i>, shown in the top-right image of <a href="#Figure_3">Figure 3</a>, is simply a multi-colored starfish.</p>
+<p><font color="#FF0000"><b>Very few areas with pixels of exactly the same color</b></font></p>
+<p>On the other hand, when the number of actual colors in the image is large <i>
+(such as a digital photograph with more than sixteen-million colors)</i>, there 
+are very few areas in the image where any significant number of adjacent pixels 
+are exactly the same color.&nbsp; <i>(Adjacent pixels may be almost the same 
+color but they are not exactly the same color.)</i></p>
+<p>Therefore, using a randomly-based substitution 
+process to change each of the sixteen-million colors to a different color 
+results in very few patterns that the human eye/mind combination is able to 
+recognize, as illustrated by the top-left image in <a href="#Figure_3">Figure 3</a>.</p>
+<p>In other words, because there are few if any groupings of colors in the 
+scrambled image, the human eye/mind combination is simply overwhelmed in its 
+attempts to recognize patterns.&nbsp; Thus, the top-left image in 
+<a href="#Figure_3">Figure 3</a> 
+appears to be simply a bunch of randomly colored pixels.&nbsp; The important point, 
+however, is that by reversing the color substitution process, the original image 
+can be recovered as shown by the bottom-left image in <a href="#Figure_3">Figure 3</a>.</p>
+<p><font color="#FF0000"><b>A caveat</b></font></p>
+<p>Be aware, however, that just because an image is stored in a format that 
+supports a large color depth, the image may actually have very shallow color 
+depth.&nbsp; For example, if you were to use a digital camera to take a 
+photograph of a black and white line drawing, the number of actual colors in the 
+image would probably be quite small.&nbsp; A scrambled version of the resulting 
+image would probably reveal quite a lot about the line drawing.</p>
+<p><font color="#FF0000"><b>Artwork anyone?</b></font></p>
+<p>Even if you aren't interested in scrambling images for security purposes, the 
+technique can be used to produce some interesting artwork.&nbsp; 
+<a href="#Figure_4">Figure 4</a> shows 
+the result of scrambling two versions of a color wheel.&nbsp; The original image 
+on the left was a JPEG image, while the original image on the right was a GIF 
+version of the JPEG <a name="Figure_4">image</a>.</p>
+
+<p>
+<table border="1" bgcolor="#ffffff">
+	<tr>
+		<td><img border="0" src="java456a05.jpg" width="211" height="432"></td>
+		<td><img border="0" src="java456a06.jpg" width="211" height="432"></td>
+	</tr>
+	<tr>
+	<td colspan="2" >
+<pre><b><a href="#Figure_4">Figure 4</a></b></pre></td>
+	</tr>
+</table>
+<p>To the unpracticed eye, two different versions of 
+the color wheel in the bottom of <a href="#Figure_4">Figure 4</a> aren't terribly different.&nbsp; 
+However, when scrambled in this manner, the top two images clearly show that the 
+color wheel on the left contains a lot more actual colors than the color wheel 
+on the right.</p>
+<p><font color="#FF0000"><b>The downside - larger image files</b></font></p>
+<p>Because this approach to scrambling and unscrambling images involves a simple 
+color substitution process, it is absolutely necessary to preserve the scrambled image 
+without modification.&nbsp; Otherwise, the image resulting from the unscrambling process 
+won't match the original image.&nbsp; This eliminates the use of lossy 
+compression schemes <i>(such as JPEG)</i> for the storage and exchange of scrambled 
+images.</p>
+<p>For this reason, the program named <b>ImgMod46a</b> produces an output PNG 
+file containing the scrambled image.&nbsp; As discussed <a href="#w3c">earlier</a>, 
+the PNG format is lossless.&nbsp; <i>(Other lossless image file 
+formats could have been used as well.)</i></p>
+<p>
+<table width="275" cellpadding="0" cellspacing="0" border="0" align="right">
+<tr>
+<td width="10">
+<td>
+  <table width="100%" cellpadding="5" cellspacing="0" border="1">
+  <tr><td bgcolor="#eeeeee">
+  <b>An estimate.</b><br />
+  I refer to this as an estimate because a compressed JPEG file is 
+	incapable of reproducing the original image.&nbsp; The uncompressed image is 
+	simply an estimate of the original image.&nbsp;
+	<a href="http://en.wikipedia.org/wiki/PNG#Comparison_with_JPEG">Wikipedia</a> 
+	estimates that a PNG file is likely to be five to ten times larger than a 
+	JPEG file containing the same original image.</td></tr></table>
+</td>
+</tr>
+</table>
+
+The downside is that a PNG file is typically much larger than a JPEG file 
+containing <i>(an estimate)</i> of the same image.</p>
+<p><font color="#FF0000"><b>Creating your own examples</b></font></p>
+
+<p>The examples shown above were produced using a combination of all three 
+programs in the above <a href="#ListOfPrograms">list</a> of programs.&nbsp; To 
+reduce the amount of typing required to run the three programs in sequence for 
+every example, I created a batch file named <b>ImgMod46.bat</b> containing the 
+commands shown in <a name="Figure_5" href="#Figure_5">Figure 5</a>.</p><p>
+<table border="1" cols="1" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>echo off
+echo Usage: enter ImgMod46 followed by a space 
+echo and the name of the image file.
+java ImgMod46a -9223372036854775807 %1
+java ImgMod46b -9223372036854775807
+java ImgMod47 junk.png junk.jpg<br></pre>
+      <pre><b><a href="#Figure_5">Figure 5</a></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Having created the batch file, all that was necessary for me to run an example was to enter a command such as 
+the following at the command line:</p>
+<p><pre><b>ImgMod46 colorwheel.jpg</b></pre></p>
+<p>where <b>colorwheel.jpg</b> is the name of the image file to be processed.</p>
+<p>If you are running Windows, you should be able to do the same thing.&nbsp; For other operating systems, you will either need to run the sequence of 
+three programs 
+directly from the command line, or create your own script.</p>
+<center>
+<h2> <a name="Discussion and Sample Programs"></a><font color="#000000">Discussion
+and Sample Code</font></h2>
+</center>
+<h3><a name="The_program_named_ImgMod47">The Program Named ImgMod47</a></h3>
+<p>A complete listing of this program is provided in <a href="#Listing_11">Listing 11</a> near the end of 
+the lesson.</p>
+<p><font color="#FF0000"><b>Description of the program</b></font></p>
+<p>As mentioned earlier, I don't plan to explain the program code for this program in 
+this lesson.&nbsp; However, I will provide an operational description.</p>
+<p>This program reads and displays two image files one above the other for 
+comparison purposes <i>(as 
+shown in <a href="#Figure_1">Figure 1</a>)</i>.&nbsp; The images do not have to 
+be the same size or to be of the same type.&nbsp; The program will read and 
+display gif, jpg, bmp, 
+and png files and possibly some other file types as well.</p>
+<p><font color="#FF0000"><b>Typical usage</b></font></p>
+<p>Enter the following at the command line to run the program:</p>
+<p><pre><b>java ImgMod47 TopImageFileName BottomImageFileName</b></pre></p>
+<p>where the two command-line parameters specify the names of the image files to 
+be displayed.</p>
+<p>If the command-line parameters are omitted, the program will search for an 
+image file named <b>ImgMod47Test.jpg</b> in the current directory and will display it in 
+both the top and bottom display locations.&nbsp; This file must be provided in the 
+current directory if it will be needed.</p>
+<p>
+<table width="275" cellpadding="0" cellspacing="0" border="0" align="right">
+<tr>
+<td width="10">
+<td>
+  <table width="100%" cellpadding="5" cellspacing="0" border="1">
+  <tr><td bgcolor="#eeeeee">
+  <b>Display a single file.</b><br />
+  To display a single file, just enter the name of the file twice on 
+	the command line.&nbsp; The file will be displayed in both the top and 
+	bottom locations.</td></tr></table>
+</td>
+</tr>
+</table>
+
+The image files must be provided by the 
+user but they don't have to be in the current directory if a 
+path to the files is specified on the command line.</p>
+<p><font color="#FF0000"><b>Display format</b></font></p>
+<p>The two images are displayed 
+in a frame with one image above the other.&nbsp; The program attempts to set the size of the 
+frame so as to accommodate both images.&nbsp; However, if both images are not totally visible, 
+the user can manually resize the frame in an attempt to make them both visible.</p>
+<p><font color="#FF0000"><b>Error conditions</b></font></p>
+<p>If the program is unable to load 
+either image file within ten seconds, it will abort with an error message.</p>
+<p>The program was tested 
+using J2SE5.0 under WinXP.&nbsp; J2SE 5.0 or a later version is required due to the use of 
+<a href="http://www.developer.com/java/other/article.php/3495121">generics</a>.</p>
+<h3><a name="The_Program_Named_ImgMod46a">The Program Named ImgMod46a</a></h3>
+<p><font color="#FF0000"><b>Purpose</b></font></p>
+<p>The purpose of this program is to scramble an image using a random number 
+generator and to write the scrambled image into an output PNG file named 
+<b>junk.png</b>.</p>
+<p>
+<table width="275" cellpadding="0" cellspacing="0" border="0" align="right">
+<tr>
+<td width="10">
+<td>
+  <table width="100%" cellpadding="5" cellspacing="0" border="1">
+  <tr><td bgcolor="#eeeeee">
+  <b>The seed value.</b><br />
+  The seed value is the same as the <a href="#A_shared_key">shared key</a> 
+	discussed earlier.</td></tr></table>
+</td>
+</tr>
+</table>
+
+<font color="#FF0000"><b>User input</b></font></p>
+<p>The value used to seed the random number generator and the name of the image file are 
+specified by the user on the command line.</p>
+<p>The program defaults to a fixed seed value and to an image file named <b>
+imgmod46test.jpg</b> if the user fails to specify both the seed value and the 
+image file name on the command line.</p>
+<p><font color="#FF0000"><b>A lossless output file format</b></font></p>
+<p>A PNG file is used as the output file because it is necessary to avoid lossy 
+compression in the output file.&nbsp; For example, if the output file were a 
+JPEG file, <i>(which is a lossy compression scheme)</i>, it would not be possible to 
+unscramble the image later.</p>
+<p><font color="#FF0000"><b>Usage instructions</b></font></p>
+<p>Enter the following at the command-line to run the program:</p>
+<p><pre><b>java ImgMod46a RandomSeedValue ImageFileName</b></pre></p>
+<p>The first parameter is a <b>long</b> value that is used to seed the random number 
+generator.&nbsp; The same seed value must be used to scramble the image using 
+this program and to later unscramble the image using the program named <b>
+ImgMod46b</b>.</p>
+<p>As a <b>long</b> integer, the seed value can range:</p>
+<p>From -9223372036854775808 to 
+9223372036854775807.</p>
+<p><font color="#FF0000"><b>Input file types</b></font></p>
+<p>The program can read and process jpg, gif, bmp, and png image files, and possibly 
+some other file types as well.</p>
+<p><font color="#FF0000"><b>Unscrambling the image file</b></font></p>
+<p>Run the program named <b>ImgMod46b</b> to read the PNG file produced by this 
+program and to unscramble the image that it contains.</p>
+<p><font color="#FF0000"><b>Program testing</b></font></p>
+<p>This program was tested using J2SE 5.0 under WinXP.&nbsp; J2SE 5.0 or later is 
+required due to the use of 
+<a href="http://www.developer.com/java/other/article.php/3495121">generics</a>.</p>
+<p><font color="#FF0000"><b>Will discuss in fragments</b></font></p>
+<p>I will explain this program in fragments.&nbsp; A complete listing of the 
+program is provided in <a href="#Listing_12">Listing 12</a> near the end of the lesson.</p>
+<p><font color="#FF0000"><b>Begin class definition</b></font></p>
+<p>The class definition begins in <a name="Listing_1"><a href="#Listing_1">Listing 1</a></a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>class ImgMod46a{
+  BufferedImage rawBufferedImage;
+  BufferedImage processedImage;
+  static String defaultImgFile = "imgmod46test.jpg";
+  static String theImgFile = null;//Input image file
+  static long defaultSeed = 1234567890;//Default seed
+  static long seed;
+  MediaTracker tracker;<br><br><b><font face="Courier New,Courier"><a href="#Listing_1">Listing 1</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The code in <a href="#Listing_1">Listing 1</a> simply declares some instance variables that are used 
+later in the program.</p>
+<p><font color="#FF0000"><b>The main method</b></font></p>
+<p>The main method is shown in its entirety in <a name="Listing_2"><a href="#Listing_2">Listing 2</a></a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  public static void main(String[] args){
+
+    //Get the seed and the input image file name from the
+    // command line, or use the default seed and image
+    // file name instead.
+    if(args.length == 2){
+      //Get the seed value.
+      seed = Long.parseLong(args[0]);
+      //Get the input file name
+      theImgFile = args[1];
+    }else{
+      seed = defaultSeed;
+      theImgFile = defaultImgFile;
+    }//end else
+    
+    System.out.println("Scrambling Key: " + seed);
+
+    //Instantiate an object of this class.
+    ImgMod46a obj = new ImgMod46a();
+  }//end main<br><br><b><font face="Courier New,Courier"><a href="#Listing_2">Listing 2</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><a href="#Listing_2">Listing 2</a> is straightforward and shouldn't require additional explanation.&nbsp; 
+Note that the last statement in the <b>main</b> method invokes the constructor 
+to instantiate an object of the class.</p>
+<p><font color="#FF0000"><b>The constructor</b></font></p>
+<p>The constructor is shown in its entirety in <a name="Listing_3"><a href="#Listing_3">Listing 3</a></a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  public ImgMod46a(){//constructor
+    //Get an image from the specified image file.
+    rawBufferedImage = getTheImage();
+
+    //Process the image.
+    processedImage = processImg(rawBufferedImage);
+    
+    //Write the modified image into a file named
+    // junk.png.
+    writeOutputFile(processedImage);
+
+  }//end ImgMod46a constructor<br><br><b><font face="Courier New,Courier"><a href="#Listing_3">Listing 3</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The constructor is also straightforward.&nbsp; In invokes the following three 
+methods in succession to perform the tasks shown:</p>
+<ul>
+	<li><b>getTheImage</b> - read the image from the input file into an object 
+	of type <b>BufferedImage</b>.</li>
+	<li><b>processImg</b> - scramble the image.</li>
+	<li><b>writeOutputFile</b> - write the scrambled image into an output file 
+	of type PNG named <b>junk.png</b>.</li>
+</ul>
+<p><font color="#FF0000"><b>The method named getTheImage</b></font></p>
+<p>This method is essentially the same as a method having the same name that I 
+explained in the earlier lesson entitled &quot;A Framework for Experimenting with 
+Java 2D Image-Processing Filters&quot; <i>(see <a href="#References">References</a>)</i>.&nbsp; Rather than to repeat that explanation 
+here, 
+I will refer you back to the earlier lesson.</p>
+<p><font color="#FF0000"><b>The method named writeOutputFile</b></font></p>
+<p>With the exception of the fact that this program writes a PNG file instead of 
+a JPEG file, this method is essentially the same as the method named <b>
+writeJpegFile</b> that I explained in the same earlier lesson entitled &quot;A 
+Framework for Experimenting with Java 2D Image-Processing Filters&quot; <i>(see
+<a href="#References">References</a>)</i>.&nbsp; Once 
+again, rather than repeating that explanation here, I will refer you back to the 
+earlier lesson.</p>
+<p>That leaves us with the method named <b>processImg</b>.</p>
+<p><font color="#FF0000"><b>The method named processImg</b></font></p>
+<p>The method named <b>processImg</b> begins in <a href="#Listing_4">Listing 4</a>.&nbsp; This method 
+uses the <b>LookupOp</b> class from the Java 2D API along with the <b>Random</b> 
+class from the <b>java.util</b> package to scramble all of the color values in the 
+pixels in the image identified by the parameter named <b><a name="Listing_4">
+theImage</a></b>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  public BufferedImage processImg(BufferedImage theImage){
+    Random randomGenerator = new Random(seed);
+
+    ArrayList &lt;Short&gt;redList = new ArrayList&lt;Short&gt;(256);
+    ArrayList &lt;Short&gt;greenList = new ArrayList&lt;Short&gt;(256);
+    ArrayList &lt;Short&gt;blueList = new ArrayList&lt;Short&gt;(256);<br><br><b><font face="Courier New,Courier"><a href="#Listing_4">Listing 4</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>A random number generator and three ArrayList 
+objects</b></font></p>
+<p>The <b>processImg</b> method begins by instantiating a random number 
+generator object of type <b>
+Random</b> using the seed that was provided as input by the user <i>(or the 
+default seed if the user failed to provide a seed)</i>.</p>
+<p>Then the method creates three <b>ArrayList</b> objects, each containing 256 unique unsigned 8-bit 
+values formatted into the least significant eight bits of 256 values of type <b>
+short</b>.&nbsp; The three empty <b>ArrayList</b> objects are instantiated in 
+<a href="#Listing_4">Listing 4</a>.&nbsp; <i>(Note the use of
+<a href="http://www.developer.com/java/other/article.php/3495121">generics</a> 
+in <a href="#Listing_4">Listing 4</a>, requiring the use of J2SE 5.0 or later.)</i></p>
+<p><font color="#FF0000"><b>Populate the ArrayList objects</b></font></p>
+<p><a href="#Listing_5">Listing 5</a> shows the beginning of a <b>for</b> loop that is used to 
+independently populate each of the three <b>ArrayList</b> objects with unique 
+unsigned 8-bit <a name="Listing_5">values</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    for(int cnt = 0;cnt &lt; 256;cnt++){
+      //Get a priming value for the redList.
+      short value = 
+                 (short)(randomGenerator.nextInt() & 0xFF);
+      while(redList.contains(value)){
+        //Try another value.  This one was already used.
+        value = (short)(randomGenerator.nextInt() & 0xFF);
+      }//end while
+      redList.add(value);//Add unique value to the list.<br><br><b><font face="Courier New,Courier"><a href="#Listing_5">Listing 5</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><a href="#Listing_5">Listing 5</a> contains code that obtains a value from the random number 
+generator that is not contained in the <b>ArrayList</b> object referred to by <b>
+redList</b> and adds that value to the <b>ArrayList</b> object.</p>
+<blockquote>
+	<p><i>(If the value of the first random number is already contained in the
+	<b>ArrayList</b> object, it is discarded and replaced by another random 
+	value.&nbsp; This process is continued until a random value is found that is 
+	not already contained in the <b>ArrayList</b> object.)</i></p>
+</blockquote>
+<p>The comments in <a href="#Listing_5">Listing 5</a> should be sufficient to 
+more fully explain the operation of 
+the code in that listing.</p>
+<p><font color="#FF0000"><b>The green and blue ArrayList objects</b></font></p>
+<p><a href="#Listing_6">Listing 6</a> shows the remainder of the <b>for</b> loop that began in <a href="#Listing_5">Listing 5</a>.&nbsp; 
+The code in <a href="#Listing_6">Listing 6</a> populates the green and blue <b>ArrayList</b> 
+<a name="Listing_6">objects</a>.</p>
+<table border="1" cols="1" width="482" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>      //Get a priming value for the greenList.
+      value = (short)(randomGenerator.nextInt() & 0xFF);
+      while(greenList.contains(value)){
+        //Try another value.  This one was already used.
+        value = (short)(randomGenerator.nextInt() & 0xFF);
+      }//end while
+      greenList.add(value);//Add unique value to the list.
+      
+      //Get a priming value for the blueList.
+      value = (short)(randomGenerator.nextInt() & 0xFF);
+      while(blueList.contains(value)){
+        //Try another value.  This one was already used.
+        value = (short)(randomGenerator.nextInt() & 0xFF);
+      }//end while
+      blueList.add(value);//Add unique value to the list.
+      
+    }//end for loop<br><br><b><font face="Courier New,Courier"><a href="#Listing_6">Listing 6</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>All three ArrayList objects are populated</b></font></p>
+<p>When the <b>for</b> loop in <a href="#Listing_6">Listing 6</a> terminates, <i>(after 256 iterations)</i>, each of 
+the <b>ArrayList</b> objects have been independently populated with random 
+sequences of unique unsigned 8-bit values formatted into the least significant 
+eight bits of 256 values of type <b>short</b>.</p>
+<p>These are the values that will be substituted for the red, green, and blue 
+color values for each pixel in the image that is being scrambled.</p>
+<p><font color="#FF0000"><b>Use of the LookupOp image-filtering class</b></font></p>
+<p>I explained the use of the class named <b>LookupOp</b> for processing images 
+in the method named <b>processImageForThePage</b> in the earlier lesson entitled 
+&quot;Using the Java 2D LookupOp Filter Class to Process Images&quot; <i>(see
+<a href="#References">References</a>)</i>.&nbsp; I won't 
+repeat that explanation in this lesson.&nbsp; Rather, I will simply refer you 
+back to the earlier lesson for those details.</p>
+<p><font color="#FF0000"><b>The ArrayList objects are a temporary convenience</b></font></p>
+<p>What we really need to be able to use the <b>LookupOp</b> image-filtering 
+class are three array objects of type <b>short</b> containing 
+the substitution values.&nbsp; The <b>ArrayList</b> objects were simply used as a 
+convenient way to create those values.&nbsp; <a href="#Listing_7">Listing 7</a> creates the 
+three array objects 
+and populates them by copying the values from the <b>ArrayList</b> objects into 
+the three array objects referred to as <b>red</b>, <b>green</b>, and <b>
+<a name="Listing_7">blue</a></b>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    //Create the data for the lookup table.
+    short[] red = new short[256];
+    short[] green = new short[256];
+    short[] blue = new short[256];
+    
+    for (int cnt = 0; cnt &lt; 256; cnt++){
+      red[cnt] = <b>redList.get(cnt)</b>;
+      green[cnt] = <b>greenList.get(cnt)</b>;
+      blue[cnt] = <b>blueList.get(cnt)</b>;
+    }//end for loop<br><br><b><font face="Courier New,Courier"><a href="#Listing_7">Listing 7</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Wrapping it up</b></font></p>
+<p>The remaining program code is shown in <a name="Listing_8"><a href="#Listing_8">Listing 8</a></a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    //Create the 2D array that will be used to create the
+    // lookup table.
+    short[][] lookupData = new short[][]{red,green,blue};
+    
+    //Create the lookup table
+    ShortLookupTable lookupTable = 
+                        new ShortLookupTable(0,lookupData);
+
+    //Create the filter object.
+    BufferedImageOp filterObj = 
+                            new LookupOp(lookupTable,null);
+
+    //Apply the filter to the incoming image and return
+    // a reference to the resulting BufferedImage object.
+    return filterObj.filter(theImage, null);
+
+  }//end processImg
+  //-----------------------------------------------------//
+}//end ImgMod46a.java class
+<br><b><font face="Courier New,Courier"><a href="#Listing_8">Listing 8</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Same as the code in the earlier lesson</b></font></p>
+<p>The code in <a href="#Listing_8">Listing 8</a> is essentially the same as the code that I explained in the method named <b>processImageForThePage</b> in the earlier lesson entitled 
+&quot;Using the Java 2D LookupOp Filter Class to Process Images&quot; <i>(see
+<a href="#References">References</a>)</i>.&nbsp; Please see 
+that lesson for an explanation of the remaining code in <a href="#Listing_8">
+Listing 8</a>.</p>
+<p><font color="#FF0000"><b>The end of the program</b></font></p>
+<p><a href="#Listing_8">Listing 8</a> signals the end of the method named<b> processImg</b>, and also 
+signals the end of the class named <b>ImgMod46a</b>.&nbsp; Therefore, this ends 
+the explanation of the program named <b>ImgMod46a</b>.</p>
+<h3><a name="The_Program_Named_ImgMod46b">The Program Named ImgMod46b</a></h3>
+<p>The program named <b>ImgMod46a</b> is very similar to the program named <b>ImgMod46a</b> that I 
+explained <a href="#The_Program_Named_ImgMod46a">above</a>.&nbsp; If you haven't 
+done so already, you should go back and study my explanation of that program.</p>
+<p><font color="#FF0000"><b>Purpose of the program</b></font></p>
+<p>The purpose of the program named <b>ImgMod46b </b>is:</p>
+<ul>
+	<li>To unscramble the image in a PNG file that was scrambled and written by 
+	the program named <b>ImgMod46a</b>.</li>
+	<li>To write the unscrambled image into an output JPEG file.</li>
+</ul>
+<p>More specifically, this program:</p>
+<ul>
+	<li>Reads a scrambled image from a file named <b>junk.png</b>.</li>
+	<li>Unscrambles the image.</li>
+	<li>Writes the unscrambled image into an output JPEG file named <b>junk.jpg</b>.</li>
+</ul>
+<p><font color="#FF0000"><b>Display the unscrambled image</b></font></p>
+<p>The program named <b>ImgMod47</b> can be used to display the scrambled image 
+along with the unscrambled image for comparison purposes as shown in
+<a href="#Figure_1">Figure 1</a>.</p>
+<p><font color="#FF0000"><b>The same seed must be used</b></font></p>
+<p>A seed value is required to instantiate a random number generator object that 
+is used to unscramble the image.&nbsp; The same seed 
+value must be used to unscramble the image as was used to scramble the image 
+using the program named <b>ImgMod46a</b>.</p>
+<p>The seed value is specified by the user on the command line.&nbsp; The program 
+defaults to the same fixed seed value as the default seed value used in the 
+program named <b>ImgMod46a</b> if the user fails to specify the seed value on 
+the command line.</p>
+<p><font color="#FF0000"><b>Usage instructions</b></font></p>
+<p>Enter the following at the command line to run the program:</p>
+<p><pre><b>java ImgMod46b RandomSeedValue</b></pre></p>
+<p>The single parameter is a <b>long</b> integer that is used to seed the random number 
+generator.&nbsp; As mentioned above, the same seed value must be used to unscramble the image as was used by 
+the program named <b>ImgMod46a</b> to scramble the image.</p>
+<p><font color="#FF0000"><b>The range of allowable seed values</b></font></p>
+<p>The seed value that is specified by the user is the same as the
+<a href="#A_shared_key">shared key</a> discussed earlier.</p>
+<p>As a long integer, the value of 
+the seed may range:</p>
+<p>From -9223372036854775808 to 9223372036854775807.</p>
+<p>This program was tested using 
+J2SE 5.0 under WinXP.&nbsp; J2SE 5.0 or a later version is required due to the 
+use of <a href="http://www.developer.com/java/other/article.php/3495121">
+generics</a>.</p>
+<p><font color="#FF0000"><b>What's new in the program named ImgMod46b?</b></font></p>
+<p>A complete listing of the program named <b>ImgMod46b</b> can be viewed in 
+<a href="#Listing_13">Listing 13</a> near the end of the lesson.&nbsp; This program is essentially the 
+same as the program named <b>ImgMod46a</b> with two exceptions:</p>
+<ul>
+	<li>This program writes a JPEG output file instead of a PNG output file.</li>
+	<li>This program populates the filtering object differently.</li>
+</ul>
+<p><font color="#FF0000"><b>Writing a JPEG file</b></font></p>
+<p><a href="#Listing_9">Listing 9</a> shows the method named <b>writeOutputFile</b> in its entirety.&nbsp; 
+This method writes the contents of a <b>BufferedImage</b> object into a file named
+<b><a name="Listing_9">junk.jpg</a></b>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  void writeOutputFile(BufferedImage img){
+    try{
+      //Get a file output stream.
+      FileOutputStream outStream = 
+                          new FileOutputStream("junk.jpg");
+      //Call the write method of the ImageIO class to write
+      // the contents of the BufferedImage object to an
+      // output file in jpg format.
+<b>      ImageIO.write(img,"jpeg",outStream);</b>
+      outStream.close();
+    }catch (Exception e) {
+      e.printStackTrace();
+    }//end catch
+  }//end writeOutputFile<br><br><b><font face="Courier New,Courier"><a href="#Listing_9">Listing 9</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The code that is different from the code in the program named <b>ImgMod46a</b> 
+is highlighted in boldface in <a href="#Listing_9">Listing 9</a>.</p>
+<p><font color="#FF0000"><b>Populating the filtering object</b></font></p>
+<p><a href="#Listing_10">Listing 10</a> shows the creation of three array objects along with a <b>for</b> 
+loop that was extracted from the method named <b>processImg</b>.&nbsp; You can 
+view this code in context in <a href="#Listing_13">Listing 13</a>.&nbsp; <i>(Compare the code in Listing 
+10 with the code in <a name="Listing_10"><a href="#Listing_7">Listing 7</a></a>.)</i></p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    //Create the data for the lookup table.
+    short[] red = new short[256];
+    short[] green = new short[256];
+    short[] blue = new short[256];
+
+    for (int cnt = 0; cnt &lt; 256; cnt++){
+      red[cnt] = 
+           <b>(short)(redList.indexOf(new Short((short)cnt)))</b>;
+      green[cnt] = 
+         <b>(short)(greenList.indexOf(new Short((short)cnt)))</b>;
+      blue[cnt] = 
+          <b>(short)(blueList.indexOf(new Short((short)cnt)))</b>;
+    }//end for loop<br><br><b><font face="Courier New,Courier"><a href="#Listing_10">Listing 10</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><a href="#Listing_10">Listing 10</a> populates the <b>red</b>, <b>green</b>, and <b>blue</b> array 
+objects with a set of substitution values that will reverse the substitution 
+process implemented by the values used to populate the corresponding array 
+objects in <a href="#Listing_7">Listing 7</a>.</p>
+<p><font color="#FF0000"><b>A pencil and paper may help here</b></font></p>
+<p>Unless your ability to analyze code in your mind is better than mine, you may 
+need to use a pencil and paper and work through some of the values to 
+understand the difference between the boldface expressions in <a href="#Listing_10">Listing 10</a> and the 
+corresponding boldface expressions in <a href="#Listing_7">Listing 7</a>.</p>
+<p><font color="#FF0000"><b>A description of the unscrambling process</b></font></p>
+<p>The code in <a href="#Listing_7">Listing 7</a> simply copies the substitution values from the <b>
+ArrayList</b> objects into the array objects at the same index values.</p>
+<p>The code in <a href="#Listing_10">Listing 10</a> uses the substitution values in the <b>ArrayList</b> 
+objects as indexes into the array objects and assigns the corresponding index 
+values from the <b>ArrayList</b> objects as substitution values in the array 
+objects.</p>
+<p>As a result, when the <b>red</b>, <b>green</b>, and <b>blue</b> array objects 
+in <a href="#Listing_10">Listing 10</a> are used to filter an image that was previously filtered using the
+<b>red</b>, <b>green</b>, and <b>blue</b> array objects in <a href="#Listing_7">Listing 7</a>, the 
+original substitution process is reversed and the scrambled image is unscrambled as shown in <a href="#Figure_1">Figure 1</a>.</p>
+<p>And that completes the explanation of the unscrambling program named <b>
+ImgMod46b</b>.<br>
+</p>
+<center>
+<h2><a name="Run the program"></a>Run the Program</h2>
+</center>
+<p>I encourage you to copy the code from <a href="#Listing_11">Listing 11</a>, <a href="#Listing_12">Listing 12</a>, and <a href="#Listing_13">Listing 13</a> into your text
+editor.&nbsp; Compile the code and execute it.&nbsp; Experiment with it, making
+changes, and observing the results of your changes.</p>
+<p>If you are running under Windows, you may want to consider creating a batch 
+file similar to that shown in <a href="#Figure_5">Figure 5</a> to make it a 
+little easier to execute the three programs in sequence.&nbsp; If you are 
+running under a different operating system, you may want to consider creating a 
+similar script for use with that operating system.</p>
+<h2 align="center"><a name="Summary">Summary</a></h2>
+<p>In this lesson, I taught you how to use the <b>LookupOp</b> image-filtering 
+class from the Java 2D API, along with the <b>Random</b> class from the <b>
+java.util</b> package to write a pair of easy-to-use programs to scramble and 
+unscramble images in a reasonably secure fashion.</p>
+<h2 align="center"><a name="References">References</a></h2>
+<ul>
+	<li><a href="http://www.developer.com/java/other/article.php/3403921">400</a> 
+	Processing Image Pixels using Java, Getting Started</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3423661">402</a> 
+	Processing Image Pixels using Java, Creating a Spotlight</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3441391">404</a> 
+	Processing Image Pixels Using Java: Controlling Contrast and Brightness</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3512456">406</a> 
+	Processing Image Pixels, Color Intensity, Color Filtering, and Color 
+	Inversion</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3522711">408</a> 
+	Processing Image Pixels, Performing Convolution on Images</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3579206">410</a> 
+	Processing Image Pixels, Understanding Image Convolution in Java</li>
+	<li><a href="http://www.developer.com/java/ent/article.php/3590351">412</a> 
+	Processing Image Pixels, Applying Image Convolution in Java, Part 1</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3596351">414</a> 
+	Processing Image Pixels, Applying Image Convolution in Java, Part 2</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3640776">416</a> Processing Image Pixels, An Improved Image-Processing Framework in 
+	Java</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3645761">450</a> A Framework for Experimenting with Java 2D Image-Processing 
+	Filters</li>
+	<li><a href="http://www.developer.com/java/other/article.php/3654171">452</a> Using the Java 2D LookupOp Filter Class to Process Images</li>
+</ul>
+<center>
+<h2> <a name="Complete Program Listings"></a>Complete Program Listing</h2>
+</center>
+Complete listings of the programs discussed in this lesson are shown in Listing 
+11, <a href="#Listing_12">Listing 12</a>, and <a href="#Listing_13">Listing 13</a> <a name="Listing_11">below</a>. <br>
+&nbsp;
+<table border="1" cols="1" width="482" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>/*File ImgMod47.java
+Copyright 2006, R.G.Baldwin
+
+This program reads and displays two image files, one above 
+the other for comparison purposes.  The images do not have
+to be the same size or the same type.
+
+The program will read gif, jpg, and png files and possibly 
+some other input file types as well.
+
+Typical usage is as follows:
+
+java ImgMod47 TopImageFileName BottomImageFileName
+
+If the command-line parameters are omitted, the program 
+will search for an image file in the current directory 
+named ImgMod47Test.jpg and will display it in both the
+top and bottom display locations.  This file must be 
+provided in the current directory if it will be needed.
+
+The image files must be provided by the user in all cases.
+However, they don't have to be in the current directory if
+a path to the files is specified on the command line.
+
+The two images are displayed in a frame with one above the 
+other.  The program attempts to set the size of the display
+so as to accommodate both images.  If both images are not 
+totally visible, the user can manually resize the display 
+frame.
+
+If the program is unable to load either image file within 
+ten seconds, it will abort with an error message.
+
+Tested using J2SE5.0 under WinXP.  Requires J2SE 5.0 or 
+later version due to the use of generics.
+**********************************************************/
+
+import java.awt.*;
+import java.awt.event.*;
+import java.io.*;
+import javax.imageio.*;
+import java.awt.image.*;
+
+class ImgMod47 extends Frame{
+  //References to top and bottom images.
+  BufferedImage topImage;
+  BufferedImage bottomImage;
+  
+  Frame displayFrame;//Frame to display the images.
+  int inLeft;//left inset
+  int inTop;//top inset
+  int inBottom;//bottom inset
+
+  //This is the name of the default image file.  This image
+  // file will be displayed in both the top and bottom 
+  // locations if the user fails to enter two command-line 
+  // parameters.  You must provide this file in the current
+  // directory if it will be needed.
+  static String topFile = "ImgMod47Test.jpg";
+  static String bottomFile = "ImgMod47Test.jpg";
+
+  MediaTracker tracker;
+  Display display = new Display();//A Canvas object
+  //-----------------------------------------------------//
+
+  public static void main(String[] args){
+    //Get input file names.  Program reads gif, png, and
+    // jpg files and possibly some other file types as
+    // well.
+    if(args.length == 0){
+      //Use default image file specified above.
+    }else if(args.length == 2){
+      topFile = args[0];
+      bottomFile = args[1];
+    }else{
+      System.out.println("Invalid args");
+      System.exit(1);
+    }//end else
+
+    //Display names of top and bottom image files.
+    System.out.println("Top File: " + topFile);
+    System.out.println("Bottom File: " + bottomFile);
+
+    //Instantiate an object of this class.
+    ImgMod47 obj = new ImgMod47();
+  }//end main
+  //-------------------------------------------//
+
+  public ImgMod47(){//constructor
+    //Get the top image from the specified image file.  Can
+    // be in a different directory if the path was entered
+    // with the file name on the  command line.
+    topImage = getTheImage(topFile);
+    
+    //Get the bottom image from the specified image file.
+    bottomImage = getTheImage(bottomFile);
+  
+    //Construct the display object.
+    this.setTitle("Copyright 2006, Baldwin");
+    this.setBackground(Color.YELLOW);
+    this.add(display);
+    
+    //Make the frame visible so as to make it possible to
+    // get insets.
+    setVisible(true);
+    //Get and store inset data for the Frame.
+    inTop = this.getInsets().top;
+    inLeft = this.getInsets().left;
+    inBottom = this.getInsets().bottom;
+    setVisible(false);
+    
+    //Save a reference to this Frame object for use in
+    // setting the size of the Frame later.
+    displayFrame = this;
+
+    //Set the display size to accommodate the top and
+    // bottom images. Set the size such that  a tiny amount
+    // of the background color shows between the two
+    // images, to the right of the larger image, and below
+    // the bottom image.
+    int maxWidth = 0;
+    //Get max image width.
+    if(bottomImage.getWidth() &gt; topImage.getWidth()){
+      maxWidth = bottomImage.getWidth();
+    }else{
+      maxWidth = topImage.getWidth();
+    }//end else
+    int totalWidth = 2*inLeft + maxWidth + 2;
+
+    //Get height of two images.
+    int height = topImage.getHeight() 
+                                 + bottomImage.getHeight();
+    int totalHeight = inTop + inBottom + height + 4;
+    displayFrame.setSize(totalWidth,totalHeight);
+    
+    //Repaint the image display frame.
+    display.repaint();
+
+    //Cause the composite of the frame and the canvas to
+    // become visible.
+    this.setVisible(true);
+
+    //===================================================//
+
+    //Anonymous inner class listener to terminate
+    // program.
+    this.addWindowListener(
+      new WindowAdapter(){
+        public void windowClosing(WindowEvent e){
+          System.exit(0);//terminate the program
+        }//end windowClosing()
+      }//end WindowAdapter
+    );//end addWindowListener
+    //===================================================//
+
+  }//end ImgMod47 constructor
+  //=====================================================//
+
+  //Inner class for canvas object on which to display the
+  // two images.
+  class Display extends Canvas{
+    //Override the paint method to display two images on
+    // the same Canvas object, separated by a couple of
+    // rows of pixels in the background color.
+    public void paint(Graphics g){
+      //First confirm that the image has been completely
+      // loaded and that none of the image references are
+      // null.
+      if (tracker.statusID(1,false) ==
+                                    MediaTracker.COMPLETE){
+        if((topImage != null) && (bottomImage != null)){
+            
+          //Draw the top image.  Terminate if the pixels
+          // are changing.
+          boolean success = false;
+          success = g.drawImage(topImage,0,0,this);
+          if(!success){
+            System.out.println("Unable to draw top image");
+            System.exit(1);
+          }//end if
+          
+          //Draw the bottom image.
+          success = g.drawImage(bottomImage,0,
+                            topImage.getHeight() + 2,this);
+          if(!success){
+            System.out.println(
+                            "Unable to draw bottom image");
+            System.exit(1);
+          }//end if
+        }//end if
+      }//end if
+    }//end paint()
+  }//end class myCanvas
+  //=====================================================//
+  
+  //This method reads an image from a specified image file,
+  // writes it into a BufferedImage object, and returns a
+  // reference to the BufferedImage object.
+  //The name of the image file is received as an incoming
+  // parameter.
+  BufferedImage getTheImage(String fileName){
+    Image rawImage = Toolkit.getDefaultToolkit().
+                                        getImage(fileName);
+
+    //Use a MediaTracker object to block until the image is
+    // loaded or ten seconds has elapsed.  Terminate and
+    // display an error message if ten seconds elapse
+    // without the image having been loaded.
+    tracker = new MediaTracker(this);
+    tracker.addImage(rawImage,1);
+
+    try{
+      if(!tracker.waitForID(1,10000)){
+        System.out.println("Load error.");
+        System.exit(1);
+      }//end if
+    }catch(InterruptedException e){
+      e.printStackTrace();
+      System.exit(1);
+    }//end catch
+
+    //Make certain that the file was successfully loaded.
+    if((tracker.statusAll(false)
+                             & MediaTracker.ERRORED
+                             & MediaTracker.ABORTED) != 0){
+      System.out.println("Load errored or aborted");
+      System.exit(1);
+    }//end if
+
+    //Create an empty BufferedImage object.  This program
+    // may work correctly for other image types, but has
+    // been tested only for TYPE_INT_RGB.
+    BufferedImage buffImage = new BufferedImage(
+                              rawImage.getWidth(this),
+                              rawImage.getHeight(this),
+                              BufferedImage.TYPE_INT_RGB);
+
+    // Draw Image into BufferedImage
+    Graphics g = buffImage.getGraphics();
+    g.drawImage(rawImage, 0, 0, null);
+
+    return buffImage;
+  }//end getTheImage
+  //-----------------------------------------------------//
+}//end ImgMod47.java class
+//=======================================================//
+<br><br><b><font face="Courier New,Courier"><a href="#Listing_11">Listing 11</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<p> </p>
+<p><a name="Listing_12"><a href="#Listing_12">Listing 12</a></a></p>
+<table border="1" cols="1" width="482" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>/*File ImgMod46a.java
+Copyright 2006, R.G.Baldwin
+
+The purpose of this program is to scramble an image using 
+a random number generator and to write the scrambled image 
+into an output png file named junk.png.  The random seed 
+value and the name of the image file are specified by the 
+user on the command line.  The program defaults to a fixed 
+seed value and to an image file named imgmod46test.jpg if
+the user fails to specify both the seed value and the image
+file name on the command line.
+
+A png file is used as the output file because it is 
+necessary to avoid lossy compression in the output file.
+For example, if the output file were a JPEG file, which is
+a lossy compression scheme, it would not be possible to
+unscramble the image later.
+
+Usage:  Enter the following at the command-line:
+
+java ImgMod46a RandomSeedValue ImageFileName
+
+The first parameter is a long value that is used to seed
+the random number generator.  The same seed value must
+be used to scramble and to unscramble the image.  The seed 
+is a long integer, which may range from 
+-9223372036854775808 to 9223372036854775807
+
+Can read jpg, gif, and png image files, and possibly some 
+other file types as well.  Note, however, that because of
+the relatively small number of actual colors in a gif
+image, scrambling a gif image often results in a scrambled
+image in which the shapes of the items in the image can
+be easily seen.
+
+Use the program named ImgMod46b to read the png file 
+produced by this program and to unscramble the image that
+it contains.  The program named ImgMod46b writes the
+unscrambled image into a JPEG output file named junk.jpg.
+
+The program named ImgMod47 can be used to display the
+scrambled image along with the unscrambled image for
+comparison purposes.
+
+Tested using J2SE 5.0 under WinXP.  A batch file containing
+the following commands was used to test this program and
+its companion programs named ImgMod46b and ImgMod47:
+
+echo off
+echo Usage: enter ImgMod46 followed by a space 
+echo and the name of the image file.
+java ImgMod46a -9223372036854775808 %1
+java ImgMod46b -9223372036854775808
+java ImgMod47 junk.png junk.jpg
+**********************************************************/
+
+import java.awt.*;
+import java.io.*;
+import javax.imageio.*;
+import java.awt.image.*;
+import java.util.Random;
+import java.util.ArrayList;
+
+class ImgMod46a{
+  BufferedImage rawBufferedImage;
+  BufferedImage processedImage;
+  static String defaultImgFile = "imgmod46test.jpg";
+  static String theImgFile = null;//Input image file
+  static long defaultSeed = 1234567890;//Default seed
+  static long seed;
+  MediaTracker tracker;
+
+  //-----------------------------------------------------//
+
+  public static void main(String[] args){
+
+    //Get the seed and the input image file name from the
+    // command line, or use the default seed and image
+    // file name instead.
+    if(args.length == 2){
+      //Get the seed value.
+      seed = Long.parseLong(args[0]);
+      //Get the input file name
+      theImgFile = args[1];
+    }else{
+      seed = defaultSeed;
+      theImgFile = defaultImgFile;
+    }//end else
+    
+    System.out.println("Scrambling Key: " + seed);
+
+    //Instantiate an object of this class.
+    ImgMod46a obj = new ImgMod46a();
+  }//end main
+  //-------------------------------------------//
+
+  public ImgMod46a(){//constructor
+    //Get an image from the specified image file.
+    rawBufferedImage = getTheImage();
+
+    //Process the image.
+    processedImage = processImg(rawBufferedImage);
+    
+    //Write the modified image into a file named
+    // junk.png.
+    writeOutputFile(processedImage);
+
+  }//end ImgMod46a constructor
+  //=====================================================//
+
+  //Use the LookupOp class from the Java 2D API to
+  // scramble all of the color values in the pixels.  The
+  // alpha value is not modified.
+  public BufferedImage processImg(BufferedImage theImage){
+
+    //Create three ArrayList objects, each containing 256
+    // unique unsigned 8-bit values.  It is required that
+    // the same seed value be used to scramble the image
+    // and to unscramble the image.
+    Random randomGenerator = new Random(seed);
+    ArrayList &lt;Short&gt;redList = new ArrayList&lt;Short&gt;(256);
+    ArrayList &lt;Short&gt;greenList = new ArrayList&lt;Short&gt;(256);
+    ArrayList &lt;Short&gt;blueList = new ArrayList&lt;Short&gt;(256);
+    
+    for(int cnt = 0;cnt &lt; 256;cnt++){
+      //Get a priming value for the redList.
+      short value = 
+                 (short)(randomGenerator.nextInt() & 0xFF);
+      while(redList.contains(value)){
+        //Try another value.  This one was already used.
+        value = (short)(randomGenerator.nextInt() & 0xFF);
+      }//end while
+      redList.add(value);//Add unique value to the list.
+      
+      //Get a priming value for the greenList.
+      value = (short)(randomGenerator.nextInt() & 0xFF);
+      while(greenList.contains(value)){
+        //Try another value.  This one was already used.
+        value = (short)(randomGenerator.nextInt() & 0xFF);
+      }//end while
+      greenList.add(value);//Add unique value to the list.
+      
+      //Get a priming value for the blueList.
+      value = (short)(randomGenerator.nextInt() & 0xFF);
+      while(blueList.contains(value)){
+        //Try another value.  This one was already used.
+        value = (short)(randomGenerator.nextInt() & 0xFF);
+      }//end while
+      blueList.add(value);//Add unique value to the list.
+      
+    }//end for loop
+    
+    //Create the data for the lookup table.
+    short[] red = new short[256];
+    short[] green = new short[256];
+    short[] blue = new short[256];
+    
+    for (int cnt = 0; cnt &lt; 256; cnt++){
+      red[cnt] = redList.get(cnt);
+      green[cnt] = greenList.get(cnt);
+      blue[cnt] = blueList.get(cnt);
+    }//end for loop
+
+    //Create the 2D array that will be used to create the
+    // lookup table.
+    short[][] lookupData = new short[][]{red,green,blue};
+    
+    //Create the lookup table
+    ShortLookupTable lookupTable = 
+                        new ShortLookupTable(0,lookupData);
+
+    //Create the filter object.
+    BufferedImageOp filterObj = 
+                            new LookupOp(lookupTable,null);
+
+    //Apply the filter to the incoming image and return
+    // a reference to the resulting BufferedImage object.
+    return filterObj.filter(theImage, null);
+
+  }//end processImg
+  //=====================================================//
+
+  //Write the contents of a BufferedImage object to a 
+  // file named junk.png.
+  void writeOutputFile(BufferedImage img){
+    try{
+      //Get a file output stream.
+      FileOutputStream outStream = 
+                          new FileOutputStream("junk.png");
+      //Call the write method of the ImageIO class to write
+      // the contents of the BufferedImage object to an
+      // output file in png format.
+      ImageIO.write(img,"png",outStream);
+      outStream.close();
+    }catch (Exception e) {
+      e.printStackTrace();
+    }//end catch
+  }//end writeOutputFile
+  //-----------------------------------------------------//
+  
+  //This method reads an image from a specified image file,
+  // writes it into a BufferedImage object, and returns a
+  // reference to the BufferedImage object.
+  //The name of the image file is contained in an instance
+  // variable of type String named theImgFile.
+  BufferedImage getTheImage(){
+    Image rawImage = Toolkit.getDefaultToolkit().
+                                      getImage(theImgFile);
+
+    //Use a MediaTracker object to block until the image is
+    // loaded or ten seconds has elapsed.  Terminate and
+    // display an error message if ten seconds elapse
+    // without the image having been loaded.  Note that the
+    // constructor for the MediaTracker requires the
+    // specification of a Component "on which the images
+    // will eventually be drawn" even if there is no
+    // intention for the program to actually display the 
+    // image.  It is useful to have a media tracker with a
+    // timeout even if the image won't be drawn by the
+    // program.  Also, the media tracker is needed to delay
+    // execution until the image is fully loaded.
+    tracker = new MediaTracker(new Frame());
+    tracker.addImage(rawImage,1);
+
+    try{
+      if(!tracker.waitForID(1,10000)){
+        System.out.println("Timeout or Load error.");
+        System.exit(1);
+      }//end if
+    }catch(InterruptedException e){
+      e.printStackTrace();
+      System.exit(1);
+    }//end catch
+
+    //Make certain that the file was successfully loaded.
+    if((tracker.statusAll(false)
+                             & MediaTracker.ERRORED
+                             & MediaTracker.ABORTED) != 0){
+      System.out.println("Load errored or aborted");
+      System.exit(1);
+    }//end if
+
+    //Create an empty BufferedImage object.  Note that the
+    // specified image type is critical to the correct
+    // operation of the image processing method. The method
+    // may work correctly for other image types, but has
+    // been tested only for TYPE_INT_RGB.  The
+    // parameters to the getWidth and getHeight methods are
+    // references to ImageObserver objects, or references
+    // to "an object waiting for the image to be loaded."
+
+    BufferedImage buffImage = new BufferedImage(
+                              rawImage.getWidth(null),
+                              rawImage.getHeight(null),
+                              BufferedImage.TYPE_INT_RGB);
+
+    // Draw Image into BufferedImage
+    Graphics g = buffImage.getGraphics();
+    g.drawImage(rawImage, 0, 0, null);
+
+    return buffImage;
+  }//end getTheImage
+  //-----------------------------------------------------//
+}//end ImgMod46a.java class
+//=======================================================//
+<br><br><b><font face="Courier New,Courier"><a href="#Listing_12">Listing 12</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<p> </p>
+<p><a name="Listing_13"><a href="#Listing_13">Listing 13</a></a></p>
+<table border="1" cols="1" width="482" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>/*File ImgMod46b.java
+Copyright 2006, R.G.Baldwin
+
+See comments in the companion program named ImgMod46a.
+
+The purpose of this program is to unscramble the image in 
+a png file that was scrambled and written by the program 
+named ImgMod46a, and to write the unscrambled image into an
+output JPEG file.
+
+This program reads a scrambled image from a file named 
+junk.png, unscrambles the image, and writes the unscrambled
+image into an output JPEG file named junk.jpg.
+
+The program named ImgMod47 can be used to display the
+scrambled image along with the unscrambled image for
+comparison purposes.
+
+A random seed value is required to unscramble the image.
+The same seed value must be used to unscramble the image
+as was used to scramble the image.  The seed value is 
+specified by the user on the command line.  The program 
+defaults to the same fixed seed value as the default seed 
+value used in the program named ImgMod46a if the user fails
+to specify the seed value on the command line.
+
+Usage:  Enter the following at the command-line:
+
+java ImgMod46b RandomSeedValue
+
+The parameter is a long integer that is used to seed the 
+random number generator.  The same seed value must be used
+to unscramble the image as was used by the program named 
+ImgMod46a to scramble the image.  As a long integer, the
+value of the seed may range from -9223372036854775808 
+to 9223372036854775807
+
+Tested using J2SE 5.0 under WinXP.  A batch file containing
+the following commands was used to test this program and
+its companion programs named ImgMod46a and ImgMod47:
+
+echo off
+echo Usage: enter ImgMod46 followed by a space 
+echo and the name of the image file.
+java ImgMod46a -9223372036854775808 %1
+java ImgMod46b -9223372036854775808
+java ImgMod47 junk.png junk.jpg
+**********************************************************/
+
+import java.awt.*;
+import java.io.*;
+import javax.imageio.*;
+import java.awt.image.*;
+import java.util.Random;
+import java.util.ArrayList;
+
+class ImgMod46b{
+  BufferedImage rawBufferedImage;
+  BufferedImage processedImage;
+  static String theImgFile = "junk.png";
+  static long defaultSeed = 1234567890;//Default seed
+  static long seed;
+  MediaTracker tracker;
+
+  //-----------------------------------------------------//
+
+  public static void main(String[] args){
+    //Get the seed value from the command line, or use the
+    // default seed value instead.
+    if(args.length == 1){
+      //Get the seed value.
+      seed = Long.parseLong(args[0]);
+    }else{
+      seed = defaultSeed;
+    }//end else
+    
+    System.out.println("Unscrambling Key: " + seed);
+    
+    //Instantiate an object of this class.
+    ImgMod46b obj = new ImgMod46b();
+  }//end main
+  //-------------------------------------------//
+
+  public ImgMod46b(){//constructor
+    //Get an image from the specified image file.
+    rawBufferedImage = getTheImage();
+
+    //Process the image.
+    processedImage = processImg(rawBufferedImage);
+    
+    //Write the modified image into a file named
+    // junk.jpg.
+    writeOutputFile(processedImage);
+
+  }//end ImgMod46b constructor
+  //=====================================================//
+
+  //Use the LookupOp class from the Java 2D API to
+  // unscramble the color values in the pixels.  The
+  // alpha value is not modified.
+  public BufferedImage processImg(BufferedImage theImage){
+
+    //Create three ArrayList objects, each containing 256
+    // unique unsigned 8-bit values.  It is required that
+    // the same seed value be used to unscramble the image
+    // as was originally used to scramble the image.
+    Random randomGenerator = new Random(seed);
+    ArrayList &lt;Short&gt;redList = new ArrayList&lt;Short&gt;(256);
+    ArrayList &lt;Short&gt;greenList = new ArrayList&lt;Short&gt;(256);
+    ArrayList &lt;Short&gt;blueList = new ArrayList&lt;Short&gt;(256);
+    
+    for(int cnt = 0;cnt &lt; 256;cnt++){
+      //Get a priming value for the red list.
+      short value = 
+                 (short)(randomGenerator.nextInt() & 0xFF);
+      while(redList.contains(value)){
+        //This value was used earlier. Try another value.
+        value = (short)(randomGenerator.nextInt() & 0xFF);
+      }//end while
+      redList.add(value);//Add unique value to the list.
+      
+      //Get a priming value for the green list.
+      value = (short)(randomGenerator.nextInt() & 0xFF);
+      while(greenList.contains(value)){
+        //Try another value
+        value = (short)(randomGenerator.nextInt() & 0xFF);
+      }//end while
+      greenList.add(value);//Add unique value to the list.
+      
+      //Get a priming value for the blue list.
+      value = (short)(randomGenerator.nextInt() & 0xFF);
+      while(blueList.contains(value)){
+        //Try another value
+        value = (short)(randomGenerator.nextInt() & 0xFF);
+      }//end while
+      blueList.add(value);//Add unique value to the list.
+      
+    }//end for loop
+    
+    //Create the data for the lookup table.
+    short[] red = new short[256];
+    short[] green = new short[256];
+    short[] blue = new short[256];
+    for (int cnt = 0; cnt &lt; 256; cnt++){
+      red[cnt] = 
+           (short)(redList.indexOf(new Short((short)cnt)));
+      green[cnt] = 
+         (short)(greenList.indexOf(new Short((short)cnt)));
+      blue[cnt] = 
+          (short)(blueList.indexOf(new Short((short)cnt)));
+    }//end for loop
+
+    //Create the 2D array that will be used to create the
+    // lookup table.
+    short[][] lookupData = new short[][]{red,green,blue};
+    
+    //Create the lookup table
+    ShortLookupTable lookupTable = 
+                        new ShortLookupTable(0,lookupData);
+
+    //Create the filter object.
+    BufferedImageOp filterObj = 
+                            new LookupOp(lookupTable,null);
+
+    //Apply the filter to the incoming image and return
+    // a reference to the resulting BufferedImage object.
+    return filterObj.filter(theImage, null);
+
+  }//end processImg
+  //=====================================================//
+
+  //Write the contents of a BufferedImage object to a 
+  // file named junk.jpg.
+  void writeOutputFile(BufferedImage img){
+    try{
+      //Get a file output stream.
+      FileOutputStream outStream = 
+                          new FileOutputStream("junk.jpg");
+      //Call the write method of the ImageIO class to write
+      // the contents of the BufferedImage object to an
+      // output file in jpg format.
+      ImageIO.write(img,"jpeg",outStream);
+      outStream.close();
+    }catch (Exception e) {
+      e.printStackTrace();
+    }//end catch
+  }//end writeOutputFile
+  //-----------------------------------------------------//
+  
+  //This method reads an image from a specified image file,
+  // writes it into a BufferedImage object, and returns a
+  // reference to the BufferedImage object.
+  //The name of the image file is contained in an instance
+  // variable of type String named theImgFile.
+  BufferedImage getTheImage(){
+    Image rawImage = Toolkit.getDefaultToolkit().
+                                      getImage(theImgFile);
+
+    //Use a MediaTracker object to block until the image is
+    // loaded or ten seconds has elapsed.  Terminate and
+    // display an error message if ten seconds elapse
+    // without the image having been loaded.  Note that the
+    // constructor for the MediaTracker requires the
+    // specification of a Component "on which the images
+    // will eventually be drawn" even if there is no
+    // intention for the program to actually display the 
+    // image.  It is useful to have a media tracker with a
+    // timeout even if the image won't be drawn by the
+    // program.  Also, the media tracker is needed to delay
+    // execution until the image is fully loaded.
+    tracker = new MediaTracker(new Frame());
+    tracker.addImage(rawImage,1);
+
+    try{
+      if(!tracker.waitForID(1,10000)){
+        System.out.println("Timeout or Load error.");
+        System.exit(1);
+      }//end if
+    }catch(InterruptedException e){
+      e.printStackTrace();
+      System.exit(1);
+    }//end catch
+
+    //Make certain that the file was successfully loaded.
+    if((tracker.statusAll(false)
+                             & MediaTracker.ERRORED
+                             & MediaTracker.ABORTED) != 0){
+      System.out.println("Load errored or aborted");
+      System.exit(1);
+    }//end if
+
+    //Create an empty BufferedImage object.  Note that the
+    // specified image type is critical to the correct
+    // operation of the image processing method. The method
+    // may work correctly for other image types, but has
+    // been tested only for TYPE_INT_RGB.  The
+    // parameters to the getWidth and getHeight methods are
+    // references to ImageObserver objects, or references
+    // to "an object waiting for the image to be loaded."
+
+    BufferedImage buffImage = new BufferedImage(
+                              rawImage.getWidth(null),
+                              rawImage.getHeight(null),
+                              BufferedImage.TYPE_INT_RGB);
+
+    // Draw Image into BufferedImage
+    Graphics g = buffImage.getGraphics();
+    g.drawImage(rawImage, 0, 0, null);
+
+    return buffImage;
+  }//end getTheImage
+  //-----------------------------------------------------//
+}//end ImgMod46b.java class
+//=======================================================//
+<br><br><b><font face="Courier New,Courier"><a href="#Listing_13">Listing 13</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<p> </p>
+<p> </p>
+<hr align="center" size="3" width="100%">
+<p>Copyright 2007, Richard G. Baldwin.&nbsp; Reproduction in whole or in part in any 
+form or medium without express written permission from Richard Baldwin is 
+prohibited. </p>
+<h4>About the author</h4>
+<b><a href="mailto:Baldwin@DickBaldwin.com">Richard Baldwin</a></b><i> is a 
+college professor (at Austin Community College in Austin, TX) and private 
+consultant whose primary focus is a combination of Java, C#, and XML. In 
+addition to the many platform and/or language independent benefits of Java and 
+C# applications, he believes that a combination of Java, C#, and XML will become 
+the primary driving force in the delivery of structured information on the Web.</i>    
+<p><i>Richard has participated in numerous consulting projects and he 
+frequently provides onsite training at the high-tech companies located in and 
+around Austin, Texas.&nbsp; He is the author of Baldwin's Programming
+<a href="http://www.dickbaldwin.com">Tutorials</a>, which have gained a 
+worldwide following among experienced and aspiring programmers. He has also 
+published articles in JavaPro magazine.</i> </p>
+<p><i>In addition to his programming expertise, Richard has many years of 
+practical experience in Digital Signal Processing (DSP).&nbsp; His first job after he 
+earned his Bachelor's degree was doing DSP in the Seismic Research Department of 
+Texas Instruments.&nbsp; (TI is still a world leader in DSP.)&nbsp; In the following 
+years, he applied his programming and DSP expertise to other interesting areas 
+including sonar and underwater acoustics.</i> </p>
+<p><i>Richard holds an MSEE degree from Southern Methodist University and has 
+many years of experience in the application of computer technology to real-world 
+problems.</i> </p>
+<p><i><a href="mailto:baldwin@dickbaldwin.com">Baldwin@DickBaldwin.com</a></i>
+</p>
+<p><b>Keywords</b><br>
+java 2D image filter&nbsp;LookupOp </p>
+<p>-end-<br>
+<br>
+<br>
+<br>
+</p>
+</body>
+</html>

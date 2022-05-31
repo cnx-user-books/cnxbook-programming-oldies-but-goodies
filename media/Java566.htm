@@ -1,0 +1,647 @@
+<html><head>
+   <meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
+   <meta name="generator" content="mozilla/4.04 [en] (win95; i) [netscape]">
+   <meta name="author" content="richard g. baldwin">
+   <title>... in Java by Richard G Baldwin</title></head><body><!--start-->
+
+<center><h3><b><i>Richard G Baldwin (512) 223-4758, <a href="mailto:baldwin@austin.cc.tx.us">baldwin@austin.cc.tx.us</a>,
+<a href="http://www2.austin.cc.tx.us/baldwin/">http://www2.austin.cc.tx.us/baldwin/</a></i></b></h3></center>
+
+<center><h2><b><!--title-->Network Programming - Datagram Servers<!--endtitle--></b></h2></center>
+Java Programming, Lesson # 566, Revised 01/27/98.
+<ul><li><a href="#preface">Preface</a></li>
+
+<li><a href="#introduction">Introduction</a></li>
+
+<li><a href="#server program">Sample Program</a></li>
+
+<ul><li><a href="#code fragments">Code Fragments</a></li>
+
+<li><a href="#program listing">Program Listing</a></li></ul></ul>
+
+<hr width="100%"><center><h2><a name="preface"></a><b><font color="#ff0000">Preface</font></b></h2></center>
+Students in Prof. Baldwin's <b><u>Advanced Java Programming</u></b> classes
+at ACC are responsible for knowing and understanding all of the material
+in this lesson.
+<center><h2><a name="introduction"></a><font color="#ff0000">Introduction</font></h2></center>
+In one of our previous lessons, we learned how to transfer data between
+a client and a server using the <b>TCP </b>protocol. We used that information
+to build a server program named <b>Server01</b> that supported both the
+<b>HTTP </b>application protocol and an <i>echo </i>protocol.
+
+<p>In another lesson, we learned how to transfer datagrams between computers
+using the <b>UDP </b>protocol.
+
+<p>In this lesson, we will expand our previous server program to support
+echo processing of datagrams using the <b>UDP </b>protocol. This will give
+us a single program that supports three different servers at the same time
+on different threads.
+<ul><li>
+Echo processing using <b>UDP</b></li>
+
+<li>
+Echo processing using <b>TCP</b></li>
+
+<li><b>HTTP </b>protocol using <b>TCP</b></li></ul>
+
+<center><h2><a name="server program"></a><font color="#ff0000">Server Program</font></h2></center>
+This program is an upgrade of the program named <b>Server01</b>. The purpose
+of the upgrade is to support a <b>UDP </b>Datagram echo port on port 7.
+
+<p>This program uses sockets to implement three different servers in a
+single program on an <b>IP </b>network. Two of the servers support the
+<b>TCP </b>protocol and one supports the <b>UDP </b>protocol.
+
+<p>The program is intended for illustration purposes only. If you use this
+program for any purpose, you use it at your own risk.
+
+<p>If you use this program, you should tighten the security manager to
+the degree needed by your situation. You can tighten the security manager
+by removing the overridden methods that begin with the word <b>check </b>(such
+as <b>checkAccept</b>) in the class named <b>ServerSecurityManager</b>.
+
+<p>This program implements three different servers.
+
+<p>One of the servers is a <b>UDP </b>"echo" server implemented by a thread
+monitoring a <b>DatagramSocket </b>on port 7. This server echoes the byte
+array contained in a datagram received on this port and sends that data
+back to the client where it originated.
+
+<p>Port 7 is the standard echo port for both <b>UDP </b>and <b>TCP </b>echo
+servers.
+
+<p>The second server is a <b>TCP </b>"echo" server implemented by a thread
+monitoring a <b>ServerSocket </b>object on port 7. This server also echoes
+the data that it receives and sends it back to the client that requested
+the connection.
+
+<p>The third server is an abbreviated <b>HTTP </b>server implemented by
+a <b>TCP </b>thread monitoring port 80. Port 80 is the standard <b>HTTP
+</b>port. This server has the ability to respond to a <b>GET </b>command
+from a web browser and deliver a file as a stream of bytes.
+
+<p>The different servers were implemented on different ports to illustrate
+the manner in which threads can be used in Java to service multiple ports.
+Also, this program illustrates that a single program can provide a mixture
+of <b>TCP </b>and <b>UDP </b>servers.
+
+<p>A custom security manager is implemented which attempts to prevent the
+<b>HTTP </b>server from delivering files other than those in the current
+directory or in a subdirectory of the current directory. Otherwise, the
+security manager is wide open and doesn't enforce any security at all.
+
+<p>Please DO NOT install this server on your network and leave it unattended
+because client computers could then connect and have broad access to your
+computer.
+
+<p>This program was tested using JDK 1.1.3 under Win95.
+
+<p>Both the <b>UDP </b>echo portion of this program and the <b>TCP </b>echo
+portion can be tested using the program named <b>Sockets08 </b>which was
+designed specifically for testing the echo portion of the program. A listing
+of <b>Sockets08 </b>is provided at the end of the lesson.
+
+<p>The <b>HTTP </b>portion of this program can be tested using an ordinary
+browser with the server name <b>localhost</b>. It can also be tested using
+the program named <b>Sockets06 </b>which was designed specifically for
+testing the security manager installed in this program. You saw this program
+in an earlier lesson. You can also test the security manager using an ordinary
+browser.
+<center><h3><a name="code fragments"></a><font color="#ff0000">Code Fragments</font></h3></center>
+We will begin with the code fragment that instantiates a security manager
+and instantiates the three server objects. The boldface line shows the
+material added in the upgraded version of this program.
+
+<p>Each of these server objects are thread objects. Thus, the three servers
+operate concurrently and asynchronously on different threads.
+
+<p>In addition, whenever a server objects needs to service a client, it
+spawns another thread at a lower priority to service that client. Then
+the server thread goes back to listening for other clients that may be
+requesting service.
+<table border bgcolor="#ffff80" ><tr><td><pre>public class Server02{
+&nbsp; public static void main(String[] argv){
+&nbsp;&nbsp;&nbsp; System.setSecurityManager(new ServerSecurityManager());
+&nbsp;&nbsp;&nbsp; HttpServer httpServerThread = new HttpServer();
+&nbsp;&nbsp;&nbsp; EchoServer echoServerThread = new EchoServer();
+<b>&nbsp;&nbsp;&nbsp; UdpEchoServer udpEchoServerThread = new UdpEchoServer();
+</b>&nbsp; }//end main
+}//end class Server02</pre></td></tr></table>
+The next fragment shows the constructor for the class used to instantiate
+an object to provide <b>UDP </b>echo services on port 7. This constructor
+simply invokes its own <b>start()</b> method to get the thread up and running.
+The<b> start()</b> method in turn invokes the <b>run()</b> method.
+<table border bgcolor="#ffff80" ><tr><td><pre>&nbsp; UdpEchoServer(){//constructor
+&nbsp;<b>&nbsp;&nbsp; start()</b>; //start the thread and invoke the run() method
+&nbsp; }//end constructor</pre></td></tr></table>
+The next code fragment begins the discussion of the <b>run()</b> method
+of the thread that provides <b>UDP </b>echo services on port 7.
+
+<p>For brevity, exception handling code has been removed from the discussion,
+as has some of the code whose only purpose is to display status while the
+server program is running. That code is available in the program listing
+that is provided near the end of the lesson.
+
+<p>We begin by instantiating a <b>DatagramSocket </b>object and binding
+it to port 7.
+<table border bgcolor="#ffff80" ><tr><td><pre>&nbsp;&nbsp;&nbsp; DatagramSocket datagramSocket = <b>new DatagramSocket(7)</b>;</pre></td></tr></table>
+Following this, we enter an infinite loop where we first instantiate an
+empty <b>DatagramPacket </b>object and then invoke the <b>receive()</b>
+method on the <b>DatagramSocket </b>object passing the <b>DatagramPacket
+</b>object as a parameter.
+
+<p>Note that this program is limited to an incoming data length of 1024
+bytes because that is the size of the byte array in the empty <b>DatagramPacket
+</b>object. If you need it to be larger, simply increase the values in
+the constructor call for the <b>DatagramPacket </b>object.
+
+<p>The <b>receive()</b> method blocks the thread and waits for a datagram
+packet to arrive. When a packet does arrive, it is used to populate the
+empty <b>DatagramPacket </b>object that was passed to the <b>receive()</b>
+method as a parameter.
+
+<p>Then a new thread of type <b>UdpEchoConnection </b>is instantiated to
+handle the client request and the newly populated <b>DatagramPacket </b>object
+is passed as a parameter to the constructor for that thread.
+
+<p>Having disposed of this requirement to service a client, the <b>UdpEchoServer
+</b>thread goes back to the top of the loop, instantiates another empty
+<b>DatagramPacket </b>object, and blocks again waiting for the arrival
+of the next datagram packet.
+<table border bgcolor="#ffff80" ><tr><td><pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; while(true){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DatagramPacket packet =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>new DatagramPacket(new</b> byte[1024],1024);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; datagramSocket.<b>receive(packet)</b>;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>new UdpEchoConnection(packet)</b>;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end while loop</pre></td></tr></table>
+That brings us to the <b>UdpEchoConnection </b>class from which the object
+is instantiated to service the client. All of the information available
+regarding this client is contained in the <b>DatagramPacket </b>object
+that the constructor for this thread receives as a parameter.
+
+<p>This object is saved by the constructor for later use. Then the constructor
+sets the thread priority to a level below the level of the threads monitoring
+the ports so that the activity of the <b>UdpEchoConnection </b>thread cannot
+interfere with the ability of the other threads to properly service those
+ports.
+
+<p>Once the datagram object is saved and the priority is adjusted, the
+constructor invokes the <b>start()</b> method which in turn invokes the
+<b>run()</b> method to get the thread up and running.
+<table border bgcolor="#ffff80" ><tr><td><pre>class UdpEchoConnection extends Thread{
+&nbsp; DatagramPacket packet;
+
+&nbsp; UdpEchoConnection(DatagramPacket packet){//constructor
+&nbsp;&nbsp;&nbsp; this.packet = packet;
+&nbsp;&nbsp;&nbsp; setPriority( NORM_PRIORITY-1 );
+&nbsp;&nbsp;&nbsp; <b>start()</b>;//start this thread and invoke the run method
+&nbsp; }//end constructor</pre></td></tr></table>
+The only requirement of this thread is to send a copy of the data in the
+packet that was just received back to the client that sent it. The client's
+address and port number are already contained in the packet, having been
+placed there by the client's <b>DatagramSocket </b>when the packet was
+sent.
+
+<p>The <b>DatagramPacket </b>object that was populated from that packet
+is directly suitable for sending back to the client as an echo with no
+modifications required.
+
+<p>However, to illustrate some of the other methods of the <b>DatagramPacket
+</b>class, I elected to use that object to construct a new object and to
+send the new object back to the client. This is closer to what might be
+needed in a server with requirements more complex than simply to echo the
+incoming packet.
+
+<p>The code for extracting information from one such object for the construction
+of a new object is shown below. As an exercise, you might consider inserting
+a date stamp into the data portion of the object so that the packet that
+is returned is not exactly like the packet that was received but contains
+a date stamp in addition to the original data.
+
+<p>Note that the following code fragment is simply one long statement.
+<table border bgcolor="#ffff80" ><tr><td><pre>&nbsp; public void run(){
+&nbsp;&nbsp;&nbsp; DatagramPacket packetToSend = new DatagramPacket(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; packet.getData(),
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; packet.getLength(),
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; packet.getAddress(),
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; packet.getPort());</pre></td></tr></table>
+The next step is to instantiate a new <b>DatagramSocket </b>object and
+use that object to send the new <b>DatagramPacket </b>object to the client
+by invoking the <b>send()</b> method on the socket object and passing the
+packet object as a parameter.
+
+<p>Then, assuming that no exceptions have been thrown, the socket is closed
+and the thread terminates normally. If an exception has been thrown, there
+are several exception handlers provided to deal with the situation. You
+can view those exception handlers in the listing of the program that follows
+in the next section.
+<table border bgcolor="#ffff80" ><tr><td><pre>&nbsp;&nbsp;&nbsp; DatagramSocket datagramSocket = null;
+&nbsp;&nbsp;&nbsp; datagramSocket = new DatagramSocket();
+&nbsp;&nbsp;&nbsp; datagramSocket.send(packetToSend);
+&nbsp;&nbsp;&nbsp; datagramSocket.close();</pre></td></tr></table>
+
+<center><h3><a name="program listing"></a><font color="#ff0000">Program Listing</font></h3></center>
+This program is an upgrade of the previous program named Server01 and much
+of the code is the same. To save space, we will remove much of the duplicated
+code and replace it by comments.
+
+<p>In addition to the program listing of the server program, this section
+also contains a listing for a short client program that was designed to
+test the <b>UDP </b>and <b>TCP </b>echo server portions of this program.
+<table border bgcolor="#ffff80" ><tr><td><pre>/*File Server02.java Copyright 1998, R.G.Baldwin
+This program is an upgrade of the program named Server01
+to support a UDP Datagram echo port on port 7.
+
+Also a couple of corrections were made to the earlier
+program where a socket wasn't being properly closed
+in an exception handler.
+
+This program uses sockets to implement three&nbsp; different&nbsp;
+servers in a single program on an IP network.&nbsp; The program
+is intended for illustration and experimentation purposes
+only.&nbsp;&nbsp;
+
+If you use this program for any purpose, you use it at&nbsp;
+your own risk.
+
+If you use this program, you should tighten the security&nbsp;
+manager to the degree needed by your situation.&nbsp; You can
+tighten the security manager by removing the overridden
+methods that begin with the word check (such as&nbsp;
+checkAccept) in the class named ServerSecurityManager.
+
+This program implements three&nbsp; different servers.&nbsp;&nbsp;
+
+One of the servers is a UDP "echo" server implemented by
+a thread monitoring a DatagramSocket on port 7. This
+server echoes the byte array contained in a datagram
+received on this port back to the sender of the datagram.
+Port 7 is the standard echo port for both UDP and TCP
+echo servers.
+
+The second server is a TCP "echo" server implemented by
+a thread monitoring a ServerSocket object on port 7.
+This server also echoes the string that it receives back
+to the the client that requested the connection.&nbsp;
+
+The third server is an abbreviated HTTP server implemented
+by a thread monitoring port 80.&nbsp; Port 80 is the standard
+HTTP port.&nbsp; This server has the ability to respond to a
+GET command from a web browser and serve a file as a stream
+of bytes.
+
+The different servers were implemented on different
+ports to illustrate the manner in which threads can be&nbsp;
+used in Java to service multiple ports. Also, this&nbsp;
+program illustrates that a single program can provide
+a mixture of TCP and UDP communications.
+
+A custom security manager is implemented which attempts
+to prevent the server from serving files other than those
+in the current directory or in a subdirectory of the&nbsp;
+current directory.&nbsp; Otherwise, the security manager is&nbsp;
+wide open and doesn't enforce any security at all.
+
+DO NOT install this server on your network and leave it
+unattended because client computers could connect and
+have broad access to your computer.
+
+This program was tested using JDK 1.1.3 under Win95.
+
+Both the UDP echo portion of this program and the TCP
+echo portion can be tested using the program named
+Sockets08 which was designed specifically for testing
+the echo portion of this program.
+
+The HTTP portion of this program can be tested using an&nbsp;
+ordinary browser with the server name localhost.&nbsp; It can&nbsp;
+also be tested using the program named Sockets06 which was
+designed specifically for testing the security manager
+installed in this program.&nbsp; However, you can also test
+the security manager using an ordinary browser.
+**********************************************************/
+
+import java.net.*;
+import java.io.*;
+import java.util.*;
+
+public class Server02{
+&nbsp; public static void main(String[] argv){
+&nbsp;&nbsp;&nbsp; //Instantiate a new custom security manager.
+&nbsp;&nbsp;&nbsp; System.setSecurityManager(new ServerSecurityManager());
+&nbsp;&nbsp;&nbsp; //Instantiate a server object to listen on port 80
+&nbsp;&nbsp;&nbsp; HttpServer httpServerThread = new HttpServer();
+&nbsp;&nbsp;&nbsp; //Instantiate a TCP server object to listen on port 7
+&nbsp;&nbsp;&nbsp; EchoServer echoServerThread = new EchoServer();
+&nbsp;&nbsp;&nbsp; //Instantiate a UDP server object to listen on port 7
+&nbsp;&nbsp;&nbsp; UdpEchoServer udpEchoServerThread = new UdpEchoServer();
+&nbsp; }//end main
+}//end class Server02
+//=======================================================//
+//=======================================================//
+//This class is used to instantiate a security manager
+class <b>ServerSecurityManager </b>extends SecurityManager{
+//See the program named Server01 for the security manager
+// code that was removed from this section.
+
+//=======================================================//
+//=======================================================//
+
+//This class is used to instantiate a UDP server thread
+// that listens on port 7 which is the echo port.
+class UdpEchoServer extends Thread{
+&nbsp;&nbsp;
+&nbsp; UdpEchoServer(){//constructor
+&nbsp;&nbsp;&nbsp; start(); //start the thread and invoke the run() method
+&nbsp; }//end constructor
+&nbsp; //-----------------------------------------------------//
+&nbsp;&nbsp;
+&nbsp; public void run(){
+&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Instantiate a DatagramSocket on port 7 (echo port)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DatagramSocket datagramSocket =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new DatagramSocket(7);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "UDP Echo Server Listening on port 7");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Loop and listen to port 7.&nbsp; If a call is
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // received, spawn a UdpEchoConnection thread to
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // deal with it.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; while(true){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //This program is limited to echo string lengths
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // of 1024 bytes.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DatagramPacket packet =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new DatagramPacket(new byte[1024],1024);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //This statement blocks on the receive() method
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // and populates the packet if a call is received.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // The populated packet is passed as a parameter
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // to a new thread that is spawned to handle the
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // client. Then this thread instantiates a new&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // empty packet and goes back to listening.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; datagramSocket.receive(packet);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new UdpEchoConnection(packet);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end while loop
+&nbsp;&nbsp;&nbsp; }catch(IOException e){System.out.println(e);}
+&nbsp; }//end run
+&nbsp;&nbsp;
+}//end class UdpEchoServer
+//=======================================================//
+
+//This class is used to spawn a thread to deal with a UDP
+// call that is received on port 7 which is the echo
+// port.
+class UdpEchoConnection extends Thread{
+&nbsp; DatagramPacket packet;
+
+&nbsp; UdpEchoConnection(DatagramPacket packet){//constructor
+&nbsp;&nbsp;&nbsp; System.out.println("Received a call on port 7");
+&nbsp;&nbsp;&nbsp; this.packet = packet;
+&nbsp;&nbsp;&nbsp; //Operate at a priority that is below the threads
+&nbsp;&nbsp;&nbsp; // listening on the ports.
+&nbsp;&nbsp;&nbsp; setPriority( NORM_PRIORITY-1 );
+&nbsp;&nbsp;&nbsp; start();//start this thread and invoke the run method
+&nbsp; }//end constructor
+&nbsp; //-----------------------------------------------------//
+&nbsp;&nbsp;
+&nbsp; public void run(){
+&nbsp;&nbsp;&nbsp; System.out.println("Running UDP thread for port 7");
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Create a packet to echo based on the data in the
+&nbsp;&nbsp;&nbsp; // packet that was received as a parameter.
+&nbsp;&nbsp;&nbsp; DatagramPacket packetToSend = new DatagramPacket(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; packet.getData(),
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; packet.getLength(),
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; packet.getAddress(),
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; packet.getPort());
+
+&nbsp;&nbsp;&nbsp; //Declare datagram socket outside of try block
+&nbsp;&nbsp;&nbsp; DatagramSocket datagramSocket = null;
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Open a new datagram socket
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; datagramSocket = new DatagramSocket();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Use the new datagram socket to send the message
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // and close the socket.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; datagramSocket.send(packetToSend);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; datagramSocket.close();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("UDP Socket closed");
+&nbsp;&nbsp;&nbsp; }//end&nbsp;
+&nbsp;&nbsp;&nbsp; catch(UnknownHostException e){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(e);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; datagramSocket.close();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("UDP Socket closed");
+&nbsp;&nbsp;&nbsp; }//end catch UnknownHostException
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; catch(SocketException e){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(e);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; datagramSocket.close();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("UDP Socket closed");
+&nbsp;&nbsp;&nbsp; }//end catch SocketException
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; catch( IOException e){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println( "I/O error " + e );
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; datagramSocket.close();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("UDP Socket closed");
+&nbsp;&nbsp;&nbsp; }//end catch IOException
+&nbsp; }//end run method
+}//end class UdpEchoConnection
+
+//=======================================================//
+//=======================================================//
+&nbsp;
+//This class is used to instantiate a server thread that
+// listens on port 7 which is the echo port.
+class <b>EchoServer </b>extends Thread{
+//See the program named Server01 for the code that was
+// removed from this section.&nbsp;&nbsp;
+
+//=======================================================//
+//=======================================================//
+
+//This class is used to instantiate a server thread that
+// listens on port 80 which is the http port.
+class <b>HttpServer </b>extends Thread{
+//See the program named Server01 for the code that was&nbsp;
+// removed from this section.&nbsp;&nbsp;
+
+//=======================================================//</pre></td></tr></table>
+The following client program was designed specifically to test the server
+program listed above.
+<table border bgcolor="#ffff80" ><tr><td><pre>/*File Sockets08.java Copyright 1998, R.G.Baldwin
+Revised 01/24/98
+
+This program is identical to the program named Sockets08
+except that the server name is localhost.&nbsp; This program
+was created for the sole purpose of testing the server
+program named Server02.
+
+Upgraded from Sockets03 to include UDP echo testing.
+
+This program performs two echo tests with a server
+by sending a line of text to the echo port: port 7.
+
+The first echo text is a TCP/IP echo test.
+
+The second test is a UDP Datagram echo test.
+
+You must be logged onto an appropriate network for this
+program to run properly.&nbsp; Otherwise, it will throw
+an exception of type UnknownHostException.
+
+Most of the program is enclosed in a try/catch block to
+deal with possible exceptions.
+
+The program begins by instantiating a String object
+containing the name of an echo server that you are
+using to test the program.
+
+This is followed by the declaration and initialization of
+an int variable identifying the standard echo port number.
+The standard echo port is number is 7 for both the TCP and
+UDP echo port.
+
+Two String objects are instantiated, one to be used for
+the TCP echo test, and the other to be used for the UDP
+echo test.&nbsp; They are named msg1 and msg2.
+
+Then the program does all of those things necessary to
+conduct the TCP echo test as described in the earlier&nbsp;
+program named Sockets03.
+
+After completing the TCP echo test the program closes the
+TCP socket and begins the UDP echo test.
+
+The message to be used for the UDP echo test is converted
+to a byte array.
+
+An object of type InetAddress is instantiated containing
+the address of the server.
+
+A DatagramPacket object is instantiated containing the
+byte array along with the address of the server and the
+number of the echo port on that server.
+
+A DatagramSocket object is instantiated that will
+(hopefully) be used to send the packet to the server.
+
+The send() method is invoked on the socket, passing the
+packet as a parameter.&nbsp; This causes the packet to be
+sent to the address of the server and port number&nbsp;
+previously encapsulated in the packet.
+
+The same DatagramSocket and packet will be used to&nbsp;
+receive the packet that is (hopefully) sent back by the
+server.&nbsp;&nbsp;
+
+The data in the packet is overwritten with the character x
+so that it can later be confirmed that the received data
+in the packet is new data and is not simply the residue
+of the message originally placed in the packet.&nbsp; The
+overwritten data in the package is displayed, consisting
+simply of a string of character x.
+
+Then the receive() method is invoked on the DatagramSocket
+passing the packet as a parameter.&nbsp; This causes the thread
+to block and wait for a packet to be received on the
+same port from which the packet was originally sent.
+
+When the physical packet is received from the server,
+the data in that physical packet is extracted and written
+into the data portion of the packet object that was
+provided as a parameter to the receive() method.
+
+The thread is no longer blocked, and program control&nbsp;
+moves to a statement that displays the data contained in
+the packet object.&nbsp; As expected, the data is an echo of&nbsp;
+the message originally sent to the echo port on the&nbsp;
+server.
+
+Then the socket is closed and the program terminates.
+
+This program was tested using JDK 1.1.3 under Win95.
+
+Assuming that you connect to a server that supports both
+TCP and UDP echo testing, the output from this program&nbsp;
+should be:
+&nbsp;&nbsp;
+This is a TCP echo test
+xxxxxxxxxxxxxxxxxxxxxxx
+This is a UDP echo test
+**********************************************************/
+
+import java.net.*;
+import java.io.*;
+import java.util.*;
+
+class Sockets08{
+&nbsp; public static void main(String[] args){
+&nbsp;&nbsp;&nbsp; String server = "localhost";
+&nbsp;&nbsp;&nbsp; int port = 7; //echo port
+&nbsp;&nbsp;&nbsp; String msg1 = "This is a TCP echo test";
+&nbsp;&nbsp;&nbsp; String msg2 = "This is a UDP echo test";
+
+&nbsp;&nbsp;&nbsp; //First conduct a TCP echo test&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Get a socket, connected to the specified server
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // on the specified port.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Socket socket = new Socket(server,port);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Get an input stream from the socket
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; BufferedReader inputStream =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new BufferedReader(new InputStreamReader(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; socket.getInputStream()));
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Get&nbsp; an output stream to the socket.&nbsp; Note
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // that this stream will autoflush.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; PrintWriter outputStream =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new PrintWriter(new OutputStreamWriter(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; socket.getOutputStream()),true);
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Send line of text to the server
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; outputStream.println(msg1);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Get echoed line back from server and display it
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(inputStream.readLine());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Close the TCP socket
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; socket.close();
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Now conduct a datagram echo test to same port on
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // the same server
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Convert the message to a byte array
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; byte[] udpMsg = msg2.getBytes();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; InetAddress addr = InetAddress.getByName(server);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Create packet to send to the UDP echo port
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DatagramPacket packet =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new DatagramPacket(udpMsg,udpMsg.length,addr,port);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Now get a datagram socket to send the message
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DatagramSocket datagramSocket = new DatagramSocket();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Now send the message
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; datagramSocket.send(packet);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Now overwrite the msg in the packet to confirm that
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // echo is really received
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; byte[] dataArray = packet.getData();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for(int cnt = 0; cnt &lt; packet.getLength(); cnt++)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; dataArray[cnt] = 'x';
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Display overwritten version
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(new String(packet.getData()));
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Now receive the echo into the same packet.&nbsp; Echo
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // will overwrite current contents of the packet
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; datagramSocket.receive(packet);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Display the echo
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(new String(packet.getData()));
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; datagramSocket.close();
+&nbsp;&nbsp;&nbsp; }//end try
+&nbsp;&nbsp;&nbsp; catch(UnknownHostException e){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(e);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Must be online to run properly.");
+&nbsp;&nbsp;&nbsp; }//end catch UnknownHostException
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; catch(SocketException e){System.out.println(e);}
+&nbsp;&nbsp;&nbsp; catch(IOException e){System.out.println(e);}
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp; }//end main
+}//end class Sockets08
+//=======================================================//</pre></td></tr></table>
+-end-<!--end--></body></html>

@@ -1,0 +1,596 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type"
+content="text/html; charset=iso-8859-1">
+<meta name="author" content="richard g. baldwin">
+<meta name="GENERATOR" content="Microsoft FrontPage Express 2.0">
+<title>... in Java by Richard G Baldwin</title>
+</head>
+
+<body bgcolor="#FFFFFF">
+<!--start-->
+<h3 align="center"><b><i>Richard G Baldwin (512) 223-4758, </i></b><a
+href="mailto:baldwin@austin.cc.tx.us"><b><i>baldwin@austin.cc.tx.us</i></b></a><b><i>,
+</i></b><a href="http://www2.austin.cc.tx.us/baldwin/"><b><i>http://www2.austin.cc.tx.us/baldwin/</i></b></a></h3>
+
+<h2 align="center"><b><!--title-->JDK 1.1, Object Serialization, A First Look<!--endtitle--></b></h2>
+
+<p>Java Programming, Lecture Notes # 250, Revised 12/17/98. </p>
+
+<ul>
+    <li><a href="#introduction">Introduction</a></li>
+    <li><a href="#overview">Overview</a></li>
+    <li><ul>
+            <li><a href="#writing an object to a stream">Writing
+                an Object to a Stream</a></li>
+            <li><a href="#reading an object from the stream">Reading
+                an Object from the Stream</a></li>
+            <li><a href="#protecting sensitive information">Protecting
+                Sensitive Information</a></li>
+        </ul>
+    </li>
+    <li><a href="#sample program">Sample Program</a></li>
+    <li><ul>
+            <li><a href="#Interesting Code Fragments">Interesting
+                Code Fragments</a></li>
+            <li><a href="#program">Program Listing</a></li>
+        </ul>
+    </li>
+</ul>
+
+<hr>
+
+<h2 align="center"><a name="introduction"></a><font
+color="#FF0000"><b>Introduction</b></font></h2>
+
+<p>Students in Prof. Baldwin's <b>Advanced Java Programming</b>
+classes at ACC are responsible for knowing and understanding all
+of the material in this lesson. </p>
+
+<p>JDK 1.1 was formally released on February 18, 1997. This
+lesson was originally written on February 25, 1997 using JDK 1.1
+software and documentation. It was upgraded to JDK 1.2 on
+12/17/98</p>
+
+<p>In a nutshell, the <i>Object Serialization</i> capability of
+JDK 1.1 makes it possible to <u>write objects to streams</u> and <u>read
+objects from streams</u> without the requirement to decompose
+those objects into their component parts before writing, and
+without the requirement to reconstruct the object from its
+component parts after reading. </p>
+
+<p>More specifically, according to the documentation for JDK 1.1:
+</p>
+
+<table border="1" bgcolor="#00FFFF">
+    <tr>
+        <td>&quot;Object Serialization extends the core Java
+        Input/Output classes with support for objects. Object
+        Serialization supports the encoding of objects, and the
+        objects reachable from them, into a stream of bytes; and
+        it supports the complementary reconstruction of the
+        object graph from the stream. Serialization is used for
+        lightweight persistence and for communication via sockets
+        or Remote Method Invocation (RMI). The default encoding
+        of objects protects private and transient data, and
+        supports the evolution of the classes. A class may
+        implement its own external encoding and is then solely
+        responsible for the external format.&quot;</td>
+    </tr>
+</table>
+
+<p align="left">While some aspects of Object Serialization such
+as evolution of classes and external encoding can be very
+complex, in its basic form, object serialization is easy to use. </p>
+
+<h2 align="center"><a name="overview"></a><font color="#FF0000">Overview</font></h2>
+
+<p>Object serialization provides the capability to <u>store and
+retrieve Java objects</u>. This capability is provided on the
+basis of streams so that objects can be &quot;stored&quot; and
+&quot;retrieved&quot; from <u>any medium that supports streams</u>
+in Java. This includes disk files, communication links via
+sockets, stream buffers in memory, etc. </p>
+
+<p>Providing this capability requires the ability to <u>represent
+the state</u> of objects in a serialized form that can be used to
+automatically reconstruct the objects. </p>
+
+<p>In order for an object to be saved in a stream, the class of
+which it is an instance must support either the <b>Serializable </b>or
+the <b>Externalizable </b>Interface. This lesson will deal <u>only</u>
+with the <b>Serializable </b>Interface. The <strong>Externalizable</strong>
+interface extends the <strong>Serializable</strong> interface,
+adding the methods <strong>writeExternal()</strong> and <strong>readExternal()</strong>
+that you can use to gain more control over the serialization
+process.</p>
+
+<p>According to the JDK 1.1 documentation: </p>
+
+<table border="1" bgcolor="#00FFFF">
+    <tr>
+        <td>&quot;For Java objects, the serialized form must be
+        able to identify and verify the Java class from which the
+        object's contents were saved and to restore the contents
+        to a new instance. For Serializable objects, the stream
+        includes sufficient information to restore the fields in
+        the stream to a compatible version of the class.&quot;</td>
+    </tr>
+</table>
+
+<p>Those objects which are to be stored in and retrieved from a
+stream <u>often contain references to other objects</u> (embedded
+objects). Those embedded objects must be <u>stored and retrieved</u>
+along with the parent object in order to maintain the
+relationship between objects. When an object is stored, all of
+the objects that are reachable from that object are stored as
+well. </p>
+
+<p align="left">A sample program will be presented later in this
+lesson which demonstrates the storage and retrieval of an object
+which contains another embedded object. </p>
+
+<h3 align="center"><a name="writing an object to a stream"></a><font
+color="#FF0000">Writing an Object to a Stream</font></h3>
+
+<p>For the simple case of storing objects in a stream, we first
+instantiate an <b>OutputStream </b>to receive the bytes. In our
+later sample program, we will use a <b>FileOutputStream</b>. </p>
+
+<p>Next, we need to instantiate an <b>ObjectOutputStream </b>object
+by invoking the constructor of the <b>ObjectOutputStream </b>class
+and passing the previously instantiated <b>OutputStream </b>object
+as a parameter. </p>
+
+<p>Having done this, we can simply invoke the <b>writeObject()</b>
+method of the <b>ObjectOutputStream </b>class, passing the object
+that we want to store as a parameter. </p>
+
+<p>In order to be able to pass the object to the <strong>writeObject()</strong>
+method, that object must belong to a class that implements the <strong>Serializable</strong>
+(or Externalizable) interface. </p>
+
+<p>After storing all of our objects, we should use the <b>flush()</b>
+method to make certain that all of the objects have been inserted
+into the stream and are not still lingering in a buffer. </p>
+
+<p>According to the JDK 1.1 documentation: </p>
+
+<table border="1" bgcolor="#00FFFF">
+    <tr>
+        <td>&quot;The writeObject method serializes the specified
+        object and traverses its references to other objects in
+        the object graph recursively to create a complete
+        serialized representation of the graph. Within a stream,
+        the first reference to any object results in the object
+        being serialized or externalized and the assignment of a
+        handle for that object. Subsequent references to that
+        object are encoded as the handle. Using object handles
+        preserves sharing and circular references that occur
+        naturally in object graphs. Subsequent references to an
+        object use only the handle allowing a very compact
+        representation.&quot;</td>
+    </tr>
+</table>
+
+<p>Note that the <strong>ObjectOutputStream</strong> class also
+provides write methods for primitive types such as <b>writeChar(),
+writeByte, writeDouble</b>, etc., to support the possibility that
+primitive types may need to be written into the stream along with
+objects. </p>
+
+<h3 align="center"><a name="reading an object from the stream"></a><font
+color="#FF0000">Reading an Object from the Stream</font></h3>
+
+<p>Retrieving a stored object, or reading an object from a stream
+is just as straightforward as writing it to the stream. </p>
+
+<p>First, we need to instantiate an <b>InputStream</b>. In the
+sample program later in this lesson, we will use a <b>FileInputStream</b>.
+</p>
+
+<p>Then we <u>i</u>nstantiate an <b>ObjectInputStream </b>that
+reads from the <b>InputStream</b>. This is accomplished by
+invoking the constructor for the <b>ObjectInputStream </b>class
+and passing the <b>InputStream</b> as a parameter. </p>
+
+<p>Having done this, we simply use the <b>readObject()</b> method
+of the <b>ObjectInputStream </b>class to read each object from
+the stream. This method returns an object of type <strong>Object</strong>,
+so we need to downcast it to the proper type of object before
+storing or attempting to manipulate it. </p>
+
+<p>According to the JDK 1.1 documentation: </p>
+
+<table border="1" bgcolor="#00FFFF">
+    <tr>
+        <td>&quot;The readObject method deserializes the next
+        object in the stream and traverses its references to
+        other objects recursively to create the complete graph of
+        objects serialized.&quot;</td>
+    </tr>
+</table>
+
+<p align="left">Note that the <b>ObjectInputStream </b>class also
+provides read methods for primitive types such as <b>readChar(),
+readByte, readDouble</b>, etc., to support the possibility that
+primitive types may have been written into the stream along with
+objects. </p>
+
+<h3 align="center"><a name="protecting sensitive information"></a><font
+color="#FF0000">Protecting Sensitive Information</font></h3>
+
+<p>If your objects contain sensitive information, you should read
+the JDK 1.1 documentation very carefully before writing the
+objects into a stream. </p>
+
+<p>According to the documentation, one technique for avoiding
+security problems is to <i>mark </i>sensitive fields as <b>private
+transient</b>. <b>transient </b>and <b>static </b>fields are not
+serialized or deserialized. This will prevent the sensitive data
+from actually entering the stream. </p>
+
+<p>Also according to the documentation: </p>
+
+<table border="1" bgcolor="#00FFFF">
+    <tr>
+        <td>&quot;Particularly sensitive classes <u>should not be
+        serialized at all</u>. To accomplish this, the object
+        should not implement either the <b>Serializable </b>or <b>Externalizable
+        </b>interfaces.&quot;</td>
+    </tr>
+</table>
+
+<p align="left">Since object serialization is implemented as a
+stream process which inherently supports the application of
+filters, it is also possible to provide encryption and decryption
+filters. </p>
+
+<h2 align="center"><a name="sample program"></a><font
+color="#FF0000">Sample Program</font></h2>
+
+<p align="left">The next section discusses the particulars of a
+sample program that illustrates much of what has been discussed
+above. A listing of the program follows the discussion. </p>
+
+<h3 align="center"><a name="Interesting Code Fragments"><font
+color="#FF0000">Interesting Code Fragments</font></a></h3>
+
+<p>This application </p>
+
+<ul>
+    <li>opens and <u>writes three objects</u> to an output file,</li>
+    <li><u>closes</u> the file,</li>
+    <li><u>opens</u> the file as an input file,</li>
+    <li><u>reads</u> the three objects, and</li>
+    <li><u>displays</u> their contents.</li>
+</ul>
+
+<p>The three objects written to the output file are: </p>
+
+<ul>
+    <li>A <strong>String</strong> object</li>
+    <li>A <strong>Date</strong> object</li>
+    <li>A composite object of a new serializable class named <b>MyOuterClass
+        </b>which contains an <u>embedded object</u> of another
+        new serializable class named <b>MyEmbeddedClass</b>.</li>
+</ul>
+
+<p>The following code fragment shows the class definition for <strong>MyEmbeddedClass.
+</strong>This class contains one private instance variable and
+one public instance method. The private instance variable is a
+simple <strong>String</strong> object. The public instance method
+is a <strong>showEmbeddedData()</strong> method that displays the
+private instance variable.</p>
+
+<p>Note that this class implements the <strong>Serializable</strong>
+interface.</p>
+
+<table border="1" bgcolor="#FFFF00">
+    <tr>
+        <td><pre>class <strong>MyEmbeddedClass</strong> implements <strong>Serializable</strong>{
+  private String myEmbeddedString = &quot;I am a &quot; +
+        &quot;Private Instance Variable in the Embedded Object&quot;;
+  public void <strong>showEmbeddedData</strong>(){
+    System.out.println(myEmbeddedString);
+  }//end showEmbeddedData  
+}//end class MyEmbeddedClass</pre>
+        </td>
+    </tr>
+</table>
+
+<p>The next fragment shows the class definition for the class
+named <b>MyOuterClass</b>. This class contains two private
+instance variables and a public instance method named <b>ShowAllData()</b>.
+</p>
+
+<p>The first instance variable is a simple <strong>String</strong>
+object. The second instance variable is an embedded object of the
+class discussed above (<strong>MyEmbeddedClass</strong>) which
+also contains a private instance variable and a public instance
+method.</p>
+
+<p>The public instance method in an object of this class is a <strong>showAllData()</strong>
+method that displays the private <strong>String</strong> variable
+in the object and invokes the public <strong>showEmbeddedData()</strong>
+method of the private embedded object to cause the private
+instance variable in that object to also be displayed.</p>
+
+<p>Note that the class implements the <strong>Serializable</strong>
+interface.</p>
+
+<table border="1" bgcolor="#FFFF00">
+    <tr>
+        <td><pre>class <strong>MyOuterClass</strong> implements <strong>Serializable</strong>{
+  private String myOuterString = &quot;I am a &quot; +
+      &quot;Private Instance Variable in the Outer Object&quot;;
+  MyEmbeddedClass myEmbeddedObject = new MyEmbeddedClass();
+
+  public void <strong>showAllData</strong>(){
+    System.out.println(myOuterString);
+    myEmbeddedObject.showEmbeddedData();
+  }//end showAllData()  
+
+}//end class MyOuterClass
+</pre>
+        </td>
+    </tr>
+</table>
+
+<p>The controlling class for the application is shown in the next
+fragment. It is very simple. All that it does is to instantiate
+an object of the <strong>MyProcess</strong> class where all of
+the work is done.. </p>
+
+<table border="1" bgcolor="#FFFF00">
+    <tr>
+        <td><pre>class <strong>ObjSer01</strong>{//controlling class
+  static public void main(String[] args){
+  MyProcess myProcess = <strong>new MyProcess()</strong>;  
+  }//end main()
+}//end class ObjSer01</pre>
+        </td>
+    </tr>
+</table>
+
+<p>The following fragment shows the beginning of the <strong>MyProcess</strong>
+class. The constructor for this class contains the code to
+illustrate object serialization.</p>
+
+<p>The constructor begins by opening an <strong>ObjectOutputStream</strong>
+as discussed earlier, and invoking the <strong>writeObject()</strong>
+method to write three objects to that stream. The objects written
+to the stream are a <strong>String</strong> object, a <strong>Date</strong>
+object, and an object of type <strong>MyOuterClass</strong>
+described above. Then the constructor flushes and closes the
+stream.</p>
+
+<table border="1" bgcolor="#FFFF00">
+    <tr>
+        <td><pre>class MyProcess{
+  MyProcess(){//constructor
+    try{
+      FileOutputStream fout = new FileOutputStream(&quot;tmp&quot;);
+      <strong>ObjectOutputStream</strong>  outStream  =  
+                             new  ObjectOutputStream(fout);
+      //write a String object
+      outStream.<strong>writeObject</strong>(&quot;Today is &quot;);
+      //write a Date object
+      outStream.<strong>writeObject</strong>(new Date());
+      //write a custom object
+      outStream.<strong>writeObject</strong>(new <strong>MyOuterClass</strong>());
+      outStream.<strong>flush</strong>();
+      outStream.<strong>close</strong>();</pre>
+        </td>
+    </tr>
+</table>
+
+<p>Than an <strong>ObjectInputStream</strong> linked to the file
+containing the three objects is instantiated as shown in the
+following fragment.</p>
+
+<table border="1" bgcolor="#FFFF00">
+    <tr>
+        <td><pre>      FileInputStream fin = new FileInputStream(&quot;tmp&quot;);
+      <strong>ObjectInputStream</strong> inStream = 
+                                new ObjectInputStream(fin);</pre>
+        </td>
+    </tr>
+</table>
+
+<p>Then the application uses the <strong>readObject()</strong>
+method to read the three objects from the stream. In each case
+the contents of the objects are displayed after they are read.
+This is illustrated in the following fragment. Note that I
+omitted the exception handling code from this fragment in the
+interest of brevity.</p>
+
+<table border="1" bgcolor="#FFFF00">
+    <tr>
+        <td><pre>        //read String object
+        String stringObj = (String)inStream.<strong>readObject</strong>();
+        //display the String object
+        System.out.print(stringObj);
+
+        //read the Date object
+        Date dateObj = (Date)inStream.<strong>readObject</strong>();
+        //display the Date object
+        System.out.println(dateObj);
+
+        //read the custom object
+        MyOuterClass myCustomObject = 
+                       (MyOuterClass)inStream.<strong>readObject</strong>();
+        //display the custom object
+        myCustomObject.<strong>showAllData</strong>();</pre>
+        </td>
+    </tr>
+</table>
+
+<p>The <i><u>important point</u></i> is that all three <u>objects
+were written as objects and read as objects</u>. No effort was
+required on the part of the programmer to decompose the objects
+for writing or to reconstruct the objects after reading. </p>
+
+<p>The output from running the program in one particular case is
+shown in the comments at the beginning of the program. </p>
+
+<h3 align="center"><a name="program"></a><font color="#FF0000">Program
+Listing</font></h3>
+
+<p>A listing of the program follows. </p>
+
+<table border="1" bgcolor="#FFFF00">
+    <tr>
+        <td><pre>/*File ObjSer01.java, Copyright 1997, R.G.Baldwin
+Rev 12/17/98
+Designed to be compiled and run under JDK 1.1 or a later
+version.
+This application discusses the object serialization 
+capability in JDK 1.1.
+
+This application writes three objects to an output file, 
+closes the file, opens the file, reads the objects, and 
+displays their contents.
+
+The three objects written to the output file are:
+ - A String object
+ - A Date object
+ - A composite object of a new serializable class named 
+   MyOuterClass which contains an embedded object of 
+   another new serializable class named MyEmbeddedClass.
+
+The object of the class named MyOuterClass contains two 
+private instance variables and a public instance method 
+named ShowAllData.
+
+The first private instance variable is a simple String 
+object.
+
+The second private instance variable is an embedded object
+of another new serializable class named MyEmbeddedClass.
+
+The embedded object also contains a private instance 
+variable of type String and a public instance method named
+showEmbeddedData().
+
+The application then closes the file and opens it for 
+reading.It reads and displays all three objects.
+
+The important point is that all three objects are written 
+as objects and read as objects.  No effort was required on
+the part of the programmer to decompose the objects for 
+writing or to reconstruct the objects after reading.
+
+The output from running the program in one particular case
+was:
+Today is Thu Dec 17 09:28:58 CST 1998
+I am a Private Instance Variable in the Outer Object
+I am a Private Instance Variable in the Embedded Object
+
+This program was tested using JDK 1.1 under Win95. It
+was also tested using JDK 1.2 under Win95.
+**********************************************************/
+import java.io.*;
+import java.util.*;
+//=======================================================//
+/*Objects of the following serializable class contain one 
+  private instance variable and one public instance method.
+  The private instance variable is a simple String object.
+  The public instance method is a show method that displays
+  the private instance variable.
+*/
+class MyEmbeddedClass implements Serializable{
+  private String myEmbeddedString = &quot;I am a &quot; +
+        &quot;Private Instance Variable in the Embedded Object&quot;;
+  public void showEmbeddedData(){
+    System.out.println(myEmbeddedString);
+  }//end showEmbeddedData  
+}//end class MyEmbeddedClass
+//=======================================================//
+
+/*Objects of the following serializable class contain two 
+ private instance variables and one public instance method.
+ The first instance variable is a simple String object.  
+ The second instance variable is an embedded object of a 
+ new serializable class which also contains a private 
+ instance variable and a public instance method.
+
+ The public instance method in an object of this class is 
+ a show method that displays the private String variable 
+ in the object and invokes the public show method of the 
+ private embedded object to cause the private instance 
+ variable in that object to also be displayed.
+
+Note that the class implements the Serializable interface.
+*/
+class MyOuterClass implements Serializable{
+  private String myOuterString = &quot;I am a &quot; +
+      &quot;Private Instance Variable in the Outer Object&quot;;
+  MyEmbeddedClass myEmbeddedObject = new MyEmbeddedClass();
+
+  public void showAllData(){
+    System.out.println(myOuterString);
+    myEmbeddedObject.showEmbeddedData();
+  }//end showAllData()  
+
+}//end class MyOuterClass
+//=======================================================//
+
+//Controlling Class
+class ObjSer01{
+  static public void main(String[] args){
+  MyProcess myProcess = new MyProcess();  
+  }//end main()
+}//end class ObjSer01
+//=======================================================//
+class MyProcess{
+  MyProcess(){//constructor
+    try{
+      FileOutputStream fout = new FileOutputStream(&quot;tmp&quot;);
+      ObjectOutputStream  outStream  =  
+                             new  ObjectOutputStream(fout);
+      //write a String object
+      outStream.writeObject(&quot;Today is &quot;);
+      //write a Date object
+      outStream.writeObject(new Date());
+      //write a custom object
+      outStream.writeObject(new MyOuterClass());
+      outStream.flush();
+      outStream.close();
+      
+      FileInputStream fin = new FileInputStream(&quot;tmp&quot;);
+      ObjectInputStream inStream = 
+                                new ObjectInputStream(fin);
+      try{
+        //read String object
+        String stringObj = (String)inStream.readObject();
+        //display the String object
+        System.out.print(stringObj);
+
+        //read the Date object
+        Date dateObj = (Date)inStream.readObject();
+        //display the Date object
+        System.out.println(dateObj);
+
+        //read the custom object
+        MyOuterClass myCustomObject = 
+                       (MyOuterClass)inStream.readObject();
+        //display the custom object
+        myCustomObject.showAllData();
+        
+      }catch(ClassNotFoundException e){
+        System.out.println(e);
+      }//end catch block
+      inStream.close();  
+    }catch(IOException e){System.out.println(e);}
+  }//end constructor
+}//end class MyProcess
+//=======================================================//</pre>
+        </td>
+    </tr>
+</table>
+
+<p>-end-<!--end--></p>
+</body>
+</html>

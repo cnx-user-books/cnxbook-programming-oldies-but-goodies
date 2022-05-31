@@ -1,0 +1,1313 @@
+<!doctype html public "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+   <meta name="GENERATOR" content="Microsoft FrontPage 5.0">
+   <title>... in Java by Richard G Baldwin</title>
+</head>
+<body link="#DD0000" vlink="#0000FF" alink="#FF0000" lang="EN-US">
+<h2>
+Java Sound, Capturing Microphone Data into an Audio File</h2>
+<i>Baldwin shows you how  to use the Java Sound API to capture audio data 
+from a microphone and how to save that data in an audio file type of your 
+choosing.</i><p><b>Published:</b>&nbsp; March 18, 2003<br><b>By <a href="mailto:Baldwin@DickBaldwin.com">Richard G. Baldwin</a></b>
+<p>Java Programming Notes # 2014<ul >
+<li>
+<a href="#Preface">Preface</a></li>
+<li>
+<a href="#Preview">Preview</a></li>
+
+<li>
+<a href="#Discussion and Sample Programs">Discussion and Sample Code</a></li>
+
+<li>
+<a href="#Run the program">Run the Program</a></li>
+
+<li>
+<a href="#Summary">Summary</a></li>
+
+<li>
+<a href="#Complete Program Listings">Complete Program Listing</a></li>
+</ul>
+
+<hr size=3 width="100%" align=center>
+<center>
+<h2>
+<a NAME="Preface"></a>Preface</h2></center>
+<p>
+This  series of lessons is designed to teach you how to use the 
+Java Sound API.&nbsp; The first lesson in the series was entitled 
+<a href="http://www.developer.com/java/other/article.php/1565671">Java Sound, An 
+Introduction</a>.&nbsp; The 
+previous lesson was entitled
+<a href="http://www.developer.com/java/other/article.php/1579071">Java Sound, 
+Getting Started, Part 2, Capture Using Specified Mixer</a>.</p>
+<p><font color="#FF0000"><b>Two types of audio data</b></font></p>
+<p>
+Two  different 
+types of audio data are supported by the Java Sound API:<ul>
+  <li>Sampled audio data</li>
+  <li>Musical Instrument Digital Interface (MIDI) data</li>
+  </ul>
+  <p>The two types of audio data are very different.&nbsp;  I 
+  am concentrating on sampled audio data at this point in time.&nbsp; I will defer 
+  my discussion of 
+      MIDI    until later.<p>
+<b><font color="#FF0000">Viewing tip</font></b>
+<p>You may find it useful to open another copy of this lesson in a separate
+browser window.&nbsp; That will make it easier for you to scroll back and
+forth among the different listings and figures while you are reading about
+them.
+<p><b><font color="#FF0000">Supplementary material</font></b>
+<p>I recommend that you also study the other lessons in my extensive collection
+of online Java tutorials.&nbsp; You will find those lessons published at
+<a href="http://softwaredev.earthweb.com/java">Gamelan.com</a>.&nbsp;
+However, as of the date of this writing, Gamelan doesn't maintain a consolidated
+index of my Java tutorial lessons, and sometimes they are difficult to
+locate there.&nbsp; You will find a consolidated index at <font color="#000000">
+<a href="http://www.DickBaldwin.com">www.DickBaldwin.com</a>.</font>
+  <h2 align="center"><font color="#000000"><a name="Preview">Preview</a></font></h2>
+<p>In 
+this lesson, I will 
+provide and explain a 
+program that you can use to capture audio data from a microphone and to write 
+that data into an audio file type of your choosing.&nbsp; You should then be 
+able to play the audio file back using any of a variety of readily available 
+media players, such as the Windows Media Player.<p>I will show you how to write 
+a Java program to play back the data stored in the audio file in a future 
+lesson.<center>
+<h2>
+<a NAME="Discussion and Sample Programs"></a><font color="#000000">Discussion
+and Sample Code</font></h2></center>
+<p><font color="#FF0000"><b>Less complicated program</b></font><p>The 
+previous two lessons showed you how to capture audio data from a microphone, 
+store it in a memory buffer, and play the data back on demand.&nbsp; As you will 
+see in this lesson, because of the relatively high-level support for writing 
+audio files in Java, the code required to store the captured data in an audio 
+file is somewhat simpler than the code required to store the data in a memory 
+buffer.<p>
+<font color="#FF0000"><b>What is a TargetDataLine?</b></font><p>
+I will be using a <b>TargetDataLine</b> object in this program.&nbsp;
+The terminology used with the Java sound API can be very confusing.&nbsp;
+A <b>TargetDataLine</b> object is a <i>streaming</i> mixer 
+output object.<blockquote>
+  <p>
+<i>(The object provides output from the mixer, not output from the program.&nbsp; 
+In fact, it often serves as input to the program.)</i></blockquote>
+<p>
+An object of this type delivers audio data from the mixer, serving as input to 
+other parts of the program.&nbsp; This concept is discussed in detail in the 
+lesson entitled
+<a href="http://www.developer.com/java/other/article.php/1579071">Java Sound, 
+Getting Started, Part 2, Capture Using Specified Mixer</a>.<p>
+<font color="#FF0000"><b>Audio data input to the program</b></font><p>
+The data provided by the <b>TargetDataLine</b> object can be pushed into some other  program construct in real time.&nbsp; 
+The 
+actual destination of the audio data can be any  of a variety of 
+destinations such as an audio file, a 
+network connection, or a buffer in memory.<blockquote>
+  <p>
+<i>(A sample program in this lesson reads audio data from a TargetDataLine 
+object and writes it into an audio output file.)</i></blockquote>
+<p>
+<font color="#FF0000"><b>The user interface</b></font><p>
+When this program is executed, the GUI shown in Figure 1 appears on the screen.&nbsp; 
+As you can see, this GUI contains two regular buttons:<ul>
+  <li>Capture</li>
+  <li>Stop</li>
+  </ul>
+    <p align="center">
+      <img border="0" src="java2014a.gif" width="301" height="121"><p align="center">
+      Figure 1 Program GUI<p>
+In addition, the GUI contains five radio buttons labeled:<ul>
+  <li>AIFC</li>
+  <li>AIFF</li>
+  <li>AU</li>
+  <li>SND</li>
+  <li>WAVE</li>
+  </ul>
+  <p>
+These are five audio file format types supported by the Java SDK, version 1.4.1.&nbsp; 
+I will have more to say about these file types later when I discuss the code.<p>
+<font color="#FF0000"><b>Operation of the program</b></font><p>
+When the user clicks the <b>Capture</b> button, input data from a microphone is captured and saved in an 
+audio output file of the type specified by the selected radio button.&nbsp; <i>
+(Clicking the Capture button also enables the Stop button and disables the 
+Capture button.)</i><p>
+When the user clicks the <b>Stop</b> button <i>(while recording data),</i> data 
+capture is terminated and the output file is closed.&nbsp; The file is then 
+suitable for playing back using any standard media player that will accommodate 
+the specified file format.<p>
+<font color="#FF0000"><b>Will discuss in fragments</b></font><p>
+As usual, I will 
+discuss this program in fragments.&nbsp; A complete listing of the program is 
+shown in Listing 22 near the end of the lesson.<p>
+<font color="#FF0000"><b>The class named AudioRecorder02</b></font><p>
+The class definition for the controlling class begins in Listing 1.<br>
+&nbsp;<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>public class <b>AudioRecorder02</b> extends JFrame{
+
+  AudioFormat audioFormat;
+  TargetDataLine targetDataLine;
+
+<b><font face="Courier New,Courier">Listing 1</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>
+This class declares several instance variables, which are used later in the 
+program.&nbsp; The two instance variables shown in Listing 1 are used later to 
+hold references to <b>AudioFormat</b> and <b>TargetDataLine</b> objects.&nbsp; I 
+will discuss those objects in more detail when we get to the point in the program where 
+they are used.<p>
+<font color="#FF0000"><b>The GUI buttons</b></font><p>
+As you saw in Figure 1, the GUI presents two ordinary buttons, which are used to 
+start and stop the audio data capture operation.&nbsp;
+The instance variables in Listing 2 are used to hold references to <b>JButton</b> 
+objects used for this purpose.<br>
+&nbsp;<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>  final JButton captureBtn =
+                          new JButton("Capture");
+  final JButton stopBtn = new JButton("Stop");
+
+<b><font face="Courier New,Courier">Listing 2</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>
+<font color="#FF0000"><b>The radio buttons</b></font><p>
+Also, as you saw in Figure 1, the GUI presents five radio buttons.&nbsp; Using 
+radio buttons is a little more complicated than using ordinary buttons.<p>
+The normal user expectation for the behavior of radio buttons is that they will 
+be logically grouped into mutually-exclusive groups <i>(only one button in a 
+group can be selected at any point in time).</i>&nbsp; This mutually-exclusive 
+behavior is achieved in Java Swing by adding <b>JRadioButton</b> objects to a <b>
+ButtonGroup</b> object.<blockquote>
+
+<p>
+<i>(A somewhat different approach is used to group radio buttons in the Java AWT.)</i></blockquote>
+
+<p>
+<font color="#FF0000"><b>Not a physical group</b></font><p>
+Note, however, that adding the buttons to the <b>ButtonGroup</b> object does not 
+create a physical grouping.&nbsp; Adding the radio buttons to the <b>ButtonGroup</b> 
+object simply creates a mutually-exclusive logical grouping.<p>
+The normal user expectation is also that a 
+mutually-exclusive group of radio buttons will be physically grouped together in 
+the GUI.&nbsp; This physical grouping requires the use of a container of some 
+type, such as a <b>JPanel</b> for example.<p>
+The instance variables in Listing 3 hold references to:<ul>
+  <li>One <b>JPanel</b> object</li>
+  <li>One <b>ButtonGroup</b> object</li>
+  <li>Five <b>JRadioButton</b> 
+objects</li>
+  </ul>
+  <table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>  final JPanel btnPanel = new JPanel();
+
+  final ButtonGroup btnGroup = new ButtonGroup();
+
+  final JRadioButton aifcBtn =
+                        new JRadioButton("AIFC");
+  final JRadioButton aiffBtn =
+                        new JRadioButton("AIFF");
+  final JRadioButton auBtn =//selected at startup
+                     new JRadioButton("AU",<b>true</b>);
+  final JRadioButton sndBtn =
+                         new JRadioButton("SND");
+  final JRadioButton waveBtn =
+                        new JRadioButton("WAVE");
+
+<b><font face="Courier New,Courier">Listing 3</font></b></pre>
+</td>
+</tr>
+</table>
+
+  <p>
+<font color="#FF0000"><b>Constructing radio buttons</b></font><p>
+The constructor used for four of the <b>JRadioButton</b> objects 
+in Listing 3 allows the button's label to be specified when the object is 
+instantiated.&nbsp; The constructor used for the button referred 
+to by <b>auBtn</b> not only allows for the label to be provided, but also allows 
+for a <b>boolean</b> parameter that causes the button to be <i> <b>selected</b></i> 
+when it appears first on the screen.<p>
+We will see the code later that uses these instance variables to create a 
+logical group and a physical group of mutually-exclusive radio buttons.<p>
+<font color="#FF0000"><b>The main method</b></font><p>
+The <b>main</b> method for this Java application,  shown in Listing 4, is 
+extremely simple.<br>
+&nbsp;<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>  public static void <b>main</b>( String args[]){
+    <b>new AudioRecorder02();</b>
+  }//end main
+
+<b><font face="Courier New,Courier">Listing 4</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>
+The code in the <b>main</b> method simply instantiates an object of the 
+controlling class.&nbsp; Code in the constructor, some other methods, and some 
+inner classes takes over at that point and provides the operational behavior of 
+the program.<p>
+<font color="#FF0000"><b>The constructor</b></font><p>
+The constructor, which begins in Listing 5, is fairly long.&nbsp; I will break it 
+up and discuss it in fragments.<br>
+&nbsp;<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>  public AudioRecorder02(){//constructor
+    captureBtn.setEnabled(<b>true</b>);
+    stopBtn.setEnabled(<b>false</b>);
+
+<b><font face="Courier New,Courier">Listing 5</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>
+When the program first starts running, the <b>Capture</b> button is enabled, and 
+the <b>Stop</b> button is disabled, as shown in Figure 1.&nbsp; As you can see 
+in Listing 5, this is accomplished by initializing the <b>enabled</b> property 
+on each of the two buttons to values of <b>true</b> and <b>false</b> 
+respectively.<p>
+We will see later that when the user clicks the <b>Capture</b> button to cause 
+data capture to begin, the values of the <b>enabled</b> property are switched to 
+cause the <b>Capture</b> button to become disabled, and to cause the <b>Stop</b> 
+button to become enabled.<p>
+<font color="#FF0000"><b>An anonymous listener from an anonymous inner class</b></font><p>
+You may, or may not be familiar with the rather cryptic programming style shown 
+in Listing 6.&nbsp; The code in Listing 6 instantiates an <b>ActionListener</b> 
+object and registers it on the <b>Capture</b> button.<br>
+&nbsp;<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>    captureBtn.addActionListener(
+      new ActionListener(){
+<b>        public void actionPerformed(
+                                  ActionEvent e){
+          captureBtn.setEnabled(false);
+          stopBtn.setEnabled(true);
+</b>          //Capture input data from the
+          // microphone until the Stop button is
+          // clicked.<b>
+          captureAudio();</b>
+        }//end actionPerformed
+      }//end ActionListener
+    );//end addActionListener()
+
+<b><font face="Courier New,Courier">Listing 6</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>
+If you are already familiar with this programming style, just note that the <b>
+actionPerformed</b> method, which is invoked when the user clicks the <b>Capture</b> 
+button,<ul>
+    <li>Switches the enabled properties of the two buttons.</li>
+    <li>Invokes the <b>captureAudio</b> method to cause the audio capture process to 
+    begin.</li>
+    </ul>
+
+<p>
+<font color="#FF0000"><b>A cryptic programming style</b></font><p>
+If you are not familiar with this programming style, think of it this way.&nbsp; 
+The code in Listing 6 instantiates an object from an unnamed class, <i>(which 
+implements the <b>ActionListener</b> interface),</i> and passes that object's 
+reference to the <b>addActionListener</b> method of the <b>Capture</b> button to 
+register the object as a listener on the button.&nbsp; Whenever the user clicks 
+the <b>Capture</b> button, the <b>actionPerformed</b> method belonging to the 
+listener object is invoked, behaving as described above.<p>
+<font color="#FF0000"><b>Another anonymous listener</b></font><p>
+The code in Listing 7 uses the same cryptic syntax to instantiate and register 
+an <b>ActionListener</b> object on the <b>Stop</b> button.<br>
+&nbsp;<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>    stopBtn.addActionListener(
+      new ActionListener(){
+<b>        public void actionPerformed(
+                                  ActionEvent e){
+          captureBtn.setEnabled(true);
+          stopBtn.setEnabled(false);
+</b>          //Terminate the capturing of input data
+          // from the microphone.<b>
+          targetDataLine.stop();
+          targetDataLine.close();
+        }//end actionPerformed</b>
+      }//end ActionListener
+    );//end addActionListener()
+
+<b><font face="Courier New,Courier">Listing 7</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>
+The behavior of the <b>actionPerformed</b> event-handler method in this case is 
+to <b>stop</b> and <b>close</b> the <b>TargetDataLine</b> object.<blockquote>
+    <p>
+<i>(Recall that the <b>TargetDataLine</b> object is the object that acquires data 
+from the microphone and delivers it to the program.&nbsp; We will see how that 
+is accomplished later.)</i></blockquote>
+
+<p>
+<font color="#FF0000"><b>The stop method</b></font><p>
+Here is what Sun has to say about invoking the <b>stop</b> method on a <b>
+TargetDataLine</b> object.<blockquote>
+
+<p>
+<i>&quot;Stops the line. A stopped line should cease I/O activity. If the line is 
+open and running, however, it should retain the resources required to resume 
+activity. A stopped line should retain any audio data in its buffer instead of 
+discarding it, so that upon resumption the I/O can continue where it left off, 
+if possible.&nbsp; ... If desired, the retained data 
+can be discarded by invoking the <code>flush</code> method.&quot;</i></blockquote>
+
+<p>
+Sun's description seems to be fairly self-explanatory.<p>
+It is worth noting that 
+this is the method call that causes the output <b>write</b> method <i>(to be 
+discussed later)</i> to close the output file. <p>
+<font color="#FF0000"><b>The close method</b></font><p>
+Here is what Sun has to say about invoking the <b>close</b> method on a <b>
+TargetDataLine</b> object.<blockquote>
+
+<p>
+<i>&quot;Closes the line, indicating that any system resources in use by the line can 
+be released.&quot;</i></blockquote>
+
+<p>
+This also seems to be fairly self-explanatory.&nbsp; I will have more to say 
+about the impact of invoking the <b>stop</b> and <b>close</b> methods later when 
+I discuss the <b>write</b> method used to write the data to the output audio 
+file.<p>
+<font color="#FF0000"><b>Put the buttons in the JFrame</b></font><p>
+The two statements in Listing 8 cause the <b>Capture</b> button and the <b>Stop</b> 
+button to be placed in the <b>JFrame</b> object.&nbsp; This is straightforward 
+GUI construction code.&nbsp; If you are unfamiliar with it, you can read about 
+it on my <a href="http://www.dickbaldwin.com">web site</a>.<br>
+&nbsp;<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>    getContentPane().add(captureBtn);
+    getContentPane().add(stopBtn);
+
+<b><font face="Courier New,Courier">Listing 8</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>
+<font color="#FF0000"><b>Include the radio buttons in a mutually-exclusive group</b></font><p>
+The code in Listing 9 causes the five radio buttons to be included in a 
+mutually-exclusive logical group.<br>
+&nbsp;<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>    btnGroup.add(aifcBtn);
+    btnGroup.add(aiffBtn);
+    btnGroup.add(auBtn);
+    btnGroup.add(sndBtn);
+    btnGroup.add(waveBtn);
+
+<b><font face="Courier New,Courier">Listing 9</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>
+<font color="#FF0000"><b>The ButtonGroup class</b></font><p>
+The variable named <b>btnGroup</b> holds a reference to an object of the <b>
+ButtonGroup</b> class.&nbsp; Here is part of what Sun has to say about the <b>
+ButtonGroup</b> class in general.<blockquote>
+
+<p>
+<i>&quot;This class is used to create a multiple-exclusion scope for a set of 
+buttons. Creating a set of buttons with the same ButtonGroup object 
+means that turning &quot;on&quot; one of those buttons turns off all other buttons in the 
+group.&nbsp; </i>
+  <p><i>Initially, all buttons in the group are unselected. Once any button is 
+  selected, one button is always selected in the group.&quot;</i></p>
+</blockquote>
+
+<p>
+As a clarification to the above, it is possible to cause a particular button to be initially 
+<i>&quot;on&quot;</i> using 
+the constructor shown for the <b>AU </b>button in Listing 3.&nbsp; When this 
+program starts, the radio button labeled <b>AU</b> is initially <i>&quot;on&quot;.</i><p>
+The use of the <b>add</b> method shown in Listing 9 causes each button to be 
+included in the group.<p>
+It is important to note that simply adding buttons to the <b>ButtonGroup</b> 
+object does not cause them to be physically grouped in the GUI.&nbsp; Additional 
+effort is required to cause the buttons to be grouped in a physical sense.<p>
+<font color="#FF0000"><b>Adding the radio buttons to the JPanel</b></font><p>
+Physical grouping of the radio buttons is accomplished by the code in Listing 
+10, which adds the radio buttons to a <b>JPanel</b> container object.<br>
+&nbsp;<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>    btnPanel.add(aifcBtn);
+    btnPanel.add(aiffBtn);
+    btnPanel.add(auBtn);
+    btnPanel.add(sndBtn);
+    btnPanel.add(waveBtn);
+
+<b><font face="Courier New,Courier">Listing 10</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>
+The default layout manager for a <b>JPanel</b> object is <b>FlowLayout</b>.&nbsp; 
+This causes the radio buttons to appear in the panel in a row from left to right 
+as shown in Figure 1.&nbsp; Because the panel is transparent and doesn't have a 
+visible border, only the buttons are visible in Figure 1.&nbsp; The underlying 
+panel is not visible.<p>
+<font color="#FF0000"><b>Add the JPanel to the JFrame</b></font><p>
+The code in Listing 11 causes the panel containing the radio buttons  
+to be placed in the <b>JFrame</b> GUI object as shown in Figure 1.<br>
+&nbsp;<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>    getContentPane().add(btnPanel);
+
+<b><font face="Courier New,Courier">Listing 11</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>
+<font color="#FF0000"><b>Finish the GUI and make it visible</b></font><p>
+The code in Listing 12 takes care of a few remaining odds and ends regarding the 
+GUI.<br>
+&nbsp;<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>    getContentPane().setLayout(new FlowLayout());
+    setTitle("Copyright 2003, R.G.Baldwin");
+    setDefaultCloseOperation(EXIT_ON_CLOSE);
+    setSize(300,120);
+    setVisible(true);
+  }//end constructor
+
+<b><font face="Courier New,Courier">Listing 12</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>
+The code in Listing 12 accomplishes the following tasks:<ul>
+  <li>Set the layout manager on the <b>JFrame</b> GUI object to <b>FlowLayout</b>.&nbsp; 
+  This causes the components to be added to the container from left to right, 
+  top to bottom.&nbsp; <i>(Remember that the <b>JPanel</b> is itself a component that 
+  contains the radio buttons, so the panel appears as a single component in the 
+  layout.)</i></li>
+  <li>Set the title on the <b>JFrame</b> GUI object.</li>
+  <li>Cause the button with the X in the upper right corner of the <b>JFrame</b> 
+  object to terminate the program when it is clicked.</li>
+  <li>Set the size of the <b>JFrame</b> object to 300 pixels by 120 pixels.</li>
+  <li>Make the whole thing visible on the screen.</li>
+  </ul>
+
+<p>
+The code in Listing 12 also ends the constructor.<p>
+<font color="#FF0000"><b>Capture the audio data from the microphone</b></font><p>
+Recall that the event handler on the <b>Capture</b> button invokes the method 
+named <b>captureAudio</b> to cause the data capture process to start.&nbsp; The beginning of the <b>captureAudio</b> method 
+is shown in Listing 13.<br>
+&nbsp;<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>  private void <b>captureAudio</b>(){
+    try{
+      audioFormat = <b>getAudioFormat</b>();
+
+<b><font face="Courier New,Courier">Listing 13</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>
+The purpose of the <b>captureAudio</b> method is to capture audio input data 
+from a microphone and to cause the data to be saved in an audio file of the type 
+specified by the selected radio button in Figure 1.<p>
+<font color="#FF0000"><b>Establishing the audio data format</b></font><p>
+The first step in the capture process is to establish the format of the captured 
+audio data.<p>
+The format of the audio data is not the same 
+thing as the format of the audio file.&nbsp; The format of the audio data 
+establishes how the bits and bytes will be used to represent the values of the 
+audio data.&nbsp; The format of the audio file establishes how those bits and 
+bytes will be saved in a physical file on the disk.<p>
+While it is probably not true that every file format can accommodate every data 
+format, it is true that some data formats can be accommodated by more than one 
+file format.<blockquote>
+
+<p>
+<i>(I plan to publish a future lesson that deals with audio formats and file 
+formats in detail.)</i></blockquote>
+
+<p>
+<font color="#FF0000"><b>The getAudioFormat method</b></font><p>
+The code in Listing 13 invokes the <b>getAudioFormat</b> method in order to 
+establish the audio format.&nbsp; I'm going to set the discussion of the <b>
+captureAudio</b> method aside momentarily and discuss the <b>getAudioFormat</b> 
+method.&nbsp; I will return to a discussion of the <b>captureAudio</b> method 
+after I explain the <b>getAudioFormat</b> method.<p>
+The entire <b>getAudioFormat</b> method is shown in Listing 14.<br>
+&nbsp;<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>  private AudioFormat getAudioFormat(){
+    float sampleRate = 8000.0F;
+    //8000,11025,16000,22050,44100
+    int sampleSizeInBits = 16;
+    //8,16
+    int channels = 1;
+    //1,2
+    boolean signed = true;
+    //true,false
+    boolean bigEndian = false;
+    //true,false
+    return new <b>AudioFormat</b>(sampleRate,
+                           sampleSizeInBits,
+                           channels,
+                           signed,
+                           bigEndian);
+  }//end getAudioFormat
+
+<b><font face="Courier New,Courier">Listing 14</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>
+The <b>getAudioFormat</b> method creates and returns an <b>AudioFormat</b> object for a given set of format parameters.<blockquote>
+
+<p>
+<i><font color="#FF0000"><b>May not work for you<br>
+</b></font>(Not all audio formats are supported on all systems.&nbsp; If these parameters don't work well for you, try some of the other allowable parameter values, which are shown in comments following the declarations.)</i></blockquote>
+
+<p>
+<font color="#FF0000"><b>An AudioFormat object</b></font><p>
+As I mentioned earlier, I plan to publish a future tutorial lesson that explains audio 
+formats in detail.&nbsp; Therefore, this discussion will be very brief.<p>
+As you can see, the code in Listing 14 instantiates and returns an object of the
+<b>AudioFormat</b> class.&nbsp; The constructor used in Listing 14 to 
+instantiate the object requires the following parameters:<ul>
+    <li>sampleRate - The number of samples that will be acquired each second for 
+    each channel of audio data.</li>
+    <li>sampleSizeInBits - The number of bits that will be used to describe the 
+    value of each audio sample.</li>
+    <li>channels - Two channels for stereo, and one channel for mono.</li>
+    <li>signed - Whether the description of each audio sample consists of both 
+    positive and negative values, or positive values only.</li>
+    <li>bigEndian - See a discussion of this topic
+    <a href="http://mindprod.com/jglossendian.html">here</a>.</li>
+    </ul>
+
+<p>
+<font color="#FF0000"><b>My format</b></font><p>
+As you can see in Listing 14, my version of the programs samples a single 
+channel 8000 times per second, dedicating sixteen bits to each sample, using  signed 
+numeric values, and not using BigEndian format.&nbsp; <i>(As mentioned earlier, you 
+may need to use a different format on your system.)</i><p>
+<font color="#FF0000"><b>Default data encoding is linear PCM</b></font><p>
+There are several ways that binary audio data can be encoded into the available 
+bits.&nbsp; The simplest way is known as linear PCM.&nbsp;
+By default, the constructor that I used constructs an <b>AudioFormat</b> object with a 
+linear PCM encoding and the parameters listed above <i>(I will have more to say 
+about linear PCM encoding and other encoding schemes in future lessons).</i><p>
+<font color="#FF0000"><b>A DataLine.Info object</b></font><p>
+Now that we have the audio format established, let's return to our discussion of 
+the <b>captureAudio</b> method shown in Listing 15.<br>
+&nbsp;<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>//Continuing with the captureAudio method
+
+      DataLine.Info dataLineInfo =
+                          new DataLine.Info(
+                            TargetDataLine.class,
+                            audioFormat);
+
+<b><font face="Courier New,Courier">Listing 15</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>
+The next step in the process is to create a new <b>DataLine.Info</b> object that 
+describes the data line that we need to handle the acquisition 
+of the audio data from the microphone.<p>
+As you can see in Listing 15, I used a constructor for this object that requires 
+two parameters.<p>
+<font color="#FF0000"><b>TargetDataLine Class object</b></font><p>
+The first parameter required by the constructor is a <b>Class</b> object.&nbsp; 
+In general, a <b>Class</b> object represents the type of an object. In this 
+case, the parameter represents the type of an object instantiated from a class that implements the
+<b>TargetDataLine</b> interface.<p>
+According to Sun, 
+    <blockquote>
+
+<p>
+<i>&quot;A target data line is a type of <b>DataLine</b> from which audio data can be 
+read. The most common example is a data line that gets its data from an audio 
+capture device. (The device is implemented as a mixer that writes to the target 
+data line.)&quot;</i></blockquote>
+
+<p>
+As you can see, <b>TargetDataLine</b> matches our needs exactly.<p>
+<font color="#FF0000"><b>The audio format parameter</b></font><p>
+The second parameter required by the constructor in Listing 15 is a 
+specification of the required audio format.&nbsp; That specification is achieved by passing the <b>AudioFormat</b> object's 
+reference that was obtained by invoking the <b>
+getAudioFormat</b> method in Listing 13.<p>
+<font color="#FF0000"><b>Getting a TargetDataLine object</b></font><p>
+The next step in the process is to get a <b>TargetDataLine</b> object to handle 
+data acquisition from the microphone that matches the information encapsulated 
+in the <b>DataLine.Info</b> object instantiated in listing 15.<p>
+This is accomplished in Listing 16 by invoking the static <b>getLine</b> method 
+of the <b>AudioSystem</b> class, passing the <b>DataLine.Info</b> object as a 
+parameter.<br>
+&nbsp;<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      targetDataLine = (TargetDataLine)
+               AudioSystem.<b>getLine</b>(dataLineInfo);
+
+<b><font face="Courier New,Courier">Listing 16</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>
+<font color="#FF0000"><b>The AudioSystem class</b></font><p>
+Here is part of what Sun has to say about the <b>AudioSystem</b> class.<blockquote>
+
+<p>
+<i>&quot;AudioSystem includes a number of methods for converting audio data between 
+different formats, and for translating between audio files and streams.</i><p>
+<i> <b>It 
+also provides a method for obtaining a Line directly from the AudioSystem 
+without dealing explicitly with mixers.</b>&quot;</i></blockquote>
+
+<p>
+The boldface portion of the above quotation is what interests us in this 
+program.&nbsp; According to Sun, the static <b>getLine</b> method:<blockquote>
+
+<p>
+<i>&quot;Obtains a line that matches the description in the specified Line.Info 
+object.&quot;</i></blockquote>
+
+<p>
+Note that the <b>getLine</b> method returns a reference to an object of type <b>
+Line</b>, which must be downcast to type <b>TargetDataLine</b> in Listing 16.<p>
+<font color="#FF0000"><b>Spawn and start a thread to handle the data capture</b></font><p>
+The code in Listing 17 creates a new <b>Thread</b> object from the <b>
+CaptureThread</b> class and starts it running.&nbsp; As you will see later, the 
+behavior of the thread is  to capture audio data from the microphone and 
+to store it in an output audio file.<br>
+&nbsp;<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      <b>new CaptureThread().start();</b>
+    }catch (Exception e) {
+      e.printStackTrace();
+      System.exit(0);
+    }//end catch
+  }//end captureAudio method
+
+<b><font face="Courier New,Courier">Listing 17</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>
+The thread starts running when the user clicks the <b>Capture</b> button in 
+Figure 1, and will continue running until the user clicks the <b>Stop</b> button 
+in Figure 1.<p>
+Once the new thread has been created and started, the code in Listing 17, <i>
+(which is part of the <b>captureAudio</b> method)</i>, returns control to the <b>
+actionPerformed</b> event handler method that is registered on the <b>Capture</b> 
+button.<p>
+The <b>captureAudio</b> method ends in Listing 17.<p>
+<font color="#FF0000"><b>The run method of the CaptureThread class</b></font><p>
+The <b>CaptureThread</b> class is an inner class.&nbsp; An object of this class 
+is used to perform the actual capture of the audio data from the microphone and 
+the storage of that data in the output audio file.<p>
+Every thread object has a <b>run</b> method, which determines the behavior of 
+the thread.&nbsp; Listing 18 shows the beginning of the <b>run </b>method of the
+<b>CaptureThread</b> class, including the declaration of two instance 
+variables that will be used later.<br>
+&nbsp;<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>class <b>CaptureThread</b> extends Thread{
+  public void <b>run</b>(){
+    AudioFileFormat.Type fileType = null;
+    File audioFile = null;
+
+<b><font face="Courier New,Courier">Listing 18</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>
+<font color="#FF0000"><b>The output file type</b></font><p>
+The first step in the execution of the <b>run</b> method is to determine the 
+type of output file specified by the user.&nbsp; 
+  <blockquote>
+    <p>
+<i>(Recall that the user specifies a particular audio file type by the selection of a particular radio button in 
+Figure 1.)</i></blockquote>
+  <p>
+The code in Listing 19 is rather long, but very repetitive and simple.<br>
+&nbsp;<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre><b>    if(aifcBtn.isSelected()){
+      fileType = AudioFileFormat.Type.AIFC;
+      audioFile = new File("junk.aifc");</b>
+    }else if(aiffBtn.isSelected()){
+      fileType = AudioFileFormat.Type.AIFF;
+      audioFile = new File("junk.aif");
+    }else if(auBtn.isSelected()){
+      fileType = AudioFileFormat.Type.AU;
+      audioFile = new File("junk.au");
+    }else if(sndBtn.isSelected()){
+      fileType = AudioFileFormat.Type.SND;
+      audioFile = new File("junk.snd");
+    }else if(waveBtn.isSelected()){
+      fileType = AudioFileFormat.Type.WAVE;
+      audioFile = new File("junk.wav");
+    }//end if
+
+<b><font face="Courier New,Courier">Listing 19</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>
+<font color="#FF0000"><b>Set file type based on selected radio button</b></font><p>
+This code in Listing 19 examines the radio buttons to determine which radio button was 
+selected by the user prior to clicking the <b>Capture</b> button.&nbsp; 
+Depending on which radio button was selected, the code in Listing 19:<ul>
+      <li>Sets the type of the audio output file.</li>
+      <li>Establishes the file name and extension for the audio output file.&nbsp;
+      <i>(With a little extra programming effort, you could cause the file name 
+      to be provided by the user via a <b>JTextField</b> object in the GUI.)</i></li>
+      </ul>
+
+<p>
+<font color="#FF0000"><b>The AudioFileFormat.Type class</b></font><p>
+The code in Listing 19 uses constants from the <b>AudioFileFormat.Type</b> 
+class.&nbsp; Here is what Sun has to say about that class.<blockquote>
+
+<p>
+<i>&quot;An instance of the <b>Type</b> class represents one of the standard 
+types of audio file. Static instances are provided for the common types.&quot;</i></blockquote>
+
+<p>
+The class provides the following common types as public static final variables
+<i>(constants).</i><ul>
+        <li>AIFC</li>
+        <li>AIFF</li>
+        <li>AU</li>
+        <li>SND</li>
+        <li>WAVE</li>
+        </ul>
+        <blockquote>
+
+<p>
+<i>(Because I plan to publish a future tutorial lesson 
+that deals with audio data formats and audio file types in detail, I won't comment further on the five common types in the above list in 
+this lesson.)</i></blockquote>
+
+<p>
+The GUI in Figure 1 has one radio button for each of the file types in the above 
+list.&nbsp; Therefore, the code in Listing 19 establishes a file type, name, and 
+extension for each of the five common types.<p>
+<font color="#FF0000"><b>Not all file types are supported on all systems</b></font><p>
+I need to point out that not all of the above-listed file types can be created 
+on all systems.&nbsp; For example, types AIFC and SND produce a <i>&quot;type not 
+supported&quot;</i> error on my system.<br>
+<br>
+<b><font color="#FF0000">Start acquiring audio data from the microphone</font></b><p>
+The two statements in Listing 20 cause the audio data acquisition process to 
+begin.<br>
+&nbsp;<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>    try{
+      targetDataLine.<b>open</b>(audioFormat);
+      targetDataLine.<b>start</b>();
+
+<b><font face="Courier New,Courier">Listing 20</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>
+<font color="#FF0000"><b>The open method</b></font><p>
+Here is part of what Sun has to say about the <b>open</b> method of the <b>
+TargetDataLine</b> interface.<blockquote>
+
+<p>
+<i>&quot;Opens the line with the specified format, causing the line to acquire any 
+required system resources and become operational.&nbsp; The implementation 
+chooses a buffer size ...&quot;</i></blockquote>
+
+<p>
+<font color="#FF0000"><b>The start method</b></font><p>
+Note that this refers to the <b>start</b> method of the <b>TargetDataLine</b> 
+object, <i>(not the <b>start</b> method of the <b>CaptureThread</b> object, 
+which was invoked in Listing 17).</i><p>
+Here is part of what Sun has to say about the <b>start</b> method invoked in 
+Listing 20.<blockquote>
+
+<p>
+<i>&quot;Allows a line to engage in data I/O. If invoked on a line that is already 
+running, this method does nothing.&quot;</i></blockquote>
+
+<p>
+<font color="#FF0000"><b>The AudioSystem.write method</b></font><p>
+Everything discussed so far has been leading up to a 
+discussion of the <b>write</b> method of the <b>AudioSystem</b> class, which is 
+invoked in the <b>run</b> method of the thread object in Listing 21.<br>
+&nbsp;<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      AudioSystem.<b>write</b>(
+            new AudioInputStream(targetDataLine),
+            fileType,
+            audioFile);
+
+<b><font face="Courier New,Courier">Listing 21</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>
+This is a very significant, very high-level method.&nbsp; However, for such a significant method, the information provided by Sun is amazingly 
+sparse.&nbsp; There are two overloaded versions of the <b>write</b> method in 
+Java SDK 1.4.1.&nbsp; Here is what Sun has to say about the version shown in 
+Listing 21.<blockquote>
+
+<p>
+<i>&quot;Writes a stream of bytes representing an audio file of the specified file 
+type to the external file provided.</i>&quot;</blockquote>
+
+<p>
+<font color="#FF0000"><b>No loops or buffers</b></font><p>
+To fully appreciate the significance of this method, you should first note that 
+there are no loops and there is no buffer manipulation involved in the code in Listing 21.&nbsp; Rather, 
+the code in Listing 21 consists of a single statement that invokes the static <b>
+write</b> method of the <b>AudioSystem</b> class.<p>
+By way of comparison, Listing 22 shows the code from a similar program in
+<a href="http://www.developer.com/java/other/article.php/1579071">Java Sound, 
+Getting Started, Part 2, Capture Using Specified Mixer</a>.&nbsp; This program 
+was used to capture microphone data and to store that data in an object of type<b> 
+ByteArrayOutputStream</b> <i>(a memory buffer)</i>.<b> </b>
+<br>
+&nbsp;<table COLS=1 WIDTH="400" BGCOLOR="#00FFFF" style="border-collapse: collapse" bordercolor="#111111" cellpadding="0" cellspacing="0" >
+<tr>
+<td>
+<pre>while(!stopCapture){
+  //Read data from the internal buffer of
+  // the data line.
+  int cnt = targetDataLine.<b>read</b>(tempBuffer,
+                        0,
+                        tempBuffer.length);
+
+  if(cnt &gt; 0){
+    //Save data in output stream object.
+    byteArrayOutputStream.<b>write</b>(tempBuffer,
+                                0,
+                                cnt);
+    }//end if
+  }//end while
+
+<b><font face="Courier New,Courier">Listing 22</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>
+<font color="#FF0000"><b>More complex code from earlier program</b></font><p>
+As you can see, the code in Listing 22 from the earlier program was required to 
+loop while monitoring for a signal to stop data capture.&nbsp; In addition, the 
+code was required to invoke interlaced <b>read</b> and <b>write</b> methods, 
+while dealing with the internal buffer of the <b>TargetDataLine</b> object and 
+a temporary buffer object as well.<p>
+All of these details are handled automatically by the single invocation of the
+<b>write</b> method in Listing 21.<p>
+<font color="#FF0000"><b>Features and characteristics of the write method</b></font><p>
+In addition to its other features, the <b>AudioSystem.write</b> method knows how 
+to detect that the <b>stop</b> method has been invoked on the <b>TargetDataLine</b> 
+object <i>(see Listing 7)</i> and to close the output file when that happens.&nbsp; 
+Therefore, it was not necessary for me to monitor for a signal to stop data 
+capture and close the output file.<p>
+The required parameters for the <b>write</b> method in Listing 21 are:<ul>
+  <li>An audio input stream of type <b>AudioInputStream</b> containing audio 
+  data to be written to the file.</li>
+  <li>The type of audio file to write, specified as type <b>AudioFileFormat.Type</b></li>
+  <li>The external file to, which the data should be written, specified as type
+  <b>File</b>.</li>
+  </ul>
+
+<p>
+The second two parameters were already available, having been created earlier.&nbsp; 
+However, a little extra work was required to create the first parameter.<p>
+<font color="#FF0000"><b>The AudioInputStream parameter</b></font><p>
+According to Sun,<blockquote>
+
+<p>
+<i>&quot;An audio input stream is an input stream with a specified audio format and 
+length.&quot;</i></blockquote>
+
+<p>
+As of Java SDK 1.4.1, the <b>AudioInputStream</b> class provides the two 
+constructors shown in Figure 2.<br>
+&nbsp;<table COLS=1 WIDTH="400" BGCOLOR="#FFFFFF" style="border-collapse: collapse" bordercolor="#111111" cellpadding="0" cellspacing="0" >
+<tr>
+<td bgcolor="#00FF00">
+
+<p>
+<font face="Courier New" size="2"><b>AudioInputStream</b>(InputStream&nbsp;stream<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+AudioFormat&nbsp;format,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+long&nbsp;length) <br>
+This constructor constructs an audio input stream that has the requested format 
+and length in sample frames, using audio data from the specified input stream.</font><p>
+<font face="Courier New" size="2"><b>AudioInputStream</b>(TargetDataLine&nbsp;line)
+<br>
+Constructs an audio input stream that reads its data from the target data line 
+indicated.<br>
+<br>
+<b>Figure 2 Constructors for the AudioInputStream class</b></font></td>
+</tr>
+</table>
+
+<p>
+Since I already had a <b>TargetDataLine</b> object, I elected to use the second 
+constructor to create the <b>AudioInputStream</b> object required for the first 
+parameter of the <b>write</b> method in Listing 21.<p>
+<font color="#FF0000"><b>End of the run method and end of the class definition</b></font><p>
+Except for a <b>catch</b> block, that ends the definition of the <b>
+run</b> method of the <b>CaptureThread</b> class that begins in Listing 18.&nbsp; 
+ 
+<p>
+That is also the end of the <b>CaptureThread</b> class, and the end of the 
+program.&nbsp;  <p>
+You can view a complete listing of the program in Listing 22 near the end of the lesson.<center>
+<h2>
+<a NAME="Run the program"></a>Run the Program</h2></center>
+<p>
+      At this point, you may find it useful to compile and run the program shown 
+      in Listing 22 near the end of the lesson.<p>
+      <font color="#FF0000"><b>Not all file types and data formats are supported</b></font><p>
+      As I mentioned earlier, not all file types can be created on all systems.&nbsp;
+      For example, types AIFC and SND produce a <i>"type<br>
+      not supported"</i> error on my system.<p>
+      Also, not all data formats are supported on all systems.&nbsp; If the 
+      format parameters that I used in Listing 14 don't work well for you, try 
+      some of the other allowable parameters, which are listed in comments 
+      following the variable declarations.<p>
+      <font color="#FF0000"><b>The program GUI at startup</b></font><p>
+      When you start the program, the GUI shown in Figure 1 should appear on 
+      your screen.&nbsp; Select an audio file type by selecting one of the radio 
+      buttons.&nbsp; Then click the <b>Capture</b> button and start talking into 
+      the microphone.&nbsp; When you have recorded enough audio data, click the
+      <b>Stop</b> button.<p>
+      <font color="#FF0000"><b>An output audio file should be created</b></font><p>
+      At that point in time, an audio file named <b>junk.xx</b> should be in the 
+      folder containing the compiled version of your program.&nbsp; The file 
+      extension will depend on the type of audio file you selected with the 
+      radio buttons before you clicked the <b>Capture</b> button <i>(see Listing 
+      19 for an identification of the possible extensions).</i><br>
+      <br>
+      <font color="#FF0000"><b>Play back the audio file</b></font><p>
+      You should be able to play the audio file back using a standard media 
+      player such as Windows Media Player.<p>
+      If you run the program two 
+      times in succession for the same audio file type, be sure to release the old file from the media
+      player before attempting to create a new file
+      with the same name and extension.&nbsp; Otherwise, it won't be possible to 
+      create the new file with the same name and extension, and you will get an 
+      error message.<p>
+      If you don't hear anything during playback, you may need to increase your speaker volume.<h2 align="center"><a name="Summary">Summary</a></h2>
+<p>In this lesson, I showed you how to use the Java Sound API to capture audio 
+data from a microphone and how to save that data in an audio file type of your 
+choosing.<center>
+<h2>
+<a NAME="Complete Program Listings"></a>Complete Program Listing</h2></center>
+  A complete listing of the program is shown in Listing 22.<br>
+&nbsp;<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>/*File AudioRecorder02.java
+Copyright 2003, Richard G. Baldwin
+
+This program demonstrates the capture of audio
+data from a microphone into an audio file.
+
+A GUI appears on the screen containing the
+following buttons:
+  Capture
+  Stop
+
+In addition, five radio buttons appear on the
+screen allowing the user to select one of the
+following five audio output file formats:
+
+  AIFC
+  AIFF
+  AU
+  SND
+  WAVE
+
+When the user clicks the Capture button, input
+data from a microphone is captured and saved in
+an audio file named junk.xx having the specified
+file format.  (xx is the file extension for the
+specified file format.  You can easily change the
+file name to something other than junk if you
+choose to do so.)
+
+Data capture stops and the output file is closed
+when the user clicks the Stop button.
+
+It should be possible to play the audio file
+using any of a variety of readily available
+media players, such as the Windows Media Player.
+
+Not all file types can be created on all systems.
+For example, types AIFC and SND produce a "type
+not supported" error on my system.
+
+Be sure to release the old file from the media
+player before attempting to create a new file
+with the same extension.
+
+Tested using SDK 1.4.1 under Win2000
+************************************************/
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.io.*;
+import javax.sound.sampled.*;
+
+public class AudioRecorder02 extends JFrame{
+
+  AudioFormat audioFormat;
+  TargetDataLine targetDataLine;
+
+  final JButton captureBtn =
+                          new JButton("Capture");
+  final JButton stopBtn = new JButton("Stop");
+
+  final JPanel btnPanel = new JPanel();
+  final ButtonGroup btnGroup = new ButtonGroup();
+  final JRadioButton aifcBtn =
+                        new JRadioButton("AIFC");
+  final JRadioButton aiffBtn =
+                        new JRadioButton("AIFF");
+  final JRadioButton auBtn =//selected at startup
+                     new JRadioButton("AU",true);
+  final JRadioButton sndBtn =
+                         new JRadioButton("SND");
+  final JRadioButton waveBtn =
+                        new JRadioButton("WAVE");
+
+  public static void main( String args[]){
+    new AudioRecorder02();
+  }//end main
+
+  public AudioRecorder02(){//constructor
+    captureBtn.setEnabled(true);
+    stopBtn.setEnabled(false);
+
+    //Register anonymous listeners
+    captureBtn.addActionListener(
+      new ActionListener(){
+        public void actionPerformed(
+                                  ActionEvent e){
+          captureBtn.setEnabled(false);
+          stopBtn.setEnabled(true);
+          //Capture input data from the
+          // microphone until the Stop button is
+          // clicked.
+          captureAudio();
+        }//end actionPerformed
+      }//end ActionListener
+    );//end addActionListener()
+
+    stopBtn.addActionListener(
+      new ActionListener(){
+        public void actionPerformed(
+                                  ActionEvent e){
+          captureBtn.setEnabled(true);
+          stopBtn.setEnabled(false);
+          //Terminate the capturing of input data
+          // from the microphone.
+          targetDataLine.stop();
+          targetDataLine.close();
+        }//end actionPerformed
+      }//end ActionListener
+    );//end addActionListener()
+
+    //Put the buttons in the JFrame
+    getContentPane().add(captureBtn);
+    getContentPane().add(stopBtn);
+
+    //Include the radio buttons in a group
+    btnGroup.add(aifcBtn);
+    btnGroup.add(aiffBtn);
+    btnGroup.add(auBtn);
+    btnGroup.add(sndBtn);
+    btnGroup.add(waveBtn);
+
+    //Add the radio buttons to the JPanel
+    btnPanel.add(aifcBtn);
+    btnPanel.add(aiffBtn);
+    btnPanel.add(auBtn);
+    btnPanel.add(sndBtn);
+    btnPanel.add(waveBtn);
+
+    //Put the JPanel in the JFrame
+    getContentPane().add(btnPanel);
+
+    //Finish the GUI and make visible
+    getContentPane().setLayout(new FlowLayout());
+    setTitle("Copyright 2003, R.G.Baldwin");
+    setDefaultCloseOperation(EXIT_ON_CLOSE);
+    setSize(300,120);
+    setVisible(true);
+  }//end constructor
+
+  //This method captures audio input from a
+  // microphone and saves it in an audio file.
+  private void captureAudio(){
+    try{
+      //Get things set up for capture
+      audioFormat = getAudioFormat();
+      DataLine.Info dataLineInfo =
+                          new DataLine.Info(
+                            TargetDataLine.class,
+                            audioFormat);
+      targetDataLine = (TargetDataLine)
+               AudioSystem.getLine(dataLineInfo);
+
+      //Create a thread to capture the microphone
+      // data into an audio file and start the
+      // thread running.  It will run until the
+      // Stop button is clicked.  This method
+      // will return after starting the thread.
+      new CaptureThread().start();
+    }catch (Exception e) {
+      e.printStackTrace();
+      System.exit(0);
+    }//end catch
+  }//end captureAudio method
+
+  //This method creates and returns an
+  // AudioFormat object for a given set of format
+  // parameters.  If these parameters don't work
+  // well for you, try some of the other
+  // allowable parameter values, which are shown
+  // in comments following the declarations.
+  private AudioFormat getAudioFormat(){
+    float sampleRate = 8000.0F;
+    //8000,11025,16000,22050,44100
+    int sampleSizeInBits = 16;
+    //8,16
+    int channels = 1;
+    //1,2
+    boolean signed = true;
+    //true,false
+    boolean bigEndian = false;
+    //true,false
+    return new AudioFormat(sampleRate,
+                           sampleSizeInBits,
+                           channels,
+                           signed,
+                           bigEndian);
+  }//end getAudioFormat
+//=============================================//
+
+//Inner class to capture data from microphone
+// and write it to an output audio file.
+class CaptureThread extends Thread{
+  public void run(){
+    AudioFileFormat.Type fileType = null;
+    File audioFile = null;
+
+    //Set the file type and the file extension
+    // based on the selected radio button.
+    if(aifcBtn.isSelected()){
+      fileType = AudioFileFormat.Type.AIFC;
+      audioFile = new File("junk.aifc");
+    }else if(aiffBtn.isSelected()){
+      fileType = AudioFileFormat.Type.AIFF;
+      audioFile = new File("junk.aif");
+    }else if(auBtn.isSelected()){
+      fileType = AudioFileFormat.Type.AU;
+      audioFile = new File("junk.au");
+    }else if(sndBtn.isSelected()){
+      fileType = AudioFileFormat.Type.SND;
+      audioFile = new File("junk.snd");
+    }else if(waveBtn.isSelected()){
+      fileType = AudioFileFormat.Type.WAVE;
+      audioFile = new File("junk.wav");
+    }//end if
+
+    try{
+      targetDataLine.open(audioFormat);
+      targetDataLine.start();
+      AudioSystem.write(
+            new AudioInputStream(targetDataLine),
+            fileType,
+            audioFile);
+    }catch (Exception e){
+      e.printStackTrace();
+    }//end catch
+
+  }//end run
+}//end inner class CaptureThread
+//=============================================//
+
+}//end outer class AudioRecorder02.java
+
+<b><font face="Courier New,Courier">Listing 22</font></b></pre>
+</td>
+</tr>
+</table>
+
+   <hr size=3 width="100%" align=center>
+<p>Copyright 2003, Richard G. Baldwin.&nbsp; Reproduction in whole or in
+part in any form or medium without express written permission from Richard
+Baldwin is prohibited. <h4>
+<a NAME="About the author"></a>About the author</h4>
+<i><a href="mailto:Baldwin@DickBaldwin.com">Richard Baldwin</a> is a college professor (at Austin Community College in Austin, TX) and private consultant whose primary focus is a combination of Java, C#, and XML. In addition to the many platform and/or language independent benefits of Java and C# applications, he believes that a combination of Java, C#, and XML will become the primary driving force in the delivery of structured information on the Web.</i><br><p><i>Richard has participated in numerous consulting projects and he
+frequently provides onsite training at the high-tech companies located
+in and around Austin, Texas.&nbsp; He is the author of Baldwin's Programming <a href="http://www.DickBaldwin.com">Tutorials</a>,
+which has gained a worldwide following among experienced and aspiring programmers.
+He has also published articles in JavaPro magazine.</i> <p><i>Richard holds an MSEE degree from Southern Methodist University and
+has many years of experience in the application of computer technology
+to real-world problems.</i> <p><i><a href="mailto:Baldwin@DickBaldwin.com">Baldwin@DickBaldwin.com</a></i> <p>-end- </body></html>

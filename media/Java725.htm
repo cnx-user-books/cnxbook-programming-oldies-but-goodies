@@ -1,0 +1,866 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>... in Java by Richard G Baldwin</TITLE>
+<META NAME="Template" CONTENT="C:\PROGRAM FILES\MICROSOFT OFFICE\OFFICE\html.dot">
+</HEAD>
+<BODY LINK="#0000ff" VLINK="#800080" BGCOLOR="#ffffff">
+
+<P><!--start--></P>
+<I><H3 ALIGN="CENTER">Richard G Baldwin (512) 223-4758, </I><A HREF="mailto:baldwin@austin.cc.tx.us"><I>baldwin@austin.cc.tx.us</I></A><I>, </I><A HREF="http://www2.austin.cc.tx.us/baldwin/"><I>http://www2.austin.cc.tx.us/baldwin/</I></A></H3>
+<H2 ALIGN="CENTER"><!--title-->Security, Digital Certificates<!--endtitle--></H2>
+<P>Java Programming, Lecture Notes # 725, Revised 5/19/99. </P>
+
+<UL>
+<LI><A HREF="#Preface">Preface</A> </LI>
+<LI><A HREF="#Disclaimer">Disclaimer</A> </LI>
+<LI><A HREF="#Introduction">Introduction</A> </LI>
+<LI><A HREF="#Terminology">Terminology</A> </LI>
+<LI><A HREF="#Discussion">Discussion</A> </LI>
+<LI><A HREF="#KeyManagement">Key Management</A> </LI>
+<LI><A HREF="#CertificateProgramming">Certificate Programming</A> </LI>
+<LI><A HREF="#SampleProgram">Sample Program</A> </LI>
+
+<UL>
+<LI><A HREF="#InterestingCodeFragments">Interesting Code Fragments</A></LI></UL>
+
+<LI><A HREF="#ProgramListing">Program Listing</A></LI></UL>
+
+<P><HR></P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Preface">Preface</A></H2>
+</FONT><P>Students in Prof. Baldwin's <B><U>Advanced Java Programming</B></U> classes at ACC will be responsible for knowing and understanding all of the material in this lesson beginning with the summer semester of 1999. </P>
+<P>This lesson was originally written on April 26, 1999 and has been updated several times since.</P>
+<P>The program in this lesson was tested using JDK 1.2 under Win95</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Disclaimer">Disclaimer</A></H2>
+</FONT><P>I claim absolutely no expertise in the area of security. I am simply a college professor attempting to gather information about Java on one hand and present it to my students on the other. I disclaim any responsibility for any security problems that may occur as a result of anyone using any of the material in any of my tutorial lessons.</P>
+<P>You are responsible for your own actions. With regard to security, you should study not only the material that I will present, but also material provided by others who possess expertise in the security area. Hopefully my material will be useful in getting you started in that direction.</P>
+<P>Two good books on security published by O'Reilly &amp; Associates are:</P>
+
+<UL>
+<U><LI>Java Security</U> by Scott Oaks </LI>
+<U><LI>Java Cryptography</U> by Jonathan Knudsen</LI></UL>
+
+<P>I highly recommend both of these books.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Introduction">Introduction</A></H2>
+<B><P>Message digests and digital signatures, the basis of certificates</P>
+</B></FONT><P>Previous lessons introduced you to message digests and digital signatures. These two topics form the basis for <I>Digital Certificates</I>, which is the primary topic of this lesson.</P>
+<B><FONT COLOR="#ff0000"><P>Tools for certificate management</P>
+</B></FONT><P>There are two major aspects of Digital Certificates insofar as Java is concerned. The first aspect involves the tools provided with the JDK that allow you to manage keys, certificates, and signed jar files from the command line. </P>
+<B><FONT COLOR="#ff0000"><P>Writing code to manage certificates</P>
+</B></FONT><P>The second aspect involves the manner in which you can manage certificates under program control. This lesson addresses the management of keys and certificates from the command line, and also addresses the management of certificates under program control.</P>
+<B><FONT COLOR="#ff0000"><P>Mechanics versus procedures</P>
+</B></FONT><P>For the most part, my tutorial lessons concentrate on the mechanics of using the Java tools and the Java API. I won't attempt to give advice on overall security procedures. Rather, I will leave that to others who have given more thought to the topic than I have.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Terminology">Terminology</A></H2>
+<B><P>The jargon of the trade</P>
+</B></FONT><P>The topic of <I>Digital Signatures</I> involves a lot of special terminology. In order to prepare you for discussions to follow in later sections, this section contains definitions or descriptions for much of that terminology.</P>
+<B><P>Entity</B> - A person, company, organization, program, computer, business, bank, or something else that you are trusting to some degree.</P>
+<B><P>Certificate</B> - A digitally signed statement from one entity (the <I>issuer</I>), saying that the public key (and other information) of another entity (the <I>subject</I>) has some specific value. All the data in a certificate is encoded using two related standards called ASN.1/DER. </P>
+
+<UL>
+<B><LI>Abstract Syntax Notation 1</B> (ASN.1) - Describes data. </LI>
+<B><LI>Definite Encoding Rules (DER)</B> - Describe a single way to store and transfer that data.</LI></UL>
+
+<B><P>Public Key</B> - One half of a <I>public/private</I> key pair. A cryptographic key associated with a particular entity. It is intended that everyone who needs to have trusted interactions with that entity also have access to the key. </P>
+<B><P>Private Key</B> - One half of a <I>public/private</I> key pair. A cryptographic key intended to be known only to the particular entity that owns it. Private and public keys exist in pairs in public key cryptography systems. Data that has been encrypted using a private key can be decrypted using the corresponding public key. Similarly, data that is encrypted using the public key can be decrypted using the private key.</P>
+<B><P>Digitally Signed - </B>Digitally signed data is stored with the identity of an entity, and a digital signature that are intended to authenticate the source of the data and to confirm the integrity of the data. The data is signed using the entity's private key. Assuming that the public key of the source entity is known with confidence, it is possible to confirm the integrity of the data to a very high degree of confidence.</P>
+<B><P>Signature - </B>Typically an encrypted version of a message digest computed across the data that the signature is intended to represent. The digest is encrypted using an entity's private key so that it can be decrypted by another entity using the corresponding public key. Assuming that the public key is known with confidence, the receiving entity can compute the digest of the received data and compare it with the decrypted signature to authenticate the source of the data and confirm the integrity of the data.</P>
+<B><P>Identity</B> - A known way of addressing an entity. In some systems the identity is the public key. In others it can be anything from a Unix UID to an Email address or an X.509 Distinguished Name.</P>
+<B><P>Certification Authority (CA) </B>- A trusted third party whose public key is widely known with confidence. The CA serves as the root of a chain of certificates which, taken as a whole, can be used to verify the public key of the entity at the end of the chain. As of 4/28/99, some existing Certification Authorities were <A HREF="http://www.verisign.com/">VeriSign</A>, <A HREF="http://www.thawte.com/">Thawte</A>, and <A HREF="http://www.entrust.com/">Entrust</A>. You can also operate your own CA within your organization.</P>
+<B><P>keytool</B> - A program provided with JDK 1.2 that makes it possible to display, import, and export certificates. It is also possible to generate self-signed certificates. As of 4/28/99, <B>keytool</B> handles X.509 certificates.</P>
+<B><P>X.509 Certificates </B>- The X.509 standard defines what information can be contained in a certificate, and the data format of the certificate. X.509 certificates contain the following data, in addition to the signature:</P>
+
+<UL>
+<LI>Version </LI>
+<LI>Serial number </LI>
+<LI>Signature algorithm identifier </LI>
+<LI>Issuer name </LI>
+<LI>Validity period </LI>
+<LI>Subject's name </LI>
+<LI>Subject's public key </LI>
+<LI>Issuer's unique identifier (versions 2 and 3) </LI>
+<LI>Subjects unique identifier (versions 2 and 3) </LI>
+<LI>Extensions (additional data in version 3) </LI>
+<LI>X.500 Distinguished Names</LI></UL>
+
+<P>Descriptions of some of the items in an X509 certificate follow.</P>
+<B><P>Version - </B>Identifies which version of the X.509 standard applies to the certificate. This determines the information that can be specified in it. As of 4/28/99, <B>keytool</B> can import and export v1, v2, and v3 certificates. It generates only v1 certificates.</P>
+<B><P>Serial Number - </B>A number created by the entity that issued the certificate that distinguishes it from other certificates issued by that same entity.</P>
+<B><P>Signature Algorithm Identifier - </B>Identifies the cryptographic algorithm used by the CA to sign the certificate.</P>
+<B><P>Issuer Name - </B>The <A HREF="#x5oodistinguishedname">X.500 Distinguished Name</A> of the entity that signed the certificate. </P>
+<B><P>Validity Period - </B>Each certificate is valid for a specified amount of time. This is the period during which the certificate is valid.</P>
+<B><P>Subject Name - </B>The name of the entity whose public key is identified by the certificate. </P>
+<B><P>Subject Public Key Information - </B>Public key of the entity being named, an algorithm identifier which specifies the public key cryptographic system to which this key belongs, and any associated key parameters.</P>
+<B><P><A NAME="x5oodistinguishedname"><A NAME="DName">X.500 Distinguished Names</A></B> </A>- Used to identify entities, such as those that are named by the <I>subject</I> and <I>issuer</I> fields of X.509 certificates. <B>keytool</B> supports the following subparts: </P>
+
+<UL>
+<I><LI>commonName</I> - common name of a person, such as "Richard Baldwin" </LI>
+<I><LI>organizationUnit</I> - small organization name such as the name of a department within a company. </LI>
+<I><LI>organizationName</I> - large organization name such as the name of a company. </LI>
+<I><LI>localityName</I> - locality (city) name such as Austin. </LI>
+<I><LI>stateName</I> - state or province name such as Texas. </LI>
+<I><LI>country</I> - two-letter country code such as US.</LI></UL>
+
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Discussion">Discussion</A></H2>
+<B><P>Privacy and security goals</P>
+</B></FONT><P>An earlier lesson suggested that when exchanging data electronically, the parties to the communication might be interested in the following three aspects of that communication:</P>
+
+<UL>
+<B><LI>Authentication</B>: Confirming the identities of the parties involved. </LI>
+<B><LI>Confidentiality</B>: Making certain that only authorized parties can understand the communication, even if it is intercepted by unauthorized persons. </LI>
+<B><LI>Integrity</B>: Confirming that the content of the communication wasn't modified during transmission.</LI></UL>
+
+<P>This lesson deals with only the first and third items: <I>authentication</I> and <I>integrity</I>. Generally, some type of encryption is required to achieve <I>confidentiality</I>. Encryption is the topic of a different lesson.</P>
+<B><FONT COLOR="#ff0000"><P>Digitally signed documents</P>
+</B></FONT><P>In an earlier lesson, you learned about <I>public</I> and <I>private</I> keys and how these keys can be used to create a digitally signed document. <B><I>If</B></I> the originator of the document uses the private key to sign the document, the recipient of the document can use the corresponding public key to <I>authenticate</I> and confirm the <I>integrity</I> of the document. In other words, if the recipient has the public key corresponding to the private key used by the originator to sign the document, the recipient can confirm that:</P>
+
+<UL>
+<LI>The document was signed by the person claiming to be the originator. </LI>
+<LI>The contents of the document have not been corrupted since the document was originally signed.</LI></UL>
+
+<P>However, the <B><I>if</B></I> in the above statement is a big <B><I>if</B></I>. In an earlier lesson on digital signatures, I assumed that the originator could provide her public key to the recipient via a secure communication channel. However, this is not always the case.</P>
+<B><FONT COLOR="#ff0000"><P>The major problem in public key cryptography</P>
+</B></FONT><P>The major problem in <I>public key cryptography</I> is management of the keys. If I sign a document and send it to you along with my public key via the Internet, you can't be sure that the entire message and the key weren't intercepted and corrupted somewhere along the way. </P>
+<P>The attacker could corrupt and digitally sign the document, and send you a different public key corresponding to the private key that was used to sign the corrupted document. If you believe that the substitute key is really my public key, you might verify and use the document using the bogus public key believing that it has not been corrupted.</P>
+<B><FONT COLOR="#ff0000"><P>Digital certificates, the solution to the problem</P>
+</B></FONT><P>That brings us to <I>digital certificates</I>. A digital certificate is nothing more than a digitally signed document from one party (<I>signer</I>) that verifies the <U>identity and public key</U> of another party (<I>subject</I>). </P>
+<P>If you know with certainty the public key of the <I>signer</I>, and if you trust the <I>signer</I>, you can determine the identity and public key of the <I>subject</I> with confidence. You can than use the public key of the <I>subject</I> to authenticate and verify the integrity of documents signed by her.</P>
+<B><FONT COLOR="#ff0000"><P>A hypothetical example</P>
+</B></FONT><P>Consider the following hypothetical example. The CEO of the small company where you work posts her public key on her office door in plain view of all employees. Each time she enters or leaves the office, she pauses and confirms that the posted version of her public key hasn't been modified. </P>
+<P>In certificate jargon, she might be known as the <I>Certification Authority</I> or <I>CA</I> having a well-known public key. She may even take other actions to expose her public key such as publishing it each week in the company newsletter.</P>
+<B><FONT COLOR="#ff0000"><P>Certifying the identity and public keys of department heads</P>
+</B></FONT><P>The company has three departments managed by Katherine, Dick, and Cynthia. The CEO generates three <I>self-signed</I> certificates, one for each of the department heads. Each of these certificates verifies the identity of a department head, and also provides the public key for that department head. </P>
+<P>Having a copy of the CA certificate for one of the department heads, you can then extract the information from the certificate and obtain the true identity and public key for that department head. </P>
+<P>You can trust that the information about the department head is true because the information has been attested to and digitally signed by the CEO. You have extracted the information from the certificate signed by the CEO using her well-known public key. Since the CEO's public key is well known (it's posted on her office door), you can be confident that a bogus public key hasn't been substituted for the CEO's public key.</P>
+<B><FONT COLOR="#ff0000"><P>Certifying the identity and public keys of ordinary employees</P>
+</B></FONT><P>Each of the department heads has five or six employees under their supervision. Some of those employees need to digitally sign documents (or code). The department heads create and digitally sign certificates for each of those employees. These certificates contain identifying information about the employee along with the public key for that employee. </P>
+<B><FONT COLOR="#ff0000"><P>Using a certificate chain</P>
+</B></FONT><P>The combination (of the CA certificate describing the department head and the department head certificate describing the employee) is commonly referred to as a <I>certificate chain</I>. </P>
+<P>Sue is one of the employees who report to Katherine. If you receive a digitally signed document from Sue along with copies of the digital certificates produced by the CEO and the Department Head, you will know with confidence the value of Sue's public key. You can then use her public key to verify her document. </P>
+<P>In other words, </P>
+
+<UL>
+<LI>You can use the CEO's public key to verify the identity and public key for the department head named Katherine. </LI>
+<LI>You can use Katherine's public key to verify the identity and public key for the employee named Sue. </LI>
+<LI>You can use Sue's public key to verify that the document really came from her, and that the document was not corrupted in transit after she signed it.</LI></UL>
+
+<B><FONT COLOR="#ff0000"><P>Confidence in the validity of the CA public key is a must</P>
+</B></FONT><P>This is possible only because you are absolutely confident that the CEO's public key that you use to verify Katherine's public key is a valid public key for the CEO. Therefore, you must have received the public key for the CEO in a manner that prevented it from being replaced by a bogus key (such as posting on the CEO's office door, or publication each week in the company newsletter).</P>
+<B><FONT COLOR="#ff0000"><P>Digital certificates on the Internet</P>
+</B></FONT><P>While this hypothetical example might be practical within a small company, a different approach is required for the use of digital certificates across the Internet as a whole. After all, there is (thankfully) no CEO for the Internet whose public key is completely trustworthy.</P>
+<P>There are several companies and organizations whose public keys are widely published and well known. They will, for a price, issue a <I>self-signed</I> digital certificate verifying the identity and public key for a <I>subject</I>. The subject could be an individual, a company, or any other entity that needs to digitally sign documents or code.</P>
+<B><FONT COLOR="#ff0000"><P>All certificates are not created equal</P>
+</B></FONT><P>Unfortunately, not all certificates are issued with the same level of certainty regarding the identity and public key for the <I>subject</I>. According to Scott Oaks, author of <U>Java Security</U>, </P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<P>"certificate authorities have different levels at which they assess the identity of the entity named in the certificate. Some of these levels are very stringent and require the CA to do an extensive verification that (the subject) is who he says he is. Other levels are not stringent at all, and if (the subject) can produce a few dollars and a credit card, he is assumed to be (the subject). Hence, one of the steps in the process of deciding whether or not to trust the entity named in the certificate includes the level at which the certificate authority generated the certificate."</TD>
+</TR>
+</TABLE>
+
+<P>For example, as of 4/26/99, the following statement appears on the VeriSign page at <A HREF="http://digitalid.verisign.com/ns_pick.htm">http://digitalid.verisign.com/ns_pick.htm</A>.</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<P>"The first step in applying for a Digital ID for Netscape Object Signing technology is choosing the class of Digital ID you need. The class of a Digital ID indicates the degree of assurance VeriSign provides about the identity of the holder of the Digital ID. The higher the class number, the more assurance the Digital ID carries. "</TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Don't assume that a certificate equates with trustworthy</P>
+</B></FONT><P>Just because someone has a digital certificate that was issued by a Certification Authority, you shouldn't necessarily consider that certificate to provide a high level of assurance regarding the identity of that person. </P>
+<P>You need to do some further checking with the issuer of the certificate to determine the level of assurance associated with the certificate. It could be that all that was required to get the Certification Authority to issue the certificate was to send a request along with a credit card number. It is a well-known fact that credit cards are easy to get, even for people with bad habits.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="KeyManagement">Key Management</A></H2>
+</FONT><P>This section is concerned primarily with the command-line tool named <B>keytool</B> provided with JDK 1.2 for the management of keys and certificates. A later section will deal with managing or manipulating certificates under program control.</P>
+<P>The official Sun description of <B>keytool</B>, as copied from the documentation for JDK 1.2 is:</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<P>"Manages a keystore (database) of private keys and their associated X.509 certificate chains authenticating the corresponding public keys. Also manages certificates from trusted entities."</TD>
+</TR>
+</TABLE>
+
+<P>A further description of <B>keytool</B> from the JDK 1.2 documentation reads as follows:</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<P><B>"keytool</B> is a key and certificate management utility. It enables users to administer their own public/private key pairs and associated certificates for use in self-authentication (where the user authenticates himself/herself to other users/services) or data integrity and authentication services, using digital signatures. It also allows users to cache the public keys (in the form of certificates) of their communicating peers." </TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Authenticity and integrity</P>
+</B></FONT><P>As you are aware, digitally signed data can be verified to check the <I>integrity</I> of the data and the <I>authenticity</I> of the source. <I>Integrity</I> means that the data has not been modified or tampered with since it was signed. <I>Authenticity</I> means that the data came from whoever claims to have created and signed it.</P>
+<B><FONT COLOR="#ff0000"><P>The keystore</P>
+</B></FONT><P>The <B>keytool</B> program stores keys and certificates in a special database referred to as a <I>keystore</I>. The default implementation writes the keystore into a file. The file can either be a file named <B>.keystore</B> (note the period) in the user's home directory, or a file having a different name somewhere else on the disk. The default implementation protects the keystore with one password and protects private and secret keys with a separate password.</P>
+<B><FONT COLOR="#ff0000"><P>The jarsigner tool</P>
+</B></FONT><P>I will discuss another tool named <B>jarsigner</B> in detail in a different lesson. This tool uses information from a keystore to generate digital signatures for Java ARchive (JAR) files. </P>
+<P>The <B>jarsigner</B> tool can also be used to verify the digital signature of a JAR file, using the certificate that comes with it. The certificate is included in the signature block file of the JAR file. </P>
+<P>The tool then checks to see if the public key of that certificate is "trusted." By definition, a public key contained in the <I>Trusted Certificate</I> section of a specified keystore is trusted. (Therefore, you need to be very careful how you put keys in your keystore.)</P>
+<B><FONT COLOR="#ff0000"><P>Big changes in JDK 1.2 relative to JDK 1.1</P>
+</B></FONT><P>The following statement appears in the JDK 1.2 documentation as an explanation regarding key management changes of JDK 1.2 relative to JDK 1.1:</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<P>"the <B>keytool</B> and <B>jarsigner</B> tools completely replace the <B>javakey</B> tool provided in JDK 1.1. These new tools provide more features than <B>javakey</B>, including the ability to protect the keystore and private keys with passwords, and the ability to verify signatures in addition to generating them. The new keystore architecture replaces the identity database that <B>javakey</B> created and managed."</TD>
+</TR>
+</TABLE>
+
+<P>The documentation goes on to point out that it is possible to import the information from a JDK 1.1 <I>identity</I> database into a keystore, using the <B>identitydb</B> command of the <B>keytool</B> program. </P>
+<B><FONT COLOR="#ff0000"><P>Types of entries in a keystore</P>
+</B></FONT><P>There are two different types of entries in a keystore:</P>
+
+<UL>
+<LI>key entries </LI>
+<LI>trusted certificate entries</LI></UL>
+
+<B><FONT COLOR="#ff0000"><P>Key entries</P>
+</B></FONT><P>As indicated by the name, each <B>key entry</B> holds cryptographic key information such as <I>secret</I> keys or <I>private</I> keys. <I>Private</I> keys have been discussed extensively in earlier lessons. <I>Secret</I> keys are keys used in the encryption and decryption process using classes and methods from the Java Cryptography Extension (JCE 1.2). As mentioned in an earlier lesson, U.S. Law prohibits me from providing any detailed electronic information about the classes in the JCE.</P>
+<P>The information for both types of keys is stored in a protected format to prevent unauthorized access. The certificate chain for the corresponding public key typically accompanies the storage of a private key.</P>
+<P>Possibly also because of U.S. government restrictions on the exporting of cryptographic information, the <B>keytool</B> and <B>jarsigner</B> tools only handle <I>private</I> keys and their associated certificate chains. They do not handle <I>secret</I> keys.</P>
+<B><FONT COLOR="#ff0000"><P>Trusted certificate entries</P>
+</B></FONT><P>Each entry of this type contains a single <I>public</I> key certificate (or certificate chain) belonging to another party. It is called a <I>trusted</I> certificate because the owner of the keystore trusts that the public key in the certificate belongs to the identity identified as the <I>subject</I> of the certificate. (It shouldn't have been entered into the keystore until trust was verified.) The issuer (signer) of the certificate vouches for the truth of the belief in trust. (As mentioned earlier, the issuer may or may not have performed a satisfactory investigation so as to support the truth of this belief.)</P>
+<B><FONT COLOR="#ff0000"><P>The unique alias</P>
+</B></FONT><P>Each key or certificate entry is accessed using a unique (not sensitive to case) alias. A pair of public and private keys can be added to the keystore using the <B>genkey</B> command. </P>
+<P>A certificate or certificate chain can be added to the list of trusted certificates using the <B>import</B> command. In each case, you must specify a unique alias. Subsequent <B>keytool</B> commands must use the same alias to refer to the entity. </P>
+<B><FONT COLOR="#ff0000"><P>Creating a pair of keys</P>
+</B></FONT><P>For example, the following command could be used at the prompt to create a new pair of keys and to wrap the public key into a <I>self-signed</I> certificate. This command specifies an initial password of <B>joespassword</B>. This password is required by subsequent commands to access the private key associated with the alias <B>joe</B>.</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<PRE>keytool -genkey -alias joe -keypass joespassword </PRE></TD>
+</TR>
+</TABLE>
+
+<P>If you execute this command, you will be prompted to provide the following information:</P>
+
+<UL>
+<LI>Keystore password (in JDK 1.2, which seems to be redundant if you also provide it as a command-line parameter). </LI>
+<LI>CN - First and last names </LI>
+<LI>OU - Organizational unit </LI>
+<LI>O - Organization </LI>
+<LI>L - City or Locality </LI>
+<LI>ST - State or Province </LI>
+<LI>C - Country code </LI>
+<LI>Key password (optionally different from the Keystore password)</LI></UL>
+
+<P>Prior to being asked to enter the key password, you will be asked to confirm the entries for CN, OU, O, L, ST, and C. If you have made an error during the entry of the data, you can answer <I>no</I>. In that case you will be given an opportunity to enter the information again. If you answer <I>yes</I>, the keys and the certificate will be generated and stored in a <I>keystore </I>file as described later.</P>
+<P>As indicated, the request for you to enter the keystore password in JDK 1.2 seems to be redundant since it was already entered on the command line. You will receive the same request even if you don't enter it on the command line.</P>
+<B><FONT COLOR="#ff0000"><P>Changing the password</P>
+</B></FONT><P>Another <B>keytool</B> command could be used later, if desired to change the password associated with the alias <B>joe</B>. The alias and the initial password are required to associate a new password with the alias.</P>
+<B><FONT COLOR="#ff0000"><P>Storage of the keystore database</P>
+</B></FONT><P>By default, the <I>keystore</I> is stored in a file named <B>.keystore</B> (note the period in front of the k) in the user's home directory. The user's home directory is determined by the value of the <I>user.home</I> system property. For example, given the user name <B>Baldwin</B>, the <I>user.home</I> property defaults to the following values on a Windows system:</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<PRE>C:\Winnt\Profiles\<B>Baldwin</B> on multi-user Windows NT systems
+C:\Windows\Profiles\<B>Baldwin</B> on multi-user Win95 systems
+C:\Windows on single-user Windows 95 systems </PRE></TD>
+</TR>
+</TABLE>
+
+<P>It is also possible to use the <B>keystore</B> option of the <B>keytool</B> program to specify a name and location for the file that is different from the default.</P>
+<B><FONT COLOR="#ff0000"><P>Creating a keystore database</P>
+</B></FONT><P>A keystore is created whenever you use any of the following commands to add data to a keystore that doesn't already exist:</P>
+
+<UL>
+<B><LI>genkey</B> -- Create a new pair of keys. </LI>
+<B><LI>import</B> -- Import a certificate. </LI>
+<B><LI>identitydb</B> -- Import data from JDK 1.1.</LI></UL>
+
+<B><FONT COLOR="#ff0000"><P>Creating a pair of keys in a new keystore database</P>
+</B></FONT><P>You can create a keystore file named <B>Security09.cer</B> in the directory in which you execute the command by </P>
+
+<UL>
+<LI>Entering the following command </LI>
+<LI>Answering the questions, and </LI>
+<LI>Being <U>very patient</U>,. </LI></UL>
+
+<P>Quite a long period of time is required on my machine to complete the execution of this command, so be patient.</P>
+<P>This keystore file will contain a pair of public and private keys wrapped in a <I>self-signed</I> certificate for the alias <I>dick.</P></I>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<PRE>keytool -genkey -alias dick -keystore Security09.cer </PRE></TD>
+</TR>
+</TABLE>
+
+<P>You can cause the file to be written somewhere other than in the current directory by specifying a fully qualified path to the file.</P>
+<B><FONT COLOR="#ff0000"><P>Displaying the contents of a certificate using the <I>-v</I> option for <I>list</P>
+</B></I></FONT><P>You can display the contents of the certificate by executing the following command:</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<PRE>keytool -list -alias dick -keystore Security09.cer <B>-v</PRE></B></TD>
+</TR>
+</TABLE>
+
+<P>This command requires you to enter the keystore password. For the information that I provided, this command displays the following information. If you provide different information when you create the certificate, that information will be displayed. Note that I manually inserted line breaks into the data to force it to fit in the allocated space for this presentation.</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<PRE>Alias name: dick
+Creation date: Mon Apr 26 16:17:46 CDT 1999
+Entry type: keyEntry
+Certificate chain length: 1
+Certificate[1]:
+Owner: CN=Dick Baldwin, OU=CIS, O=ACC, L=Austin, ST=TX,
+C=US
+Issuer: CN=Dick Baldwin, OU=CIS, O=ACC, L=Austin, ST=TX,
+C=US
+Serial number: 3724d7d7
+Valid from: Mon Apr 26 16:17:11 CDT 1999 until: Sun Jul 25
+16:17:11 CDT 1999
+Certificate fingerprints:
+MD5:  B7:80:2C:FC:CB:F4:C1:60:2E:03:49:B5:E8:76:F4:42
+SHA1: E9:C5:B3:C1:6F:9C:1E:87:1D:33:EB:4F:4F:26:66:09:49:
+D5:9C:37 </PRE></TD>
+</TR>
+</TABLE>
+
+<P>The <I>fingerprints</I> shown above are message digests computed according to two different algorithms, MD5 and SHA1.</P>
+<B><FONT COLOR="#ff0000"><P>Displaying the contents of a certificate using the <I>-rfc</I> option</P>
+</B></FONT><P>Another way to display the contents of the same certificate is by executing the following command using the <I>rfc</I> option <U>instead of </U>the <I>v</I> option.</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<PRE>keytool -list -alias dick -keystore Security09.cer <B>-rfc</PRE></B></TD>
+</TR>
+</TABLE>
+
+<P>This command also requires you to enter the keystore password and displays the following information. Note that I manually inserted extra line breaks into the data to force it to fit in the allocated space for this presentation.</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<PRE>Alias name: dick
+Creation date: Mon Apr 26 16:17:46 CDT 1999
+Entry type: keyEntry
+Certificate chain length: 1
+Certificate[1]:
+-----BEGIN CERTIFICATE-----
+MIIC8TCCAq8CBDck19cwCwYHKoZIzjgEAwUAMF
+4xCzAJBgNVBAYTAlVTMQswCQYDVQQIEwJUWDEP
+MA0GA1UEBxMGQXVzdGluMQwwCgYDVQQKEwNBQ0
+MxDDAKBgNVBAsTA0NJUzEVMBMGA1UEAxMMRGlj
+ayBCYWxkd2luMB4XDTk5MDQyNjIxMTcxMVoXDT
+k5MDcyNTIxMTcxMVowXjELMAkGA1UEBhMCVVMx
+CzAJBgNVBAgTAlRYMQ8wDQYDVQQHEwZBdXN0aW
+4xDDAKBgNVBAoTA0FDQzEMMAoGA1UECxMDQ0lT
+MRUwEwYDVQQDEwxEaWNrIEJhbGR3aW4wggG4MI
+IBLAYHKoZIzjgEATCCAR8CgYEA/X9TgR11EilS
+30qcLuzk5/YRt1I870QAwx4/gLZRJmlFXUAiUf
+tZPY1Y+r/F9bow9subVWzXgTuAHTRv8mZgt2uZ
+UKWkn5/oBHsQIsJPu6nX/rfGG/g7V+fGqKYVDw
+T7g/bTxR7DAjVUE1oWkTL2dfOuK2HXKu/yIgMZ
+ndFIAccCFQCXYFCPFSMLzLKSuYKi64QL8Fgc9Q
+KBgQD34aCF1ps93su8q1w2uFe5eZSvu/o66oL5
+V0wLPQeCZ1FZV4661FlP5nEHEIGAtEkWcSPoTC
+gWE7fPCTKMyKbhPBZ6i1R8jSjgo64eK7OmdZFu
+o38L+iE1YvH7YnoBJDvMpPG+qFGQiaiD3+Fa5Z
+8GkotmXoB7VSVkAUw7/s9JKgOBhQACgYEAjP3q
+/FyUrK54187i8RKVQ1lEOfsTLpzKw0tHeAt5cI
+RifHXk3rVvo6TyJUD0oOaMqwavVNFkUqcpPDMR
+AnPHXu6+uat3TlpRwTcWdh33HCT4ThKv1N8RBj
+65lZmKbvRD7JlF3XcWcwuFmd9MTrwvMQXhAI6E
+Na3fjJYu4A/XXRYwCwYHKoZIzjgEAwUAAy8AMC
+wCFE9MOdL1cPKle4MUsADr38pWS9DuAhQ0DsNI
+FbIOvyc+ptj3JF7k2iBV7g==
+-----END CERTIFICATE-----</PRE></TD>
+</TR>
+</TABLE>
+
+<P>When the <I><CODE>rfc</I></CODE> option is specified, the certificate is output in the Base 64 encoding format. </P>
+<P>In this format, the encoded certificate data is bounded at the beginning and the end by the lines:</P>
+<CODE><BLOCKQUOTE>-----BEGIN CERTIFICATE-----</BLOCKQUOTE>
+<BLOCKQUOTE>-----END CERTIFICATE-----</BLOCKQUOTE>
+</CODE><P>The characters between these two lines are a Base 64 representation of the certificate.</P>
+<P>I will have more to say later about the difference between the <I>v</I> and <I>rfc</I> options.</P>
+<B><FONT COLOR="#ff0000"><P>Displaying the contents of a certificate using the default option</P>
+</B></FONT><P>A third alternative way to display the contents of the same certificate is by executing the following command using the default display option (neither <I>-rfc</I> nor <I>-v</I>). This is the default display format for the <I>list</I> command.</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<PRE>keytool -list -alias dick -keystore Security09.cer</PRE></TD>
+</TR>
+</TABLE>
+
+<P>This command also requires that you enter the keystore password and displays the following information. Note that as before, I manually inserted extra line breaks into the data to force it to fit in the allocated space for this presentation.</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<PRE>dick, Mon Apr 26 16:17:46 CDT 1999, keyEntry,
+Certificate fingerprint (MD5):
+B7:80:2C:FC:CB:F4:C1:60:2E:03:49:B5:E8:76:F4:42</PRE></TD>
+</TR>
+</TABLE>
+
+<P>I will have more to say about this format later also.</P>
+<B><FONT COLOR="#ff0000"><P>Programming with certificates</P>
+</B></FONT><P>I will also use this certificate file later to illustrate some of the programming features of Java that are used with certificates and keystores. For example, the <B>Keystore</B> class provides an interface that can be used to access and modify the information in a keystore.</P>
+<B><FONT COLOR="#ff0000"><P>Exporting a certificate</P>
+</B></FONT><P>Having created a keystore in the file named <B>Security09.cer</B> and having populated it with a key pair and a certificate associated with the alias <I>dick</I>, you can export the certificate containing the public key into a file suitable for sending to someone else by executing the following command. Note that I manually inserted a line break to force the command to fit in the allocated space for this document.</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<PRE>keytool -export -alias dick -file Security09A.cer 
+-keystore Security09.cer</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Displaying an exported certificate using <I>printcert</P>
+</B></I></FONT><P>The exported certificate will then reside in a file named <B>Security09A.cer</B>. Having exported it into that file, you (or someone that you send it to) can display the certificate by executing the following command.</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<PRE>keytool -printcert -file Security09A.cer</PRE></TD>
+</TR>
+</TABLE>
+
+<P>This command produces the following output for my certificate. Note that I manually inserted line breaks to force the material to fit on my page.</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<PRE>Owner: CN=Dick Baldwin, OU=CIS, O=ACC, L=Austin, ST=TX, 
+C=US
+Issuer: CN=Dick Baldwin, OU=CIS, O=ACC, L=Austin, ST=TX, 
+C=US
+Serial number: 3724d7d7
+Valid from: Mon Apr 26 16:17:11 CDT 1999 until: 
+Sun Jul 25 16:17:11 CDT 1999
+Certificate fingerprints:
+MD5:  B7:80:2C:FC:CB:F4:C1:60:2E:03:49:B5:E8:76:F4:42
+SHA1: E9:C5:B3:C1:6F:9C:1E:87:1D:33:EB:4F:4F:26:66:09:49:
+D5:9C:37</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Importing a trusted certificate</P>
+</B></FONT><P>Finally, assuming that you were to receive this certificate from someone else, you could import it as a <I>trusted certificate</I> into a keystore in a file named <B>Security09B.cer</B> under the alias <I>joe</I> using the following command. I manually inserted line breaks into this command to make it fit in the allocated space.</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<PRE>keytool -import -alias joe -file Security09A.cer 
+-keystore Security09B.cer</PRE></TD>
+</TR>
+</TABLE>
+
+<P>While importing my certificate, the command displays the following information on the screen. Note that this is a <I>self-signed</I> certificate because the owner is the same as the issuer.</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<PRE>Owner: CN=Dick Baldwin, OU=CIS, O=ACC, L=Austin, ST=TX, 
+C=US
+Issuer: CN=Dick Baldwin, OU=CIS, O=ACC, L=Austin, ST=TX, 
+C=US
+Serial number: 3724d7d7
+Valid from: Mon Apr 26 16:17:11 CDT 1999 until: 
+Sun Jul 25 16:17:11 CDT 1999
+Certificate fingerprints:
+MD5:  B7:80:2C:FC:CB:F4:C1:60:2E:03:49:B5:E8:76:F4:42
+SHA1: E9:C5:B3:C1:6F:9C:1E:87:1D:33:EB:4F:4F:26:66:09:49:
+D5:9C:37</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The program prompts you to provide a password for the keystore and asks if you want to trust the certificate. If you answer <I>"y"</I>, the program responds</P>
+<CODE><BLOCKQUOTE>"Certificate was added to keystore."</BLOCKQUOTE>
+</CODE><P>If you answer <I>"n"</I>, the program responds</P>
+<CODE><BLOCKQUOTE>"Certificate was not added to keystore."</BLOCKQUOTE>
+</CODE><B><FONT COLOR="#ff0000"><P>A recap</P>
+</B></FONT><P>Now I will recap some of the above to prepare you for the discussions that follow. </P>
+<P>The <B><I>genkey</B></I> command can be used to generate a pair of public/private keys, wrap the public key in a self-signed certificate, and store the private key along with the certificate as a key entry in a keystore. This information is associated with an alias, provided by you, that must be unique to the keystore database. </P>
+<P>You must be able to provide the password for the keystore and another password for the key in order to execute this command. You must also provide other information about the entity that will be the owner of the key and the certificate.</P>
+<P>The <B><I>list</B></I> command can be used to display certificate information in the keystore associated with a particular alias. You must be able to provide the keystore password to execute this command.</P>
+<P>The <B><I>export</B></I> command can be used to export a certificate associated with a particular alias into a file that is suitable for sending to another entity. You must be able to provide the keystore password to execute this command.</P>
+<P>The <B><I>printcert</B></I> command can be used to display the contents of a certificate that has been exported. No password is required to execute this command.</P>
+<P>The <B><I>import</B></I> command can be used to import a (previously exported) certificate as a <I>trusted</I> certificate into a keystore database and to associate it with a unique alias. . You must be able to provide the keystore password to execute this command.</P>
+<B><FONT COLOR="#ff0000"><P>Standard tools</P>
+</B></FONT><P>As of JDK 1.2, there are three standard tools delivered with the JDK that make use of a keystore:</P>
+
+<UL>
+<LI>keytool </LI>
+<LI>jarsigner </LI>
+<LI>policytool</LI></UL>
+
+<B><P>keytool</B> is discussed in this lesson. <B>jarsigner</B> and <B>policytool</B> are discussed is other lessons having to do with managing security policies and managing signed JAR files.</P>
+<B><FONT COLOR="#ff0000"><P>Implementation of the keystore database</P>
+</B></FONT><P>A built-in implementation by Sun implements the keystore database as a file, utilizing a proprietary keystore format named "JKS." This format protects each private key with its individual password, and also protects the entire keystore with a different password.</P>
+<P>As with other aspects of Java security, it is also possible to install a keystore implementation from other providers. According to Sun: </P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<P>"The term "provider" refers to a package or a set of packages that supply a concrete implementation of a subset of services that can be accessed by the Java Security API.</P>
+<P>Applications can choose different <I>types</I> of keystore implementations from different providers, using the "getInstance" factory method supplied in the <CODE>KeyStore</CODE> class. A keystore type defines the storage and data format of the keystore information, and the algorithms used to protect private keys in the keystore and the integrity of the keystore itself. Keystore implementations of different types are not compatible."</TD>
+</TR>
+</TABLE>
+
+<P>If this is of interest to you, you will need to refer to the documentation to learn how to perform the installation.</P>
+<B><FONT COLOR="#ff0000"><P>Specifying the location of the keystore database</P>
+</B></FONT><P>The manner in which the location of the keystore is determined differs among the <B>keytool</B>, <B>jarsigner</B>, and <B>policytool</B> tools. <B>keytool</B> considers the keystore to be contained in a file. (It treats the KeyStore location that is passed to it at the command line as a filename and converts it to a <B>FileInputStream</B>, from which it loads the keystore information.)</P>
+<P>The <B>jarsigner</B> and <B>policytool</B> tools can read a keystore from any location that can be specified using a URL.</P>
+<B><FONT COLOR="#ff0000"><P>Keystore type</P>
+</B></FONT><P>You can specify a keystore type at the command line, via the <I>storetype</I> option for <B>keytool</B> and <B>jarsigner</B>. You can specify a keystore type via the <I>"Change Keystore"</I> command in the Edit menu for <B>policytool</B>.</P>
+<P>A separate lesson discusses the different security policy configuration files that are used to establish the security policy on a machine under JDK 1.2. One of those files is <I>java.home\lib\security\java.security</I>. According to the JDK 1.2 documentation:</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<P>"If you don't explicitly specify a keystore type, the tools choose a keystore implementation based simply on the value of the <CODE>keystore.type</CODE> property specified in the security properties file. The security properties file is called <TT>java.security</TT>, and it resides in the JDK security properties directory, <I><CODE>java.home</I>\lib\security</CODE>, where <I>java.home</I> is the JDK installation directory. </P>
+<P>Each tool gets the <CODE>keystore.type</CODE> value and then examines all the currently-installed providers until it finds one that implements keystores of that type. It then uses the keystore implementation from that provider."</TD>
+</TR>
+</TABLE>
+
+<P>A static method named <B>getDefaultType()</B> is defined in the <B>Keystore</B> class. This method is used to manage security under program control, and makes it possible for applications and applets to retrieve the value of the <I>keystore.type</I> property.</P>
+<B><FONT COLOR="#ff0000"><P>Changing the keystore type</P>
+</B></FONT><P>As mentioned earlier, the default keystore type is "jks". This is the proprietary type implementation provided by Sun. This default value is specified by a line in the security properties file that reads: <I>keystore.type=jks</I>.</P>
+<P>If you need for the tools to use a keystore implementation that is different from the default, you will need to change that line to specify a different keystore type. The specification is not case sensitive.</P>
+<B><FONT COLOR="#ff0000"><P>Specifying keypair and signature algorithms</P>
+</B></FONT><P>The <I>keyalg</I> and <I>sigalg</I> options of <B>keytool</B> allow you to specify any key pair generation and signature algorithm supplied by any of the registered cryptographic service providers.</P>
+<P>Quoting the Sun documentation for JDK 1.2</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<P>The default key pair generation algorithm is "DSA". The signature algorithm is derived from the algorithm of the underlying private key: If the underlying private key is of type "DSA", the default signature algorithm is "SHA1withDSA", and if the underlying private key is of type "RSA", the default signature algorithm is "MD5withRSA". </P>
+<P>When generating a DSA key pair, the key size must be in the range from 512 to 1024 bits, and must be a multiple of 64. The default key size for any algorithm is 1024 bits.</TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Alternative export formats</P>
+</B></FONT><P>Certificates are often stored using an encoding format defined by the Internet RFC 1421 standard, as an alternative to binary encoding. This <I>"Base 64 encoding"</I> produces a printable format. It also facilitates exporting certificates to other applications by email or through some other mechanism capable of handling seven-bit ASCII data.</P>
+<P>Certificates read by the <B><I><CODE>import</B></I></CODE> and <B><I><CODE>printcert</B></I></CODE> commands can be in either the Base 64 format or the binary encoded format.</P>
+<P>By default, the <B><I><CODE>export</B></I></CODE> command outputs a certificate in binary encoding. Optionally, it can be used to output a certificate in the Base 64 format by using the <B><I><CODE>rfc</B></I></CODE> option.</P>
+<P>For example, the following command can be used to export the certificate for the alias <I>dick</I> created earlier in this lesson into a file using the Base 64 format. I manually inserted a line break to force this material to fit in the allocated space.</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<PRE>keytool -export -alias dick -file Security09C.cer 
+-keystore Security09.cer -rfc</PRE></TD>
+</TR>
+</TABLE>
+
+<P>When viewed with a text editor, the output file appears as shown below. Note that I removed a substantial amount of material from the middle of the file for brevity. I also manually inserted line breaks to force the material to fit in the allocated space.</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<P><FONT FACE="Courier New" SIZE=2>-----BEGIN CERTIFICATE-----</P>
+<P>MIIC8TCCAq8CBDck19cwCwYHKoZIzjgEAwUAMF<BR>
+4xCzAJBgNVBAYTAlVTMQswCQYDVQQIEwJUWDEP</P>
+<B><I><P>NOTE: Material was removed here for brevity</P>
+</B></I><P>Na3fjJYu4A/XXRYwCwYHKoZIzjgEAwUAAy8AMC<BR>
+wCFE9MOdL1cPKle4MUsADr38pWS9DuAhQ0DsNI<BR>
+FbIOvyc+ptj3JF7k2iBV7g==</P>
+</FONT><PRE>-----END CERTIFICATE-----</PRE></TD>
+</TR>
+</TABLE>
+
+<P>This file will be used in a later section to illustrate the manipulation of certificates under program control.</P>
+<B><FONT COLOR="#ff0000"><P>Alternative display formats for <I>list</P>
+</B></I></FONT><P>An earlier example made use of the <I>v</I> and <I>rfc</I> options of the <I>list</I> command of <B>keytool</B> to display a certificate in three different formats<B>. </P>
+</B><P>By default, the <I><CODE>list</I></CODE> command prints the MD5 fingerprint of a certificate. </P>
+<P>If the <I><CODE>v</I></CODE> option is specified, the certificate is printed in human-readable format.</P>
+<P>If the <I><CODE>rfc</I></CODE> option is specified, the certificate is output in the Base 64 encoding format. </P>
+<P>In the Base 64 format, the encoded certificate data is bounded at the beginning and the end by the lines:</P>
+<P>-----BEGIN CERTIFICATE-----</P>
+<P>-----END CERTIFICATE-----</P>
+<P>The characters between these two lines are a Base 64 representation of the certificate.</P>
+<B><FONT COLOR="#ff0000"><P>Certificate chaining</P>
+</FONT><P>keytool</B> can be used to create and manage <I>"key"</I> entries in a keystore. Each such entry contains a private key and an associated certificate <I>"chain"</I>. The first certificate in the chain contains the public key corresponding to the private key.</P>
+<P>When you first use the <B><I>genkey</B></I> command to create a key, the chain contains a single <I>self-signed certificate</I>. In this case, the issuer (signer) is the same as the subject (the entity whose public key is being authenticated by the certificate). The private key that is generated and the public key authenticated by the certificate form a pair of corresponding keys. </P>
+<B><FONT COLOR="#ff0000"><P>Engendering trust</P>
+</B></FONT><P>A self-signed certificate should not engender trust on the part of someone who receives a copy of the certificate. Anyone who downloads and installs JDK 1.2 can create such a certificate, and can pretend to be anyone else.</P>
+<P>In order to cause this certificate to engender trust, it needs to be used to form a certificate chain that can be traced back to a trusted <I>Certification Authority</I> and verified against a well-known public key owned by that CA.</P>
+<B><FONT COLOR="#ff0000"><P>The certificate signing request (CSR)</P>
+</B></FONT><P>This is accomplished by using the <B><I>certreq</B></I> command to generate a <I>Certificate Signing Request (CSR)</I> and sending that CSR to a Certification Authority (possibly accompanied by some money or a credit card number).</P>
+<B><FONT COLOR="#ff0000"><P>Processing the response from the CA</P>
+</B></FONT><P>When the response is received back from the CA, that response is imported using the <I>import</I> command. The self-signed certificate in the keystore is automatically replaced by a chain of certificates received from the CA. </P>
+<P>The certificate at the bottom of the chain is the certificate issued by the CA authenticating the subject's public key. </P>
+<P>The next certificate in the chain is one that authenticates the <I>CA</I>'s public key. This will often be a self-signed certificate from the CA authenticating its own public key. In that case, it will be the last certificate in the chain.</P>
+<B><FONT COLOR="#ff0000"><P>Alternative forms of response from the CA</P>
+</B></FONT><P>Sometimes the CA will return a chain of certificates as described above. In this case, the bottom certificate in the chain will be a certificate signed by the CA, authenticating the public key corresponding to the private key in the key entry. </P>
+<P>The second certificate in the chain will be a certificate signed by a <I>different</I> CA, authenticating the public key of the CA you sent the CSR to. </P>
+<P>The next certificate in the chain will be a certificate authenticating the second CA's key, and so on. When the top certificate in the chain is reached, it will be a self-signed "root" certificate. </P>
+<P>Thus, each certificate in the chain (after the first) authenticates the public key of the signer of the previous certificate in the chain.</P>
+<P>There are two prevalent reply formats. One format (defined by the PKCS#7 standard) includes the supporting certificate chain, in addition to the issued certificate. </P>
+<P>However, some CAs only return the issued certificate, with no supporting chain. In this case, the certificate chain must be established from trusted certificate information already stored in the keystore. The <B>keytool</B> tool can handle both formats, provided the keystore already contains the necessary trusted certificate information.</P>
+<B><FONT COLOR="#ff0000"><P>The root Certification Authority</P>
+</B></FONT><P>The top-level or <I>root</I> CA certificate is always self-signed. The simple fact that the certificate contains a public key should not engender any trust because anybody could generate a self-signed certificate with the distinguished name of a well-known CA. The trust must come from the fact that the public key in that certificate <U>is a well-known public key for that CA</U> that can be verified from other sources such as newspaper advertisements. </P>
+<P>The only reason that the public key is stored in the root certificate is because this is the format that most certificate management tools expect. In this case, the certificate is used only for the purpose of transporting the CA's public key to you so that you can manually verify it against another source.</P>
+<B><FONT COLOR="#ff0000"><P>Two reasons for importing a certificate</P>
+</B></FONT><P>There are two reasons for you to import a certificate using the <I>import</I> command:</P>
+
+<UL>
+<LI>To add it to the list of trusted certificates </LI>
+<LI>To import a certificate reply received from a CA as the result of submitting a <I>Certificate Signing Request</I> to that CA earlier.</LI></UL>
+
+<B><FONT COLOR="#ff0000"><P>Import precautions</P>
+</B></FONT><P>Before importing the certificate into your keystore, you should <U>verify the public key</U> embodied in the root certificate <U>using other sources</U>. One way to do this is to use the <I>printcert</I> command to view the fingerprint for the certificate. Then compare the fingerprint that is displayed with the known fingerprint for that CA obtained from some other reliable source. </P>
+<P>Only if the fingerprints match can you be confident that the certificate has not been replaced in transit with an attacker's certificate. If such an attack took place, and you did not check the certificate before you imported it, you would end up trusting anything the attacker has signed, such as a JAR file with malicious class files inside. </P>
+<B><FONT COLOR="#ff0000"><P>Importing the certificate</P>
+</B></FONT><P>You can import a certificate from a file using the <I>import</I> command as in the following sample command:</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<PRE>keytool -import -alias tom -file tomsfile.cer </PRE></TD>
+</TR>
+</TABLE>
+
+<P>This command imports the certificate(s) in the file <B>tomsfile.cer</B> and stores it in the keystore entry identified by the alias <I>tom</I>. An earlier paragraph identified two reasons for importing a certificate, which really corresponds to two different types of certificates.</P>
+<P>The value of the <I><CODE>alias</I></CODE> option indicates which type of import is intended. If the alias exists in the database, and identifies an entry with a private key, it is assumed you want to import a certificate reply from a <I>Certification Authority</I>. In this case, <B>keytool</B> checks whether the public key in the certificate reply matches the public key stored with the alias. If they are different, <B>keytool</B> exits without completing the import operation. </P>
+<P>When importing a new trusted certificate, <I>alias</I> <U>must not yet exist</U> in the keystore. If the alias does not exist, it will be created and associated with the newly-imported trusted certificate.</P>
+<B><FONT COLOR="#ff0000"><P>Exporting a certificate</P>
+</B></FONT><P>As mentioned earlier, you can use the <I>export</I> command as follows to export a certificate into a file that is suitable for sending to another entity.</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<PRE>keytool -export -alias tom -file tomsfile.cer </PRE></TD>
+</TR>
+</TABLE>
+
+<P>This command will export <I>tom's</I> certificate to the file named <B>tomsfile.cer</B>. </P>
+<P>If <I>tom</I> is the alias for a key entry, the command exports the certificate at the bottom of the certificate chain in that keystore entry. This is the certificate that authenticates tom's public key. </P>
+<P>If tom is the alias for a trusted certificate, that trusted certificate is exported.</P>
+<B><FONT COLOR="#ff0000"><P>Using the <I>list</I> command to display entire keystore database</P>
+</B></FONT><P>You can use the <I>list</I> command to display the entire contents of a keystore database, or the contents associated with a particular alias. </P>
+<P>If you specify an alias, only the information for that alias will be displayed. If you don't specify an alias, the entire contents of the keystore will be displayed.</P>
+<B><FONT COLOR="#ff0000"><P>Displaying an exported certificate</P>
+</B></FONT><P>You can use the <B><I>printcert</B></I> command to display the contents of a certificate stored in a file that has been exported from a keystore. No password is required, and there is no required association with a keystore database. For example, the file may contain a certificate sent to you by another entity that you have not yet imported into your keystore.</P>
+<B><FONT COLOR="#ff0000"><P>Generating a certificate for an existing key pair</P>
+</B></FONT><P>You can use the <B><I>genkey</B></I> command to create a <I>public/private</I> key pair and to wrap the public key in a self-signed certificate. In this case, you will need to provide a password for the keystore that is to contain the key entry as well as a password for the key. You will also be required to provide other information about the entity that will own the certificate.</P>
+<P>It is also possible to create a new self-signed certificate using the key pair associated with a previously generated certificate. For example, if you change departments within your company, you may need a new certificate that properly reflects your new organizational unit. There are several steps involved in accomplishing this, which I won't attempt to discuss here. If you need to do this, see the JDK 1.2 documentation.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="CertificateProgramming">Certificate Programming</A></H2>
+</FONT><P>While JDK 1.2 <U>does not provide</U> the capability to create certificates under program control, it does provide the capability to import certificates and then to use them in a variety of ways. Some of those ways are illustrated in the sample program that follows.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="SampleProgram">Sample Program</A></H2>
+<B><P>Illustrates manipulation of certificates under program control</P>
+</B></FONT><P>This program, named <B>Security09</B>, illustrates the manipulation of Digital Certificates under program control.</P>
+<P>A self-signed certificate was previously created using the <B>keytool</B> program. This certificate was exported using <B>keytool</B> into two separate files named <B>Security09A.cer</B> and <B>Security09C.cer</B>.</P>
+<P>The certificate exported into <B>Security09A.cer</B> was exported in the default binary format.</P>
+<P>The certificate exported into <B>Security09C.cer</B> was exported into the RFC or Base 64 format.</P>
+<B><FONT COLOR="#ff0000"><P>Creates an X509Certificate object</P>
+</B></FONT><P>This program reads each of those files and uses the contents of the file to create an <B>X509Certificate</B> object. Various methods of the object are invoked to display information contained in the certificate.</P>
+<B><FONT COLOR="#ff0000"><P>Verifies the certificate</P>
+</B></FONT><P>The public key is extracted from the certificate and used to verify the certificate. Verification confirms that the certificate was signed using the private key that corresponds to the specified public key. The <B>verify()</B> method uses the signature verification engine supplied by the specified provider. In this case, the default provider (SUN) was used.</P>
+<P>Since this was a self-signed certificate, it could be verified using the public key that it contains. If it were not a self-signed certificate, the <U>public key of the issuer</U>, instead of the public key contained in the certificate, would be required to verify it.</P>
+<B><FONT COLOR="#ff0000"><P>Program output</P>
+</B></FONT><P>The program was tested using JDK 1.2 under Win95. The output from the program was as shown below. Since the two files, having different formats, were based on the same certificate, the output produced by processing the two files is identical.</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<PRE><B>Process RFC formatted certificate file
+</B>Subject:
+CN=Dick Baldwin, OU=CIS, O=ACC, L=Austin, ST=TX, C=US
+Issuer:
+CN=Dick Baldwin, OU=CIS, O=ACC, L=Austin, ST=TX, C=US
+Serial Number: 925161431
+Valid from Mon Apr 26 16:17:11 CDT 1999
+until Sun Jul 25 16:17:11 CDT 1999
+Type: X.509
+Certificate is verified
+
+<B>Process binary encoded certificate file
+</B>Subject:
+CN=Dick Baldwin, OU=CIS, O=ACC, L=Austin, ST=TX, C=US
+Issuer:
+CN=Dick Baldwin, OU=CIS, O=ACC, L=Austin, ST=TX, C=US
+Serial Number: 925161431
+Valid from Mon Apr 26 16:17:11 CDT 1999
+until Sun Jul 25 16:17:11 CDT 1999
+Type: X.509
+Certificate is verified</PRE></TD>
+</TR>
+</TABLE>
+
+<FONT COLOR="#ff0000"><H3 ALIGN="CENTER"><A NAME="InterestingCodeFragments"></H3>
+<H3 ALIGN="CENTER">Interesting Code Fragments</A></H3>
+<B><P>Calling processCertFile()</P>
+</B></FONT><P>With only one exception involving the use of a <I>factory</I>, this is a very simple program. The first fragment shows the entire <B>main()</B> method. This method makes two calls to the method named <B>processCertFile()</B> passing the names of the certificate files to be processed. All of the work is done in the method named <B>processCertFile()</B>.</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#ffff00">
+<PRE>class Security09 {
+  public static void <B>main</B>(String[] args) {
+    try{
+      System.out.println(
+                 "Process RFC formatted certificate file");
+      <B>processCertFile</B>("Security09C.cer");
+
+      System.out.println(
+              "\nProcess binary encoded certificate file");
+      <B>processCertFile</B>("Security09A.cer");
+    }catch(Exception e){System.out.println(e);}
+  }//end main</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Behavior of processCertFile()</P>
+</B></FONT><P>The method named <B>processCertFile()</B> </P>
+
+<UL>
+<LI>Reads a file containing a certificate that was previously exported </LI>
+<LI>Creates an X509Certificate object </LI>
+<LI>Uses the object to display information about the certificate.</LI></UL>
+
+<P>However, the first two steps are not distinguishable in the code.</P>
+<B><FONT COLOR="#ff0000"><P>Get a FileInputStream</P>
+</B></FONT><P>The first fragment gets a <B>FileInputStream</B> object linked to the file containing the certificate.</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#ffff00">
+<PRE>  static void <B>processCertFile</B>(String fileName)
+                                         throws Exception{
+    InputStream inStream = new FileInputStream(fileName);</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Creating an X509Certificate object requires two steps</P>
+</B></FONT><P>Two steps are involved in using the file to create a certificate object. </P>
+<B><FONT COLOR="#ff0000"><P>Creating a CertificateFactory object</P>
+</B></FONT><P>The first step uses the <B>getInstance()</B> method of the <B>CertificateFactory</B> class to create an object of type <B>CertificateFactory. </B>The certificate type "X.509" is passed as a parameter resulting in a <B>CertificateFactory</B> object that complies with the X.509 standard. This step is shown in the next fragment.</P>
+<P>The factory object will be used to actually create the certificate.</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#ffff00">
+<PRE>    CertificateFactory certFactory = 
+                   CertificateFactory.<B>getInstance</B>("X.509");</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Create the X509Certificate object</P>
+</B></FONT><P>The next step invokes the <B>generateCertificate()</B> method on the factory object to create the actual certificate as an object of the <B>X509Certificate</B> class. </P>
+<P>Note that the <B>InputFileStream</B> that was linked to the file containing the exported certificate in an earlier fragment is passed as a parameter to this method. Thus, this method </P>
+
+<UL>
+<LI>Reads the data from the file, and </LI>
+<LI>Creates the certificate object.</LI></UL>
+
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#ffff00">
+<PRE>    X509Certificate certificate = 
+                          (X509Certificate)certFactory.
+                             <B>generateCertificate</B>(inStream);
+    inStream.close();</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The above fragment also closes the input stream.</P>
+<B><FONT COLOR="#ff0000"><P>Display information about the certificate</P>
+</B></FONT><P>The next fragment invokes various methods on the certificate object to extract and display information about the certificate as shown earlier.</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#ffff00">
+<PRE>    System.out.println("Subject:\n" 
+                   + certificate.<B>getSubjectDN().getName()</B>);
+    System.out.println("Issuer:\n" 
+                    + certificate.<B>getIssuerDN().getName()</B>);
+    System.out.println("Serial Number: " 
+               + certificate.<B>getSerialNumber().toString()</B>);
+    System.out.println("Valid from " 
+             + certificate.<B>getNotBefore()</B>  
+                 + "\nuntil " + certificate.<B>getNotAfter()</B>);
+    System.out.println("Type: " + certificate.<B>getType()</B>);</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Verify the certificate</P>
+</B></FONT><P>The next fragment extracts the public key from the certificate and passes it to the <B>verify()</B> method in an attempt to verify the certificate. Verification confirms that the certificate was signed using the private key that corresponds to the specified public key. If the verification fails, one of several different exceptions will be thrown.</P>
+<P>In this case, the verification is successful. A self-signed certificate should always verify against the public key stored in the certificate because that public key belongs to the person who issued the certificate. If it were not a self-signed certificate, the public key of the issuer, instead of the public key contained in the certificate, would be required to verify the certificate.</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#ffff00">
+<PRE>    PublicKey publicKey = certificate.<B>getPublicKey()</B>;
+
+    try{//to verify certificate against its own public key
+      certificate.<B>verify</B>(publicKey);
+      System.out.println("Certificate is verified");
+    }catch(Exception ex){System.out.println(ex);}
+  }//end processCertificateFile()
+  
+}//end class Security09</PRE></TD>
+</TR>
+</TABLE>
+
+<P>&nbsp;</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="ProgramListing">Program Listing</A></H2>
+</FONT><P>A complete listing of the program follows.</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#ffff00">
+<PRE>/*File Security09.java Copyright 1999, R.G.Baldwin
+Rev 5/1/99
+
+Illustrates the manipulation of Digital Certificates under
+program control.
+
+A self-signed certificate was previously created using the
+keytool program.  This certificate was exported using
+keytool into two separate files named Security09A.cer and
+Security09C.cer.
+
+The certificate exported into Security09A.cer was exported
+in the default binary format.
+
+The certificate exported into Security09C.cer was exported
+into the RFC or Base 64 format.
+
+This program reads each of those files and uses the 
+contents of the file to create an X509Certificate object.
+Various methods of the object are invoked to display
+information contained in the certificate.
+
+The public key is extracted from the certificate and used
+to verify it.  Since this was a self-signed certificate,
+it can be verified using the public key that it contains.
+If it were not a self-signed certificate, the public key
+of the issuer, rather than the public key contained in the
+certificate, would be required to verify it.
+
+Tested using JDK 1.2 under Win95.
+
+Output from the program is:
+  
+Process RFC formatted certificate file
+Subject:
+CN=Dick Baldwin, OU=CIS, O=ACC, L=Austin, ST=TX, C=US
+Issuer:
+CN=Dick Baldwin, OU=CIS, O=ACC, L=Austin, ST=TX, C=US
+Serial Number: 925161431
+Valid from Mon Apr 26 16:17:11 CDT 1999
+until Sun Jul 25 16:17:11 CDT 1999
+Type: X.509
+Certificate is verified
+
+Process binary encoded certificate file
+Subject:
+CN=Dick Baldwin, OU=CIS, O=ACC, L=Austin, ST=TX, C=US
+Issuer:
+CN=Dick Baldwin, OU=CIS, O=ACC, L=Austin, ST=TX, C=US
+Serial Number: 925161431
+Valid from Mon Apr 26 16:17:11 CDT 1999
+until Sun Jul 25 16:17:11 CDT 1999
+Type: X.509
+Certificate is verified
+
+**********************************************************/
+
+import java.io.*;
+import java.security.*;
+import java.security.cert.*;
+import sun.misc.*;
+
+class Security09 {
+
+  public static void main(String[] args) {
+    try{
+      System.out.println(
+                 "Process RFC formatted certificate file");
+      processCertFile("Security09C.cer");
+
+      System.out.println(
+              "\nProcess binary encoded certificate file");
+      processCertFile("Security09A.cer");
+    }catch(Exception e){System.out.println(e);}
+  }//end main
+  //-----------------------------------------------------//
+
+  //Reads exported certification file, creates certificate,
+  // and displays information about the certificate.  
+  static void processCertFile(String fileName)
+                                         throws Exception{
+    InputStream inStream = new FileInputStream(fileName);
+    CertificateFactory certFactory = 
+                   CertificateFactory.getInstance("X.509");
+    X509Certificate certificate = 
+                          (X509Certificate)certFactory.
+                             generateCertificate(inStream);
+    inStream.close();
+    
+    System.out.println("Subject:\n" 
+                   + certificate.getSubjectDN().getName());
+    System.out.println("Issuer:\n" 
+                    + certificate.getIssuerDN().getName());
+    System.out.println("Serial Number: " 
+               + certificate.getSerialNumber().toString());
+    System.out.println("Valid from " 
+             + certificate.getNotBefore()  
+                 + "\nuntil " + certificate.getNotAfter());
+    System.out.println("Type: " + certificate.getType());
+    
+    PublicKey publicKey = certificate.getPublicKey();
+    try{//to verify certificate against its own public key
+      certificate.verify(publicKey);
+      System.out.println("Certificate is verified");
+    }catch(Exception ex){System.out.println(ex);}
+  }//end processCertificateFile()
+  
+  //-----------------------------------------------------//
+
+}//end class Security09</PRE></TD>
+</TR>
+</TABLE>
+
+<P>-end-</P>
+<P><!--end--></P></BODY>
+</HTML>

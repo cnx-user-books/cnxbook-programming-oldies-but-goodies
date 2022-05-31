@@ -1,0 +1,374 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>... in Java by Richard G Baldwin</TITLE>
+<META NAME="Template" CONTENT="C:\PROGRAM FILES\MICROSOFT OFFICE\OFFICE\html.dot">
+</HEAD>
+<BODY LINK="#0000ff" VLINK="#800080" BGCOLOR="#ffffff">
+
+<P><!--start--></P>
+<I><H3 ALIGN="CENTER">Richard G Baldwin (512) 223-4758, </I><A HREF="mailto:baldwin@austin.cc.tx.us"><I>baldwin@austin.cc.tx.us</I></A><I>, </I><A HREF="http://www2.austin.cc.tx.us/baldwin/"><I>http://www2.austin.cc.tx.us/baldwin/</I></A></H3>
+<H2 ALIGN="CENTER"><!--title-->Servlets, Session Tracking Using Cookies <!--endtitle--></H2>
+<P>Java Programming, Lecture Notes # 693, Revised 3/17/99. </P>
+<P><A HREF="#Preface">Preface</A> </P>
+<P><A HREF="#Introduction">Introduction</A> </P>
+<P><A HREF="#Cookie_Class">The Java Cookie Class</A></P>
+<P><A HREF="#sample_program">Sample Program</A> </P><DIR>
+<DIR>
+
+<P><A HREF="#Interesting_Code_Fragments">Interesting Code Fragments</A> </P>
+<P><A HREF="#program_listing">Program Listing</A> </P></DIR>
+</DIR>
+
+<P><HR></P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Preface">Preface</A></H2>
+</FONT><P>Students in Prof. Baldwin's <B><U>Advanced Java Programming</B></U> classes at ACC will be responsible for knowing and understanding all of the material in this lesson beginning with the spring semester of 1999. </P>
+<P>This lesson was originally written on March 17, 1999. </P>
+<P>The sample servlet in this lesson was tested using Win95, Netscape Navigator, the JDK 1.2 download package from JavaSoft, the JSDK 2.0 download package from JavaSoft, and the <STRONG>servletrunner</STRONG> program that is included in the JSDK. The sample program was tested using <B>servletrunner</B> both from the same machine, and from a different machine on the network.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Introduction">Introduction</A></H2>
+</FONT><P>This is one of a series of lessons designed to show you some of the ways to implement session tracking using servlets. The purpose of the sample program in this lesson is to illustrate session tracking through the use of <I>cookies</I>.</P>
+<I><P>Cookies</I> are information stored on the client machine by the browser. Under certain conditions, this information is sent to the HTTP server whenever a request is sent from the client to the server</P>
+<P>Cookies are widely used by various server-side programming techniques for the purpose of implementing session tracking. Java provides classes and methods designed to allow you to use cookies in your servlets.</P>
+<P>By default, cookies are sent only to the host that caused them to be saved. Methods can be invoked to set attributes for each cookie that determine which servers will receive the cookie. For example, the <B>setDomain()</B> method can be used to specify a domain pattern indicating which servers should receive a cookie.</P>
+<P>By default, cookies are sent to the page that set the cookie and to all the pages in that directory or under that directory. This also can be modified by invoking the <B>setPath()</B> method on the cookie.</P>
+<P>Also by default, a cookie expires when the browser exits. The <B>setMaxAge()</B> method can be invoked to override the default and specify the maximum age of the cookie in seconds. The cookie will expire when the maximum age has been reached. The parameter to this method is an <B>int</B> so the maximum age of a cookie can be a very large number of seconds.</P>
+<P>The <B>setComment()</B> method can be used to provide a comment with the cookie. The browser may elect to make this information available to the user.</P>
+<P>The constructor sets the name and value of a cookie when the <B>Cookie</B> object is instantiated. The <B>setValue()</B> method can be used to assign a new value to the cookie after it is instantiated.</P>
+<P>There are a few other attributes that can be set as well. You can read about them in the JavaSoft JSDK documentation.</P>
+<P>CAUTION: The user can disable cookies in most, and perhaps all browsers. My Netscape Navigator browser provides the following options regarding cookies:</P>
+
+<UL>
+<LI>Accept all cookies </LI>
+<LI>Accept only cookies that get sent back to the originating server </LI>
+<LI>Disable cookies</LI></UL>
+
+<P>In addition, my browser can be set to warn me before accepting a cookie.</P>
+<P>Therefore, unless you can be certain that all of your clients will operate with cookies enabled, the use of cookies for session tracking may not be satisfactory in all cases.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Cookie_Class">The Java Cookie Class</A></H2>
+</FONT><P>The <B>Cookie</B> class represents a cookie that can be used for session management with the HTTP protocol.</P>
+<P>Cookies are used to cause <I>user agents</I> such as web browsers to store small amounts of state associated with a user's web browsing activities. </P>
+<P>Common applications for cookies include:</P>
+
+<UL>
+<LI>Storing user preferences </LI>
+<LI>Automating low security user signon facilities, and </LI>
+<LI>Helping collect data used for "shopping cart" applications. </LI></UL>
+
+<P>Each cookie has a name and a single value. As mentioned earlier, it may have optional attributes, including:</P>
+
+<UL>
+<LI>A comment presented to the user </LI>
+<LI>Path and domain qualifiers to specify which hosts can see the cookie </LI>
+<LI>A maximum age, and </LI>
+<LI>A version. </LI></UL>
+
+<P>Servers assign cookies, using fields added to HTTP response headers. </P>
+<P>In the Java API, cookies are saved one at a time into such HTTP response headers, using the <B>addCookie()</B> method. </P>
+<P>Browsers are expected to support twenty cookies per host, of at least four kilobytes each.</P>
+<P>Cookies are passed from the browser to the server using fields added to HTTP request headers. </P>
+<P>In the Java API, HTTP cookies are retrieved using the <B>getCookies()</B> method. This method returns all of the cookies found in the request sent by the client.</P>
+<P>A description of the constructor for a <B>Cookie</B> object is shown below.</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=638>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<P>public Cookie(String name, String value)</P>
+<P>Defines a cookie with an initial name/value pair. The name must be an HTTP/1.1 "token" value; alphanumeric ASCII strings work. Names starting with a "$" character are reserved by RFC 2109. </P>
+<P>Parameters: </P>
+
+<UL>
+<LI>name - name of the cookie </LI>
+<LI>value - value of the cookie</UL>
+</TD>
+</TR>
+</TABLE>
+
+<P>&nbsp;</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="sample_program"></A>Sample Program</H2>
+</FONT><P>The name of the servlet is <B>Servlet09</B>. Each time the servlet is invoked, it displays an html form on the client screen. The form contains:</P>
+
+<UL>
+<LI>An input field for submitting a name </LI>
+<LI>A submit button </LI>
+<LI>A list of previously submitted names</LI></UL>
+
+<P>The first time the servlet is invoked, it creates a unique session ID and stores it in a cookie on the browser. This session ID is not used for any purpose in this sample program. It is included in the servlet simply to show how to create and save a unique session ID.</P>
+<P>Each time the servlet is invoked, it creates a cookie containing the field value submitted by the user and stores it on the browser. Netscape Navigator will only store about 20 cookies. Beyond this number, older cookies are deleted when new cookies are added.</P>
+<P>When the servlet is invoked, it gets all of the cookie information stored on the browser and displays that information on the client screen. The display should include the unique session ID and all of the field values submitted by the user during that session.</P>
+<P>By default, the cookie information is deleted when the browser is exited. As discussed earlier, other possibilities regarding the maximum age of the cookie are available as well. It is important to note that a session doesn't end just because the user visits another page. If the user returns to the <B>Servlet09</B> servlet without exiting the browser, the cookies written by <B>Servlet09</B> continue to exist on the browser and the session continues.</P>
+<FONT COLOR="#ff0000"><H3 ALIGN="CENTER"><A NAME="Interesting_Code_Fragments">Interesting Code Fragments</A></H3>
+</FONT><P>The first fragment shows the beginning of the controlling class and the beginning of the <B>doGet()</B> method. You have seen this before, so I won't discuss it further.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>public class Servlet09 extends HttpServlet{
+  public void doGet(HttpServletRequest req, 
+                    HttpServletResponse res)
+                      throws ServletException, IOException{</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The next fragment constructs a unique session ID that is later written into a cookie on the browser.</P>
+<P>The first step is to get a <B>String</B> representation of a <B>UID</B> object. According to JavaSoft, the <B>UID</B> class is an "Abstraction for creating identifiers that are unique with respect to the host on which it is generated."</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>    String uid = new java.rmi.server.<B>UID</B>().toString();
+
+    String sessionID = java.net.URLEncoder.<B>encode</B>(uid);</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The second step is to invoke the <B>encode()</B> method of the <B>URLEncoder</B> class to convert the string into a MIME format called the "x-www-form-urlencoded" format. This ensures that the identifier can be reliably transmitted between the server and the client and that it will contain only those characters that are acceptable for saving in a cookie (see documentation on the <B>setValue()</B> method for more information).</P>
+<P>To convert the <B>String</B>, each character is examined and modified as follows: </P>
+
+<UL>
+<LI>The ASCII characters 'a' through 'z', 'A' through 'Z', and '0' through '9' remain the same. </LI>
+<LI>The space character is converted into a plus sign '+'. </LI>
+<LI>All other characters are converted into the 3-character string "%xy", where xy is the two-digit hexadecimal representation of the lower 8-bits of the character.</LI></UL>
+
+<P>A typical session identifier created by this process might appear as follows:</P>
+<B><P>1cce64%3Ad69878ccf0%3A-7ff9</P>
+</B><P>The next fragment uses the <B>getCookies()</B> method of the incoming <B>HttpServletRequest</B> object to get and save the cookies submitted by the browser. The values of the cookies will be displayed later.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>    Cookie[] cookies = req.<B>getCookies</B>();</PRE></TD>
+</TR>
+</TABLE>
+
+<P>As in previous sample programs, the next fragment gets and saves the field value submitted by the client.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>    String name = req.<B>getParameter</B>("firstName");</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The next step establishes the type of output. You have seen this many times before, so I won't comment further on this step.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>    res.setContentType("text/html");</PRE></TD>
+</TR>
+</TABLE>
+
+<P>Because cookies are sent to the browser using HTTP headers, they should be added to the response before you send any content.</P>
+<P>If no cookies were submitted by the client with the request, this is interpreted by this program to be the beginning of the <I>session</I>. A new <B>Cookie</B> object is instantiated containing the session ID value created above along with the name of the cookie: <B>sessionID</B>.</P>
+<P>Then the cookie is sent to the client's browser by invoking the <B>addCookie()</B> method on the outgoing <B>HttpServletResponse</B> object.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>    if(cookies == null){
+      Cookie newCookie = new <B>Cookie</B>("sessionID",sessionID);
+      res.<B>addCookie</B>(newCookie);
+    }//end if</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The next fragment gets an output stream. You have seen this many times before, so I won't comment further.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>    PrintWriter out = res.getWriter();</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The next fragment instantiates a cookie containing the field value submitted by the client and sends that cookie back to the browser for storage.</P>
+<P>Unless delineated by path information, each cookie needs a unique name in addition to its value. Assuming that successive invocations of the servlet will be separated in time by at least one millisecond, unique names can be created by getting the current date and time in milliseconds. That mechanism for creating unique cookie names was used in this sample program. The <B>getTime()</B> method of the <B>Date</B> class returns the date and time in milliseconds represented by a <B>Date</B> object.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>    if(name != null){
+      String cookieName = "" + new <B>Date</B>().<B>getTime</B>();
+      Cookie newCookie = new <B>Cookie</B>(cookieName, name);
+      res.<B>addCookie</B>(newCookie);
+    }//end if</PRE></TD>
+</TR>
+</TABLE>
+
+<P>If you compile and run this program with Netscape Navigator, you will probably notice that after about 20 cookies are added, Navigator starts deleting the oldest cookie when each new cookie is added.</P>
+<P>Any scheme for session tracking that uses cookies must take this limitation into account.</P>
+<P>Perhaps more important, any scheme that implements session tracking using cookies must take into account the fact that the user can disable the storage of cookies on most browsers. As near as I can tell, the servlet receives no warning that cookie processing has been disabled on the browser and that cookies being sent to the browser are not being saved.</P>
+<P>(However, some web applications warn me to enable cookies so there must be some way to detect that cookies are disabled.)</P>
+<P>The next fragment contains code that is very similar to code discussed in a previous lesson, so I won't discuss it further here. The fragment is being included here simply for continuity.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>    //Construct an HTML form and send it back to the client
+    out.println("&lt;HTML&gt;");
+    out.println("&lt;HEAD&gt;&lt;TITLE&gt;Servlet09&lt;/TITLE&gt;&lt;/HEAD&gt;");
+    out.println("&lt;BODY&gt;");
+        
+    //Substitute the name of your server or localhost in
+    // place of baldwin in the following statement.
+    out.println("&lt;FORM METHOD=GET ACTION="
+           + "\"http://baldwin:8080/servlet/Servlet09\"&gt;");
+    out.println("Enter a name and press the button&lt;P&gt;");
+    out.println("Name: &lt;INPUT TYPE=TEXT NAME="
+                                    + "\"firstName\"&gt;&lt;P&gt;");
+    out.println("&lt;INPUT TYPE=submit VALUE="
+                                     + "\"Submit Name\"&gt;");
+    out.println(
+      "&lt;BR&gt;&lt;BR&gt;Your session ID and list of names is:&lt;BR&gt;");
+    if(name == null){
+      out.println("Empty&lt;BR&gt;");
+    }//end if</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The next fragment uses the <B>getValue()</B> method of the <B>Cookie</B> class to get and display the values of each of the cookies saved earlier in the array of cookies. The first value displayed should be the session ID that was stored in the first cookie saved. The remaining items in the list should be the field input values previously submitted by the user each time the servlet was invoked.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>    if(cookies != null){
+      for(int i = 0; I &lt; cookies.length; i++){
+        out.println(cookies[i].<B>getValue</B>() + "&lt;BR&gt;");
+      }//end for loop
+    }//end if</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The next fragment displays the field value submitted by the user for the current invocation of the servlet. This value is displayed at the end of the list.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>    if(name != null){
+      out.println(name + "&lt;BR&gt;");
+    }//end if</PRE></TD>
+</TR>
+</TABLE>
+
+<P>A text version of a typical screen output following several invocations of the servlet is shown below. Note that the graphic input text field and the graphic button have been replaced by &lt;comments&gt;.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#00ffff">
+<PRE>Enter a name and press the button
+
+Name: &lt;Input Field Appears Here&gt;
+
+&lt;Submit Button Appears Here&gt;
+
+Your session ID and list of names is:
+1cce64%3Ad69878ccf0%3A-8000
+Tom
+Dick
+Harry
+Bill
+Sue
+Mary
+Alice</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The remainder of the code is typical of what you have seen before and can be viewed in the complete listing of the servlet in the next section.</P>
+<FONT COLOR="#ff0000"><H3 ALIGN="CENTER"><A NAME="program_listing"></A>Program Listing</H3>
+</FONT><P>A complete listing of the program follows.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Servlet09.java, Copyright 1999, R.G.Baldwin
+Rev 3/17/99
+The purpose of this program is to illustrate session
+tracking through the use of cookies.
+
+Each time the servlet is invoked, it displays an html
+form on the client screen.  The form contains:
+  An input field for submitting a name
+  A submit button
+  A list of previously submitted names
+  
+The first time the servlet is invoked, it creates a
+unique session ID and stores it in a cookie on the browser.
+
+Each time the servlet is invoked, it creates a cookie
+containing the name submitted by the user and stores it
+on the browser.  Netscape will only store about 20 cookies
+before beginning to delete the older cookies.
+
+The servlet was tested using the JDK 1.2 download package
+from JavaSoft along with the Java Servlet Development Kit
+(JSDK) 2.0 from JavaSoft. All tests were performed 
+under Win95 using a Netscape browser.
+
+The servlet was tested using the servletrunner program that
+is included in the JSDK with the servletrunner program 
+running on the same machine and also with the servletrunner
+program running on a different machine on the network. 
+
+
+**********************************************************/
+import java.io.*;
+import java.util.*;
+import javax.servlet.*;
+import javax.servlet.http.*;
+
+public class Servlet09 extends HttpServlet{
+  public void doGet(HttpServletRequest req, 
+                    HttpServletResponse res)
+                      throws ServletException, IOException{
+                        
+    //Get a unique ID to be used to construct a session ID
+    String uid = new java.rmi.server.UID().toString();
+    //Encode any special characters that may be in the uid
+    // to construct the session ID
+    String sessionID = java.net.URLEncoder.encode(uid);
+
+    //Get and save the cookies submitted with the request
+    Cookie[] cookies = req.getCookies();
+    
+    //Get the submitted name for the current GET request
+    String name = req.getParameter("firstName");
+
+    //Establish the type of output
+    res.setContentType("text/html");
+    
+    //If no cookies were submitted with the request, 
+    // create and add a cookie containing the session ID
+    if(cookies == null){
+      Cookie newCookie = new Cookie("sessionID",sessionID);
+      res.addCookie(newCookie);
+    }//end if
+    
+    //Get an output stream
+    PrintWriter out = res.getWriter();
+
+    //Add a cookie with the new name value.  Use the
+    // current date/time in milliseconds as a unique
+    // name for the cookie.  Note that Netscape will
+    // save only about 20 cookies before deleting the
+    // older cookies.
+    if(name != null){
+      String cookieName = "" + new Date().getTime();
+      Cookie newCookie = new Cookie(cookieName, name);
+      res.addCookie(newCookie);
+    }//end if
+    
+    //Construct an HTML form and send it back to the client
+    out.println("&lt;HTML&gt;");
+    out.println("&lt;HEAD&gt;&lt;TITLE&gt;Servlet09&lt;/TITLE&gt;&lt;/HEAD&gt;");
+    out.println("&lt;BODY&gt;");
+        
+    //Substitute the name of your server or localhost in
+    // place of baldwin in the following statement.
+    out.println("&lt;FORM METHOD=GET ACTION="
+           + "\"http://baldwin:8080/servlet/Servlet09\"&gt;");
+    out.println("Enter a name and press the button&lt;P&gt;");
+    out.println("Name: &lt;INPUT TYPE=TEXT NAME="
+                                    + "\"firstName\"&gt;&lt;P&gt;");
+    out.println("&lt;INPUT TYPE=submit VALUE="
+                                     + "\"Submit Name\"&gt;");
+    out.println(
+      "&lt;BR&gt;&lt;BR&gt;Your session ID and list of names is:&lt;BR&gt;");
+    if(name == null){
+      out.println("Empty&lt;BR&gt;");
+    }//end if 
+    
+    //Display the session ID and the values of the
+    // cookies that have been saved.
+    if(cookies != null){
+      for(int i = 0; i &lt; cookies.length; i++){
+        out.println(cookies[i].getValue() + "&lt;BR&gt;");
+      }//end for loop
+    }//end if
+
+    //Display name submitted with current GET request
+    if(name != null){
+      out.println(name + "&lt;BR&gt;");
+    }//end if
+
+    out.println("&lt;/BODY&gt;&lt;/HTML&gt;");
+      
+  }//end doGet()
+}//end class Servlet09</PRE></TD>
+</TR>
+</TABLE>
+
+<P>-end-<!--end--></P></BODY>
+</HTML>

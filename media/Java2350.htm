@@ -1,0 +1,2508 @@
+<!DOCTYPE doctype PUBLIC "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+                
+  <meta http-equiv="Content-Type"
+ content="text/html; charset=iso-8859-1">
+                
+  <meta name="GENERATOR" content="Microsoft FrontPage 6.0">
+  <title>... JAVA and DSP by Richard G Baldwin</title>
+	<style>
+<!--
+.Indent      { margin-left: 4em; margin-right: 2em; }
+-->
+</style>
+</head>
+<body link="#0000ff" vlink="#666666" alink="#ff0000" lang="EN-US">
+ 
+<h2>Adaptive Filtering in Java, Getting Started</h2>
+    <i>Learn how to write a Java program to adaptively design a time-delay 
+convolution filter with a flat amplitude response and a linear phase response using an LMS 
+adaptive algorithm.</i><p><b>Published:</b>&nbsp; September 20, 2005<br>
+   <b>By <a href="#About_the_author">Richard G. Baldwin</a></b> </p>
+     
+<p>Java Programming, Notes # 2350</p>
+     
+<ul>
+  <li><a href="#Preface">Preface</a></li>
+  <li><a href="#Preview">Preview</a></li>
+  <li><a href="#Discussion_and_Sample_Code">Discussion and Sample Code</a><li><a href="#Run_the_Programs">Run the Program</a></li>
+  <li><a href="#Summary">Summary</a></li>
+	<li><a href="#Whats Next">What's Next</a></li>
+  <li><a href="#Complete_Program_Listings">Complete Program Listings</a> </li>
+</ul>
+        
+<hr size="3" width="100%" align="center">    
+<center>    
+<h2> <a name="Preface">Preface</a></h2>
+   </center>
+<p><font color="#FF0000"><b>DSP and adaptive filtering</b></font></p>
+<p>With the decrease in cost and the increase in speed of digital devices, 
+Digital Signal Processing <i>(<a href="http://www.dickbaldwin.com/tocdsp.htm">DSP</a>)</i> 
+is showing up in everything from cell phones to hearing aids to rock concerts.&nbsp; 
+Many applications of DSP are static.&nbsp; That is, the characteristics of the 
+digital processor don't change with time or circumstances.&nbsp; However, a particularly 
+interesting branch of DSP is <i>adaptive filtering.</i>&nbsp; This is a 
+situation where the characteristics of the digital processor change with time, 
+circumstances, or both.</p>
+<p><font color="#FF0000"><b>First in a series</b></font></p>
+<p>This is the first lesson in a series designed to teach you about 
+adaptive filtering in Java.&nbsp; This lesson will introduce you to the 
+topic by showing you how to write a Java program to solve a relatively simple 
+time-adaptive filtering problem for which the correct solution is well known in 
+advance.&nbsp; This will make it possible to check the adaptive solution against 
+the known correct solution.</p>
+<p><font color="#FF0000"><b>An adaptive whitening filter</b></font></p>
+<p>The next lesson will show you how to write an adaptive <i>whitening filter</i> program in Java, which is conceptually more difficult 
+than the filter that I will explain in this lesson.&nbsp; The next lesson will 
+also show you how to use the whitening filter to extract wide band 
+signal from a channel in which the signal is corrupted by one or more components 
+of narrow band noise.</p>
+<p><font color="#FF0000"><b>More general adaptive filtering considerations</b></font></p>
+<p>Following that, the lessons in the series will become somewhat more general.&nbsp; 
+I plan to publish lessons that explain and provide examples for the four common 
+scenarios in which adaptive filtering is used:</p>
+<ul>
+	<li>System Identification</li>
+	<li>Inverse System Identification</li>
+	<li>Noise Cancellation</li>
+	<li>Prediction</li>
+</ul>
+<p>Somewhere along the way I will probably also publish a lesson that explains 
+and illustrates the difference between <i>least mean square (LMS)</i> and <i>
+recursive least squares (RLS)</i> adaptive algorithms.</p>
+<p><b><font color="#ff0000">Viewing tip</font></b> </p>
+ 
+<p>You may find it useful to open another copy of this lesson in a separate
+ browser window.&nbsp; That will make it easier for you to scroll back and
+ forth among the different figures and listings while you are reading about
+ them.</p>
+<p><b><font color="#ff0000">Supplementary material</font></b> </p>
+<p>I recommend that you also study the other lessons in my extensive collection 
+of online Java tutorials.&nbsp; You will find those lessons published at
+<a href="http://softwaredev.earthweb.com/java">Gamelan.com</a>.&nbsp; However, as of 
+the date of this writing, Gamelan doesn't maintain a consolidated index of my 
+Java tutorial lessons, and sometimes they are difficult to locate there.&nbsp; You 
+will find a consolidated index at <a href="http://www.dickbaldwin.com">
+www.DickBaldwin.com</a><font color="#000000">.</font></p>
+<h2 align="center"><a name="Preview">Preview</a></h2>
+<p><font color="#FF0000"><b>A time-delay filter with a flat amplitude response</b></font></p>
+<p>The program that I will present and explain in this lesson illustrates an 
+aspect of adaptive filtering for which the correct solution is already well 
+known.&nbsp; The program adaptively designs a time-delay filter with a flat 
+amplitude response and a linear 
+<a href="http://www.developer.com/java/other/article.php/3411041">phase</a> response in the
+<a href="http://www.developer.com/java/other/article.php/3392871">frequency</a> domain.</p>
+<p><font color="#FF0000"><b>A straightforward but useful scenario for learning</b></font></p>
+<p>Although this is a relatively straightforward 
+scenario, it is also a useful scenario for learning purposes.&nbsp; To begin with, the program 
+illustrates the use of a least mean square
+<a href="http://cnx.rice.edu/content/m11829/latest/"> <i>(LMS)</i> adaptive algorithm</a> in a 
+relatively simple setting, making it easy to understand what the algorithm is 
+doing.&nbsp; In addition, the program teaches you about the use of digital delay 
+lines, a topic with which you may not yet be familiar.&nbsp; Beyond that, it is easy to confirm that the adaptive solution 
+matches the known correct solution.</p>
+<p><font color="#FF0000"><b>User experimentation is encouraged</b></font></p>
+<p>When running this program, the user provides several parameters that have an impact on the 
+adaptive process.&nbsp; This allows the user to experiment with the adaptive process 
+comparing results for different input parameters.</p>
+<p><font color="#FF0000"><b>Two channels of input data</b></font></p>
+<p>Two sampled <a href="http://www.dickbaldwin.com/dsp/Dsp00104.htm">time series</a>, <b>chanA</b> and <b>chanB</b>, are presented to the 
+adaptive processing system.&nbsp; Each time series consists of the same wide band signal 
+plus white noise that is uncorrelated between the two channels.</p>
+<p><font color="#FF0000"><b>A time shift between the two channels</b></font></p>
+<p>On the basis of user input, the signal 
+in <b>chanB</b> can be delayed or advanced by up to six samples relative to the 
+signal in <b>chanA</b>.&nbsp; In other words, the time base for <b>chanB</b> can 
+be shifted in either direction causing <b>chanB</b> to lead <b>chanA</b> in 
+time, or causing <b>chanB</b> to lag <b>chanA</b> in time.</p>
+<blockquote>
+	<p><i>(Also, for a 
+trivial case, the time shift between the two channels can be set to zero.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Filtering chanA</b></font></p>
+<p>A nine-point 
+<a href="http://www.developer.com/java/other/article.php/3484591">convolution</a> operator is developed adaptively and applied to <b>
+chanA</b>.&nbsp; The purpose of the adaptive process is to cause the filtered 
+output to be in time registration with <b>chanB</b>.</p>
+<blockquote>
+	<p><i>(Because the coefficient values in the convolution operator change 
+	with time, the convolution process also changes with time.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>How do you measure success?</b></font></p>
+<p>When the adaptive process converges successfully, the time series produced by 
+applying the convolution operator to <b>chanA</b> matches the signal on <b>chanB</b>.</p>
+<p>It is already well known that the correct solution to this problem is a finite 
+	impulse response <i>(<a href="http://www.dspguru.com/info/faqs/firfaq.htm">FIR</a>)</i> 
+convolution filter in which one coefficient has a value of 1 and all the 
+	other coefficients have a value of 0.&nbsp; The location of the coefficient 
+	having the value of 1 is such as to cause the result of filtering <b>chanA</b> to be either advanced or 
+	delayed in time by a number of samples that causes it to be in time registration 
+	with <b>chanB</b>.&nbsp; </p>
+<p>It is also already well known that the 
+<a href="http://www.developer.com/java/other/article.php/3436341">Fourier</a> transform of the filter 
+described above will have a flat amplitude response and a linear phase response.</p>
+<p>If the adaptive process converges to this result, 
+it is successful.</p>
+<p><font color="#FF0000"><b>User inputs</b></font></p>
+<p>The user provides the following information as command line parameters:</p>
+<ul>
+	<li><b>timeShift</b>:&nbsp; A negative value for this parameter delays <b>
+	chanB</b> relative to <b>chanA</b> and a positive value advances <b>chanB</b> 
+	relative to <b>chanA</b>.&nbsp; If no command line parameters are provided, 
+	a default <b>timeShift</b> value of -4 is used.&nbsp; This causes a 
+	four-sample delay on <b>chanB</b> relative to <b>chanA</b>.&nbsp; Because 
+	the convolution operator has only nine points, time shifts outside the range 
+	of plus or minus four samples cannot be resolved and an adaptive solution 
+	will not be found.&nbsp; Time shifts greater than six samples cause the 
+	program to terminate.</li>
+	<li><b>feedbackGain</b>:&nbsp; This parameter controls the convergence rate 
+	of the adaptive process.&nbsp; If the value is very low, the process will 
+	take a long time to converge.&nbsp; If the value is too high, the process 
+	will become unstable.&nbsp; If no command line parameters are provided, a <b>
+	feedbackGain</b> value of 0.001 is used.&nbsp; Depending on the random noise 
+	level, the process appears to be stable for <b>feedbackGain</b> values as 
+	large as 0.004, but goes unstable for a <b>feedbackGain</b> value of 0.005.</li>
+	<li><b>noiseLevel</b>:&nbsp; This parameter controls the amount of 
+	uncorrelated white noise that is added to the signal on each of the 
+	two channels.&nbsp; If no command line parameters are provided, the default 
+	noise level is 0.0.&nbsp; The noise level is provided as a decimal fraction 
+	of the signal level.&nbsp; For example, a noise level of 0.1 causes the 
+	level of the noise that is added to each of the channels to be one tenth of 
+	the signal level on that channel.</li>
+	<li><b>numberIterations</b>:&nbsp; This parameter controls the number of 
+	adaptive iterations that are performed before the adaptive process terminates and all 
+	of the data that has been saved is plotted.&nbsp; If no command line 
+	parameters are provided, the default is 100 iterations.</li>
+</ul>
+<p><b><font color="#FF0000"><a name="Command_Line_Output">Command Line Output</a></font></b></p>
+<p>The first example was run using default parameters.&nbsp; This produced the 
+following output on the command line screen.&nbsp; <i>(Note that a line break 
+was manually entered into the first line to force it to fit into this narrow 
+publication format.)</i></p>
+<pre>Usage: java Adapt01 timeShift feedbackGain 
+noiseLevel numberIterations
+Negative timeShift is delay
+Using -4 sample shift by default
+Using 0.001 feedbackGain by default
+noiseLevel is a decimal fraction
+Using 0.0 by default
+numberIterations is an int
+Using 100 by default</pre></p>
+<p><font color="#FF0000"><b>Graphic output</b></font></p>
+<p>Figure 1 shows the first of three graphic outputs that are produced by this 
+program.&nbsp; <i>(The other two graphic outputs are shown later in Figure 2.)</i>&nbsp; </p>
+<p>The following four time series are plotted in color 
+in Figure 1 showing the convergence <i>(or lack thereof)</i> of the adaptive algorithm:</p>
+<ul>
+	<li>Black:&nbsp; Input to the convolution filter</li>
+	<li>Red:&nbsp; Output from the convolution filter</li>
+	<li>Blue:&nbsp; Adaptive target <i>(chanB)</i></li>
+	<li>Green:&nbsp; Error <i>(difference between filter output and the target)</i></li>
+</ul>
+
+
+
+
+
+
+<p>
+<div align="center">
+<table border="1" cols="1" width="400" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><img border="0" src="java2350a1.jpg" width="399" height="251"><br></pre>
+      
+      </td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</p>
+<p align="center"><b>Figure 1</b></p>
+<p><font color="#FF0000"><b>Traces wrap around and down</b></font></p>
+<p>When the top four traces reach the right end of the plotting area in Figure 1, they wrap around 
+and down resulting in four new traces further down the page.&nbsp; Thus, the 
+bottom four traces in Figure 1 are the continuation of the right end of the top 
+four traces.</p>
+<p><font color="#FF0000"><b>Was the adaptive process successful?</b></font></p>
+<p>If the adaptive process is successful for this problem, the green <i>
+(error) </i>trace should go to zero, and the red <i>(filter output)</i> trace 
+should match the blue <i>(target)</i> trace.&nbsp; As you can see, the adaptive 
+process converges to this solution about half way across the top four traces in 
+Figure 1.&nbsp; Thus, the adaptive process was successful.&nbsp; I will have more to say about Figure 1 later when I explain the 
+code.</p>
+<p><font color="#FF0000"><b>Impulse response plots</b></font></p>
+<p>The second of the three graphic outputs produced by this program is shown in the left 
+column of Figure 
+2.</p>
+<p>The impulse response of the adaptive convolution filter at the 
+beginning and at the end of every tenth iteration is shown in the left column of 
+Figure 2.&nbsp; Thus, the changes in the shape of the impulse response can be 
+viewed from the beginning to the end of the adaptive process.</p>
+<p>The progressive stages of the impulse response are shown from top 
+to bottom in the left column in Figure 2.</p>
+<div align="center">
+<table border="1" cols="1" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <img border="0" src="java2350b1.jpg" width="113" height="488"></td>
+      <td>
+      <img border="0" src="java2350b2.jpg" width="265" height="488"></td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</p>
+<p align="center"><b>Figure 2</b></p>
+<blockquote>
+	<p><i>(Note that the actual impulse response consists of the values to the 
+	left of the flat raised portion of the plots in the left column of Figure 2.&nbsp; 
+	The minimum allowable width of an AWT <b>Frame</b> object in Java running 
+	under WinXP is 112 pixels, and the length of the impulse response was 
+	insufficient to fill that width.&nbsp; Therefore, I plotted the flat raised 
+	portion to the right of the impulse response to flag the portion of the 
+	plots that is not part of the impulse response.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Initial impulse response at the top</b></font></p>
+<p>The filter is initialized with a single coefficient value of 1 at the center 
+and 0 for all of the other eight coefficient values.&nbsp; The 
+correct solution is a single coefficient value of 1 at a location in the 
+convolution filter 
+that matches the time shift between <b>chanA</b> and the target, <b>chanB</b>.&nbsp; For the 
+case shown in Figure 2, the target was delayed by four samples relative to <b>
+chanA</b>.</p>
+<p><b><font color="#FF0000">The peak shifts to the left</font></b></p>
+<p>As you can see from Figure 2, the impulse response begins at the top with a 
+value of 1 in the center and values of 0 elsewhere.&nbsp; As the adaptive 
+process progresses down the page, the peak value in the impulse response 
+progresses from the center of the impulse response to the correct location at 
+the left end.&nbsp; In other words, the impulse response modifies itself such 
+that after about 70 iterations <i>(the eighth impulse response plot),</i> it has 
+a value of 1 at the left end and zeros elsewhere.</p>
+<p><font color="#FF0000"><b>The frequency response</b></font></p>
+<p>The third graphic output produced by this program is shown in the right 
+column of Figure 2.</p>
+<p>The frequency response of the 
+convolution filter at the 
+beginning and at the end of every tenth iteration is computed and displayed in 
+the right column of Figure 2.&nbsp; 
+Both the amplitude response and the phase response of the filter are displayed, with the 
+amplitude response being plotted above the phase response in the right column of 
+Figure 2.&nbsp; The frequency-domain plots in the right column extend from zero 
+frequency on the left to the 
+<a href="http://www.developer.com/java/other/article.php/3380031">Nyquist</a> folding frequency, <i>(which is one-half the 
+sampling frequency),</i> on the right.</p>
+<p><b><font color="#FF0000">Frequency response on the right corresponds to 
+impulse response on the left</font></b></p>
+<p>Each pair of plots in the right column immediately to the right of a single 
+impulse response in the left column consists of the amplitude and phase 
+responses of the corresponding impulse response.&nbsp; The amplitude response is 
+plotted in black and the phase response is plotted in red below the amplitude 
+response.</p>
+<p><font color="#FF0000"><b>Frequency response starts out flat</b></font></p>
+<p>At the beginning <i>(at the top),</i> the impulse response consists of a single impulse in the 
+center of the convolution filter.</p>
+<blockquote>
+	<p><i>(The center of the convolution filter is defined as the zero time 
+	origin for purposes of computing the phase response.)</i></p>
+</blockquote>
+<p>At that point in the adaptive process, both the amplitude response and the 
+phase response of the convolution filter are flat across the entire frequency 
+<a href="http://www.developer.com/java/other/article.php/3380031">spectrum</a>.</p>
+<p><font color="#FF0000"><b>Deviations appear by the twentieth iteration</b></font></p>
+<p>By the third impulse response going down the page <i>(twenty adaptive 
+iterations),</i> the impulse response is no longer represented by a single 
+impulse, and some deviation from flatness is apparent in the corresponding 
+amplitude response.</p>
+<p>By the fourth impulse response <i>(thirty adaptive iterations),</i> the shape 
+of the impulse response has changed considerably and quite a lot of activity is 
+apparent in the corresponding amplitude response and phase response.</p>
+<p><font color="#FF0000"><b>An adaptive solution in 90 iterations</b></font></p>
+<p>By the eighth impulse response <i>(70 iterations),</i> the impulse response 
+has become a single time-shifted impulse, the amplitude response has returned to 
+being flat across the frequency spectrum, and the phase response has taken on a 
+saw tooth character.</p>
+<p>This is the correct solution as described above.</p>
+<p><font color="#FF0000"><b>A flat amplitude response</b></font></p>
+<p>The fact that the impulse response is once again a single impulse means that 
+the amplitude response of the convolution filter is flat across the entire 
+frequency spectrum.</p>
+<p>The new location <i>(relative to the zero time origin)</i> of the single 
+impulse in the convolution filter causes the output of the filter to be shifted 
+in time relative to its input.&nbsp; As evidenced in Figure 1, this causes the 
+convolution filter output <i>(red)</i> to be in time registration with the 
+target <i>(blue).</i>&nbsp; At that point, the error <i>(green)</i> has 
+converged to zero.</p>
+<p><font color="#FF0000"><b>A linear phase response</b></font></p>
+<p>A convolution operator that produces a simple time shift is represented in 
+the frequency domain by a flat amplitude response and a linear relationship 
+between phase 
+and frequency.&nbsp; In other words, the phase is a straight line that goes 
+through the zero frequency origin.&nbsp; The slope of the line indicates the 
+direction of the time shift.&nbsp; The magnitude of the slope indicates the 
+amount of the time shift.</p>
+<p>Because the phase response is plotted in the range from 
+-180 degrees to +180 degrees, and wraps around whenever it exceeds either of those 
+limits, a linear phase shift has a saw tooth appearance when plotted as shown 
+near the bottom of Figure 2.</p><p><font color="#FF0000"><b>Testing</b></font></p><p>This program was tested using J2SE 5.0 and WinXP.&nbsp; J2SE 5.0 or later is 
+required.</p><h2 align="center"><a name="Discussion_and_Sample_Code">Discussion and Sample 
+Code</a></h2><p><font color="#FF0000"><b>The program named Adapt01</b></font></p><p>
+I will discuss and explain this program in fragments.&nbsp; A complete listing 
+of the program is provided in Listing 32 near the end of the lesson.</p>
+<p>The beginning of the class and the beginning of the <b>main</b> method is 
+shown in Listing 1.</p><p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>class Adapt01{
+&nbsp; public static void main(String[] args){
+&nbsp;&nbsp;&nbsp; //Default values
+&nbsp;&nbsp;&nbsp; int timeShift = -4;
+&nbsp;&nbsp;&nbsp; double feedbackGain = 0.001;
+&nbsp;&nbsp;&nbsp; double noiseLevel = 0.0;
+&nbsp;&nbsp;&nbsp; int numberIterations = 100;
+&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; if(args.length != 4){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Usage: java Adapt01 " +
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "timeShift feedbackGain " +
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "noiseLevel numberIterations");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Negative timeShift is delay");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Using -4 sample shift by default");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Using 0.001 feedbackGain by default");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "noiseLevel is a decimal fraction");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Using 0.0 by default");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "numberIterations is an int");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Using 100 by default");
+&nbsp;&nbsp;&nbsp; }else{//Command line params were provided.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Convert String to int
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; timeShift = Integer.parseInt(args[0]);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "timeShift: " + timeShift);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Convert String to double
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; feedbackGain = Double.parseDouble(args[1]);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "feedbackGain: " + feedbackGain);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Convert String to double
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; noiseLevel = Double.parseDouble(args[2]);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "noiseLevel: " + noiseLevel);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Convert String to int
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; numberIterations =
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Integer.parseInt(args[3]);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "numberIterations: " + numberIterations);
+&nbsp;&nbsp;&nbsp; }//end else
+&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; if(abs(timeShift) &gt; 6){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Time shift magnitude &gt; 6 not allowed.");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Terminating");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.exit(0);
+&nbsp;&nbsp;&nbsp; }//end if<br><br><b><font face="Courier New,Courier">Listing 1</font></b></pre></td></tr></tbody></table></p><p>
+The code in the <b>main</b> method in Listing 1 deals with the command line 
+parameters.&nbsp; If the user enters command line parameters, those parameters 
+are used in the adaptive process.&nbsp; If the user doesn't enter command line 
+parameters, a set of default parameters are used in the adaptive process.</p>
+<p>The code in Listing 1 is completely straightforward and shouldn't require 
+explanation.</p>
+<p><font color="#FF0000"><b>Perform the adaptive process</b></font></p>
+<p>The code in Listing 2 instantiates an object of the <b>Adapt01</b> class and 
+invokes the <b>process</b> method to cause the adaptive process to be performed.&nbsp; 
+As described above, the parameters passed to the <b>process</b> method are either provided by the 
+user as command line parameters, or provided by the program by default if the 
+user doesn't enter command line parameters.</p><p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>&nbsp;&nbsp;&nbsp; new Adapt01().process(timeShift,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; feedbackGain,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; noiseLevel,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; numberIterations);
+&nbsp; }//end main<br><br><b><font face="Courier New,Courier">Listing 2</font></b></pre></td></tr></tbody></table></p><p>
+Listing 2 also signals the end of the <b>main</b> method.</p>
+<p>
+<font color="#FF0000"><b>The parameters for Figure 1 and Figure 2</b></font></p>
+<p>
+The case that produced the output shown in Figure 1 and Figure 2 was run without 
+entering command line parameters.&nbsp; Hence, the adaptive process was executed using 
+the following default parameters, which were displayed by the code in the main 
+method:</p>
+<pre>Using -4 sample shift by default
+Using 0.001 feedbackGain by default
+noiseLevel is a decimal fraction
+Using 0.0 by default
+numberIterations is an int
+Using 100 by default</pre></p>
+<p><font color="#FF0000"><b>The process method of the Adapt01 class</b></font></p>
+<p>The <b>process</b> method of the <b>Adapt01</b> class begins in Listing 3.&nbsp; The code in Listing 3 
+begins by declaring and populating a nine-element array of type <b>double</b> 
+containing the initial convolution filter.&nbsp; This is the filter that is 
+shown by the impulse response at the top of the left column in Figure 2.&nbsp; 
+The contents of this array will be adaptively modified as the program executes.</p><p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>&nbsp; void process(int timeShift,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; double feedbackGain,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; double noiseLevel,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int numberIterations){
+&nbsp;&nbsp;&nbsp; //Create the initial convolution filter.
+&nbsp;&nbsp;&nbsp; double[] filter = {0,0,0,0,1,0,0,0,0};
+&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Create array objects that will be used as
+&nbsp;&nbsp;&nbsp; // delay lines.
+&nbsp;&nbsp;&nbsp; double[] rawData = new double[13];
+&nbsp;&nbsp;&nbsp; double[] chanA = new double[9];
+&nbsp;&nbsp;&nbsp; double[] chanB = new double[9];<br><br><b><font face="Courier New,Courier">Listing 3</font></b></pre></td></tr></tbody></table></p><p>
+<font color="#FF0000"><b>Create three tapped delay line objects</b></font></p>
+<p>Then the code in Listing 3 declares three array objects, which will be used as 
+tapped delay lines for the <b>rawData</b>, <b>chanA</b>, and <b>chanB</b>.&nbsp; </p>
+<p>A delay line 
+is similar to a queue.&nbsp; For example, think of a short section of hose that 
+is full of colored marbles.&nbsp; When you insert a new marble in one end, a 
+marble gets pushed out and discarded from the other end.&nbsp; Now think of 
+cutting a series of small holes along the hose through which you can see the 
+color of the marble next to each hole.&nbsp; You can think of these holes as 
+taps from which you can extract the color of the marbles as they progress past 
+the holes.</p>
+<p>Each of the delay lines in this program is implemented using an array object.&nbsp; 
+Data enters the delay line at the topmost element and moves to the 
+next lower element once during each iteration.&nbsp; The data value that is in 
+element 0 during a particular iteration is discarded and replaced by the value from 
+element 1 during the next iteration.</p>
+<p>The ability for the code to access any individual element provides taps by 
+which the contents at any stage in the delay line can be retrieved by the code.</p>
+<p><font color="#FF0000"><b>Instantiate a plotting object for time series data</b></font></p>
+<p>The code in listing 4 instantiates an object of the class named <b>PlotALot05</b>, 
+which provides the ability to plot the time series data in the format shown in 
+Figure 1.</p><p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>&nbsp;&nbsp;&nbsp; PlotALot05 plotObj = new PlotALot05(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &quot;Time Series&quot;,398,250,25,5,4,4);<br><br><b><font face="Courier New,Courier">Listing 4</font></b></pre></td></tr></tbody></table></p><p>
+The class named <b>PlotALot05</b> is a simple extension of the class named <b>
+PlotALot04</b>, which I explained in the lesson entitled
+<a href="http://www.developer.com/java/data/article.php/3529186">Plotting Large Quantities of Data using Java</a>.&nbsp; 
+I will refer you to that lesson for a general explanation of the class.</p>
+<blockquote>
+	<p><i>(The source code for the class named <b>PlotALot05</b> is provided in Listing 
+33 near the end of this lesson.)</i></p>
+</blockquote>
+<p>
+<font color="#FF0000"><b>Output on the command-line screen</b></font></p>
+<p>
+The parameters passed to the constructor for the class caused the constructor to 
+display the following information about the plotting object on the command line 
+screen.</p><pre>Title: Time Series
+Frame width: 398
+Frame height: 250
+Page width: 390
+Page height: 223
+Trace spacing: 25
+Sample spacing: 5
+Traces per page: 8
+Samples per page: 156</pre></p>
+<p><font color="#FF0000"><b>Instantiate a plotting object for frequency response 
+data</b></font></p>
+<p>The code in Listing 5 instantiates a plotting object for two channels of frequency response data.&nbsp; One channel is used to plot the amplitude response in db and the other channel is used to plot the phase on a scale that extends from -180 degrees to +180 degrees.</p><p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>
+&nbsp;&nbsp;&nbsp; PlotALot03 freqPlotObj =
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new PlotALot03("Freq",264,487,20,2,0,0);<br><br><b><font face="Courier New,Courier">Listing 5</font></b></pre></td></tr></tbody></table></p><p>
+The class named <b>PlotALot03</b> is one of the classes that I explained in the 
+earlier lesson entitled
+<a href="http://www.developer.com/java/data/article.php/3529186">Plotting Large Quantities of Data using Java</a>.&nbsp; 
+<i>(I will refer you back to that lesson for a copy of the source code for this 
+class.)</i>&nbsp; The parameters that describe this plotting object are given below.</p>
+<p>
+<pre>Title: Freq
+Frame width: 264
+Frame height: 487
+Page width: 256
+Page height: 460
+Trace spacing: 20
+Sample spacing: 2
+Traces per page: 22
+Samples per page: 1408</pre></p>
+<p><font color="#FF0000"><b>Instantiate a plotting object for the impulse 
+response data</b></font></p>
+<p>The code in Listing 6 instantiates a plotting object to display the impulse 
+response of the convolution filter at intervals during the adaptive process.&nbsp; 
+I explained the class named <b>PlotALot01</b> in the earlier lesson entitled
+<a href="http://www.developer.com/java/data/article.php/3529186">Plotting Large Quantities of Data using Java</a>.&nbsp;
+<i>(Once again, I will refer you back to that lesson for a copy of the source 
+code for this class.)</i></p><p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>&nbsp;&nbsp;&nbsp; PlotALot01 filterPlotObj = new PlotALot01(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Filter",(filter.length * 4) + 8,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 487,40,4,0,0);<br><br><b><font face="Courier New,Courier">Listing 6</font></b></pre></td></tr></tbody></table></p>
+<p><font color="#FF0000"><b>The actual plotting object parameters</b></font></p>
+<p><a name="The_actual_parameters">The actual parameters</a> that describe this plotting object 
+are:</p>
+<p><pre>Title: Filter
+Frame width: 112
+Frame height: 487
+Page width: 104
+Page height: 460
+Trace spacing: 40
+Sample spacing: 4
+Traces per page: 11
+Samples per page: 286</pre></p>
+<p><font color="#FF0000"><b>The Frame width is different</b></font></p>
+<p>Note that the actual <b>Frame</b> width of 112 is different from the 
+specified <b>Frame</b> width of 44 in Listing 6.&nbsp; This is because the minimum allowable width for an AWT
+<b>Frame</b> object is 112 pixels under WinXP regardless of the specified width.</p>
+<blockquote>
+	<p><i>(As described below, this code is very specific to the WinXP operating system for 
+correct plotting of the impulse response data.)</i></p>
+</blockquote>
+<p>Because the actual <b>Frame</b> width doesn't match the specified <b>Frame</b> 
+width, the 
+	code in Listing 6 won't cause the plotting process to synchronize properly 
+	and to plot a single impulse response on each axis for filter lengths less than 25 coefficients.&nbsp; 
+To compensate for this problem, the code that feeds the filter data to the plotting object later in the program extends the length of the filter to cause it to synchronize and to plot one 
+	impulse response on each axis.</p>
+<blockquote>
+	<p><i>(If the program is run on an operating 
+	system for which the sum of the left and right <b>Frame</b> inset values is 
+	other than eight pixels, even that compensating code won't provide proper 
+	synchronization.&nbsp; In that case, the individual impulse response 
+	functions will appear to walk across their axes with each one starting at a 
+	different location on the axis.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Display frequency response of the filter</b></font></p>
+<p>Listing 7 invokes the method named <b>displayFreqResponse</b> to compute and 
+display the frequency response of the initial convolution filter at 128 points 
+between zero frequency and the 
+<a href="http://www.developer.com/java/other/article.php/3380031">Nyquist folding frequency</a>.</p><p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>&nbsp;&nbsp;&nbsp; displayFreqResponse(filter,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; freqPlotObj,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 128,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; filter.length - 5);<br><br><b><font face="Courier New,Courier">Listing 7</font></b></pre></td></tr></tbody></table></p><p>
+At this point, I am going to set the discussion of the <b>process</b> method 
+aside momentarily while I explain the method named <b>displayFreqResponse</b>.&nbsp; I will 
+return to the discussion of the <b>process</b> method shortly.</p>
+<p><font color="#FF0000"><b>The displayFreqResponse method</b></font></p>
+<p>The <b>displayFreqResponse</b> method, which begins in Listing 8, receives a reference to a double array containing a convolution filter along 
+with a reference to a plotting object capable of plotting two channels of data.&nbsp; 
+The method also receives a value specifying the number of frequencies at which a 
+<a href="http://www.developer.com/java/other/article.php/3374611">discrete Fourier transform <i>(DFT)</i></a> is to be performed on the filter, along 
+with the sample number that represents the zero time location in the filter.</p>
+<p>The method uses this information to perform a 
+<a href="http://www.developer.com/java/other/article.php/3374611">DFT</a> on the filter from zero to the 
+Nyquist folding frequency.&nbsp; It feeds the resulting amplitude spectrum and 
+the phase spectrum to the plotting object for plotting later.</p><p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>
+&nbsp; void displayFreqResponse(double[] filter,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; PlotALot03 plot,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int len,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int zeroTime){<br><br><b><font face="Courier New,Courier">Listing 8</font></b></pre></td></tr></tbody></table></p><p>
+<font color="#FF0000"><b>Performing the discrete Fourier transform</b></font></p>
+<p>
+The <b>process</b> method uses a static method named <b>transform</b> belonging 
+to a class named <b>ForwardRealToComplex01</b> to perform the Fourier transform.&nbsp; 
+I explained that class and method in detail in the earlier lesson entitled
+<a href="http://www.developer.com/java/other/article.php/3380031">Spectrum 
+Analysis using Java, Sampling Frequency, Folding Frequency, and the FFT 
+Algorithm</a>.</p>
+<blockquote>
+	<p><i>(I will refer you to that lesson for a copy of the source code for the
+	<b>ForwardRealToComplex01</b> class.)</i></p>
+</blockquote>
+<font color="#FF0000"><b>Description of the transform method</b></font></b></font><p>
+The static method named <b>transform</b> performs a real to complex Fourier 
+transform.&nbsp; The method does not implement the FFT algorithm.&nbsp; Rather, 
+it implements a straightforward sampled data version of the continuous Fourier 
+transform defined using integral calculus.</p>
+<p><font color="#FF0000"><b>The return values</b></font></p>
+<p>The method returns the following:</p>
+<ul>
+	<li>Real part of the spectral analysis result 
+	</li>
+	<li>Imaginary part of the spectral analysis result 
+	</li>
+	<li>Magnitude of the spectral analysis result 
+	</li>
+	<li>Phase angle of the spectral analysis result in degrees 
+	</li>
+</ul>
+<p><font color="#FF0000"><b><a name="The_transform_method_parameters">The transform method parameters</a></b></font></p>
+<p>The method parameters for the <b>transform</b> method are: </p>
+<ul>
+	<li>double[] data - incoming real data 
+	</li>
+	<li>double[] realOut - outgoing real data </li>
+	<li>double[] imagOut - outgoing imaginary data </li>
+	<li>double[] angleOut - outgoing phase angle in degrees </li>
+	<li>double[] magnitude - outgoing amplitude spectrum 
+	</li>
+	<li>int zero - the index of the incoming data sample that 
+	represents zero time 
+	</li>
+	<li>double lowF - low frequency limit for computation as a 
+	fraction of sampling frequency </li>
+	<li>double highF - high frequency limit for computation as a 
+	fraction of sampling frequency&nbsp; </li>
+</ul>
+<p><font color="#FF0000"><b>Frequency increment, magnitude 
+spectrum, and number of returned values</b></font></p>
+<p>The computational frequency increment is the difference 
+between the high and low limits divided by the length of the 
+magnitude array.</p>
+<p>The magnitude <i>(amplitude)</i> is computed as the square root of 
+the sum of the squares of the real and imaginary parts.&nbsp; This 
+value is divided by the incoming data length, which is given by
+<b>data.length</b>.</p>
+<p>The method returns a number of points in the frequency domain 
+equal to the incoming data length regardless of the high and low 
+frequency limits.</font>
+
+<p><font color="#FF0000"><b>Prepare the required array objects</b></font></p>
+<p>Listing 9 creates the five array objects required as input parameters by the
+<b>transform</b> method.&nbsp; Then Listing 9 uses the <b>arraycopy</b> method 
+of the <b>System</b> class to copy the incoming filter data into the array 
+object referred to by <b>timeDataIn</b>.</p>
+<p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>&nbsp;&nbsp;&nbsp; double[] timeDataIn = new double[len];
+&nbsp;&nbsp;&nbsp; double[] realSpect = new double[len];
+&nbsp;&nbsp;&nbsp; double[] imagSpect = new double[len];
+&nbsp;&nbsp;&nbsp; double[] angle = new double[len];
+&nbsp;&nbsp;&nbsp; double[] magnitude = new double[len];
+&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Copy the filter into the timeDataIn array.
+&nbsp;&nbsp;&nbsp; System.arraycopy(filter,0,timeDataIn,0,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; filter.length);<br><br><b><font face="Courier New,Courier">Listing 9</font></b></pre></td></tr></tbody></table></p><p>
+Note that the length of the <b>timeDataIn</b> array is about fourteen times 
+greater than the length of the actual convolution filter.&nbsp; This results in 
+a small frequency increment value producing smooth representations of the 
+frequency response curves in Figure 2.</p>
+<p><font color="#FF0000"><b>Compute the frequency response of the convolution 
+filter</b></font></p>
+<p>Listing 10 invokes the static <b>transform</b> method of the <b>
+ForwardRealToComplex01</b> class to compute and return the frequency response of 
+the convolution operator from zero to the Nyquist folding frequency.</p><p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>&nbsp;&nbsp;&nbsp; ForwardRealToComplex01.transform(timeDataIn,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; realSpect,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; imagSpect,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; angle,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; magnitude,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; zeroTime,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0.0,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0.5);<br><br><b><font face="Courier New,Courier">Listing 10</font></b></pre></td></tr></tbody></table></p><p>
+You can compare the parameter values in Listing 10 with the description of the 
+parameters given <a href="#The_transform_method_parameters">earlier</a>.&nbsp; 
+We will discard all of the transform results other than the amplitude response 
+returned in the array referred to by <b>magnitude</b>, and the phase response 
+returned in the array referred to by <b>angle</b>.</p>
+<p><font color="#FF0000"><b>Prepare to convert amplitude response to log base 10</b></font></p>
+<p>That's all there is to getting the amplitude and phase response of the 
+convolution filter.&nbsp; The remaining code in the <b>displayFreqResponse</b> method is concerned with 
+plotting the data in the format shown in the right column of Figure 2.</p>
+<p>The amplitude response will be converted to 
+<a href="http://arts.ucsc.edu/EMS/Music/tech_background/TE-06/teces_06.html">decibels</a> before plotting.&nbsp; 
+This requires converting the amplitude data to log base 10.&nbsp; I will use the
+<b>log10</b> method of the <b>Math</b> class to perform the conversion.</p>
+<p>Some possible amplitude response values are not compatible with the <b>log10</b> 
+method.&nbsp; I invite you to examine Sun's documentation for that method to see 
+what I mean.&nbsp; The code in Listing 11 converts those values to compatible 
+values if they exist in the amplitude response.</p>
+<p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>&nbsp;&nbsp;&nbsp; //Eliminate or change all values that are
+&nbsp;&nbsp;&nbsp; // incompatible with log10 method.
+&nbsp;&nbsp;&nbsp; for(int cnt = 0;cnt &lt; magnitude.length;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cnt++){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if((magnitude[cnt] == Double.NaN) ||
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (magnitude[cnt] &lt;= 0)){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; magnitude[cnt] = 0.0000001;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }else if(magnitude[cnt] ==
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Double.POSITIVE_INFINITY){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; magnitude[cnt] = 9999999999.0;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end else if
+&nbsp;&nbsp;&nbsp; }//end for loop<br><br><b><font face="Courier New,Courier">Listing 11</font></b></pre></td></tr></tbody></table></p><p>
+<font color="#FF0000"><b>Convert amplitude response to log base 10</b></font></p>
+<p>The code in Listing 12 invokes the <b>log10</b> method in a <b>for</b> loop 
+to convert each amplitude response value to log base 10.</p><p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>&nbsp;&nbsp;&nbsp; for(int cnt = 0;cnt &lt; magnitude.length;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cnt++){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; magnitude[cnt] = log10(magnitude[cnt]);
+&nbsp;&nbsp;&nbsp; }//end for loop<br><br><b><font face="Courier New,Courier">Listing 12</font></b></pre></td></tr></tbody></table></p><p>
+Because this is an in-place conversion, all future references to the array 
+referred to by <b>magnitude</b> will be referring to data values that have been 
+converted to log base 10.&nbsp; This data can be thought of scaled decibels.</p>
+<p><font color="#FF0000"><b>Normalize the data for plotting</b></font></p>
+<p>One of the difficulties that is always encountered in plotting large 
+quantities of data is the problem of scaling the data so that it fits in the 
+range allocated to the plotting space.&nbsp; The code in Listing 13 begins by 
+finding the absolute peak value of the log base 10 amplitude response data.&nbsp; 
+Then it scales that data by a factor of 50, divided by the peak value, and adds 
+a constant value of 50 producing the results shown in Figure 2.</p><p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>&nbsp;&nbsp;&nbsp; //Find the absolute peak value
+&nbsp;&nbsp;&nbsp; double peak = -9999999999.0;
+&nbsp;&nbsp;&nbsp; for(int cnt = 0;cnt &lt; magnitude.length;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cnt++){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(peak &lt; abs(magnitude[cnt])){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; peak = abs(magnitude[cnt]);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end if
+&nbsp;&nbsp;&nbsp; }//end for loop
+
+&nbsp;&nbsp;&nbsp; //Normalize to 50 times the peak value and
+&nbsp;&nbsp;&nbsp; // shift up the screen by 50 units to make
+&nbsp;&nbsp;&nbsp; // the values compatible with the plotting
+&nbsp;&nbsp;&nbsp; // program.&nbsp; Recall that adding a constant to
+&nbsp;&nbsp;&nbsp; // log values is equivalent to scaling the
+&nbsp;&nbsp;&nbsp; // original data.
+&nbsp;&nbsp;&nbsp; for(int cnt = 0;cnt &lt; magnitude.length;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cnt++){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; magnitude[cnt] =
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 50*magnitude[cnt]/peak + 50;
+&nbsp;&nbsp;&nbsp; }//end for loop<br><br><b><font face="Courier New,Courier">Listing 13</font></b></pre></td></tr></tbody></table></p><p>
+<font color="#FF0000"><b>Feed the data to the plotting object</b></font></p>
+<p>The code in Listing 14 feeds the normalized decibel data and the phase 
+response data to the plotting object where it will be plotted later.</p>
+<p>The phase data ranges from -180 to +180 degrees.&nbsp; This data is divided 
+by a factor of 20 to make it compatible with the plotting format being used.</p><p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>&nbsp;&nbsp;&nbsp; for(int cnt = 0;cnt &lt; magnitude.length;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cnt++){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; plot.feedData(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; magnitude[cnt],angle[cnt]/20);
+&nbsp;&nbsp;&nbsp; }//end for loop
+&nbsp;&nbsp;&nbsp;
+&nbsp; }//end displayFreqResponse<br><br><b><font face="Courier New,Courier">Listing 14</font></b></pre></td></tr></tbody></table></p><p>
+Listing 14 signals the end of the <b>displayFreqResponse</b> method.&nbsp; At 
+this point, I will resume my discussion of the <b>process</b> method of the <b>
+Adapt01</b> class.</p>
+<p><font color="#FF0000"><b>Display impulse response of the initial convolution 
+filter</b></font></p>
+<p>Back in the <b>process</b> method, Listing 15 feeds the values of the initial convolution filter <i>(see Listing 
+3)</i> to one of the plotting objects <i>(see Listing 6)</i> for plotting as 
+shown at the top of the left column in Figure 2.</p><p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>&nbsp;&nbsp;&nbsp; for(int cnt = 0;cnt &lt; filter.length;cnt++){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; filterPlotObj.feedData(30*filter[cnt]);
+&nbsp;&nbsp;&nbsp; }//end for loop<br><br><b><font face="Courier New,Courier">Listing 15</font></b></pre></td></tr></tbody></table></p><p>
+<font color="#FF0000"><b>Extend the convolution filter</b></font></p>
+<p>Recall from the lesson entitled 
+<a href="http://www.developer.com/java/data/article.php/3529186">Plotting Large Quantities of Data using Java</a> that this plotting object knows nothing about 
+the end of one convolution filter and the beginning of the next.&nbsp; 
+Rather, the plotting object is designed to simply accept large quantities of 
+data values to be plotted and to cause the plot to automatically wrap from the 
+current axis down to the next axis when the right side of the current axis is 
+encountered.</p>
+<p><font color="#FF0000"><b>Adjust width of the plotting surface to match length 
+of impulse response</b></font></p>
+<p>Normally, to cause each impulse response to appear on a separate axis, I 
+would adjust the width of the plotting surface <i>(<a href="#The_actual_parameters">Page 
+width</a>)</i> to cause it to match the length 
+of the impulse response.&nbsp; However, an AWT <b>Frame</b> object has a minimum 
+allowable width of 112 pixels under WinXP, regardless of the width that you 
+specify in the <b>setSize</b> method.&nbsp; Therefore, it was not possible to 
+cause the width of the plotting surface to match the length of the impulse 
+response in this case.</p>
+<p><font color="#FF0000"><b>Extend the length of the impulse response</b></font></p>
+<p>Therefore, the code in Listing 16 <i>(working in conjunction with the code in 
+Listing 6)</i> extends the length of each impulse response to cause it to match 
+the width of the plotting surface.</p>
+<blockquote>
+	<p><i>(As mentioned earlier, however, this 
+will not cause the plot of the impulse response to synchronize properly when run 
+under an operating system for which the sum of the left and right inset values 
+for an AWT <b>Frame</b> object is something other than eight pixels.&nbsp; In 
+that case, a single point (such as the peak) on the impulse response will 
+appear to move across the successive axes.)</i></p>
+</blockquote>
+<p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>&nbsp;&nbsp;&nbsp; if(filter.length &lt;= 26){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for(int cnt = 0;cnt &lt; (26 - filter.length);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cnt++){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; filterPlotObj.feedData(2.5);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end for loop
+&nbsp;&nbsp;&nbsp; }//end if<br><br><b><font face="Courier New,Courier">Listing 16</font></b></pre></td></tr></tbody></table></p><p>
+<font color="#FF0000"><b>A constant value of 2.5</b></font></p>
+<p>
+I extended the impulse response with a constant value of 2.5 to cause the 
+extended portion to be visually separable from the actual impulse response 
+values.&nbsp; The extended portion is shown by the broad flat areas to the right of the impulse response 
+plots in the left column of Figure 2.</p>
+<p><font color="#FF0000"><b>Declare and initialize adaptive variables</b></font></p>
+<p>Listing 17 declares and initializes some variables that are used later in the adaptive process.</p><p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>&nbsp;&nbsp;&nbsp; double output = 0;
+&nbsp;&nbsp;&nbsp; double err = 0;
+&nbsp;&nbsp;&nbsp; double target = 0;
+&nbsp;&nbsp;&nbsp; double input = 0;
+&nbsp;&nbsp;&nbsp; double dataScale = 25;//Default data scale<br><br><b><font face="Courier New,Courier">Listing 17</font></b></pre></td></tr></tbody></table></p><p>
+<font color="#FF0000"><b>Execute the adaptive process</b></font></p>
+<p>Listing 18 shows the beginning of a <b>for</b> loop that creates the data and 
+performs the adaptive process on that data.&nbsp; The body of this loop executes 
+once for each adaptive iteration specified by the user as <b>numberIterations
+</b><i>(see Listing 1).</i></p><p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>&nbsp;&nbsp;&nbsp; //Do the iterative adaptive process
+&nbsp;&nbsp;&nbsp; for(int cnt = 0;cnt &lt; numberIterations;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cnt++){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Add new input data to the delay line
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // containing the raw input data.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; flowLine(rawData,Math.random() - 0.5);<br><br><b><font face="Courier New,Courier">Listing 18</font></b></pre></td></tr></tbody></table></p><p>
+<font color="#FF0000"><b>Create the wide bandwidth signal data</b></font></p>
+<p>
+Listing 18 uses a random number generator to get a random value to serve as a 
+wide bandwidth signal sample.&nbsp; The random number generator produces random values 
+having a flat distribution from 0 to 1.0.&nbsp; Listing 18 subtracts 0.5 from 
+the random value causing the resulting distribution to range from -0.5 to +0.5.</p>
+<p><font color="#FF0000"><b>Insert data into the rawData delay line</b></font></p>
+<p>Listing 18 passes the random value to the method named <b>flowLine</b>.&nbsp; 
+Listing 18 also passes a reference to an array object named <b>rawData </b>to the <b>
+flowLine</b> method.</p>
+<blockquote>
+	<p><i>(The array object referred to by <b>rawData</b> was instantiated 
+in Listing 3 to serve as a tapped delay line for raw data.)</i></p>
+</blockquote>
+<p>At this point, I will put the discussion of the <b>process</b> method aside for 
+momentarily and explain the method named <b>flowLine</b>.&nbsp; I will 
+return to the explanation of the <b>process</b> method shortly.</p>
+<p><font color="#FF0000"><b>The flowLine method</b></font></p>
+<p>The <b>flowLine</b> method, which is shown in its entirety in Listing 19, is a simple 
+utility method that causes an array object to behave as a tapped delay line.</p><p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>&nbsp; void flowLine(double[] line,double val){
+&nbsp;&nbsp;&nbsp; for(int cnt = 0;cnt &lt; (line.length - 1);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cnt++){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; line[cnt] = line[cnt+1];
+&nbsp;&nbsp;&nbsp; }//end for loop
+&nbsp;&nbsp;&nbsp; line[line.length - 1] = val;
+&nbsp; }//end flowLine<br><br><b><font face="Courier New,Courier">Listing 19</font></b></pre></td></tr></tbody></table></p><p>
+The <b>flowLine</b> method receives a reference to an array and a reference to a 
+value of type <b>double</b>.&nbsp; It discards the value at index 0 of the 
+array, moves all the other values down by one element toward index 0, and inserts the new 
+value at the top of the array.</p>
+<p>That's all that there is to the <b>flowLine</b> method, so I will 
+resume my discussion of the <b>process</b> method at this point.</p>
+<p><font color="#FF0000"><b>Getting raw data for chanA</b></font></p>
+<p>The purpose of the <b>rawData</b> delay line is to make it possible to get 
+wide band data representing <b>chanA</b> and <b>chanB</b> where <b>chanB</b> can 
+be shifted in time by up to plus or minus six samples relative to <b>chanA</b>.</p>
+<p>The array used for the <b>rawData</b> delay line has a <b>length</b> of 
+thirteen elements <i>(see Listing 3).</i>&nbsp; In this case, the value at element index 6 
+is considered to represent the zero time origin.&nbsp; Therefore, the value at index 0 represents 
+a time delay of six samples and the value at index 12 represents a time advance 
+of six samples.</p>
+<p><font color="#FF0000"><b>Feed signal plus noise into chanA</b></font></p>
+<p>Listing 20 extracts the middle sample <i>(at zero time)</i> from the <b>
+rawData</b> delay line, adds some random noise to it, and inserts it into a 
+nine-element delay line <i>(see Listing 3)</i> containing the data for <b>chanA</b>.</p><p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; flowLine(chanA,dataScale*rawData[6] +
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; noiseLevel*dataScale*(Math.random()
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - 0.5));<br><br><b><font face="Courier New,Courier">Listing 20</font></b></pre></td></tr></tbody></table></p><p>
+The amount of additive random noise is controlled by the value of <b>noiseLevel</b>, 
+which is provided by the user as an input parameter.</p>
+<p><font color="#FF0000"><b>Feed signal plus noise into chanB</b></font></p>
+<p>Listing 21 extracts data with a <b>timeShift</b> from the <b>rawData</b> delay 
+line, adds some random noise, and inserts it into a delay line <i>(see Listing 
+3)</i> containing the data for <b>chanB</b>.</p><p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; flowLine(chanB,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; dataScale*rawData[6 + timeShift] +
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; noiseLevel*dataScale*(Math.random()
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - 0.5));<br><br><b><font face="Courier New,Courier">Listing 21</font></b></pre></td></tr></tbody></table></p><p>
+Once again, the level of the additive noise is controlled by the value of <b>noiseLevel</b> 
+described earlier.</p>
+<p>The time shift is controlled by the value of <b>timeShift</b>, which is 
+provided by the user as a command line parameter.</p>
+<blockquote>
+	<p><i>(The results shown in Figure 1 and Figure 2 were produced with a value 
+	of 0.0 for <b>noiseLevel</b> and a value of -4 for <b>timeShift</b>.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Get the input (chanA) data for plotting</b></font></p>
+<p>Listing 22 gets and saves the value at the middle of the <b>chanA</b> delay 
+line for plotting later.&nbsp; These are the values that are plotted in black in 
+Figure 1.</p><p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; input = chanA[chanA.length/2];<br><br><b><font face="Courier New,Courier">Listing 22</font></b></pre></td></tr></tbody></table></p><p>
+<font color="#FF0000"><b>Time is relative</b></font></p>
+<p>When processing sampled data in a computer, <i>(assuming that you are willing to 
+suffer an overall time delay),</i> time is relative.&nbsp; 
+You can consider any sample in a time series to represent zero time.</p>
+<p>At this point, we will shift our thinking and consider the center taps for the
+<b>chanA</b> and <b>chanB</b> delay lines to represent zero time.&nbsp; Thus, 
+each of those delay lines contains the sample value at the current time, four 
+samples of historical data, and four samples of future data.</p>
+<p><font color="#FF0000"><b>Why should we think about it this way?</b></font></p>
+<p>The primary motivation for thinking about it this way is to cause the output 
+from a 
+convolution filter with a single impulse at the center to represent a time 
+series with no time shift in either direction.</p>
+<p><font color="#FF0000"><b>Not possible for a real-time system</b></font></p>
+<p>Obviously, in a real time system, the delay line could not possibly contain 
+future data.&nbsp; Considering the center tap of the <b>chanA</b> delay line to 
+represent zero time actually inserts an overall time delay of four samples into 
+the entire process.&nbsp; This is evident in Figure 5 for which you see four 
+samples with a value of zero at the beginning of the black trace.&nbsp; In this 
+case, noise is inserted into the <b>chanA</b> delay line during the first 
+iteration, but it doesn't emerge from the center tap on the delay line until the 
+fifth iteration.</p>
+<p>Figure 1, on the other hand, shows ten iterations before anything emerges 
+from the center tap on the <b>chanA</b> delay line.&nbsp; This is because Figure 
+1 shows a noise free case where the only input to the <b>chanA</b> delay line is 
+obtained from the center tap on the <b>rawData</b> delay line.&nbsp; Thus, the
+<b>rawData</b> delay line causes a six-sample delay in addition to the 
+four-sample delay caused by the <b>chanA</b> delay line.</p>
+<p><font color="#FF0000"><b>The bottom line</b></font></p>
+<p>The bottom line is that the value that is extracted and saved for plotting in Listing 22 
+represents our concept of the value at zero time from the input <b>chanA</b> <i>
+(but in actuality, an overall time delay has been incurred).</i> </p>
+<p><font color="#FF0000"><b>Apply the convolution filter to chanA</b></font></p>
+<p>Normally, if I were going to apply a fixed convolution filter to a time 
+series, I would write a method that receives the filter and the time series, 
+performs the convolution, and returns the filtered time series.&nbsp; For 
+example, that is what I did in Listing 13 in the earlier lesson entitled
+<a href="http://www.developer.com/java/other/article.php/3484591">Convolution 
+and Frequency Filtering in Java</a>.</p>
+<p>However, the situation here is different.&nbsp; The convolution filter is not 
+fixed.&nbsp; Rather, I need to interrupt the convolution operation at the end of 
+each iteration and modify the filter coefficients.</p>
+<p>Listing 23 invokes the <b>dotProduct</b> method to apply the filter 
+coefficients to the current data in the <b>chanA</b> delay line returning a 
+single value of type <b>double</b> as a result.</p>
+<blockquote>
+	<p><i>(Click
+<a href="http://mathworld.wolfram.com/DotProduct.html">here</a> to read a 
+description of a vector dot product from Mathworld.&nbsp; While I may not 
+have used this terminology in earlier lessons on
+	<a href="http://www.developer.com/java/other/article.php/3487996">convolution</a>, 
+the vector dot product is a central element in the computation process involved 
+in convolution.)</i></p>
+</blockquote>
+<p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; output = dotProduct(filter,chanA);<br><br><b><font face="Courier New,Courier">Listing 23</font></b></pre></td></tr></tbody></table></p><p>
+I will explain the <b>dotProduct</b> method at this point and return to the 
+explanation of the <b>process</b> method shortly.</p>
+<p><font color="#FF0000"><b>The dotProduct method</b></font></p>
+<p>This method receives two arrays and treats the first n elements in each array 
+as a pair of vectors.&nbsp; It computes and returns the vector dot product of 
+the two vectors.&nbsp; If the length of one array is greater than the length of 
+the other array, it considers the number of dimensions of the vectors to be 
+equal to the length of the smaller array.</p><p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>&nbsp; double dotProduct(double[] v1,double[] v2){
+&nbsp;&nbsp;&nbsp; double result = 0;
+&nbsp;&nbsp;&nbsp; if((v1.length) &lt;= (v2.length)){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for(int cnt = 0;cnt &lt; v1.length;cnt++){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; result += v1[cnt]*v2[cnt];
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end for loop
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; return result;
+&nbsp;&nbsp;&nbsp; }else{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for(int cnt = 0;cnt &lt; v2.length;cnt++){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; result += v1[cnt]*v2[cnt];
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end for loop
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; return result;
+&nbsp;&nbsp;&nbsp; }//end else
+&nbsp; }//end dotProduct<br><br><b><font face="Courier New,Courier">Listing 24</font></b></pre></td></tr></tbody></table></p><p>
+As you can see, the vector dot product is simply the sum of the products of the 
+values that describe each of the two vectors.</p>
+<p><font color="#FF0000"><b>Get the adaptive target</b></font></p>
+<p>Returning now to the explanation of the <b>process</b> method, the code in 
+Listing 25 gets and saves the middle sample from the <b>chanB</b> delay line to 
+be used as the adaptive target.</p>
+<blockquote>
+	<p><i>(This is a value from the blue time 
+series plotted in Figure 1.)</i></p>
+</blockquote>
+<p>In other words, the adaptive process will 
+attempt to cause the filtered version of <b>chanA</b> to match the value in the 
+middle of the <b>chanB</b> delay line.</p><p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; target = chanB[chanB.length/2];<br><br><b><font face="Courier New,Courier">Listing 25</font></b></pre></td></tr></tbody></table></p><p>
+<font color="#FF0000"><b>Compute the error value</b></font></p>
+<p>As you will see shortly, the adaptive process makes an adjustment to each of 
+the filter coefficients based on the value of an error.</p>
+<blockquote>
+	<p><i>(The error time 
+series is plotted in green in Figure 1.)</i></p>
+</blockquote>
+<p>As you can see in Listing 26, the error value is the difference between the 
+output produced by applying the filter coefficients to the contents of the <b>
+chanA</b> delay line <i>(see Listing 23)</i> and the value of the target from 
+Listing 25.</p><p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; err = output - target;<br><br><b><font face="Courier New,Courier">Listing 26</font></b></pre></td></tr></tbody></table></p><p>
+<font color="#FF0000"><b>Update the filter coefficients</b></font></p>
+<p>We've now arrived at the heart of the matter for an LMS adaptive algorithm.&nbsp; 
+The code in Listing 27 uses a <b>for</b> loop to modify each of the filter 
+coefficient values by computing a correction value for each coefficient and 
+subtracting that correction value from the coefficient.</p><p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for(int ctr = 0;ctr &lt; filter.length;ctr++){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; filter[ctr] -=
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; err*chanA[ctr]*feedbackGain;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end for loop<br><br><b><font face="Courier New,Courier">Listing 27</font></b></pre></td></tr></tbody></table></p><p>
+<font color="#FF0000"><b>The correction value</b></font></p>
+<p>
+The correction value for each coefficient value consists of the product of the 
+following:</p>
+<ul>
+	<li>The error value.</li>
+	<li>The value of the input time series in <b>chanA</b> that was registered 
+	with the coefficient value to produce the dot product that was used to 
+	compute the error.</li>
+	<li>A constant referred to as <b>feedbackGain</b> that controls the overall 
+	magnitude of the correction value.</li>
+</ul>
+<p>As you can see from Figure 1 and Listing 27, as the value of the error 
+approaches zero, the magnitude of the correction values also approaches zero and 
+the coefficient values converge to fixed values.</p>
+<p><font color="#FF0000"><b>A theoretical justification</b></font></p>
+<p>I'm not going to attempt to justify this adaptive algorithm theoretically.&nbsp; 
+There are hundreds of articles on the web that provide such justification.&nbsp; 
+If you are interested in a justification, I recommend that you use
+<a href="http://www.google.com/">Google</a> to search them out and read them.&nbsp; 
+For example, you might search for the keywords <i>LMS Adaptive Algorithm</i> or 
+for the keywords <i>Steepest Descent</i>.</p>
+<p><font color="#FF0000"><b>An important concept</b></font></p>
+<p>This is an important concept because I will be using this adaptive algorithm 
+in several future lessons.&nbsp; As mentioned earlier, I wanted to present the 
+algorithm here in a relatively simple case so that when we get to the more 
+difficult cases, you will already have an understanding of the adaptive 
+algorithm and can concentrate on the bigger picture.</p>
+<p><font color="#FF0000"><b>The end of the adaptive code</b></font></p>
+<p>This is the end of the adaptive process.&nbsp; All of the remaining code in 
+the <b>process</b> method is used to display information about the adaptive 
+process.</p>
+<p><font color="#FF0000"><b>Feed the time series plotting object</b></font></p>
+<p>Recall that we are still in a <b>for</b> loop processing one input sample 
+during each iteration of the loop.</p>
+<p>The code in Listing 28 feeds the values from four time series to the plotting 
+object that will eventually be used to plot the time series in Figure 1.</p><p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; plotObj.feedData(input,output,target,err);<br><br><b><font face="Courier New,Courier">Listing 28</font></b></pre></td></tr></tbody></table></p><p>
+The order of the input parameters to the <b>feedData</b> in Listing 28 
+corresponds to the black, red, blue, and green traces in Figure 1.</p>
+<p><font color="#FF0000"><b>Compute and display frequency response data</b></font></p>
+<p>Listing 29 shows the beginning of an <b>if</b> statement that is used to plot 
+the impulse response and the frequency response of the convolution operator at 
+the end of every tenth iteration.</p><p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(cnt%10 == 0){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; displayFreqResponse(filter,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; freqPlotObj,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 128,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; filter.length - 5);<br><br><b><font face="Courier New,Courier">Listing 29</font></b></pre></td></tr></tbody></table></p>
+<p>The code in Listing 29 invokes the <b>displayFreqResponse</b> method 
+discussed earlier to produce the amplitude and phase response plots shown in the 
+right column of Figure 2.</p>
+<p><font color="#FF0000"><b>Extend and display impulse response data</b></font></p>
+<p>The code in Listing 30 deals with the need to extend the impulse response 
+data in order to plot the impulse response at the end of every tenth iteration 
+as shown in the left column of Figure 2.</p><p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Plot the filter coefficient values.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // Scale the coefficient values by 30
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // to make them compatible with the
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // plotting software.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for(int ctr = 0;ctr &lt; filter.length;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ctr++){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; filterPlotObj.feedData(30*filter[ctr]);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end for loop
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Extend the filter with a value of 2.5
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // for plotting to cause it to
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // synchronize with one filter on each
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // axis.&nbsp; See explanatory comment
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // earlier.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(filter.length &lt;= 26){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for(int count = 0;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; count &lt; (26 - filter.length);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; count++){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; filterPlotObj.feedData(2.5);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end for loop
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end if
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end if on cnt%10
+&nbsp;&nbsp;&nbsp; }//end for loop<br><br><b><font face="Courier New,Courier">Listing 30</font></b></pre></td></tr></tbody></table></p><p>
+<font color="#FF0000"><b>Extending the impulse response for plotting</b></font></p>
+<p>
+I discussed the need for extending impulse response for plotting 
+earlier and won't discuss it further here.&nbsp; Suffice it to say that the code 
+in Listing 30 feeds the extended impulse response data to the plotting object so 
+that it can be plotted later.</p>
+<p>Listing 30 also signals the end of the <b>if</b> statement that is used to 
+cause its body to be executed every tenth iteration.</p>
+<p>Listing 30 also signals the end of the <b>for</b> loop whose body is executed 
+once for every adaptive iteration.</p>
+<p><font color="#FF0000"><b>Plot the results</b></font></p>
+<p>Up to this point in time, a lot of data has been fed into the three plotting objects 
+responsible for plotting the results shown in Figure 1 and Figure 2.&nbsp; 
+However, nothing has actually been plotted yet.</p>
+<p>By invoking the <b>plotData</b> method on each of the three plotting objects, 
+the code in Listing 31 causes them to plot their data at the screen coordinates 
+passed as parameters to the <b>plotData</b> method.</p>
+<blockquote>
+	<p><i>(Default screen coordinates are used by the plotting object referred 
+	to by <b>plotObj</b>.&nbsp; Once again, I refer you to the earlier lesson 
+	entitled <a href="http://www.developer.com/java/data/article.php/3529186">Plotting Large Quantities of Data using Java</a> for an explanation as to how this plotting system works.)</i></p>
+</blockquote>
+<p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>
+&nbsp;&nbsp;&nbsp; plotObj.plotData();
+&nbsp;&nbsp;&nbsp; freqPlotObj.plotData(0,201);
+&nbsp;&nbsp;&nbsp; filterPlotObj.plotData(265,201);
+&nbsp;&nbsp;&nbsp;
+&nbsp; }//end process
+}//end class Adapt01<br><br><b><font face="Courier New,Courier">Listing 31</font></b></pre></td></tr></tbody></table></p>
+<p><font color="#FF0000"><b>The end of the process method</b></font></p>
+<p>Listing 31 also signals the end of the <b>process</b> method and the end of 
+the <b>Adapt01</b> class.</p>
+<p><font color="#FF0000"><b>Some more sample results</b></font></p><p>Before 
+ending this lesson, I want to show you the results for a few more cases.&nbsp; 
+I will begin with a case having no uncorrelated noise on <b>chanA</b> and <b>chanB</b> but 
+with <b>chanB</b> having a time shift of +3 samples relative to <b>chanA</b>.</p>
+<p>I will run this case using the following command on the 
+<a name="command_line:">command line:</a></p>
+<pre>java Adapt01 3 0.001 0.0 100</pre></p><p>This produces the following output 
+on the command line:</p>
+<pre>timeShift: 3
+feedbackGain: 0.0010
+noiseLevel: 0.0
+numberIterations: 100</pre></p>
+<p>Compare this output with the <a href="#Command_Line_Output">command line 
+output</a> for the first example, particularly with respect to the value of 
+timeShift.</p>
+<p><font color="#FF0000"><b>The graphic output</b></font></p>
+<p>The time series output for this case is shown in Figure 3.</p>
+      
+      
+      
+<p>
+<div align="center">
+<table border="1" cols="1" width="400" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><img border="0" src="java2350d1.jpg" width="399" height="251"></pre>
+      
+</td></tr></tbody></table>
+      
+      
+</div>
+      
+      
+</p><p align="center"><b>Figure 3</b></p>
+<p>If you compare Figure 3 with Figure 1, you will see that the target <i>
+(blue)</i> data in Figure 3 leads the input <i>(black)</i> data in Figure 3, 
+which is just the reverse of Figure 1 where the target data lags the input data.</p>
+<p>In both cases, the error is decreased to near zero about midway across the 
+top four traces, and the filter output <i>(red)</i> data converges to become a 
+good match for the target <i>(blue)</i> data at that point.</p>
+<p><font color="#FF0000"><b>The impulse and frequency response</b></font></p>
+<p>The impulse response of the convolution filter is shown in the left column of 
+Figure 4.&nbsp; The frequency response is shown in the right column of Figure 4.</p>
+<div align="center">
+<table border="1" cols="1" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <img border="0" src="java2350e1.jpg" width="113" height="488"></td>
+      <td>
+      <img border="0" src="java2350e2.jpg" width="265" height="488"></td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</p>
+<p align="center"><b>Figure 4</b></p>
+<p><font color="#FF0000"><b>Compare Figure 4 with Figure 2</b></font></p>
+<p>If you compare Figure 4 with Figure 2, you will see that the adaptive process 
+causes the peak in the impulse response to move three samples to the right in 
+Figure 4, as compared to four samples to the left in Figure 2.&nbsp; This is the 
+difference between a leading target for this example and a lagging target for 
+the previous example.</p>
+<p>In addition, the slope of the phase response in positive in Figure 4 and 
+negative in Figure 2.&nbsp; A positive slope indicates a leading target for this 
+example whereas a negative slope indicates a lagging target for the previous 
+example.</p>
+<p>Finally, the magnitude of the slope of the phase response in Figure 4 is less 
+than the magnitude of the slope in Figure 2.&nbsp; This is an indication that 
+the relative time shift of three samples in this example is less than the 
+relative time shift of four samples in the previous example.</p>
+<p><font color="#FF0000"><b>One final example</b></font></p>
+<p>For this case, white random noise was added to both <b>chanA</b> and <b>chanB</b> 
+at a level equal to twenty-five percent of the signal level on each channel.&nbsp; 
+The noise was uncorrelated between <b>chanA</b> and <b>chanB</b>.</p>
+<p>Some changes to the input parameters were required to achieve reasonably good 
+results.&nbsp; The following command was entered on the command line for this 
+case:</p>
+<pre>java Adapt01 3 0.0005 0.25 210</pre></p>
+<p><font color="#FF0000"><b>Compare with the previous example</b></font></p>
+<p>Compare this with the command line input for the <a href="#command_line:">
+previous example</a> and you will see that:</p>
+<ul>
+	<li>The feedbackGain was reduced from 0.0010 to 0.0005.</li>
+	<li>The noiseLevel was increased from 0.0 to 0.25.</li>
+	<li>The numberIterations were increased from 100 to 210.</li>
+</ul>
+<p>These parameters produced the following output on the command line:</p>
+<pre>timeShift: 3
+feedbackGain: 5.0E-4
+noiseLevel: 0.25
+numberIterations: 210</pre></p>
+<p>Note that the time shift of the target relative to <b>chanA</b> is still +3 samples 
+as in the previous example.</p>
+<p><font color="#FF0000"><b>The time series output</b></font></p>
+<p>The time series output for this case is shown in Figure 5.</p><p>
+<div align="center">
+<table border="1" cols="1" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <img border="0" src="java2350f1.jpg" width="399" height="251"></td></tr>
+    <tr>
+      <td>
+      <img border="0" src="java2350f2.jpg" width="399" height="251"></td></tr></tbody></table>
+</div>
+</p><p align="center"><b>Figure 5</b></p>
+<p><font color="#FF0000"><b>Error never goes to zero</b></font></p>
+<p>One thing worth noting is that the error <i>(green)</i> never goes to zero in 
+Figure 5 regardless of the quality of the adaptive solution.&nbsp; The target 
+contains white random noise.&nbsp; There is nothing that the convolution filter 
+being applied to <b>chanA</b> can do to eliminate that noise and it passes 
+straight through from the target to the error in the subtraction process shown in 
+Listing 26.</p>
+<p>There is also white random noise on <b>chanA</b>.&nbsp; If the convolution 
+filter maintains a flat amplitude response as intended, this noise will be 
+passed through to the output also and will contribute to the noise on the error 
+signal in Figure 5.</p>
+<blockquote>
+	<p><i>(Theoretically, however, the average of the white random noise from 
+	<b>chanA</b> and the white random noise from the target will be reduced by about 
+	the square root of 2 relative to the level on either channel.)</i></p>
+</blockquote>
+<p>Despite the uncorrelated noise on both channels, the filtered output <i>(red)</i> 
+is a reasonably good replica of the target <i>(blue)</i> by the beginning of the 
+traces in the bottom page of Figure 5.</p>
+<p><font color="#FF0000"><b>The impulse response</b></font></p>
+<p>The impulse response at the beginning and at the end of every tenth adaptive 
+iteration is shown in the left column in the two pages in Figure 6.&nbsp; As you can 
+see, this impulse response is converted from a single impulse in the center of 
+the convolution filter to a single impulse <i>(plus a few very small non-zero 
+values)</i> three samples to the right of center after about 140 iterations.&nbsp; 
+As you know, this is the correct solution, and it was achieved despite the 
+presence of random noise on the two channels.</p><p>
+<div align="center">
+<table border="1" cols="1" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <img border="0" src="java2350g1.jpg" width="113" height="488"></td>
+      <td>
+      <img border="0" src="java2350g3.jpg" width="265" height="488"></td></tr>
+    <tr>
+      <td>
+      <img border="0" src="java2350g2.jpg" width="113" height="488"></td>
+      <td>
+      <img border="0" src="java2350g4.jpg" width="265" height="488"></td></tr></tbody></table>
+</div>
+</p><p align="center"><b>Figure 6</b></p>
+<p>What this means is that after about 140 iterations, the output from the 
+convolution filter has been shifted so as to register with the target.&nbsp; Most 
+of the error that we see in Figure 5 after this point in time is simply the 
+result of the random white noise being passed through from <b>chanA</b> and the 
+target to the error.</p>
+<p><font color="#FF0000"><b>The frequency response</b></font></p>
+<p>After about 140 iterations, the amplitude response shown in the right column of 
+Figure 6 is very flat, and the phase response has a positive slope and a linear 
+shape indicating that the convolution filter has converged to the simple 
+time-shift filter that we know to be the correct solution to the problem.</p><h2 align="center"><a name="Run_the_Programs">Run the Program</a>s</h2><p>I encourage you to copy, compile and run 
+the program provided in Listing 32 below.&nbsp; You will need some other classes 
+in addition to the program in Listing 32.</p>
+<p>I have provided the source code for the class named <b>PlotALot05</b> in 
+Listing 33.&nbsp; You will need to go to the previous lesson entitled
+<a href="http://www.developer.com/java/data/article.php/3529186">Plotting Large Quantities of Data using Java</a> 
+to get the source code for the other required <b>PlotALot</b> classes.</p>
+<p>In addition, you will need to go to the lesson entitled
+<a href="http://www.developer.com/java/other/article.php/3380031">Spectrum 
+Analysis using Java, Sampling Frequency, Folding Frequency, and the FFT 
+Algorithm</a> to get the source code for the class named <b>
+ForwardRealToComplex01</b>.</p>
+<p><font color="#ff0000"><b>Have fun and learn</b></font></p><p>Above all, have fun and use this program to learn as much as you can about 
+the basics of adaptive filtering.</p><h2 align="center"><a name="Summary">Summary</a></h2><p>
+In this lesson, I explained adaptive filtering using an LMS adaptive algorithm 
+in a relatively simple scenario.</p><h2 align="center"><a name="Whats Next">What's Next?</a></h2>
+<p>The next lesson will tackle a considerably more complicated scenario for 
+adaptive filtering.&nbsp; In the next lesson, I will teach you how to write a 
+whitening filter program for the extraction of wide band signals corrupted by 
+narrow band noise.</p><p>Following that, the lessons in the series will become somewhat more general.&nbsp; 
+I plan to publish lessons that explain and provide examples for the four common 
+scenarios in which adaptive filtering is used:</p><ul>
+	<li>System Identification</li><li>Inverse System Identification</li><li>Noise Cancellation</li><li>Prediction</li></ul><p>Somewhere along the way I 
+may publish a lesson that explains and 
+illustrates the difference between <i>least mean square (LMS)</i> and <i>
+recursive least squares (RLS)</i> adaptive algorithms.</p><h2 align="center"><a name="Complete_Program_Listings">Complete Program Listing</a>s</h2><p>
+Complete listings of two of the programs discussed in this lesson are provided in 
+Listing 32 and Listing 33 below.</p><p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>/*File Adapt01.java.java
+Copyright 2005, R.G.Baldwin
+
+This program illustrates one aspect of time-
+adaptive signal processing.
+
+Two sampled time series, chanA and chanB,
+are presented to the an adaptive algorithm. Each
+time series contains the same wide band signal
+plus white noise that is uncorrelated between the
+two channels.
+
+The signal in chanB may be delayed or advanced by
+up to 6 samples relative to the signal in chanA.
+
+A 9-point convolution operator is developed
+adaptively.&nbsp; When the adaptive process converges
+successflly, the time series produced by applying
+the convolution operator to chanA matches the
+signal on chanB.
+
+The user provides the following information as
+command line parameters:
+
+timeShift - A negative value delays chanB
+relative to chanA and a positive value advances
+chanB relative to chanA.&nbsp; If no command line
+parameters are provided, a default timeShift
+value of -4 is used.&nbsp; This causes a four-sample
+delay on chanB relative to chanA.&nbsp; Because the
+convolution operator has only nine points, time
+shifts greater than plus or minus four samples
+cannot be resolved and an adaptive solution will
+not be found.&nbsp; Time shifts greater than six
+samples cause the program to terminate.
+
+feedbackGain - Controls the convergence rate of
+the adaptive process.&nbsp; If the value is very low,
+the process will take a long time to converge.&nbsp;
+If the value is too high, the process will become
+unstable.&nbsp; If no command line parameters are
+provided, a feedbackGain value of 0.001 is used.
+Depending on the random noise level, the process
+appears to be stable for feedbackGain values as
+large as 0.004, but goes unstable for a
+feedbackGain value of 0.005.
+
+noiseLevel - Controls the amount of uncorrelated
+white noise that is added to the signal on each
+of the channels.&nbsp; If no command line parameters
+are provided, the default noise level is 0.0&nbsp; The
+noise level is provided as a decimal fraction of
+the signal level.&nbsp; For example, a noise level
+of 0.1 causes the level of the noise that is
+added to each of the channels to be one tenth of
+the signal level on that channel.
+
+numberIterations - The number of adaptive
+iterations performed before the adaptive process
+terminates and all of the data that has been
+saved is plotted.&nbsp; If no command line parameters
+are provided, the default is 100 iterations.
+
+The following time series are plotted in color
+showing the convergence of the adaptive
+algorithm:
+black: input to the filter
+red: output from the filter
+blue: adaptive target
+green: error
+
+In addition, the frequency response of the filter
+at the beginning and at the end of every tenth
+iteration is computed and displayed when the
+adaptive process terminates.&nbsp; Both the amplitude
+and the phase response of the filter are computed
+and plotted.&nbsp; Also, the filter is plotted as a
+time series on the same iterations that the
+frequency response is computed.&nbsp; Thus, the shape
+of the filter can be compared with the frequency
+response of the filter.
+
+The filter is initialized with a single
+coefficient value of 1 at the center and 0 for
+all of the other coefficient values.&nbsp; The ideal
+solution is a single coefficient value of 1 at a
+location in the filter that matches the time
+shift between chanA and the target.&nbsp; The value
+of 1 can be seen to progress from the center of
+the filter to the correct location in the filter
+as the program iterates.&nbsp; In addition, the phase
+response can be seen to change appropriately as
+the program iterates.
+
+Tested using J2SE 5.0 and WinXP
+J2SE 5.0 or later is required.
+************************************************/
+import static java.lang.Math.*;//J2SE 5.0 req
+
+class Adapt01{
+&nbsp; public static void main(String[] args){
+&nbsp;&nbsp;&nbsp; //Default values
+&nbsp;&nbsp;&nbsp; int timeShift = -4;
+&nbsp;&nbsp;&nbsp; double feedbackGain = 0.001;
+&nbsp;&nbsp;&nbsp; double noiseLevel = 0.0;
+&nbsp;&nbsp;&nbsp; int numberIterations = 100;
+&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; if(args.length != 4){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Usage: java Adapt01 " +
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "timeShift feedbackGain " +
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "noiseLevel numberIterations");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Negative timeShift is delay");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Using -4 sample shift by default");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Using 0.001 feedbackGain by default");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "noiseLevel is a decimal fraction");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Using 0.0 by default");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "numberIterations is an int");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Using 100 by default");
+&nbsp;&nbsp;&nbsp; }else{//Command line params were provided.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Convert String to int
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; timeShift = Integer.parseInt(args[0]);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "timeShift: " + timeShift);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Convert String to double
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; feedbackGain = Double.parseDouble(args[1]);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "feedbackGain: " + feedbackGain);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Convert String to double
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; noiseLevel = Double.parseDouble(args[2]);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "noiseLevel: " + noiseLevel);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Convert String to int
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; numberIterations =
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Integer.parseInt(args[3]);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "numberIterations: " + numberIterations);
+&nbsp;&nbsp;&nbsp; }//end else
+&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; if(abs(timeShift) &gt; 6){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Time shift magnitude &gt; 6 not allowed.");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Terminating");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.exit(0);
+&nbsp;&nbsp;&nbsp; }//end if
+&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Instantiate an object of the class and
+&nbsp;&nbsp;&nbsp; // execute the adaptive algorithm using the
+&nbsp;&nbsp;&nbsp; // specified feedbackGain and other
+&nbsp;&nbsp;&nbsp; // parameters.
+&nbsp;&nbsp;&nbsp; new Adapt01().process(timeShift,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; feedbackGain,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; noiseLevel,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; numberIterations);
+&nbsp; }//end main
+&nbsp; //-------------------------------------------//
+&nbsp;
+&nbsp; void process(int timeShift,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; double feedbackGain,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; double noiseLevel,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int numberIterations){
+&nbsp;&nbsp;&nbsp; //The process begins with a filter having
+&nbsp;&nbsp;&nbsp; // the following initial coefficients.
+&nbsp;&nbsp;&nbsp; double[] filter = {0,0,0,0,1,0,0,0,0};
+&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Create array objects that will be used as
+&nbsp;&nbsp;&nbsp; // delay lines.
+&nbsp;&nbsp;&nbsp; double[] rawData = new double[13];
+&nbsp;&nbsp;&nbsp; double[] chanA = new double[9];
+&nbsp;&nbsp;&nbsp; double[] chanB = new double[9];
+&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Instantiate a plotting object for four
+&nbsp;&nbsp;&nbsp; // data channels.&nbsp; This object will be used
+&nbsp;&nbsp;&nbsp; // to plot the time series data.
+&nbsp;&nbsp;&nbsp; PlotALot05 plotObj = new PlotALot05(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &quot;Time Series&quot;,398,250,25,5,4,4);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Instantiate a plotting object for two
+&nbsp;&nbsp;&nbsp; // channels of filter frequency response
+&nbsp;&nbsp;&nbsp; // data.&nbsp; One channel is used to plot the
+&nbsp;&nbsp;&nbsp; // amplitude response in db and the other
+&nbsp;&nbsp;&nbsp; // channel is used to plot the phase on a
+&nbsp;&nbsp;&nbsp; // scale that extends from -180 degrees to
+&nbsp;&nbsp;&nbsp; // +180 degrees.
+&nbsp;&nbsp;&nbsp; PlotALot03 freqPlotObj =
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new PlotALot03("Freq",264,487,20,2,0,0);
+&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Instantiate a plotting object to display
+&nbsp;&nbsp;&nbsp; // the filter as a short time series at
+&nbsp;&nbsp;&nbsp; // intervals during the adaptive&nbsp; process.
+&nbsp;&nbsp;&nbsp; // Note that the minimum allowable width
+&nbsp;&nbsp;&nbsp; // for a Frame is 112 pixels under WinXP.
+&nbsp;&nbsp;&nbsp; // Therefore, the following display doesn't
+&nbsp;&nbsp;&nbsp; // synchronize properly for filter lengths
+&nbsp;&nbsp;&nbsp; // less than 25 coefficients.&nbsp; However, the
+&nbsp;&nbsp;&nbsp; // code that feeds the filter data to the
+&nbsp;&nbsp;&nbsp; // plotting object later in the program
+&nbsp;&nbsp;&nbsp; // extends the length of the filter to
+&nbsp;&nbsp;&nbsp; // cause it to synchronize and to plot one
+&nbsp;&nbsp;&nbsp; // set of filter coefficients on each axis.
+&nbsp;&nbsp;&nbsp; PlotALot01 filterPlotObj = new PlotALot01(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Filter",(filter.length * 4) + 8,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 487,40,4,0,0);
+&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Display frequency response of initial
+&nbsp;&nbsp;&nbsp; // filter computed at 128 points between zero
+&nbsp;&nbsp;&nbsp; // and the folding frequency.
+&nbsp;&nbsp;&nbsp; displayFreqResponse(filter,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; freqPlotObj,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 128,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; filter.length - 5);
+&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Display the initial filter as a time series
+&nbsp;&nbsp;&nbsp; // on the first axis.
+&nbsp;&nbsp;&nbsp; for(int cnt = 0;cnt &lt; filter.length;cnt++){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; filterPlotObj.feedData(30*filter[cnt]);
+&nbsp;&nbsp;&nbsp; }//end for loop
+
+&nbsp;&nbsp;&nbsp; //Extend the filter with a value of 2.5 for
+&nbsp;&nbsp;&nbsp; // plotting to cause it to synchronize
+&nbsp;&nbsp;&nbsp; // properly with the plotting software.&nbsp; See
+&nbsp;&nbsp;&nbsp; // earlier comment on this topic.&nbsp; Note that
+&nbsp;&nbsp;&nbsp; // this will not cause the plot to
+&nbsp;&nbsp;&nbsp; // synchronize properly on an operating
+&nbsp;&nbsp;&nbsp; // system for which the sum of the left and
+&nbsp;&nbsp;&nbsp; // right insets on a Frame object are
+&nbsp;&nbsp;&nbsp; // different from 8 pixels.
+&nbsp;&nbsp;&nbsp; if(filter.length &lt;= 26){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for(int cnt = 0;cnt &lt; (26 - filter.length);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cnt++){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; filterPlotObj.feedData(2.5);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end for loop
+&nbsp;&nbsp;&nbsp; }//end if
+&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Declare and initialize variables used in
+&nbsp;&nbsp;&nbsp; // the adaptive process.
+&nbsp;&nbsp;&nbsp; double output = 0;
+&nbsp;&nbsp;&nbsp; double err = 0;
+&nbsp;&nbsp;&nbsp; double target = 0;
+&nbsp;&nbsp;&nbsp; double input = 0;
+&nbsp;&nbsp;&nbsp; double dataScale = 25;//Default data scale
+&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Do the iterative adaptive process
+&nbsp;&nbsp;&nbsp; for(int cnt = 0;cnt &lt; numberIterations;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cnt++){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Add new input data to the delay line
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // containing the raw input data.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; flowLine(rawData,Math.random() - 0.5);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Extract the middle sample from the input
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // data delay line, add some random noise,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // and insert it into the delay line
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // containing the data for chanA.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; flowLine(chanA,dataScale*rawData[6] +
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; noiseLevel*dataScale*(Math.random()
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - 0.5));
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Extract data with a time shift from the
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // input data delay line, add some random
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // noise, and insert it into the delay line
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // containing the data for chanB.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; flowLine(chanB,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; dataScale*rawData[6 + timeShift] +
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; noiseLevel*dataScale*(Math.random()
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - 0.5));
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Get the middle sample from the chanA
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // delay line for plotting.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; input = chanA[chanA.length/2];
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Apply the current filter coefficients to
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // the chanA data contained in the delay
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // line.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; output = dotProduct(filter,chanA);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Get the middle sample from the chanB
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // delay line and use it as the adaptive
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // target.&nbsp; In other words, the adaptive
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // process will attempt to cause the
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // filtered output to match the value in
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // the middle of the chanB delay line.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; target = chanB[chanB.length/2];
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Compute the error between the current
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // filter output and the target.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; err = output - target;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Update the filter coefficients
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for(int ctr = 0;ctr &lt; filter.length;ctr++){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; filter[ctr] -=
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; err*chanA[ctr]*feedbackGain;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end for loop
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //This is the end of the adaptive process.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // The code beyond this point is used to
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // display information about the adaptive
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // process.
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Feed the time series data to the plotting
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // object.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; plotObj.feedData(input,output,target,err);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Compute and plot the frequency response
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // and plot the filter as a time series
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // every 10 iterations.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(cnt%10 == 0){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; displayFreqResponse(filter,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; freqPlotObj,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 128,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; filter.length - 5);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Plot the filter coefficient values.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // Scale the coefficient values by 30
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // to make them compatible with the
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // plotting software.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for(int ctr = 0;ctr &lt; filter.length;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ctr++){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; filterPlotObj.feedData(30*filter[ctr]);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end for loop
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Extend the filter with a value of 2.5
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // for plotting to cause it to
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // synchronize with one filter on each
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // axis.&nbsp; See explanatory comment
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // earlier.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(filter.length &lt;= 26){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for(int count = 0;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; count &lt; (26 - filter.length);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; count++){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; filterPlotObj.feedData(2.5);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end for loop
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end if
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end if on cnt%10
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; }//end for loop
+&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Cause all the data to be plotted in the
+&nbsp;&nbsp;&nbsp; // screen locations specified.
+&nbsp;&nbsp;&nbsp; plotObj.plotData();
+&nbsp;&nbsp;&nbsp; freqPlotObj.plotData(0,201);
+&nbsp;&nbsp;&nbsp; filterPlotObj.plotData(265,201);
+&nbsp;&nbsp;&nbsp;
+&nbsp; }//end process
+&nbsp; //-------------------------------------------//
+&nbsp;
+&nbsp; //This method simulates a tapped delay line.
+&nbsp; // It receives a reference to an array and
+&nbsp; // a value.&nbsp; It discards the value at
+&nbsp; // index 0 of the array, moves all the other
+&nbsp; // values by one element toward 0, and
+&nbsp; // inserts the new value at the top of the
+&nbsp; // array.
+&nbsp; void flowLine(double[] line,double val){
+&nbsp;&nbsp;&nbsp; for(int cnt = 0;cnt &lt; (line.length - 1);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cnt++){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; line[cnt] = line[cnt+1];
+&nbsp;&nbsp;&nbsp; }//end for loop
+&nbsp;&nbsp;&nbsp; line[line.length - 1] = val;
+&nbsp; }//end flowLine
+&nbsp; //-------------------------------------------//
+&nbsp;
+&nbsp; //This method receives two arrays and treats
+&nbsp; // the first n elements in each array as a pair
+&nbsp; // of vectors.&nbsp; It computes and returns the
+&nbsp; // vector dot product of the two vectors.&nbsp; If
+&nbsp; // the length of one array is greater than the
+&nbsp; // length of the other array, it considers the
+&nbsp; // number of dimensions of the vectors to be
+&nbsp; // equal to the length of the smaller array.
+&nbsp; double dotProduct(double[] v1,double[] v2){
+&nbsp;&nbsp;&nbsp; double result = 0;
+&nbsp;&nbsp;&nbsp; if((v1.length) &lt;= (v2.length)){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for(int cnt = 0;cnt &lt; v1.length;cnt++){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; result += v1[cnt]*v2[cnt];
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end for loop
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; return result;
+&nbsp;&nbsp;&nbsp; }else{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for(int cnt = 0;cnt &lt; v2.length;cnt++){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; result += v1[cnt]*v2[cnt];
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end for loop
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; return result;
+&nbsp;&nbsp;&nbsp; }//end else
+&nbsp; }//end dotProduct
+&nbsp; //-------------------------------------------//
+&nbsp;
+&nbsp; //This method receives a reference to a double
+&nbsp; // array containing a convolution filter
+&nbsp; // along with a reference to a plotting object
+&nbsp; // capable of plotting two channels of data.
+&nbsp; // It also receives a value specifying the
+&nbsp; // number of frequencies at which a DFT is
+&nbsp; // to be performed on the filter, along with
+&nbsp; // the sample number that represents the zero
+&nbsp; // time location in the filter.&nbsp; The method
+&nbsp; // uses this information to perform a DFT on
+&nbsp; // the filter from zero to the folding
+&nbsp; // frequency.&nbsp; It feeds the amplitude spectrum
+&nbsp; // and the phase spectrum to the plotting
+&nbsp; // object for plotting.
+&nbsp; void displayFreqResponse(double[] filter,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; PlotALot03 plot,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int len,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int zeroTime){
+
+&nbsp;&nbsp;&nbsp; //Create the arrays required by the Fourier
+&nbsp;&nbsp;&nbsp; // Transform.
+&nbsp;&nbsp;&nbsp; double[] timeDataIn = new double[len];
+&nbsp;&nbsp;&nbsp; double[] realSpect = new double[len];
+&nbsp;&nbsp;&nbsp; double[] imagSpect = new double[len];
+&nbsp;&nbsp;&nbsp; double[] angle = new double[len];
+&nbsp;&nbsp;&nbsp; double[] magnitude = new double[len];
+&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Copy the filter into the timeDataIn array.
+&nbsp;&nbsp;&nbsp; System.arraycopy(filter,0,timeDataIn,0,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; filter.length);
+
+&nbsp;&nbsp;&nbsp; //Compute DFT of the filter from zero to the
+&nbsp;&nbsp;&nbsp; // folding frequency and save it in the
+&nbsp;&nbsp;&nbsp; // output arrays.
+&nbsp;&nbsp;&nbsp; ForwardRealToComplex01.transform(timeDataIn,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; realSpect,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; imagSpect,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; angle,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; magnitude,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; zeroTime,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0.0,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0.5);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+&nbsp;&nbsp;&nbsp; //Plot the magnitude data.&nbsp; Convert to
+&nbsp;&nbsp;&nbsp; // normalized decibels before plotting.
+&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Eliminate or change all values that are
+&nbsp;&nbsp;&nbsp; // incompatible with log10 method.
+&nbsp;&nbsp;&nbsp; for(int cnt = 0;cnt &lt; magnitude.length;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cnt++){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if((magnitude[cnt] == Double.NaN) ||
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (magnitude[cnt] &lt;= 0)){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; magnitude[cnt] = 0.0000001;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }else if(magnitude[cnt] ==
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Double.POSITIVE_INFINITY){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; magnitude[cnt] = 9999999999.0;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end else if
+&nbsp;&nbsp;&nbsp; }//end for loop
+&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Now convert magnitude data to log base 10
+&nbsp;&nbsp;&nbsp; for(int cnt = 0;cnt &lt; magnitude.length;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cnt++){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; magnitude[cnt] = log10(magnitude[cnt]);
+&nbsp;&nbsp;&nbsp; }//end for loop
+&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Note that from this point forward, all
+&nbsp;&nbsp;&nbsp; // references to magnitude are referring to
+&nbsp;&nbsp;&nbsp; // log base 10 data, which can be thought of
+&nbsp;&nbsp;&nbsp; // as scaled decibels.
+
+&nbsp;&nbsp;&nbsp; //Find the absolute peak value
+&nbsp;&nbsp;&nbsp; double peak = -9999999999.0;
+&nbsp;&nbsp;&nbsp; for(int cnt = 0;cnt &lt; magnitude.length;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cnt++){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(peak &lt; abs(magnitude[cnt])){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; peak = abs(magnitude[cnt]);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end if
+&nbsp;&nbsp;&nbsp; }//end for loop
+
+&nbsp;&nbsp;&nbsp; //Normalize to 50 times the peak value and
+&nbsp;&nbsp;&nbsp; // shift up the screen by 50 units to make
+&nbsp;&nbsp;&nbsp; // the values compatible with the plotting
+&nbsp;&nbsp;&nbsp; // program.&nbsp; Recall that adding a constant to
+&nbsp;&nbsp;&nbsp; // log values is equivalent to scaling the
+&nbsp;&nbsp;&nbsp; // original data.
+&nbsp;&nbsp;&nbsp; for(int cnt = 0;cnt &lt; magnitude.length;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cnt++){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; magnitude[cnt] =
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 50*magnitude[cnt]/peak + 50;
+&nbsp;&nbsp;&nbsp; }//end for loop
+
+&nbsp;&nbsp;&nbsp; //Now feed the normalized decibel data to the
+&nbsp;&nbsp;&nbsp; // plotting object.&nbsp; The angle data ranges
+&nbsp;&nbsp;&nbsp; // from -180 to +180.&nbsp; Scale it down by a
+&nbsp;&nbsp;&nbsp; // factor of 20 to make it compatible with
+&nbsp;&nbsp;&nbsp; // the plotting format being used.
+&nbsp;&nbsp;&nbsp; for(int cnt = 0;cnt &lt; magnitude.length;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cnt++){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; plot.feedData(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; magnitude[cnt],angle[cnt]/20);
+&nbsp;&nbsp;&nbsp; }//end for loop
+&nbsp;&nbsp;&nbsp;
+&nbsp; }//end displayFreqResponse
+&nbsp; //-------------------------------------------//
+}//end class Adapt01<br><br><b><font face="Courier New,Courier">Listing 32</font></b></pre></td></tr></tbody></table></p>
+<p>&nbsp;</p>
+<p>
+<table border="1" cols="1" width="400" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>
+/*File PlotALot05.java 
+Copyright 2005, R.G.Baldwin
+This program is an update to the program named 
+PlotALot04 for the purpose of plotting four
+data channels.  See PlotALot04 for descriptive
+comments.  Otherwise, the comments in this
+program have not been updated to reflect this
+update.
+
+The program was tested using J2SE 5.0 and WinXP.
+Requires J2SE 5.0 to support generics.
+************************************************/
+
+import java.awt.*;
+import java.awt.event.*;
+import java.util.*;
+
+public class PlotALot05{
+  //This main method is provided so that the
+  // class can be run as an application to test
+  // itself.
+  public static void main(String[] args){
+    //Instantiate a plotting object using the
+    // version of the constructor that allows for
+    // controlling the plotting parameters.
+    PlotALot05 plotObjectA = 
+            new PlotALot05("A",158,250,25,5,4,4);
+    
+    //Feed quadruplets of data values to the 
+    // plotting object.
+    for(int cnt = 0;cnt &lt; 115;cnt++){
+      //Plot some white random noise. Note that
+      // fifteen of the values for each time
+      // series are not random.  See the opening
+      // comments for a discussion of the reasons
+      // why.
+      double valBlack = (Math.random() - 0.5)*25;
+      double valRed = valBlack;
+      double valBlue = valBlack;
+      double valGreen = valBlack;
+      //Feed quadruplets of values to the
+      // plotting object by invoking the feedData
+      // method once for each quadruplet of data
+      // values.
+      if(cnt == 57){
+        plotObjectA.feedData(0,0,0,0);
+      }else if(cnt == 58){
+        plotObjectA.feedData(0,0,0,0);
+      }else if(cnt == 59){
+        plotObjectA.feedData(25,25,25,25);
+      }else if(cnt == 60){
+        plotObjectA.feedData(-25,-25,-25,-25);
+      }else if(cnt == 61){
+        plotObjectA.feedData(25,25,25,25);
+      }else if(cnt == 62){
+        plotObjectA.feedData(0,0,0,0);
+      }else if(cnt == 63){
+        plotObjectA.feedData(0,0,0,0);
+      }else if(cnt == 26){
+        plotObjectA.feedData(0,0,0,0);
+      }else if(cnt == 27){
+        plotObjectA.feedData(0,0,0,0);
+      }else if(cnt == 28){
+        plotObjectA.feedData(20,20,20,20);
+      }else if(cnt == 29){
+        plotObjectA.feedData(20,20,20,20);
+      }else if(cnt == 30){
+        plotObjectA.feedData(-20,-20,-20,-20);
+      }else if(cnt == 31){
+        plotObjectA.feedData(-20,-20,-20,-20);
+      }else if(cnt == 32){
+        plotObjectA.feedData(0,0,0,0);
+      }else if(cnt == 33){
+        plotObjectA.feedData(0,0,0,0);
+      }else{
+        plotObjectA.feedData(valBlack,
+                             valRed,
+                             valBlue,
+                             valGreen);
+      }//end else
+    }//end for loop
+    //Cause the data to be plotted in the default
+    // screen location.
+    plotObjectA.plotData();
+  }//end main
+  //-------------------------------------------//
+
+  String title;
+  int frameWidth;
+  int frameHeight;
+  int traceSpacing;//pixels between traces
+  int sampSpacing;//pixels between samples
+  int ovalWidth;//width of sample marking oval
+  int ovalHeight;//height of sample marking oval
+  
+  int tracesPerPage;
+  int samplesPerPage;
+  int pageCounter = 0;
+  int sampleCounter = 0;
+  ArrayList &lt;Page&gt; pageLinks = 
+                           new ArrayList&lt;Page&gt;();
+  
+  //There are two overloaded versions of the
+  // constructor for this class.  This
+  // overloaded version accepts several incoming
+  // parameters allowing the user to control
+  // various aspects of the plotting format. A
+  // different overloaded version accepts a title
+  // string only and sets all of the plotting
+  // parameters to default values.
+  PlotALot05(String title,//Frame title
+             int frameWidth,//in pixels
+             int frameHeight,//in pixels
+             int traceSpacing,//in pixels
+             int sampSpace,//in pixels per sample
+             int ovalWidth,//sample marker width
+             int ovalHeight)//sample marker hite
+  {//constructor
+    //Specify sampSpace as pixels per sample.
+    // Should never be less than 1.  Convert to
+    // pixels between samples for purposes of
+    // computation.
+    this.title = title;
+    this.frameWidth = frameWidth;
+    this.frameHeight = frameHeight;
+    this.traceSpacing = traceSpacing;
+    //Convert to pixels between samples.
+    this.sampSpacing = sampSpace - 1;
+    this.ovalWidth = ovalWidth;
+    this.ovalHeight = ovalHeight;
+
+    //The following object is instantiated solely
+    // to provide information about the width and
+    // height of the canvas. This information is
+    // used to compute a variety of other
+    // important values.
+    Page tempPage = new Page(title);
+    int canvasWidth = tempPage.canvas.getWidth();
+    int canvasHeight = 
+                     tempPage.canvas.getHeight();
+    //Display information about this plotting
+    // object.
+    System.out.println("\nTitle: " + title);
+    System.out.println(
+          "Frame width: " + tempPage.getWidth());
+    System.out.println(
+        "Frame height: " + tempPage.getHeight());
+    System.out.println(
+                   "Page width: " + canvasWidth);
+    System.out.println(
+                 "Page height: " + canvasHeight);
+    System.out.println(
+               "Trace spacing: " + traceSpacing);
+    System.out.println(
+         "Sample spacing: " + (sampSpacing + 1));
+    if(sampSpacing &lt; 0){
+      System.out.println("Terminating");
+      System.exit(0);
+    }//end if
+    //Get rid of this temporary page.
+    tempPage.dispose();
+    //Now compute the remaining important values.
+    tracesPerPage = 
+                 (canvasHeight - traceSpacing/2)/
+                                    traceSpacing;
+    System.out.println("Traces per page: "
+                                + tracesPerPage);
+    if((tracesPerPage == 0) || 
+                        (tracesPerPage%4 != 0) ){
+      System.out.println("Terminating program");
+      System.exit(0);
+    }//end if
+    samplesPerPage = canvasWidth * tracesPerPage/
+                             (sampSpacing + 1)/4;
+    System.out.println("Samples per page: "
+                               + samplesPerPage);
+    //Now instantiate the first usable Page
+    // object and store its reference in the
+    // list.
+    pageLinks.add(new Page(title));
+  }//end constructor
+  //-------------------------------------------//
+  
+  PlotALot05(String title){
+    //Invoke the other overloaded constructor
+    // passing default values for all but the
+    // title.
+    this(title,400,410,50,2,2,2);
+  }//end overloaded constructor
+  //-------------------------------------------//
+  
+  //Invoke this method once for each quadruplet
+  // of data values to be plotted.
+  void feedData(double valBlack,
+                double valRed,
+                double valBlue,
+                double valGreen){
+    if((sampleCounter) == samplesPerPage){
+      //if the page is full, increment the page
+      // counter, create a new empty page, and
+      // reset the sample counter.
+      pageCounter++;
+      sampleCounter = 0;
+      pageLinks.add(new Page(title));
+    }//end if
+    //Store the sample values in the MyCanvas
+    // object to be used later to paint the
+    // screen.  Then increment the sample
+    // counter.  The sample values pass through
+    // the page object into the current MyCanvas
+    // object.
+    pageLinks.get(pageCounter).putData(
+                                  valBlack,
+                                  valRed,
+                                  valBlue,
+                                  valGreen,
+                                  sampleCounter);
+    sampleCounter++;
+  }//end feedData
+  //-------------------------------------------//
+  
+  //There are two overloaded versions of the
+  // plotData method.  One version allows the
+  // user to specify the location on the screen
+  // where the stack of plotted pages will
+  // appear.  The other version places the stack
+  // in the upper left corner of the screen.
+  
+  //Invoke one of the overloaded versions of
+  // this method once when all data has been fed
+  // to the plotting object in order to rearrange
+  // the order of the pages with page 0 at the
+  // top of the stack on the screen.
+  
+  //For this overloaded version, specify xCoor
+  // and yCoor to control the location of the
+  // stack on the screen.  Values of 0,0 will
+  // place the stack at the upper left corner of
+  // the screen.  Also see the other overloaded
+  // version, which places the stack at the upper
+  // left corner of the screen by default.
+  void plotData(int xCoor,int yCoor){
+    Page lastPage = 
+             pageLinks.get(pageLinks.size() - 1);
+    //Delay until last page becomes visible.
+    while(!lastPage.isVisible()){
+      //Loop until last page becomes visible
+    }//end while loop
+    
+    Page tempPage = null;
+    //Make all pages invisible
+    for(int cnt = 0;cnt &lt; (pageLinks.size());
+                                          cnt++){
+      tempPage = pageLinks.get(cnt);
+      tempPage.setVisible(false);
+    }//end for loop
+    
+    //Now make all pages visible in reverse order
+    // so that page 0 will be on top of the
+    // stack on the screen.
+    for(int cnt = pageLinks.size() - 1;cnt &gt;= 0;
+                                          cnt--){
+      tempPage = pageLinks.get(cnt);
+      tempPage.setLocation(xCoor,yCoor);
+      tempPage.setVisible(true);
+    }//end for loop
+
+  }//end plotData(int xCoor,int yCoor)
+  //-------------------------------------------//
+  
+  //This overloaded version of the method causes
+  // the stack to be located in the upper left
+  // corner of the screen by default
+  void plotData(){
+    plotData(0,0);//invoke overloaded version
+  }//end plotData()
+  //-------------------------------------------//
+
+  //Inner class.  A PlotALot05 object may
+  // have as many Page objects as are required
+  // to plot all of the data values.  The 
+  // reference to each Page object is stored
+  // in an ArrayList object belonging to the
+  // PlotALot05 object.
+  class Page extends Frame{
+    MyCanvas canvas;
+    int sampleCounter;
+
+    Page(String title){//constructor
+      canvas = new MyCanvas();
+      add(canvas);
+      setSize(frameWidth,frameHeight);    
+      setTitle(title + " Page: " + pageCounter);
+      setVisible(true);
+      
+      //---------------------------------------//
+      //Anonymous inner class to terminate the
+      // program when the user clicks the close
+      // button on the Frame.
+      addWindowListener(
+        new WindowAdapter(){
+          public void windowClosing(
+                                  WindowEvent e){
+            System.exit(0);//terminate program
+          }//end windowClosing()
+        }//end WindowAdapter
+      );//end addWindowListener
+      //---------------------------------------//
+    }//end constructor
+    //=========================================//
+  
+    //This method receives a quadruplet of sample
+    // values of type double and stores each of
+    // them in a separate array object belonging
+    // to the MyCanvas object.
+    void putData(double valBlack,
+                 double valRed,
+                 double valBlue,
+                 double valGreen,
+                 int sampleCounter){
+      canvas.blackData[sampleCounter] = valBlack;
+      canvas.redData[sampleCounter] = valRed;
+      canvas.blueData[sampleCounter] = valBlue;
+      canvas.greenData[sampleCounter] = valGreen;
+      //Save the sample counter in an instance
+      // variable to make it available to the
+      // overridden paint method. This value is
+      // needed by the paint method so it will
+      // know how many samples to plot on the
+      // final page which probably won't be full.
+      this.sampleCounter = sampleCounter;
+    }//end putData
+    
+    //=========================================//
+    //Inner class
+    class MyCanvas extends Canvas{
+      double [] blackData = 
+                      new double[samplesPerPage];
+      double [] redData = 
+                      new double[samplesPerPage];
+      double [] blueData = 
+                      new double[samplesPerPage];
+      double [] greenData = 
+                      new double[samplesPerPage];
+                      
+      //Override the paint method
+      public void paint(Graphics g){
+        //Draw horizontal axes, one for each
+        // trace.
+        for(int cnt = 0;cnt &lt; tracesPerPage;
+                                          cnt++){
+          g.drawLine(0,
+                     (cnt+1)*traceSpacing,
+                     this.getWidth(),
+                     (cnt+1)*traceSpacing);
+        }//end for loop
+        
+        //Plot the points if there are any to be
+        // plotted.
+        if(sampleCounter &gt; 0){
+          for(int cnt = 0;cnt &lt;= sampleCounter;
+                                          cnt++){
+                                            
+            //Begin by plotting the values from
+            // the blackData array object.
+            g.setColor(Color.BLACK);
+            
+            //Compute a vertical offset to locate
+            // the black data on every third axis
+            // on the page.
+            int yOffset = 
+               ((1 + cnt*(sampSpacing + 1)/
+                this.getWidth())*4*traceSpacing)
+                                - 3*traceSpacing;
+
+            //Draw an oval centered on the sample
+            // value to mark the sample in the
+            // plot. It is best if the dimensions
+            // of the oval are evenly divisable
+            // by 2 for  centering purposes.
+            //Reverse the sign of the sample
+            // value to cause positive sample
+            // values to be plotted above the
+            // axis.
+
+            g.drawOval(cnt*(sampSpacing + 1)%
+                   this.getWidth() - ovalWidth/2,
+              yOffset - (int)blackData[cnt] 
+                                  - ovalHeight/2,
+              ovalWidth,
+              ovalHeight);
+            
+            //Connect the sample values with
+            // straight lines.  Do not draw a
+            // line connecting the last sample in
+            // one trace to the first sample in
+            // the next trace.
+            if(cnt*(sampSpacing + 1)%
+                               this.getWidth() &gt;=
+                                sampSpacing + 1){
+              g.drawLine(
+                (cnt - 1)*(sampSpacing + 1)%
+                                 this.getWidth(),
+                yOffset - (int)blackData[cnt-1],
+                cnt*(sampSpacing + 1)%
+                                 this.getWidth(),
+                yOffset - (int)blackData[cnt]);
+            }//end if
+
+            //Now plot the data stored in the
+            // redData array object.
+            g.setColor(Color.RED);
+            //Compute a vertical offset to locate
+            // the red data on every third axis
+            // on the page.
+            yOffset = (1 + cnt*(sampSpacing + 1)/
+                  this.getWidth())*4*traceSpacing
+                                - 2*traceSpacing;
+            
+            //Draw the ovals as described above.
+            g.drawOval(cnt*(sampSpacing + 1)%
+                   this.getWidth() - ovalWidth/2,
+              yOffset - (int)redData[cnt] 
+                                  - ovalHeight/2,
+              ovalWidth,
+              ovalHeight);
+            
+            //Connect the sample values with
+            // straight lines as described above.
+            if(cnt*(sampSpacing + 1)%
+                               this.getWidth() &gt;=
+                                sampSpacing + 1){
+              g.drawLine(
+                (cnt - 1)*(sampSpacing + 1)%
+                                 this.getWidth(),
+                yOffset - (int)redData[cnt-1],
+                cnt*(sampSpacing + 1)%
+                                 this.getWidth(),
+                yOffset - (int)redData[cnt]);
+                
+            }//end if
+          
+
+            //Now plot the data stored in the
+            // blueData array object.
+            g.setColor(Color.BLUE);
+            //Compute a vertical offset to locate
+            // the blue data on every third axis
+            // on the page.
+            yOffset = (1 + cnt*(sampSpacing + 1)/
+                 this.getWidth())*4*traceSpacing 
+                                   -traceSpacing;
+            
+            //Draw the ovals as described above.
+            g.drawOval(cnt*(sampSpacing + 1)%
+                   this.getWidth() - ovalWidth/2,
+              yOffset - (int)blueData[cnt] 
+                                  - ovalHeight/2,
+              ovalWidth,
+              ovalHeight);
+            
+            //Connect the sample values with
+            // straight lines as described above.
+            if(cnt*(sampSpacing + 1)%
+                               this.getWidth() &gt;=
+                                sampSpacing + 1){
+              g.drawLine(
+                (cnt - 1)*(sampSpacing + 1)%
+                                 this.getWidth(),
+                yOffset - (int)blueData[cnt-1],
+                cnt*(sampSpacing + 1)%
+                                 this.getWidth(),
+                yOffset - (int)blueData[cnt]);
+            }//end if
+            
+            
+            //Now plot the data stored in the
+            // greenData array object.
+            g.setColor(Color.GREEN);
+            //Compute a vertical offset to locate
+            // the green data on every third axis
+            // on the page.
+            yOffset = (1 + cnt*(sampSpacing + 1)/
+                 this.getWidth())*4*traceSpacing;
+            
+            //Draw the ovals as described above.
+            g.drawOval(cnt*(sampSpacing + 1)%
+                   this.getWidth() - ovalWidth/2,
+              yOffset - (int)greenData[cnt] 
+                                  - ovalHeight/2,
+              ovalWidth,
+              ovalHeight);
+            
+            //Connect the sample values with
+            // straight lines as described above.
+            if(cnt*(sampSpacing + 1)%
+                               this.getWidth() &gt;=
+                                sampSpacing + 1){
+              g.drawLine(
+                (cnt - 1)*(sampSpacing + 1)%
+                                 this.getWidth(),
+                yOffset - (int)greenData[cnt-1],
+                cnt*(sampSpacing + 1)%
+                                 this.getWidth(),
+                yOffset - (int)greenData[cnt]);
+            }//end if
+          }//end for loop
+        }//end if for sampleCounter &gt; 0
+      }//end overridden paint method
+    }//end inner class MyCanvas
+  }//end inner class Page
+}//end class PlotALot05
+//=============================================//<br><br><b><font face="Courier New,Courier">Listing 33</font></b></pre></td></tr></tbody></table></p>
+<p>
+&nbsp;</p>
+
+<hr size="3" width="100%" align="center">    
+<p>Copyright 2005, Richard G. Baldwin.&nbsp; Reproduction in whole or in
+part in any form or medium without express written permission from Richard
+Baldwin is prohibited. </p>
+     
+<h4> <a name="About_the_author">About the author</a></h4><b><a href="mailto:baldwin@dickbaldwin.com">Richard Baldwin</a></b><i>
+  is a college professor (at Austin Community College in Austin, TX) and
+private  consultant whose primary focus is a combination of Java, C#, and
+XML. In addition to the many platform and/or language independent benefits
+of Java and C# applications, he believes that a combination of Java, C#,
+and XML will become the primary driving force in the delivery of structured
+information on the Web.</i>    
+<p><i>Richard has participated in numerous consulting projects and he frequently 
+ provides onsite training at the high-tech companies located in and around 
+ Austin, Texas.&nbsp; He is the author of Baldwin's Programming <a
+ href="http://www.dickbaldwin.com">Tutorials</a>,
+  which has gained a worldwide following among experienced and aspiring programmers.
+  He has also published articles in JavaPro magazine.</i> </p>
+     
+<p><i>In addition to his programming expertise, Richard has many years of 
+ practical experience in Digital Signal Processing (DSP).&nbsp; His first
+ job after he earned his Bachelor's degree was doing DSP in the Seismic Research 
+ Department of Texas Instruments.&nbsp; (TI is still a world leader in DSP.)&nbsp; 
+ In the following years, he applied his programming and DSP expertise to other
+ interesting areas including sonar and underwater acoustics.</i> </p>
+     
+<p><i>Richard holds an MSEE degree from Southern Methodist University and
+  has many years of experience in the application of computer technology
+to  real-world problems.</i> </p>
+     
+<p><i><a href="mailto:baldwin@dickbaldwin.com">Baldwin@DickBaldwin.com</a></i>
+  </p>
+     
+<p><b>Keywords</b><br>
+Java adaptive filtering convolution filter frequency spectrum LMS amplitude 
+phase time-delay linear DSP impulse decibel log10 DFT transform bandwidth signal 
+noise real-time dot-product vector time-series</p>
+<p>-end- </p>
+   </body>
+</html>

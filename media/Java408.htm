@@ -1,0 +1,3254 @@
+<!DOCTYPE doctype PUBLIC "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+                
+  <meta http-equiv="Content-Type"
+ content="text/html; charset=iso-8859-1">
+                
+  <meta name="GENERATOR" content="Microsoft FrontPage 6.0">
+  <title>... JAVA and DSP by Richard G Baldwin</title>
+</head>
+<body link="#0000ff" vlink="#666666" alink="#ff0000" lang="EN-US">
+ 
+<h2>Processing Image Pixels, Performing Convolution on Images</h2>
+    <i>Learn to write Java programs that use convolution (flat filters and 
+Gaussian filters) to smooth or blur an image.&nbsp; Also learn how to write jpg 
+files containing specialized images that are useful for testing image-processing programs.</i><p><b>Published:</b>&nbsp; 
+July 26, 2005 <br>
+   <b>By <a href="#About_the_author">Richard G. Baldwin</a></b> </p>
+     
+<p>Java Programming, Notes # 408</p>
+     
+<ul>
+  <li><a href="#Preface">Preface</a></li>
+	<li><a href="#Background_Information">Background Information</a></li>
+  <li><a href="#Preview">Preview</a></li>
+  <li><a href="#Discussion_and_Sample_Code">Discussion and Sample Code</a><li>
+	<a href="#Interpretation_of_Results">Interpretation of Results</a><li><a href="#Run_the_Programs">Run the Program</a></li>
+  <li><a href="#Summary">Summary</a></li>
+	<li><a href="#Whats Next">What's Next</a></li>
+  <li><a href="#Complete_Program_Listings">Complete Program Listings</a> </li>
+</ul>
+        
+<hr size="3" width="100%" align="center">    
+<center>    
+<h2> <a name="Preface">Preface</a></h2>
+   </center>
+<p><font color="#FF0000"><b>Next in a series</b></font></p>
+<p>This is the next lesson in a series designed to teach you how to 
+use Java to create special effects with images by directly manipulating the 
+pixels in the images.</p>
+<p>The first lesson in the series was entitled 
+<a href="http://www.developer.com/java/other/article.php/3403921">Processing 
+Image Pixels using Java, Getting Started</a>.&nbsp; The previous lesson 
+was entitled <a href="http://www.developer.com/java/other/article.php/3512456">
+Processing Image Pixels, Color Intensity, Color Filtering, and Color Inversion</a>.&nbsp; This lesson 
+builds upon those earlier lessons.&nbsp; You will need to understand the code in the 
+lesson entitled 
+<a href="http://www.developer.com/java/other/article.php/3403921">Processing 
+Image Pixels using Java, Getting Started</a> before the code in this lesson will make much sense.</p>
+<p><font color="#FF0000"><b>Not a lesson on JAI</b></font></p>
+<p>The lessons in this series do not provide instructions on how to use 
+the Java Advanced Imaging <i>(JAI)</i> API.&nbsp; 
+<i>(That will be the primary topic for a future series of lessons.)</i>&nbsp; The purpose of 
+this series is to teach you how to implement common 
+image-processing algorithms by 
+working directly with the pixels.</p>
+<blockquote>
+	<p><i>(However, this lesson does present two programs that make heavy use of 
+	the JAI API without providing much in the way of an explanation as to how 
+	they do what they do.&nbsp; These two programs are used to create 
+	jpg files, which in turn are used as input to the two primary image-processing programs that I 
+	will explain in this lesson.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>You will need a driver program</b></font></p>
+<p>The lesson entitled 
+<a href="http://www.developer.com/java/other/article.php/3441391">Processing 
+Image Pixels Using Java: Controlling Contrast and Brightness</a> provided and explained a program named <b>
+ImgMod02a</b> that makes it easy to:</p>
+<ul>
+	<li>Manipulate and modify the pixels that belong to an image.</li>
+	<li>Display the processed image along with the original image.</li>
+</ul>
+<p><b>ImgMod02a</b> serves as a driver that controls 
+the execution of a second program that actually processes the pixels.</p>The 
+image-processing programs that I will explain in this lesson run under the control of <b>
+ImgMod02a</b>.&nbsp; 
+You will need to go to the lessons entitled 
+<a href="http://www.developer.com/java/other/article.php/3441391">Processing 
+Image Pixels Using Java: Controlling Contrast and Brightness</a> and  
+<a href="http://www.developer.com/java/other/article.php/3403921">Processing 
+Image Pixels using Java, Getting Started</a> to get copies of the program 
+named <b>ImgMod02a</b> and the interface named <b>ImgIntfc02</b> in order to 
+compile and run the programs that I will provide in this 
+lesson.<p><b><font color="#ff0000">Viewing tip</font></b> </p>
+ 
+<p>You may find it useful to open another copy of this lesson in a separate
+ browser window.&nbsp; That will make it easier for you to scroll back and
+ forth among the different figures and listings while you are reading about
+ them.</p>
+<p><font color="#FF0000"><b>Display format</b></font></p>
+<p>The output shown in Figure 1 was produced by the driver program named <b>
+ImgMod02a</b> and the image-processing program named <b>ImgMod24</b>.</p>
+<div align="center">
+<table bgcolor="#ccffff" border="1" cols="1">
+	<tr>
+		<td>
+		<pre><img border="0" src="java408a.jpg" width="114" height="304">
+</pre>
+		<pre><b>Figure 1</b></pre>
+		</td>
+	</tr>
+</table>
+</div>
+<p>As in all of the graphic output produced by the driver program 
+named <b>ImgMod02a</b>, the 
+original image is shown at the top and the processed image is shown at the 
+bottom.</p>
+<p><font color="#FF0000"><b>An interactive image-processing program</b></font></p>
+<p>The image-processing program illustrated by Figure 1 allows the user to 
+interactively control certain aspects of the process that I will describe later.</p>
+<div align="center">
+	<table bgcolor="#ccffff" border="1" cols="1">
+	<tr>
+		<td>
+		<pre><img border="0" src="java408b.jpg" width="201" height="101">
+</pre>
+		<pre><b>Figure 2</b></pre>
+		</td>
+	</tr>
+</table>
+</div>
+<p>Figure 2 shows the control panel through which the user interactively 
+controls that process.&nbsp; The user enters an integer value into the text 
+field in Figure 2 and then presses the <b>Replot</b> button at the bottom of 
+Figure 1 to cause the process to be rerun using the new input value.</p>
+<p><font color="#FF0000"><b>Theoretical basis and practical implementation</b></font></p>
+<p>While discussing the lessons in this series, I will provide some of the theoretical basis for 
+special-effects algorithms.&nbsp; In addition, I will show you how to implement those algorithms in Java.</p>
+<h2 align="center"><a name="Background_Information">Background Information</a></h2>
+<p>The earlier lesson entitled 
+<a href="http://www.developer.com/java/other/article.php/3403921">Processing 
+Image Pixels using Java, Getting Started</a> provided a great deal of background 
+information as to how images are constructed, stored, transported, and rendered.&nbsp; 
+I won't repeat that material here, but will simply refer you to the earlier 
+lesson.</p>
+<p>The earlier lesson introduced and explained the concept of a pixel.&nbsp; In 
+addition, the lesson provided a brief discussion of image files, and indicated 
+that the program named <b>ImgMod02a</b> is compatible with <i><b>gif</b></i> files,
+<i><b>jpg</b></i> 
+files, and possibly some other file formats as well.</p>
+<p>The lessons in this series are not 
+particularly concerned with file formats.&nbsp; Rather, the lessons are concerned with what 
+to do with the pixels after they have been extracted from an image file.&nbsp; 
+Therefore, there is very little discussion about file formats.</p>
+<p><font color="#FF0000"><b>A three-dimensional array of pixel data as type int</b></font></p>
+<p>The driver program named <b>ImgMod02a</b>:</p>
+<ul>
+	<li>Extracts the pixels from an image file.</li>
+	<li>Converts the pixel data to type <b>int.</b></li>
+	<li>Stores the pixel data in a three-dimensional array of type <b>int</b> that is 
+	well suited for processing.</li>
+	<li>Passes the three-dimensional array object's reference to an 
+	image-processing program.</li>
+	<li>Receives a reference to a three-dimensional array object containing 
+	processed pixel data from the image-processing program.</li>
+	<li>Displays the original image and the processed image in a stacked display 
+	as shown in Figure 1.</li>
+	<li>Makes it possible for the user to provide new input data to the 
+	image-processing program, invoke the image-processing program again, and 
+	create a new display showing the newly-processed image along with the 
+	original image.</li>
+</ul>
+<p>The manner in which that is accomplished was explained in the earlier lesson 
+entitled <a href="http://www.developer.com/java/other/article.php/3403921">
+Processing Image Pixels using Java, Getting Started</a>.</p>
+<p><font color="#FF0000"><b>Will concentrate on the three-dimensional array of 
+type int</b></font></p>
+<p>This and future lessons in this series will show you how to write 
+image-processing programs that implement a variety of image-processing 
+algorithms.&nbsp; The image-processing programs will receive raw pixel data in the form of a three-dimensional array 
+of type <b>int</b>, 
+and will return processed pixel data in the form of a three-dimensional array of 
+type <b>int</b>.</p>
+<p><font color="#FF0000"><b>A grid of colored pixels</b></font></p>
+<p>Each three-dimensional array object represents one image consisting of a 
+grid of colored pixels.&nbsp; The pixels in the grid are arranged in rows 
+and columns when they are rendered.&nbsp; One of the dimensions of the array represents rows.&nbsp; 
+A second dimension represents columns.&nbsp; The third dimension represents the color <i>(and transparency)</i> of 
+the pixels.</p>
+<p><font color="#FF0000"><b>Fundamentals</b></font></p>
+<p>Once again, I will refer you to the earlier lesson entitled 
+<a href="http://www.developer.com/java/other/article.php/3403921">Processing 
+Image Pixels using Java, Getting Started</a> to learn:</p>
+<ul>
+	<li>How the primary colors of red, green, and blue and the transparency of a 
+	pixel are represented by four <b><i>unsigned</i></b> 8-bit bytes of data.</li>
+	<li>How specific colors are created by mixing different amounts of red, 
+	green, and blue.</li>
+	<li>How the range of each primary color and the range of transparency 
+	extends from 0 to 255.</li>
+	<li>How black, white, and the colors in between are created.</li>
+	<li>How the overall color of each individual pixel is 
+determined by the values stored in the three color bytes for that pixel, as 
+	modified by the transparency byte.</li>
+</ul>
+<p><font color="#FF0000"><b>Convolution in one dimension</b></font></p>
+<p>The earlier lesson entitled 
+<a href="http://www.developer.com/java/other/article.php/3484591">Convolution 
+and Frequency Filtering in Java</a> taught you about performing convolution in 
+one dimension.&nbsp; In that lesson, I showed you how to apply a convolution operator to a 
+sampled time series in one dimension.&nbsp; As you may recall, the mathematical 
+process in one dimension involves the following steps:</p>
+<ul>
+	<li>Register the n-point convolution operator with the first <b>n</b> samples in 
+	the time series.</li>
+	<li>Compute an output point value, which is the sum of the products of the 
+	convolution operator values and the corresponding time series values.</li>
+	<li>Move the convolution operator one step forward, registering it with the 
+	next <b>n</b> samples in the time series and compute the next output point 
+	value as a sum 
+	of products.</li>
+	<li>Repeat this process until all samples in the time series have been 
+	processed.</li>
+</ul>
+<p><font color="#FF0000"><b>Convolution in two dimensions</b></font></p>
+<p>Convolution in two dimensions involves essentially the same steps except that 
+in this case we are dealing with three different 3D sampled surfaces and a 3D convolution 
+operator instead of a simple sampled time series.</p>
+<blockquote>
+	<p><i>(There is a red surface, a green surface, and a blue surface, each of 
+	which must be processed.&nbsp; Each surface has width and height 
+	corresponding to the first two dimensions of the 3D surface.&nbsp; In 
+	addition, each sampled value that represents the surface can be different.&nbsp; 
+	This constitutes the third dimension of the surface.&nbsp; There is also an 
+	alpha or transparency surface that could be processed, but the programs in 
+	this lesson don't process the alpha surface.&nbsp; Similarly, the 
+	convolution operator has three dimensions corresponding to width, height, 
+	and the values of the coefficients in the operator.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Lots of arithmetic required</b></font></p>
+<p>Because each surface has three dimensions and there are three surfaces to be 
+processed by a 3D convolution operator, the amount of arithmetic that must be 
+performed can be quite large.&nbsp; Therefore, we will be looking for ways 
+to make the arithmetic process more efficient than might be the case if we were 
+to approach the problem simply using a brute-force multiply-add approach.</p>
+<p><font color="#FF0000"><b>Steps in the processing</b></font></p>
+<p>Basically, the steps involved in processing each of the three surfaces to 
+produce an output surface consist of:</p>
+<ul>
+	<li>Register the 2D aspect <i>(width and height)</i> of the convolution 
+	operator with the first 2D area centered on the first row of samples on the 
+	input surface.</li>
+	<li>Compute a point for the output surface, by computing the sum of the 
+	products of the convolution operator values and the corresponding input 
+	surface values.</li>
+	<li>Move the convolution operator one step forward along the row, 
+	registering it with the next 2D area on the surface and compute the next point 
+	on the output surface as a sum of products.&nbsp; When that row has been 
+	completely processed, move the convolution operator to the beginning of the 
+	next row, registering with the corresponding 2D area on the input surface 
+	and compute the next point for the output surface.</li>
+	<li>Repeat this process until all samples in the surface have been 
+	processed.</li>
+</ul>
+<p><font color="#FF0000"><b>Repeat once for each color surface</b></font></p>
+<p>Repeat the above set of steps three times, once for each of the three color 
+surfaces.</p>
+<p><font color="#FF0000"><b>Watch out for the edges</b></font></p>
+<p>As you will see later, special care must be taken to avoid 
+having the edges of the convolution operator extend outside the boundaries of 
+the input surface.</p>
+<p><font color="#FF0000"><b>The size of the convolution operator</b></font></p>
+<p>One of the most important issues in performing convolution on images has to 
+do with the ability to vary the 2D aspect of the size of the convolution 
+operator.&nbsp; The two programs that I will explain in this lesson approach 
+this process in two different ways.</p>
+<p><font color="#FF0000"><b>A Gaussian shape with a round footprint</b></font></p>
+<p>The program named <b>ImgMod24</b> begins with a flat 3x3 square convolution 
+operator and allows the user to effectively increase the size and the 3D shape 
+of the operator by performing multiple successive convolution operations on the 
+input surface.&nbsp; 
+In this case, the effective 3D shape of the convolution operator approaches a 
+Gaussian shape with a round footprint as more and more successive convolutions 
+are performed.</p>
+<blockquote>
+	<p><i>(I will explain what I mean by a Gaussian shape with a round footprint 
+	later.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>A totally flat convolution operator</b></font></p>
+<p>The program named <b>ImgMod12</b> allows the user to specify the size of a 
+flat rectangular convolution operator.&nbsp; For small operator sizes, the shape 
+of the operator can be a rectangle.&nbsp; For large operator sizes, the shape of 
+the operator is constrained to be a perfect square.&nbsp; In all cases, the 3D 
+shape of the operator remains flat.&nbsp; This greatly reduces the arithmetic 
+required to perform the processing.</p>
+<p><b><font color="#ff0000">Supplementary material</font></b> </p>
+ 
+<p>I recommend that you also study the other lessons in my extensive collection
+ of online Java tutorials.&nbsp; You will find those lessons published at
+<a href="http://softwaredev.earthweb.com/java">Gamelan.com</a>.&nbsp; However, 
+as of the date of this writing, Gamelan doesn't maintain a consolidated index 
+of my Java tutorial lessons, and sometimes they are difficult to locate there.&nbsp; 
+You will find a consolidated index at <a
+ href="http://www.dickbaldwin.com">www.DickBaldwin.com</a><font
+ color="#000000">.</font></p>
+<h2 align="center"><a name="Preview">Preview</a></h2>
+<p><font color="#FF0000"><b>Five programs and one interface</b></font></p>
+<p>The image-processing programs that I will discuss in this lesson require the program named
+<b>ImgMod02a</b> and the interface named <b>ImgIntfc02</b> for compilation and 
+execution.&nbsp; I provided and explained that material in the earlier lessons 
+entitled <a href="http://www.developer.com/java/other/article.php/3441391">
+Processing Image Pixels Using Java: Controlling Contrast and Brightness</a> and <a href="http://www.developer.com/java/other/article.php/3403921">
+Processing Image Pixels using Java, Getting Started</a>. </p>
+<p>I will present and explain two new Java programs named <b>
+ImgMod12</b> and <b>ImgMod24</b> in this lesson.&nbsp; These programs, when run under control of the program named <b>
+ImgMod02a</b>, will produce outputs similar to Figure 1.</p>
+<blockquote>
+	<p><i>(The results will be different if you use a different image 
+	file or provide different user input values.)</i></p>
+</blockquote>
+<p>In addition, I will present, but will not fully explain, two programs named
+<b>ImgMaker01</b> and <b>ImgMaker02</b>.&nbsp; These two programs will be used 
+to produce output 
+jpg files that are useful in illustrating and explaining the behavior of the two 
+image-processing programs.</p>
+<p><font color="#FF0000"><b>The processImg method</b></font></p>
+<p>The programs named <b>ImgMod12</b> and <b>ImgMod24</b>, <i>(and all 
+image-processing programs that are capable of being driven by <b>ImgMod02a</b>),</i> 
+must implement the interface named <b>ImgIntfc02</b>.&nbsp; That interface 
+declares a single method named <b>processImg</b>, which must be defined by all 
+implementing classes.</p>
+<p>When the user runs the program named <b>ImgMod02a</b>, that program 
+instantiates an object of the image-processing program class and invokes the <b>
+processImg</b> method on that object.</p>
+<p>A three-dimensional array containing the pixel data 
+for the image is passed to the <b>processImg</b> method.&nbsp; The <b>processImg</b> method returns a 
+three-dimensional array containing the pixel data for a processed version of the 
+original image.</p>
+<p><font color="#FF0000"><b>A <i>before</i> and <i>after</i> display</b></font></p>
+<p>When the <b>processImg</b> method returns, the driver program named<b> 
+ImgMod02a </b>causes the 
+original image and the processed image to be displayed in a frame 
+with the original image above the processed image as shown earlier in Figure 1.</p>
+<p><font color="#FF0000"><b>Usage information for ImgMod12 and ImgMod24</b></font></p>
+<p>To use the program named <b>ImgMod02a</b> to drive the program named <b>
+ImgMod12</b>, enter the following at the 
+command line: </p>
+<b><pre>java ImgMod02a ImgMod12 ImagePathAndFileName</pre></b> </p>
+<p>To use the program named <b>ImgMod02a</b> to drive the program named <b>
+ImgMod24</b>, enter the following at the 
+command line: </p>
+<b><pre>java ImgMod02a ImgMod24 ImagePathAndFileName</pre></b> </p>
+<p><font color="#FF0000"><b>The image file</b></font></p>
+<p>The image file can be a <i><b>gif</b></i> file or a 
+<i><b>jpg</b></i> file.&nbsp; 
+Other file types may be compatible as well.&nbsp; If the program is unable to load the image file within ten 
+seconds, it will abort with an error message.</p>
+<blockquote>
+	<p><i>(You should be able to right-click on the image in Figure 16 to download and save the image locally.&nbsp; Then you should be able to replicate the output produced in 
+	Figure 1 by running the program named <b>ImgMod24</b> and specifying 10 
+	convolutions to process that 
+	image.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Image display format</b></font></p>
+<p>When the program is started, the original image and the processed image for 
+the default processing parameters are 
+displayed in a frame with the original image above the processed image as shown 
+in Figure 1.</p>
+<p>A
+<b>Replot</b> button appears at the bottom of the frame. If the user clicks the
+<b>Replot</b> button, the <b>processImg</b> method is rerun, the image is 
+reprocessed, and the new version of the processed image replaces the old version 
+in the display. </p>
+<p><font color="#FF0000"><b>Input to the image-processing program</b></font></p>
+<p>The image-processing programs named <b>ImgMod12</b> and <b>ImgMod24 </b>provide a GUI for user input.&nbsp; 
+A sample of the user input panel for <b>ImgMod24 </b>is shown in Figure 2.&nbsp; 
+A sample of the input panel for <b>ImgMod12 </b>is shown in Figure 13.&nbsp; This makes it possible for the user to provide different input values each time the image-processing method is rerun.&nbsp; To rerun the 
+image-processing method, type the new value into the text field and press the <b>
+Replot</b> button.</p>
+<h2 align="center"><a name="Discussion_and_Sample_Code">Discussion and Sample 
+Code</a></h2>
+<p>Before getting into the details of the image-processing programs, I am going 
+to briefly cover the two programs named <b>ImgMaker01</b> and <b>ImgMaker02</b>.&nbsp; 
+These two programs are utility programs that I wrote to produce special jpg 
+image files.&nbsp; I will use those files to illustrate certain key aspects of 
+the two image-processing programs.</p>
+<p><font color="#FF0000"><b>The program named ImgMaker01</b></font></p>
+<p>The program named <b>ImgMaker01</b> is shown in Listing 20.&nbsp; The purpose 
+of this program is to write an output jpg file named <b>junk.jpg</b> containing 
+a white square centered in a square black image as shown in Figure 3.</p>
+<div align="center">
+	<table bgcolor="#ccffff" border="1" cols="1">
+	<tr>
+		<td>
+		<pre><img border="0" src="java408c.jpg" width="50" height="50">
+</pre>
+		<pre><b>Figure 3</b></pre>
+		</td>
+	</tr>
+</table>
+</div>
+<p><font color="#FF0000"><b>The size of the square and the image</b></font></p>
+<p>The length of the sides of the image and the length of the sides of the white 
+square are provided by the user as command line parameters.&nbsp; If the user doesn't 
+provide these values, the default size of the image is 31 pixels on each side and 
+the default size of the white square is 9 pixels on each side.</p>
+<p><font color="#FF0000"><b>Usage information</b></font></p>
+<p>To run this program, enter the following command at the command-line prompt</p>
+<pre><b>java ImageMaker01 ImageSize SquareSize</b></pre>
+<p>where:</p>
+<ul>
+	<li>ImageSize is the 
+number of pixels on the side of the square image.</li>
+	<li>SquareSize is the number of 
+pixels on the side of the white square centered in the image.</li>
+</ul>
+<p><font color="#FF0000"><b>Color values</b></font></p>
+<p>The red, green, and 
+blue values of the pixels in the white square are all 255.</p>
+<p>The value of the alpha 
+byte for all pixels is set to 255.&nbsp; <i>(See later note regarding the writing of the jpg file.)</i></p>
+<p>All red, green, and blue pixel values outside the white square are 
+zero.</p>
+<blockquote>
+	<p><i>(Note that when these values are encoded into the jpg file and later 
+read into another program, some of the values may be found to exhibit small 
+errors.&nbsp; Apparently this is the result of encoding and later decoding the data in 
+the jpg file.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>The alpha byte</b></font></p>
+<p>This program cannot handle alpha bytes with different values when writing the 
+file.&nbsp; Rather, the program writes the three color bytes into the output file, apparently 
+setting all of the alpha bytes to 255.</p>
+<p><font color="#FF0000"><b>References</b></font></p>
+<p>This file writing capability is based on information 
+obtained from the following websites:</p>
+<ul>
+	<li><a href="https://jaistuff.dev.java.net/data.html">https://jaistuff.dev.java.net/data.html</a></li>
+	<li><a href="https://jaistuff.dev.java.net/Code/data/CreateRGBImage.java">https://jaistuff.dev.java.net/Code/data/CreateRGBImage.java</a></li>
+</ul>
+<p><font color="#FF0000"><b>Program code</b></font></p>
+<p>The program contains two static methods that:</p>
+<ul>
+	<li>Generate the pixel values </li>
+	<li>Encode those pixel values into the output jpg file named <b>junk.jpg</b></li>
+</ul>
+<p>The names of the two methods are:</p>
+<ul>
+	<li>createThreeDImage</li>
+	<li>writeImageFile</li>
+</ul>
+<p><font color="#FF0000"><b>The createThreeDImage method</b></font></p>
+<p>The code in this method is relatively straightforward and shouldn't 
+require much of an explanation.</p>
+<p>The method stores the pixel data for the white square into a 
+3D array of type:</p>
+<p>int[row][column][depth].</p>
+<p>The first two dimensions of the array 
+correspond to the rows and columns of pixels in the image.</p>
+<p>The third dimension 
+always has a value of 4 and contains the following information by index value:</p>
+<ul>
+	<li>0 alpha 
+	value 
+<i>(not set within the program)</i></li>
+	<li>1 red value</li>
+	<li>2 green value</li>
+	<li>3 blue value</li>
+</ul>
+<p>Note that these values are stored 
+as type <b>int</b> rather than type <b>unsigned byte</b> which is the format of pixel data in 
+an image.&nbsp; The values are converted to type <b>unsigned byte</b> during the writing of 
+the jpg file.</p>
+<p><font color="#FF0000"><b>The writeImage method</b></font></p>
+<p>The code in the second method is not straightforward at all.&nbsp; However 
+since the purpose of this lesson is to concentrate on processing image files 
+rather than writing image files, I am simply going to refer you to the two URLs 
+listed above for an explanation of that code.</p>
+<p>The program was tested using SDK 1.4.2 under WinXP.</p>
+<p><font color="#FF0000"><b>The program named ImgMaker02</b></font></p>
+<p>The program named <b>ImgMaker02</b> is shown in Listing 21.&nbsp; The purpose 
+of this program is to write an output jpg file named <b>junk.jpg</b> containing a 
+single white pixel centered in a square black image as shown in figure 4.&nbsp; 
+Images like this will be used for impulse testing the two image-processing 
+programs to be discussed later in this lesson.</p>
+<div align="center">
+<table bgcolor="#ccffff" border="1" cols="1">
+	<tr>
+		<td>
+		<pre><img border="0" src="java408d.jpg" width="31" height="31">
+</pre>
+		<pre><b>Figure 4</b></pre>
+		</td>
+	</tr>
+</table>
+</div>
+<p>This program uses the same method for creating the jpg file that was 
+discussed with regard to the program named <b>ImgMaker01</b>.&nbsp; </p>
+<p>Furthermore, the data-generation portion of this program is even simpler than 
+the data-generation portion of the program named <b>ImgMod01</b>.&nbsp; 
+Therefore, I won't discuss this program further other than to tell you that you 
+can run the program by entering the following at the command-line prompt</p>
+<pre><b>java ImageMaker02 ImageSize</b></pre>
+<p>where:</p>
+<ul>
+	<li>ImageSize is the 
+number of pixels on the side of the square image.</li>
+</ul>
+<p><font color="#FF0000"><b>The program named ImgMod24</b></font></p>
+<p>That brings us to the first of the two 
+image-processing programs that I will explain in this lesson.&nbsp; This 
+program is named <b>ImgMod24</b>.&nbsp; Before getting into the 
+details of this program, however, I want to explain certain aspects of 
+convolution.</p>
+<p><font color="#FF0000"><b>Convolution is a linear process</b></font></p>
+<p>I explained in the lesson entitled 
+<a href="http://www.developer.com/java/other/article.php/3484591">Convolution 
+and Frequency Filtering in Java</a> that convolution is a linear 
+process.&nbsp; Among other things, this means that superposition holds.&nbsp; It is 
+possible to reverse the order of certain operations without changing the overall 
+results.</p>
+<p><font color="#FF0000"><b>A convolution example</b></font></p>
+<p>For example, assume that I have a time series that contains high-frequency 
+components that I would like to suppress.&nbsp; I can accomplish that by 
+convolving the time series with a low-pass convolution filter that will suppress the 
+high-frequency components.</p>
+<p>Suppose that after applying the convolution operator once to the time series, 
+I conclude that there is still too much energy in the high-frequency area.&nbsp; 
+There is nothing to stop me from simply applying the low-pass convolution filter 
+again to further suppress the high-frequency components.</p>
+<p>Now suppose that I know in advance that one pass of the convolution filter 
+won't do the job and I would like to create a different convolution filter that 
+will do the job in a single pass.&nbsp; One way to do this is to convolve the 
+convolution filter with itself to produce an output that is a new convolution 
+filter.&nbsp; I can then apply this new convolution filter to the time series 
+attaining acceptable high-frequency suppression with a single pass.&nbsp; In 
+fact, the results will be identical to the results obtained by applying the 
+original convolution filter twice.</p>
+<p><font color="#FF0000"><b>Which approach would be preferable?</b></font></p>
+<p>Both approaches will provide the same results.&nbsp; I can either apply the 
+convolution operator to the time series twice in succession, or I can apply the 
+convolution operator to itself and convolve the output from that convolution 
+process with the time series once.</p>
+<p>Therefore, my evaluation as to which approach is best must be based on something other than the frequency content of 
+the time series following the application of the convolution filter.</p>
+<p><font color="#FF0000"><b>Required computing resource as an evaluation 
+criteria</b></font></p>
+<p>One 
+evaluation criteria might be the amount of computing resource that is required to 
+accomplish each approach.</p>
+<p>To follow up on the issue of required computing resource, assume that I have two convolution filters.&nbsp; The first is a 
+three-point filter having the following coefficient values:</p>
+<p>1, 1, 1</p>
+<p>The second is a five-point filter having the following coefficient values:</p>
+<p>1, 2, 3, 2, 1</p>
+<p>Which of these two convolution filters would require the greatest computing 
+resource to apply?&nbsp; The answer is simple.&nbsp; The second filter would 
+require the greatest computing resource for two reasons:</p>
+<ul>
+	<li>The second filter has more coefficients and therefore requires more 
+	computations.</li>
+	<li>The second filter requires multiplication by values other than unity.</li>
+</ul>
+<p><font color="#FF0000"><b>The cost of multiplication</b></font></p>
+<p>With some systems, the second reason is much more important than the first 
+reason.&nbsp; Although the computation of a convolution output value always 
+requires computing the sum of the products of the filter coefficient values and the data 
+values, when all of the filter values are 1, the multiplication step can be skipped.</p>
+<p>On many systems, multiplication is very expensive in terms of computer 
+resources.&nbsp; Therefore, the requirement to do multiplication can be much 
+more significant in terms of required computer resources than the number of 
+points in the convolution filter.</p>
+<p><font color="#FF0000"><b>Convolve the first filter with itself</b></font></p>
+<p>Now, take out a piece of paper and convolve the first filter given above with 
+itself.&nbsp; What did you get?&nbsp; If I did it correctly, I got a result that 
+is the second convolution filter given above.&nbsp; Therefore, convolving the time series 
+with the first filter twice in succession will produce the same result as 
+convolving the time series with the second filter once.</p>
+<p><font color="#FF0000"><b>Might be more efficient</b></font></p>
+<p>Because all of the coefficients in the first filter have a value of 1, you should 
+be able to write a special convolution algorithm that doesn't do any 
+multiplication.</p>
+<blockquote>
+	<p><i>(That isn't possible with the second filter because it contains values 
+	other than 1.)</i></p>
+</blockquote>
+<p>As a result, you may be able to write an algorithm that will convolve the 
+time series with the first filter twice in succession and still require less 
+computing resource than the algorithm to convolve the time series with the 
+second filter only once.</p>
+<p><font color="#FF0000"><b>Now convolve one more time</b></font></p>
+<p>Now convolve the second filter with itself.&nbsp; If I did the arithmetic 
+correctly, this results in a filter containing the following nine coefficient values:</p>
+<p>1, 4, 10, 16, 19, 16, 10, 4, 1</p>
+<p>Convolving this filter with the time series once would produce the same 
+result that would be produced by convolving the first filter with the time 
+series four times in succession.&nbsp; However, that isn't my main point in 
+having you do this.</p>
+<p><font color="#FF0000"><b>Approaches a Gaussian</b></font></p>
+<p>If you plot this new filter in Cartesian coordinates, you might notice that 
+the shape of the curve is tending towards a typical <i>bell shaped </i>or
+<i>Gaussian</i> curve.</p>
+<p>Without getting into the technical details, a convolution operator having a 
+Gaussian shape has some very interesting properties in digital signal 
+processing <i>(DSP),</i> so that is something that we might be interested in.</p>
+<p>If we begin 
+with a flat convolution filter and successively convolve it with itself, the 
+resulting convolution filter will more and more closely approximate a Gaussian 
+shape.</p>
+<p>Similarly, because the convolution process is a linear process and 
+superposition holds, if we successively convolve a time series with a flat 
+convolution filter, the ultimate result will be the same as convolving that time 
+series with a convolution filter having a Gaussian shape.&nbsp; Unlike with the 
+actual Gaussian filter, however, we can write a convolution algorithm for a flat filter 
+that doesn't require any multiplications <i>(except for possibly scaling or 
+normalizing the final result).</i>&nbsp; Convolving multiple times in succession 
+with a flat filter may require less computer resource than 
+convolving with a Gaussian filter only once.</p>
+<p><font color="#FF0000"><b>What about a 3D Gaussian filter?</b></font></p>
+<p>I briefly described the 3D image convolution process in an earlier section.&nbsp; 
+I will get into the detailed code that accomplishes that process later.&nbsp; Right now, 
+I want to show you what happens when I successively convolve an image with a 
+flat convolution filter consisting of an array of nine points all having the 
+same value.</p>
+<p>The top black image in Figure 5 contains a single white pixel, containing 
+equal contributions of red, green, and blue.&nbsp; The color values for each of 
+the three colors for this pixel are 255.&nbsp; The color values for all of the 
+other pixels in the image are 0.&nbsp; Thus, this is what we would refer to as 
+an impulse in DSP involving sampled time series.</p>
+<div align="center">
+	<table bgcolor="#ccffff" border="1" cols="1">
+	<tr>
+		<td>
+		<pre><img border="0" src="java408e.jpg" width="113" height="116">
+</pre>
+		<pre><b>Figure 5</b></pre>
+		</td>
+	</tr>
+</table>
+</div>
+&nbsp;<p><font color="#FF0000"><b>The result of multiple successive convolutions</b></font></p>
+<p>The bottom image in Figure 5 shows the result of convolving the 
+top image ten times in succession with the nine-point flat convolution filter 
+whose values are shown in Figure 6.&nbsp; As you can see, the white color 
+belonging to the single pixel in the center gets spread into the adjacent 
+pixels.&nbsp;&nbsp; Not only did spreading occur, but the output is brightest in 
+the center.&nbsp; The white color gradually progresses through grey to black as 
+the distance from the center increases.&nbsp; </p>
+<div align="center">
+<table bgcolor="#ccffff" border="1" cols="1">
+	<tr>
+		<td>
+		<pre>
+1 1 1
+1 1 1
+1 1 1
+</pre>
+		<pre><b>Figure 6</b></pre>
+		</td>
+	</tr>
+</table>
+</div>
+<p><font color="#FF0000"><b>The output in numeric terms</b></font></p>
+<p>Figure 7 shows the actual values that are displayed by the bottom image 
+in Figure 5.&nbsp; <i>(These are the red color values only, but all three color 
+values are the same for every pixel.)</i>&nbsp; The values shown are the only 
+non-zero values in the image.&nbsp; All the other pixel values in the image have 
+a value of 0 and appear black in the bottom image of Figure 5.</p>
+<div align="center">
+<table bgcolor="#ccffff" border="1" cols="1">
+	<tr>
+		<td>
+		<pre>
+                   1 2 4 4 4 2 1 
+            1 3 7 10 14 15 14 10 7 3 1 
+        1 4 10 19 28 36 39 36 28 19 10 4 1 
+       3 10 22 39 58 73 78 73 58 39 22 10 3 
+    1 7 9 39 68 99 123 132 123 99 68 39 19 7 1 
+ 2 10 28 58 99 143 178 191 178 143 99 58 28 10 2
+4 14 36 73 123 178 220 237 220 178 123 73 36 14 4
+4 15 39 78 132 191 237 <b>255</b> 237 191 132 78 39 15 4
+4 14 36 73 123 178 220 237 220 178 123 73 36 14 4
+ 2 10 28 58 99 143 178 191 178 143 99 58 28 10 2
+   1 7 19 39 68 99 123 132 123 99 68 39 19 7 1
+       3 10 22 39 58 73 78 73 58 39 22 10 3
+        1 4 10 19 28 36 39 36 28 19 10 4 1
+            1 3 7 10 14 15 14 10 7 3 1
+                   1 2 4 4 4 2 1
+</pre>
+		<pre><b>Figure 7</b></pre>
+		</td>
+	</tr>
+</table>
+</div>
+<p><font color="#FF0000"><b>A Gaussian shape with a round footprint</b></font></p>
+<p>The value of 255 shown at the center of Figure 7 represents the brightest 
+point in the center of the bottom image of Figure 5.&nbsp; As you move away from that value at 
+the center, the other values shown in Figure 7 represent the grey values shown 
+in Figure 5.&nbsp; Ultimately the black, or zero values occur, but they are not shown in Figure 7.</p>
+<blockquote>
+	<p><i>(I promised earlier that I would explain what I meant by a Gaussian 
+	shape with a round footprint.&nbsp; Figure 7 illustrates a Gaussian shape 
+	with a nearly round footprint.&nbsp; If you were to use clay and build a 3D 
+	model of the values shown in Figure 7, it would be nearly round on the 
+	bottom and would look like a church bell with a nearly Gaussian shape.)</i> </p>
+</blockquote>
+<p><font color="#FF0000"><b>Plot some points on an intersection</b></font></p>
+<p>If you draw a line through the center point in Figure 7 and plot the values 
+intersected by that line in Cartesian coordinates, you will see that the values 
+describe a <i>bell shape</i> or <i>Gaussian</i> curve.</p>
+<p><font color="#FF0000"><b>Symmetry</b></font></p>
+<p>If you divide Figure 7 into four quadrants centered on the value of 255 at 
+the center, you will see that the other values exhibit symmetry about each of 
+the axes.</p>
+<p><font color="#FF0000"><b>What does this mean?</b></font></p>
+<p>This means that if you convolve this nine-point flat convolution filter with 
+each of the values of the three color surfaces ten times in succession, every 
+pixel will be modified in the manner shown in the bottom image in Figure 5.&nbsp; 
+Each pixel will maintain the correct relative height and will be spread into the 
+adjacent pixels in the 
+manner shown in Figure 5.&nbsp; The resulting picture will be the sum of those 
+modified pixels.</p>
+<p><font color="#FF0000"><b>Back to the stick man</b></font></p>
+<p>This should explain why the stick man in the bottom image of Figure 1 
+appears softer and fuzzier than the stick man in the top image of Figure 1.&nbsp; 
+In this case, the outline of the original stick man results from a series of pixels that 
+have all zero color values.&nbsp; Therefore, those pixels appear to be black.</p>
+<p>The white 
+areas in Figure 1 represent pixels whose red, green, and blue color values are 
+all 255.&nbsp; As a result, those pixels appear to be white.</p>
+<p>Each of the pixels at the transition between white and black in the bottom image 
+of Figure 1 was modified in a manner similar to the bottom image in Figure 5.&nbsp; 
+This results in the apparent fuzziness of the stick man in Figure 1.</p>
+<p><font color="#FF0000"><b>Explanation from a DSP viewpoint</b></font></p>
+<p>Another explanation, from a DSP viewpoint, is that rapid transitions from 
+black to white require color surfaces containing strong high-frequency 
+components.&nbsp; The convolution process implemented by this program suppresses 
+high-frequency components from the color surfaces.&nbsp; Therefore, rapid 
+transitions from black to white are also eliminated.</p>
+<p>Because the black areas that represent the stick man are so narrow, 
+elimination of the rapid transitions from black to white tend to turn the black 
+stick man into a grey stick man.&nbsp; There simply isn't enough space to go 
+from white to black and back to white in the width of the stick man's body.</p>
+<p>This is most apparent by comparing the stick man's face with the remainder of 
+his body.&nbsp; The width of the black area representing the face is wider than 
+the other parts of his body.&nbsp; Therefore, the face ended up blacker than the 
+rest of the body.</p>
+<p><font color="#FF0000"><b>Now for some code - ImgMod24</b></font></p>
+<p>The program named <b>ImgMod24</b> is designed to allow a user to apply the 
+flat nine-point convolution filter shown in Figure 6 repetitively to an input 
+image.&nbsp; The number of times the convolution filter is applied is specified 
+by the user via the control panel shown in Figure 2.</p>
+<p>The user can experiment by entering different values into the text field in 
+Figure 2 and then pressing the <b>Replot</b> button in Figure 1.&nbsp; Each time 
+the <b>Replot</b> button is pressed, the old processing results are cleared out 
+and the image is processed and displayed again according to the new value provided 
+by the user.</p>
+<p><font color="#FF0000"><b>The processImg method</b></font></p>
+<p>The image-processing program must implement the interface named <b>
+ImgIntfc02</b>.&nbsp; A listing of that interface was provided in the earlier 
+lesson entitled 
+<a href="http://www.developer.com/java/other/article.php/3403921">Processing 
+Image Pixels using Java, Getting Started</a>.&nbsp; That interface declares a single method with the following 
+signature:</p><b><pre>
+int[][][] processImg(int[][][] threeDPix, 
+                     int imgRows, 
+                     int imgCols);</pre></b></p>
+<p>The first parameter is a reference to an incoming three-dimensional array of pixel data stored as 
+type <b>int</b>.&nbsp; The second and third parameters specify the number of rows 
+and the number of columns of pixels in the image. </p>
+<p><font color="#FF0000"><b>It's best to make and modify a copy</b></font></p>
+<p>Normally the <b>processImg</b> 
+method should make a copy of the incoming 
+array and modify the copy rather than modifying the original.&nbsp; Then the 
+method should return a reference to the processed copy of the three-dimensional pixel array.</p>
+<p><font color="#FF0000"><b>The program named ImgMod24</b></font></p>
+</p>
+<p>This program allows for multiple successive convolutions using a fixed 3x3 
+flat convolution filter.&nbsp; The result approaches a Gaussian filter as more 
+successive convolutions are performed.&nbsp;</p>
+<p><font color="#FF0000"><b>The output is normalized</b></font> </p>
+<p>The program normalizes the output so that the largest color value in the 
+output always matches the largest color value in the input.&nbsp; This may or 
+may not be desirable depending on the circumstances.</p>
+<p><font color="#FF0000"><b>Driven by ImgMod02a</b></font></p>
+<p>This program is designed to be driven by the program named <b>ImgMod02a</b>.&nbsp; 
+Enter the following at the command line to run this program:</p>
+<b><pre>java ImgMod02a ImgMod24 ImagePathAndFileName</pre></b> 
+<p><font color="#FF0000"><b>A low-pass filter</b></font></p>
+<p>As mentioned above, this is a low-pass filter that suppresses high frequency 
+components in color 
+surfaces described by an array of color values.</p>
+<p><font color="#FF0000"><b>The algorithm</b></font></p>
+<p>The program treats each color surface separately from the others.&nbsp; 
+During each convolution pass, the program adds all of the color values for each 
+color surface within the area 
+covered by the 3x3 filter.&nbsp; The sum of those values constitutes one value 
+in the output color surface.</p>
+<p>Then it moves to the next registration point and 
+adds the pixel values then covered by the area.&nbsp; This process is continued 
+until all of the values in the color surface have been processed.</p>
+<p>When a convolution pass is complete, all of the color values in the output 
+surface are scaled so that 
+the peak color value in the output surface matches the peak color value in the input 
+surface.</p>
+<p><font color="#FF0000"><b>Special treatment at the edges</b></font></p>
+<p>Each pixel belonging to the input color surface, except those at the outer edges of the 
+surface, is used as a 
+registration point.&nbsp; The pixels around the outer edges are not used as 
+registration points because that would cause the area covered by the convolution 
+filter to extend outside the input surface.&nbsp; The result of ignoring the 
+outer edges of the input surface is shown by the black frame in the bottom image 
+of Figure 1.</p>
+<blockquote>
+	<p><i>(If this were a production system, I would need to come up with a 
+	better way to handle the pixels at the edges rather than to just ignore 
+	them.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>The visual effect</b></font></p>
+<p>The visual effect of applying this filter to an image is to cause the image to go 
+increasingly out of focus as the number of convolutions is increased.&nbsp; The 
+effect is most obvious with images that have well-defined lines such as 
+text characters.&nbsp; This is sometimes referred to as a blurring filter.</p>
+<p><font color="#FF0000"><b>Why use a blurring filter?</b></font></p>
+<p>One possible use of a blurring filter such as this is to reduce the 
+visibility of age lines 
+and wrinkles in a portrait of a human face, thus causing the person in the 
+portrait to look somewhat younger.</p>
+<p><font color="#FF0000"><b>Transparency</b></font></p>
+<p>The transparency or alpha value of each pixel is preserved intact.&nbsp; If you 
+don't see what you expect to see when you run this program with a particular 
+image, it may be because your image contains transparent areas.&nbsp; This will 
+be evidenced by the yellow background color of the canvas showing through the 
+image.</p>
+<p><font color="#FF0000"><b>Testing</b></font></p>
+<p>This program was tested using SDK 1.4.2 and WinXP</p>
+<p><font color="#FF0000"><b>The Graphical User Interface</b></font> </p>
+<p>The program provides the GUI control panel shown in Figure 2, which allows 
+the user to enter a new value to specify the number of times to apply the 
+convolution filter.&nbsp; To use this feature, simply type a new integer value 
+into the text field and press the <b>Replot</b> button at the bottom of the main 
+display frame shown in Figure 1.</p>
+<p><font color="#FF0000"><b>No need to press the Enter key</b></font></p>
+<p>It isn't necessary to press the <b>Enter</b> key to type a new value into the 
+text field, but doing so won't cause any harm.</p>
+<p>Entering a text string that cannot be 
+converted to a value of type <b>int</b> will cause the program to throw an 
+exception. </p>
+<p><font color="#FF0000"><b>Will discuss in fragments</b></font> </p>
+<p>I will break the program down and discuss it in fragments.&nbsp; A complete 
+listing of the program is provided in Listing 22 near the end of the 
+lesson.</p>
+<p>The beginning of the class definition, including the declaration of some instance variables is 
+shown in Listing 1.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+	<tr>
+		<td>
+		<pre>class ImgMod24 extends Frame implements
+                                      ImgIntfc02{
+
+  int numberConvolutions;
+  String inputData;//Obtained via the TextField
+  TextField input;//User input field
+
+<b><font face="Courier New,Courier">Listing 1</font></b></pre>
+		</td>
+	</tr>
+</table>
+<p>As is the case with all classes that are intended to be run under control of 
+the program named <b>ImgMod02a</b>, this class implements the interface named <b>
+ImgIntfc02</b>.&nbsp; This in turn requires the class to define the method named
+<b>processImg</b>, which will be discussed shortly.</p>
+<p><font color="#FF0000"><b>The constructor</b></font></p>
+<p>The constructor is shown in Listing 2.&nbsp; The only purpose of the 
+constructor is to create the control panel GUI shown in Figure 2.&nbsp; The code 
+in the constructor is 
+straightforward and should not require further discussion.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+	<tr>
+		<td>
+		<pre>  ImgMod24(){//constructor
+    setLayout(new FlowLayout());
+
+    Label instructions = new Label(
+               "Number of convolutions/replot.");
+    add(instructions);
+
+    input = new TextField("1",5);
+    add(input);
+
+    setTitle("Copyright 2004, Baldwin");
+    setBounds(400,0,200,100);
+    setVisible(true);
+  }//end constructor
+
+<b><font face="Courier New,Courier">Listing 2</font></b></pre>
+		</td>
+	</tr>
+</table>
+&nbsp;</p>
+<font color="#FF0000"><b>The processImg method</b></font>&nbsp;
+<p>The <b>processImg</b> method, which is declared in the interface named <b>
+ImgInfc02</b>, begins in Listing 3.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+	<tr>
+		<td>
+		<pre>  public int[][][] processImg(
+                            int[][][] threeDPix,
+                            int imgRows,
+                            int imgCols){
+
+    System.out.println("\nWidth = " + imgCols);
+    System.out.println("Height = " + imgRows);
+
+    //Get numberConvolutions value from the
+    // TextField
+    numberConvolutions = Integer.parseInt(
+                                input.getText());
+
+<b><font face="Courier New,Courier">Listing 3</font></b></pre>
+		</td>
+	</tr>
+</table>
+<p>
+The <b>processImg</b> method applies the convolution filter to the incoming 3D 
+array of pixel data and returns a normalized filtered 3D array of pixel data. 
+The output array is normalized such that the peak output color value matches the 
+peak input color value.<p>The code in Listing 3 is straightforward and shouldn't 
+require further discussion.</p>
+<p><font color="#FF0000"><b>A working copy of the 3D data</b></font></p>
+<p>The code in Listing 4 makes a working copy of the incoming 3D array to avoid 
+making permanent changes to the original image data.&nbsp; It also gets and 
+saves the peak input color value for use in normalization later on.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+	<tr>
+		<td>
+		<pre>    int inputPeak = 0;
+    int colorValue = 0;
+    int[][][] working3D =
+                    new int[imgRows][imgCols][4];
+    for(int row = 0;row < imgRows;row++){
+      for(int col = 0;col < imgCols;col++){
+        working3D[row][col][0] =
+                          threeDPix[row][col][0];
+        colorValue = threeDPix[row][col][1];
+        working3D[row][col][1] = colorValue;
+        if(colorValue > inputPeak){
+          inputPeak = colorValue;
+        }//end if
+
+        colorValue = threeDPix[row][col][2];
+        working3D[row][col][2] = colorValue;
+        if(colorValue > inputPeak){
+          inputPeak = colorValue;
+        }//end if
+
+        colorValue = threeDPix[row][col][3];
+        working3D[row][col][3] = colorValue;
+        if(colorValue > inputPeak){
+          inputPeak = colorValue;
+        }//end if
+
+      }//end inner loop
+    }//end outer loop
+    System.out.println(
+                     "inputPeak = " + inputPeak);
+
+<b><font face="Courier New,Courier">Listing 4</font></b></pre>
+		</td>
+	</tr>
+</table>
+&nbsp;</p>
+<font color="#FF0000"><b>Miscellaneous preparation operations</b></font><p>The 
+code in Listing 5 creates an empty output array of the same size as the incoming 
+array.&nbsp; Then it copies all of the alpha or transparency values from the 
+input array to the output array.&nbsp; No processing is performed on the alpha 
+values.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+	<tr>
+		<td>
+		<pre>    //Create an empty output array of the same
+    // size as the incoming array.
+    int[][][] output =
+                    new int[imgRows][imgCols][4];
+
+    //Copy all alpha values from input to output.
+    for(int row = 0;row < imgRows;row++){
+      for(int col = 0;col < imgCols;col++){
+        output[row][col][0] =
+                          working3D[row][col][0];
+      }//end inner loop
+    }//end outer loop
+
+<b><font face="Courier New,Courier">Listing 5</font></b></pre>
+		</td>
+	</tr>
+</table>
+&nbsp;</p>
+<font color="#FF0000"><b>The convolution operation</b></font>&nbsp;
+<p>The convolution operation begins in Listing 6.&nbsp; This operation uses 
+three nested <b>for</b> loops to treat each pixel <i>(other than those along the edges 
+of the image)</i> as a registration point, and to perform the two-dimensional 
+convolution using a <i>shift-sum-scale</i> approach.&nbsp; There is no 
+multiplication required between convolution operator values and surface values.</p>
+<blockquote>
+	<p><i>(This algorithm is somewhat different from and probably more efficient than 
+the algorithm used in the program named <b>ImgMod12</b> to be discussed later in 
+this lesson.&nbsp; It is also simpler.&nbsp; However, this algorithm is also less flexible in terms of the 
+shapes of the convolution filters that can be applied.)</i></p>
+</blockquote>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+	<tr>
+		<td>
+		<pre>    //Perform the convolution one or more times
+    // in succession
+    for(int cnt = 0;
+                 cnt < numberConvolutions;cnt++){
+      try{
+        //Iterate on each pixel as a registration
+        // point.
+        for(int row = 0 + 1;row < imgRows - 2;
+                                          row++){
+          for(int col = 0 + 1;
+                        col < imgCols - 2;col++){
+
+<b><font face="Courier New,Courier">Listing 6</font></b></pre>
+		</td>
+	</tr>
+</table>
+</p>
+<p><font color="#FF0000"><b>The three nested for loops</b></font></p>
+<p>The convolution operation uses an outer loop to control the number of 
+times the convolution operator is successively applied to the image.</p>
+<p>The two inner loops iterate on the number of rows and the number of columns 
+contained in the image to perform one convolution pass.</p>
+<p>Listing 6 shows the setup code for the three nested <b>for</b> loops.</p>
+<p>
+<font color="#FF0000"><b>Calculate the red sum</b></font>&nbsp;
+<p>Figure 7 shows the calculation that is performed to calculate the red output 
+value for each input registration point during one convolution pass.&nbsp; Once again, note that there are 
+no multiplications required.&nbsp; This is because the values of all the 
+convolution operator coefficients are 1.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+	<tr>
+		<td>
+		<pre>            int redSum =
+                 working3D[row - 1][col - 1][1] +
+                 working3D[row - 1][col - 0][1] +
+                 working3D[row - 1][col + 1][1] +
+                 working3D[row - 0][col - 1][1] +
+                 working3D[row - 0][col - 0][1] +
+                 working3D[row - 0][col + 1][1] +
+                 working3D[row + 1][col - 1][1] +
+                 working3D[row + 1][col - 0][1] +
+                 working3D[row + 1][col + 1][1];
+
+<b><font face="Courier New,Courier">Listing 7</font></b></pre>
+		</td>
+	</tr>
+</table>
+&nbsp;</p>
+If you examine Listing 7 carefully, you will see that the calculation simply 
+involves adding the nine input values centered on the registration point to 
+produce the output value for that registration point.<p><font color="#FF0000">
+<b>Calculate the green and blue sums</b></font>&nbsp; </p>
+<p>Listing 22 near the end of the lesson shows two additional blocks of code, almost identical to the code 
+in Listing 7.&nbsp; These blocks of code are used to calculate the green and blue sums.&nbsp; Because 
+of the similarity of the code, I didn't include that code in this discussion of 
+code fragments.</p>
+<p><font color="#FF0000"><b>Store the sums in the output image</b></font></p>
+<p>The code in Listing 8 stores the red, green, and blue sums in the output 
+image for each registration point.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+	<tr>
+		<td>
+		<pre>            output[row][col][1] = redSum;
+            output[row][col][2] = greenSum;
+            output[row][col][3] = blueSum;
+
+          }//end for loop on col
+        }//end for loop on row
+
+      }catch(Exception e){
+        e.printStackTrace();
+      }//end catch
+
+<b><font face="Courier New,Courier">Listing 8</font></b></pre>
+		</td>
+	</tr>
+</table>
+&nbsp;</p>
+Listing 8 also shows the ends of the two inner <b>for</b> loops that iterate on 
+rows and columns.<p><font color="#FF0000"><b>Get output peak value for 
+normalization</b></font>&nbsp; </p>
+<p>The code in listing 9 scans the red, green, and blue color values in the 
+output image to get and save the peak color value.&nbsp; This value will be used 
+to normalize the output image to the same peak value as the input image.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+	<tr>
+		<td>
+		<pre>      int outputPeak = 0;
+      for(int row = 0;row < imgRows;row++){
+        for(int col = 0;col < imgCols;col++){
+          if(output[row][col][1] > outputPeak){
+            outputPeak = output[row][col][1];
+          }//end if
+          if(output[row][col][2] > outputPeak){
+            outputPeak = output[row][col][2];
+          }//end if
+          if(output[row][col][3] > outputPeak){
+            outputPeak = output[row][col][3];
+          }//end if
+        }//end inner loop
+      }//end outer loop
+      //System.out.println(
+      //           "outputPeak = " + outputPeak);
+
+<b><font face="Courier New,Courier">Listing 9</font></b></pre>
+		</td>
+	</tr>
+</table>
+&nbsp;</p>
+<font color="#FF0000"><b>Normalize the peak value</b></font>&nbsp;
+<p>The code in Listing 10 uses the two peak values that were saved earlier to 
+scale all of the values in the output image to make the peak color value in 
+the output image equal to the peak color value in the input image.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+	<tr>
+		<td>
+		<pre>      double outputScale =
+                  ((double)inputPeak)/outputPeak;
+      for(int row = 0;row < imgRows;row++){
+        for(int col = 0;col < imgCols;col++){
+          output[row][col][1] =
+             (int)(output[row][col][1]*
+                                    outputScale);
+          output[row][col][2] =
+             (int)(output[row][col][2]*
+                                    outputScale);
+          output[row][col][3] =
+             (int)(output[row][col][3]*
+                                    outputScale);
+        }//end inner loop
+      }//end outer loop
+
+<b><font face="Courier New,Courier">Listing 10</font></b></pre>
+		</td>
+	</tr>
+</table>
+&nbsp;</p>
+<font color="#FF0000"><b>Reprocess or return?</b></font><p>At this point, a 
+decision must be made to either loop back and apply the convolution 
+filter again to the previously processed data, or to return the processed data 
+to the program named <b>ImgMod02a</b>.</p>
+<p><font color="#FF0000"><b>Copy output data to input array</b></font></p>
+<p>In view of the possibility that it may be necessary to perform another 
+convolution pass on the processed data, the code in Listing 11 copies the processed normalized output color data 
+into the input working array.&nbsp; Then control returns to the top of the <b>
+for</b> loop where a decision is made to either process the data again, or to 
+break out of the loop and return to <b>ImgMod02a</b>.</p>
+<blockquote>
+	<p><i>(An improvement in structure could be made at this point to prevent 
+	the unnecessary copying of the data at the end of the final convolution pass.)</i></p>
+</blockquote>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+	<tr>
+		<td>
+		<pre>      for(int row = 0;row < imgRows;row++){
+        for(int col = 0;col < imgCols;col++){
+          working3D[row][col][1] =
+                            output[row][col][1];
+          working3D[row][col][2] =
+                            output[row][col][2];
+          working3D[row][col][3] =
+                            output[row][col][3];
+        }//end inner loop
+      }//end outer loop
+    }//end for loop on numberConvolutions
+
+<b><font face="Courier New,Courier">Listing 11</font></b></pre>
+		</td>
+	</tr>
+</table>
+&nbsp;</p>
+<font color="#FF0000"><b>Return the processed image</b></font>&nbsp;
+<p>Listing 12 shows the code that is executed when all the processing has been 
+completed and it is time to return the processed image to the program named <b>
+ImgMod02a</b> for display.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+	<tr>
+		<td>
+		<pre>    System.out.println("Processing Done");
+    return output;
+  }//end processImg method
+}//end class ImgMod24
+
+<b><font face="Courier New,Courier">Listing 12</font></b></pre>
+		</td>
+	</tr>
+</table>
+&nbsp;</p>
+Listing 12 also shows the end of the <b>processImg</b> method and the end of the
+<b>ImgMod24</b> class.<p><font color="#FF0000"><b>Some more image-processing 
+examples</b></font></p>
+<p>Before we finish our discussion of this program, let's look at a few more 
+image-processing examples.</p>
+<p>Figure 8 shows the result of making ten convolution passes on an image 
+containing a white square.&nbsp; This example clearly illustrates the manner in 
+which this processing technique softens the hard transitions between colors.</p>
+<div align="center">
+	<table bgcolor="#ccffff" border="1" cols="1">
+	<tr>
+		<td>
+		<pre><img border="0" src="java408f.jpg" width="113" height="154">
+</pre>
+		<pre><b>Figure 8 with 
+10 convolution
+passes</b></pre>
+		</td>
+	</tr>
+</table>
+</div>
+<p><font color="#FF0000"><b>Edge detection</b></font></p>
+<p>In a future lesson I will show you another convolution 
+technique that emphases rather than softens the edges of transitions between colors.&nbsp; 
+Convolution is used in both cases.&nbsp; The only difference is the convolution 
+operator that is used.</p>
+<p><font color="#FF0000"><b>A natural example</b></font></p>
+<p>Up to this point, all of the results that I have shown you have been based on 
+artificial images, so to speak.&nbsp; They were not images taken from nature.&nbsp; 
+Figure 9 shows the result of making ten convolution passes on an image taken 
+from a digital photograph at an aquarium.</p>
+<div align="center">
+	<table bgcolor="#ccffff" border="1" cols="1">
+	<tr>
+		<td>
+		<pre><img border="0" src="java408g.jpg" width="334" height="714">
+</pre>
+		<pre><b>Figure 9 with 10 convolutions</b></pre>
+		</td>
+	</tr>
+</table>
+</div>
+<p>Note that Figure 9 is not intended to improve the image.&nbsp; It is 
+intended simply to show you the result of convolution with this particular 
+operator.</p>
+<p><font color="#FF0000"><b>Application to text characters</b></font></p>
+<p>The application of a smoothing operator is most apparent for situations where 
+there are well-defined lines, such as in text.&nbsp; This is illustrated in 
+Figure 10, which shows the result of making only one convolution pass with the 
+flat 3x3 operator on an image containing text.</p>
+<div align="center">
+	<table bgcolor="#ccffff" border="1" cols="1">
+	<tr>
+		<td>
+		<pre><img border="0" src="java408h.jpg" width="339" height="740">
+</pre>
+		<pre><b>Figure 10 with one convolution of 9 points</b></pre>
+		</td>
+	</tr>
+</table>
+</div>
+<p>As you can see, this causes the transitions between colors to become less 
+well defined.&nbsp; This has the effect of blurring the characters and the lines.</p>
+<p><font color="#FF0000"><b>Additional blurring</b></font></p>
+<p>Figure 11 shows the result of making ten convolution passes on the same 
+image.&nbsp; As you can see, this caused the text to become almost totally 
+unreadable.</p>
+<div align="center">
+	<table bgcolor="#ccffff" border="1" cols="1">
+	<tr>
+		<td>
+		<pre><img border="0" src="java408i.jpg" width="339" height="740">
+</pre>
+		<pre><b>Figure 11 with 10 convolutions</b></pre>
+		</td>
+	</tr>
+</table>
+</div>
+<p><font color="#FF0000"><b>A different approach</b></font></p>
+<p>Next, I am going to discuss the program named <b>ImgMod12</b>, which uses a 
+completely different approach to the use of convolution for smoothing.&nbsp; 
+After discussing that program, I will show you some additional image-processing 
+examples and use them to compare the two approaches.</p>
+<p><font color="#FF0000"><b>One common situation</b></font></p>
+<p>There is one situation in which the two approaches are the same.&nbsp; 
+Making a single convolution pass with <b>ImageMod24</b> is equivalent to 
+processing with <b>ImgMod12</b> using a 3x3 convolution operator.&nbsp; This is 
+the situation illustrated in Figure 10.&nbsp; </p>
+<p>Making ten 
+convolution passes using <b>ImgMod24</b> is roughly equivalent to using a 
+Gaussian filter with a nearly round footprint about fifteen pixels in diameter
+<i>(see Figure 7).</i></p>
+<p><font color="#FF0000"><b>The program named ImgMod12</b></font></p>
+<p>The program named <b>ImgMod12</b> applies a flat convolution filter to 
+an input image.&nbsp; The user is allowed to control the size and to some 
+extent, the 2D shape of the filter, but it is always flat regardless of user 
+input.&nbsp; Because of the additional requirement for control code to 
+accommodate the user input, the code is more complex than the code in 
+the previously-discussed program named <b>ImgMod24.</b></p>
+<p><font color="#FF0000"><b>Sample output from ImgMod12</b></font></p>
+<p>Figure 12 shows the output from this program for the one case where the 
+behavior of this program matches the behavior of the program named<b> ImgMod24</b>.&nbsp; 
+This is the case where both programs apply a square 3x3 flat filter.&nbsp; This 
+is the startup case for <b>ImgMod24</b> and is one of the selectable cases for 
+ImgMod12.</p>
+<table bgcolor="#ccffff" border="1" cols="1" align="center">
+	<tr>
+		<td>
+			<pre><img border="0" src="java408j.jpg" width="339" height="740">
+</pre></div>
+			<pre><b>Figure 12</b></pre></div>
+		</td>
+	</tr>
+</table>
+<p align="left">The 
+bottom image in Figure 12 should compare favorably with the bottom image in 
+Figure 10, which was produced by the program named <b>ImgMod24</b>.</p>
+<p><font color="#FF0000"><b>The interactive control panel for ImgMod12</b></font></p>
+<p>Figure 13 shows the interactive control panel for <b>ImgMod12</b>, which allows the 
+user to specify the area in sample points for the flat convolution filter that is 
+to be applied to the input image.</p>
+<table bgcolor="#ccffff" border="1" cols="1" align="center">
+	<tr>
+		<td>
+		<pre><img border="0" src="java408k.jpg" width="201" height="101">
+</pre>
+		</div>
+		<div align="left">
+		<pre><b>Figure 13</b></pre>
+		</td>
+	</tr>
+</table>
+<p><font color="#FF0000"><b>Runs under control of ImgMod02a</b></font></p>
+<p>The program named<b> ImgMod12 </b>is designed to be driven by the program named 
+<b>ImgMod02a</b>.&nbsp; Enter the 
+following at the command line prompt to run this program:</p>
+<pre><b>java ImgMod02a ImgMod12 ImageFileName</b></pre>
+<p>This program illustrates the use of area 
+convolution filtering to blur or soften an image.&nbsp; </p>
+<p><font color="#FF0000"><b>Display format</b></font></p>
+<p>The program displays two frames on the 
+screen.&nbsp; The large frame on the left shows the original image at the top and the 
+filtered image at the bottom.&nbsp; That frame has a button labeled <b>Replot</b> at the very 
+bottom.</p>
+<p>The small frame on the right is the interactive control pane shown in Figure 
+13.&nbsp; It contains a <b>TextField</b> for user input.</p>
+<p><font color="#FF0000"><b>Interactive control panel</b></font></p>
+<p>When the 
+program starts running, this <b>TextField</b> displays the size of the default convolution area in pixels.&nbsp; To modify the convolution area, type an 
+integer value into the <b>TextField</b> and click the <b>Replot</b> button.&nbsp; The new filter will be 
+applied to the image and the filtered image will be displayed.</p>
+<p><font color="#FF0000"><b>Shape and size of convolution filters</b></font></p>
+<p>The program 
+supports non-square convolution area values of 1, 2, 3, 4, 6, and 8 
+pixels.&nbsp; The shape of the convolution area is shown as a grid of X characters on 
+the screen.&nbsp; Area values of 0, 5, and 7 are not supported.</p>
+<p>In addition, the 
+program supports all area values that are perfect squares beginning with an 
+area value of 4 pixels.&nbsp; For area values greater than 9, the value entered 
+by the user is automatically rounded to the nearest perfect square before 
+processing takes place.&nbsp; For example, if the user enters 10, the actual area used for 
+convolution will be a square with 3 pixels on each side.&nbsp; If the user enters 15, 
+the area used for convolution will be a square with 4 pixels on each side.&nbsp; The 
+convolution operator is a box with each coefficient having a value of 
+1.<i>&nbsp; (See discussion of normalization later.)</i></p>
+<p><font color="#FF0000"><b>Mechanics of convolution</b></font></p>
+<p>This is a low-pass filter that 
+suppresses high frequency changes in color values.&nbsp; The red, green, and 
+blue color surfaces are treated separately.&nbsp; The program adds all of the pixel values 
+for each color within the area covered by the filter and uses that value to 
+produce an output point.&nbsp; Then the program moves to the next 
+registration point and adds the pixel values that are contained in the area 
+there.</p>
+<p><font color="#FF0000"><b>Special treatment at the edges</b></font></p>
+<p>Every 
+pixel, except those in the outer edges of the image, is used as a registration 
+point.</p>
+<blockquote>
+	<p><i>(The pixels around the outer edges are not used as registration points 
+because that would cause the convolution area to extend outside the color 
+	surface)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Normalization</b></font></p>
+<p>Once 
+the convolution process is finished, the output data is normalized such that the 
+peak color value in the output matches the peak color value in the input.&nbsp; This may, 
+or may not be appropriate depending on the circumstances.&nbsp; However, it does 
+preserve the dynamic range of the display.</p>
+<p><font color="#FF0000"><b>The visual effect</b></font></p>
+<p>The visual effect of applying this 
+filter is to cause the image to go increasingly out of focus as the size of the 
+area is increased.&nbsp; The effect is most obvious with images that have well defined 
+lines such as text characters.</p>
+<p><font color="#FF0000"><b>Transparency is preserved</b></font></p>
+<p>The transparency or alpha value of each pixel 
+is preserved.&nbsp; If you don't see what you expect to see when you run this program 
+with a particular image, it may be because your image contains transparent 
+areas.&nbsp; This will be evidenced by the yellow background color of the canvas 
+showing through the image.</p>
+<p><font color="#FF0000"><b>Testing</b></font></p>
+<p>The program was tested using SDK 1.4.2 and WinXP.</p>
+<p><font color="#FF0000"><b>Will discuss in fragments</b></font></p>
+<p>I will break the program named <b>ImgMod12</b> down and discuss it in 
+fragments.&nbsp; Listing 13 shows the beginning of the class and the 
+constructor.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+	<tr>
+		<td>
+		<pre>class ImgMod12 extends Frame implements
+                                      ImgIntfc02{
+
+  int area;//The area value in pixels
+  String inputData;//Obtained via the TextField
+  TextField input;//User input field
+
+  ImgMod12(){//constructor
+    setLayout(new FlowLayout());
+
+    Label instructions = new Label(
+               "Type an area value and replot.");
+    add(instructions);
+
+    input = new TextField("2",5);
+    add(input);
+
+    setTitle("Copyright 2004, Baldwin");
+    setBounds(400,0,200,100);
+    setVisible(true);
+  }//end constructor
+
+<b><font face="Courier New,Courier">Listing 13</font></b></pre>
+		</td>
+	</tr>
+</table>
+&nbsp;</p>
+Once again, note that the class implements the interface named<b> ImgIntfc02</b> 
+requiring the class to define the method named <b>processImg</b>.<p>The 
+constructor simply creates the user input panel shown in Figure 13.</p>
+<p><font color="#FF0000"><b>The processImg method</b></font></p>
+<p>The <b>processImg</b> method begins in Listing 14.&nbsp; This method applies 
+the convolution filter to the incoming 3D array of pixel data and returns a 
+filtered 3D array of pixel data.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+	<tr>
+		<td>
+		<pre>  public int[][][] processImg(
+                            int[][][] threeDPix,
+                            int imgRows,
+                            int imgCols){
+
+    System.out.println("\nWidth = " + imgCols);
+    System.out.println("Height = " + imgRows);
+
+    //Get area value from the TextField
+    area = Integer.parseInt(input.getText());
+
+    //Create an empty output array of the same
+    // size as the incoming array.
+    int[][][] output =
+                    new int[imgRows][imgCols][4];
+
+    //Make a working copy of the 3D array to
+    // avoid making permanent changes to the
+    // original image data.  Get and save the
+    // maximum value along the way.
+    int inputPeak = 0;
+    int colorValue = 0;
+    int[][][] working3D =
+                    new int[imgRows][imgCols][4];
+    for(int row = 0;row < imgRows;row++){
+      for(int col = 0;col < imgCols;col++){
+        working3D[row][col][0] =
+                          threeDPix[row][col][0];
+        colorValue = threeDPix[row][col][1];
+        working3D[row][col][1] = colorValue;
+        if(colorValue > inputPeak){
+          inputPeak = colorValue;
+        }//end if
+
+        colorValue = threeDPix[row][col][2];
+        working3D[row][col][2] = colorValue;
+        if(colorValue > inputPeak){
+          inputPeak = colorValue;
+        }//end if
+
+        colorValue = threeDPix[row][col][3];
+        working3D[row][col][3] = colorValue;
+        if(colorValue > inputPeak){
+          inputPeak = colorValue;
+        }//end if
+
+      }//end inner loop
+    }//end outer loop
+    System.out.println(
+                     "inputPeak = " + inputPeak);
+
+    //Copy all alpha values from input to output.
+    for(int row = 0;row < imgRows;row++){
+      for(int col = 0;col < imgCols;col++){
+        output[row][col][0] =
+                          working3D[row][col][0];
+      }//end inner loop
+    }//end outer loop
+
+<b><font face="Courier New,Courier">Listing 14</font></b></pre>
+		</td>
+	</tr>
+</table>
+&nbsp;</p>
+The code in Listing 14 is very similar to the code discussed earlier for the 
+program named <b>ImgMod24</b>, so there should be no need to repeat that 
+discussion here.<p><font color="#FF0000"><b>Accumulators</b></font>&nbsp;
+&nbsp;</p>
+<p>Listing 15 declares three variables that are used to accumulate the products 
+of the pixel values and the convolution filter coefficients</p>
+<blockquote>
+	<p><i>(Note however 
+that because the values of all of the convolution filter coefficients are 1, no 
+actual multiplication is required.&nbsp; The program would probably run much 
+more slowly if it were actually necessary to multiply the pixel values by the 
+filter coefficients.)</i></p>
+</blockquote>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+	<tr>
+		<td>
+		<pre>    int redSum = 0;
+    int greenSum = 0;
+    int blueSum = 0;
+
+<b><font face="Courier New,Courier">Listing 15</font></b></pre>
+		</td>
+	</tr>
+</table>
+&nbsp;</p>
+<font color="#FF0000"><b>Control variables</b></font>&nbsp;
+<p>Listing 16 declares a large number of variables that are used for control 
+purposes while performing the convolution operation.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+	<tr>
+		<td>
+		<pre>    int rowNo = 0;
+    int colNo = 0;
+    int row = 0;
+    int col = 0;
+    int firstRow = 0;
+    int lastRow = 0;
+    int firstCol = 0;
+    int lastCol = 0;
+    int minusRow = 0;
+    int plusRow = 0;
+    int minusCol = 0;
+    int plusCol = 0;
+
+<b><font face="Courier New,Courier">Listing 16</font></b></pre>
+		</td>
+	</tr>
+</table>
+&nbsp;</p>
+<font color="#FF0000"><b>Setting the control variables</b></font>&nbsp;
+<p>Listing 17 contains a <b>switch</b> statement that is used to set the control 
+variables listed above for area values of 1, 2, 3, 4, 6, and 8 on an individual 
+area basis.&nbsp; Area values of 5 and 7 are not supported.&nbsp; Area values of 
+9 and greater default to the nearest perfect square, such as 9, 16, 25, 36, etc.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+	<tr>
+		<td>
+		<pre>    switch(area){
+      case 0:
+        System.out.println(
+                   "Area value 0 not supported");
+        break;
+      case 1://A single pixel reproduces image
+        firstRow = 0;
+        lastRow = imgRows;
+        firstCol = 0;
+        lastCol = imgCols;
+        minusRow = 0;
+        plusRow = 0;
+        minusCol = 0;
+        plusCol = 0;
+      break;
+      case 2://Two pixels in a row
+        firstRow = 0;
+        lastRow = imgRows;
+        firstCol = 1;
+        lastCol = imgCols;
+        minusRow = 0;
+        plusRow = 0;
+        minusCol = 1;
+        plusCol = 0;
+      break;
+      case 3://Three pixels in a row
+        firstRow = 0;
+        lastRow = imgRows;
+        firstCol = 1;
+        lastCol = imgCols - 1;
+        minusRow = 0;
+        plusRow = 0;
+        minusCol = 1;
+        plusCol = 1;
+      break;
+      case 4://Four pixels in a square
+        firstRow = 1;
+        lastRow = imgRows;
+        firstCol = 1;
+        lastCol = imgCols;
+        minusRow = 1;
+        plusRow = 0;
+        minusCol = 1;
+        plusCol = 0;
+      break;
+      case 5:
+        System.out.println(
+                   "Area value 5 not supported");
+      break;
+      case 6://Two rows of 3 pixels
+        firstRow = 1;
+        lastRow = imgRows;
+        firstCol = 1;
+        lastCol = imgCols - 1;
+        minusRow = 1;
+        plusRow = 0;
+        minusCol = 1;
+        plusCol = 1;
+      break;
+      case 7:
+        System.out.println(
+                   "Area value 7 not supported");
+      break;
+      case 8://Two rows of 4
+        firstRow = 1;
+        lastRow = imgRows;
+        firstCol = 2;
+        lastCol = imgCols - 1;
+        minusRow = 1;
+        plusRow = 0;
+        minusCol = 2;
+        plusCol = 1;
+      break;
+      //Default to nearest perfect square for
+      // area values greater than 8.
+      default:
+        //Get the side of the square area,
+        // rounded to the nearest square.
+        double dSide = Math.sqrt(area);
+        int side = (int)Math.round(dSide);
+
+        //Set the area value to the nearest
+        // perfect square.  This is necessary
+        // because it is used to scale the
+        // accumulated values later.
+        area = side*side;
+
+        //Because a square area with an even
+        // number of pixels on a side doesn't
+        // have a pixel at the center, it must
+        // be treated differently from a square
+        // area with an odd number of pixels on a
+        // side.  For the even case, the area
+        // above and to the left of the
+        // registration point is slightly greater
+        // than the area below and to the right.
+        if(side%2 == 0){//side is even
+          firstRow = side/2;
+          lastRow = imgRows - side/2 + 1;
+          firstCol = side/2;
+          lastCol = imgCols - side/2 + 1;
+          minusRow = side/2;
+          plusRow = side/2 - 1;
+          minusCol = side/2;
+          plusCol = side/2 -1;
+        }else{//side is odd
+          firstRow = side/2;
+          lastRow = imgRows - side/2;
+          firstCol = side/2;
+          lastCol = imgCols - side/2;
+          minusRow = side/2;
+          plusRow = side/2;
+          minusCol = side/2;
+          plusCol = side/2;
+        }//end else
+    }//end switch statement
+
+<b><font face="Courier New,Courier">Listing 17</font></b></pre>
+		</td>
+	</tr>
+</table>
+&nbsp;</p>
+The comments in Listing 17 should be sufficient to make the code 
+self-explanatory.<p><font color="#FF0000"><b>Perform the convolution</b></font>&nbsp; </p>
+<p>The code in Listing 18 uses nested <b>for</b> loops to treat each pixel <i>(other than those along the edges of the image)</i> as registration points and to perform the two-dimensional convolution 
+based on those registration points.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+	<tr>
+		<td>
+		<pre>
+    try{
+      //First iterate on each pixel as a
+      // registration point.
+      for(row = firstRow;row < lastRow;row++){
+        for(col = firstCol;col < lastCol;col++){
+
+          //Now use the registration point as a
+          // base and iterate on the pixels
+          // contained within the area covered by
+          // the convolution filter.  Display a
+          // grid of X characters on the screen
+          // showing the shape of the area
+          // covered by the convolution filter.
+          // Display the grid only once while
+          // processing the first registration
+          // point.
+          for(rowNo = row - minusRow;
+                 rowNo <= row + plusRow;rowNo++){
+
+            //Start a new line in the grid of X
+            // characters.
+            if((row == firstRow)
+                           && (col == firstCol)){
+              System.out.println();
+            }//end if
+
+            for(colNo = col - minusCol;
+                 colNo <= col + plusCol;colNo++){
+
+              //Display the next X in the grid of
+              // X characters.
+              if((row == firstRow)
+                           && (col == firstCol)){
+                System.out.print("X");
+              }//end if
+
+              //Accumulate the pixel values
+              // multiplied by the coefficient
+              // values in the convolution
+              // filter.  Note that all
+              // coefficients have a value of 1.
+              // The accumulated value will later
+              // be divided by the area, causing
+              // the effective values of the
+              // coefficients to be the
+              // reciprocal of the area.
+              redSum +=
+                      working3D[rowNo][colNo][1];
+              greenSum +=
+                      working3D[rowNo][colNo][2];
+              blueSum +=
+                      working3D[rowNo][colNo][3];
+            }//end for loop on y
+          }//end for loop on x
+
+          //Store the accumlator values in the
+          // output array.
+          output[row][col][1] = redSum;
+          output[row][col][2] = greenSum;
+          output[row][col][3] = blueSum;
+
+          //Clear the accumulators in preparation
+          // for processing the next registration
+          // point.
+          redSum = 0;
+          greenSum = 0;
+          blueSum = 0;
+
+        }//end for loop on col
+      }//end for loop on row
+
+    }catch(Exception e){
+      e.printStackTrace();
+    }//end catch
+
+<b><font face="Courier New,Courier">Listing 18</font></b></pre>
+		</td>
+	</tr>
+</table>
+&nbsp;</p>
+As you can see, the code in Listing 18 is much more complex than the code that 
+performs the convolution for the program named <b>ImgMod24</b>.&nbsp; This 
+increased complexity results from the fact that this program is much more 
+flexible in terms of the size and shape of the convolution filter.<p>
+<font color="#FF0000"><b>Normalize the data and return</b></font>&nbsp;
+</p>
+<p>The code in Listing 19 normalizes the output data to cause the peak color 
+value in the output to match the peak color value in the input.&nbsp; Then the 
+method returns the output data to the program named <b>ImgMod02a</b> for 
+display.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+	<tr>
+		<td>
+		<pre>    //Normalize output peak value to match
+    // input peak value.
+    //First get output peak value
+    int outputPeak = 0;
+    for(row = 0;row < imgRows;row++){
+      for(col = 0;col < imgCols;col++){
+        if(output[row][col][1] > outputPeak){
+          outputPeak = output[row][col][1];
+        }//end if
+        if(output[row][col][2] > outputPeak){
+          outputPeak = output[row][col][2];
+        }//end if
+        if(output[row][col][3] > outputPeak){
+          outputPeak = output[row][col][3];
+        }//end if
+      }//end inner loop
+    }//end outer loop
+
+    //Normalize to peak value
+    double outputScale =
+                ((double)inputPeak)/outputPeak;
+    for(row = 0;row < imgRows;row++){
+      for(col = 0;col < imgCols;col++){
+        output[row][col][1] =
+           (int)(output[row][col][1]*
+                                  outputScale);
+        output[row][col][2] =
+           (int)(output[row][col][2]*
+                                  outputScale);
+        output[row][col][3] =
+           (int)(output[row][col][3]*
+                                  outputScale);
+      }//end inner loop
+    }//end outer loop
+
+    //Return a reference to the array containing
+    // the filtered pixels.
+    return output;
+  }//end processImg method
+}//end class ImgMod12
+
+<b><font face="Courier New,Courier">Listing 19</font></b></pre>
+		</td>
+	</tr>
+</table>
+&nbsp;</p>
+The code in Listing 19 is very similar to the corresponding code discussed 
+earlier for the program named <b>ImgMod24</b>.&nbsp; Therefore, I won't discuss 
+it further here.<p>Note that Listing 19 also signals the end of the <b>processImg</b> 
+method and the end of the<b> ImgMod12</b> class.<b> </b></p>
+<p><font color="#FF0000"><b>Some more examples from ImgMod12</b></font></p>
+<p>Let's look at the output from some more examples.&nbsp; First consider the 
+output shown in Figure 14 and compare it with the output from the program named
+<b>ImgMod24 </b>shown earlier in Figure 5.</p>
+<table bgcolor="#ccffff" border="1" cols="1" align="center">
+	<tr>
+		<td>
+		<pre><img border="0" src="java408m.jpg" width="113" height="116">
+</pre>
+		<pre><b>Figure 14</b></pre>
+		</td>
+	</tr>
+</table>
+<p>These two figures compare the impulse responses of the two convolution 
+processes for convolution filters having approximately the same area.</p>
+<p><font color="#FF0000"><b>The areas of the two filters</b></font></p>
+<p>If you consider the footprint of the Gaussian filter shown in Figure 7 to be 
+a perfect circle, the area of the circle is approximately 176 pixels.&nbsp; The 
+output shown in Figure 14 was produced by specifying a 2D convolution area for
+<b>ImgMod12</b> to be 169 pixels.&nbsp; In particular, this is a square flat 
+convolution filter that is 13 pixels on each side.</p>
+<p><font color="#FF0000"><b>Contribution from pixels some distance from the 
+center</b></font></p>
+<p>For the Gaussian filter, the output produced for each registration point 
+consists of the value at the registration point plus a decreasing contribution 
+from pixels located within the nearly round footprint but at greater distances from the 
+registration point.</p>
+<p>For the flat filter used in <b>ImgMod12</b>, the output value for a given 
+registration point consists of equal contributions of all the pixels contained 
+within the rectangular or square footprint.&nbsp; Thus, for footprints of approximately the same area, 
+the flat filter used in <b>ImgMod12</b> is a much harsher filter than the filter 
+in <b>ImgMod24</b> that decays with distance from the center.</p>
+<p><font color="#FF0000"><b>A much harsher filter</b></font></p>
+<p>The fact that the filter in <b>ImgMod12</b> is much harsher for the same 
+footprint area can be illustrated by comparing Figure 15 with Figure 9.&nbsp; 
+Figure 9 was produced by <b>ImgMod24</b> and Figure 15 was produced by <b>
+ImgMod12</b>.</p>
+<table bgcolor="#ccffff" border="1" cols="1" align="center">
+	<tr>
+		<td>
+		<pre><img border="0" src="java408n.jpg" width="334" height="714">
+</pre>
+		<pre><b>Figure 15</b></pre>
+		</td>
+	</tr>
+</table>
+	<p>The total area encompassed by the footprints of the two filters was 
+approximately the same <i>(169 for ImgMod12 and 176 for ImgMod24).</i>&nbsp; 
+However, the blurring in Figure 15 was much more substantial than in Figure 9.</p>
+	<p><font color="#FF0000"><b>Neither good nor bad</b></font></p>
+<p>This is not intended to indicate that one approach is better than the 
+	other.&nbsp; It is simply intended to show that the two approaches produce 
+	different results for the same total area encompassed within the footprint 
+	of the convolution filter.&nbsp; If your needs are such that you would 
+	prefer that the contribution of the pixels <i>(to the output)</i> decrease 
+	with distance from the registration point, then the Gaussian approach is 
+	probably best.&nbsp; On the other hand, if you need an equal contribution 
+	from all the pixels within the footprint, then the flat filter is probably best.</p>
+	<h2 align="center"><a name="Interpretation_of_Results">Interpretation of 
+Results</a></h2>
+<p>The convolution process always produces an output sample as a 
+weighted summation of input samples.&nbsp; The shape of the convolution 
+operator along with the values of the individual coefficients in the convolution 
+operator determine which input samples will be used to produce the output 
+sample, and how they will be weighted in the output.&nbsp; Different convolution 
+operators can produce decidedly different results.</p>
+<p><font color="#FF0000"><b>A low-pass filter</b></font></p>
+<p>In DSP terms, the convolution filters used in this lesson are what we would 
+call low-pass filters.&nbsp; That is, they suppress high-frequency components 
+and preserve low-frequency components.&nbsp; </p>
+	<p>In order for an image to exhibit rapid changes in color, the color values in 
+	the image must 
+	include high-frequency components.&nbsp; Suppressing those high-frequency components causes 
+the transitions between colors to be spread across more pixels, thus producing 
+the softening or blurring of the images that you have seen in the examples in 
+	this lesson.</p>
+<p>In future lessons, I will show you what happens to your image when you use a 
+convolution filter that preserves high-frequency components and suppresses 
+low-frequency components.&nbsp; In general, this will result in sharpening the 
+image, and in the extreme case, causing the edges between color transitions to 
+become very prominent.</p>
+<h2 align="center"><a name="Run_the_Programs">Run the Program</a></h2>
+<p>I encourage you to copy, compile and run the following programs that are 
+provided in this lesson:</p>
+<ul>
+	<li>ImgMaker01</li>
+	<li>ImgMaker02</li>
+	<li>ImgMod12</li>
+	<li>ImgMod24</li>
+</ul>
+<p>Experiment with them, making changes and observing the results of your changes.</p>
+<blockquote>
+	<p><i>(Remember, you will also need to copy the program named <b>ImgMod02a</b> 
+	and the interface named <b>ImgIntfc02</b> from the earlier lessons entitled 
+	<a href="http://www.developer.com/java/other/article.php/3441391">Processing 
+	Image Pixels Using Java: Controlling Contrast and Brightness</a> and <a href="http://www.developer.com/java/other/article.php/3403921">
+	Processing Image Pixels using Java, Getting Started</a>.)</i></p>
+</blockquote>
+	<p><font color="#FF0000"><b>Test images</b></font></p>
+	<p>To replicate the output images shown in this lesson, you will need to use 
+	the same images as input.&nbsp; Some of those images can be created by 
+	running the programs named <b>ImgMaker01</b> and <b>ImgMaker02</b>.</p>
+	<p>The other images are provided below.&nbsp; Simply right-click on each of 
+	the images in Figures 16, 17, and 18, and save them on your disk.&nbsp; Then 
+	use them as input to the programs named <b>ImgMod12</b> and <b>ImgMod24</b>.</p>
+	<div align="center">
+		<table bgcolor="#ccffff" border="1" cols="1">
+	<tr>
+		<td>
+		<pre><img border="0" src="java408p.gif" width="104" height="125">
+</pre>
+		<pre><b>Figure 16</b></pre>
+		</td>
+	</tr>
+</table>
+	</div>
+&nbsp;<div align="center">
+	<table bgcolor="#ccffff" border="1" cols="1">
+	<tr>
+		<td>
+		<pre><img border="0" src="java408q.jpg" width="324" height="330">
+</pre>
+		<pre><b>Figure 17</b></pre>
+		</td>
+	</tr>
+</table>
+	</div>
+&nbsp;<div align="center">
+	<table bgcolor="#ccffff" border="1" cols="1">
+	<tr>
+		<td>
+		<pre><img border="0" src="java408r.gif" width="329" height="343">
+</pre>
+		<pre><b>Figure 18</b></pre>
+		</td>
+	</tr>
+</table>
+	</div>
+<p><font color="#FF0000"><b>Modify a variety of images</b></font></p>
+<p>If you search the Internet, you should be able to find lots of images that 
+you can download and experiment with.&nbsp; Just remember, as explained in the 
+lesson entitled 
+<a href="http://www.developer.com/java/other/article.php/3441391">Processing 
+Image Pixels Using Java: Controlling Contrast and Brightness</a>, if you download a gif 
+image, it will probably contain a lot less color information than a comparable 
+jpg image.</p>
+<p><font color="#ff0000"><b>Have fun and learn</b></font></p>
+<p>Above all, have fun and use these programs to learn as much as you can about 
+manipulating images by modifying image pixels using Java.</p>
+<h2 align="center"><a name="Summary">Summary</a></h2>
+<p>In this lesson, I showed you how to write programs that produce highly 
+specialized jpg image 
+files containing images that are very useful for testing image-processing 
+programs.</p>
+<p>I also showed you two different ways to perform convolution on an image to 
+provide varying degrees of smoothing or blurring.</p>
+<h2 align="center"><a name="Whats Next">What's Next?</a></h2>
+<p>Future lessons will show you how to write image-processing programs that 
+implement many common special effects as well as a few that aren't so common.&nbsp; 
+This will include programs to do the following:</p>
+<ul>
+	<li>Deal with the effects of noise in an image.</li>
+	<li>Sharpen all or part of an image.</li>
+	<li>Perform edge detection on an image.</li>
+	<li>Morph one image into another image.</li>
+	<li>Rotate an image.</li>
+	<li>Change the size of an image.</li>
+	<li>Create a kaleidoscope of an image.</li>
+	<li>Create a 3D or embossed effect with an image.</li>
+	<li>Other special effects that I may dream up or discover while doing the 
+	background research for the lessons in this series.</li>
+</ul>
+<h2 align="center"><a name="Complete_Program_Listings">Complete Program Listings</a></h2><p>
+Complete listings of the programs discussed in this lesson are provided in 
+Listing 20 through Listing 23.&nbsp; In order to use these programs, you will 
+also need copies of the program named <b>ImgMod02a</b> 
+	and the interface named <b>ImgIntfc02</b> from the earlier lessons entitled 
+	<a href="http://www.developer.com/java/other/article.php/3441391">Processing 
+Image Pixels Using Java: Controlling Contrast and Brightness</a> and 
+	<a href="http://www.developer.com/java/other/article.php/3403921">
+	Processing Image Pixels using Java, Getting Started</a>.</p>
+<p><font color="#FF0000"><b>A disclaimer</b></font></p>
+<p>The programs that I am providing and explaining in this series of lessons are 
+not intended to be used for high-volume production work.&nbsp; Numerous 
+integrated image-processing programs are available for that purpose.&nbsp; In 
+addition, the Java Advanced Imaging API <i>(JAI)</i> has a number of built-in special effects if you prefer to write 
+your own production image-processing programs using Java.</p>
+<p>The programs that I am providing in this series are intended to 
+make it easier for you to develop and experiment with image-processing algorithms and 
+to gain a better understanding of how they work, and why they do what they do.</p>
+<table border="1" cols="1" width="400" bgcolor="#FFFF00">
+<tbody>
+<tr>
+<td>                     
+<pre>
+/*File ImgMaker01.java
+Copyright 2004, R.G.Baldwin
+
+The purpose of this program is to write an output
+jpg file named junk.jpg containing a white square
+centered in a square black image.  The length of
+the sides of the image and the length of the
+sides of the white square are provided by the
+user as command line parameters.  If the user
+doesn't provide these values, the default size of
+the image is 31 pixels on each side and the
+default size of the white square is 9 pixels.
+
+The output image files produced by this program
+are very useful for testing and illustrating the
+effects of 2D convolution.
+
+Usage:
+java ImageMaker01 ImageSize SquareSize
+where:
+ImageSize is the number of pixels on the side of
+  the square image.
+SquareSize is the number of pixels on the side of
+  the white square centered in the image.
+
+The red,green, and blue values of the pixels in
+the white square are all 255.  The value of the
+alpha byte for all pixels is set to 255. (See
+later note regarding the writing of the jpg
+file.)
+
+All red, green, and blue pixel values outside the
+white square are zero.  Note, however, that when
+these values are written into the jpg file and
+later read into another program, some of the
+values may be found to exhibit small errors.
+Apparently this is the result of encoding and
+later decoding the data in the jpg file.
+
+The program writes the image into a file named
+junk.jpg.  Note that this program can't handle
+alpha bytes with different values when writing
+the file.  Rather, it writes the three color
+bytes into the output file, apparently setting
+the alpha byte to 255.
+
+This file writing capability is based on
+information obtained from the following web
+sites:
+https://jaistuff.dev.java.net/data.html
+https://jaistuff.dev.java.net/Code/data/
+  CreateRGBImage.java
+
+The program stores the pixel data for the white
+square into a 3D array of type:
+
+int[row][column][depth].
+
+The first two dimensions of the array correspond
+to the rows and columns of pixels in the image.
+The third dimension always has a value of 4 and
+contains the following values by index value:
+
+0 alpha (not set within the program)
+1 red
+2 green
+3 blue
+
+Note that these values are stored as type int
+rather than type unsigned byte which is the
+format of pixel data in the an image.  The values
+are converted to type unsigned byte during the
+writing of the jpg file.
+
+Tested using SDK 1.4.2 under WinXP.
+************************************************/
+
+import java.awt.*;
+import java.awt.image.*;
+import javax.media.jai.*;
+
+class ImgMaker01 extends Frame{
+
+  public static void main(String[] args){
+    int imgCols = 31;//default values
+    int imgRows = 31;
+    int whiteSquareSize = 9;
+
+    if(args.length == 2){
+      //Get size of image and size of white
+      // square from command-line args.
+      imgCols = Integer.parseInt(args[0]);
+      imgRows = imgCols;
+      whiteSquareSize =
+                       Integer.parseInt(args[1]);
+    }//end else
+    int[][][] threeDPix = createThreeDImage(
+                imgCols,imgRows,whiteSquareSize);
+    writeImageFile(threeDPix,imgCols,imgRows);
+  }//end main
+  //-------------------------------------------//
+
+  static int[][][] createThreeDImage(
+                            int imgCols,
+                            int imgRows,
+                            int whiteSquareSize){
+    int[][][] temp3D =
+                    new int[imgRows][imgCols][4];
+
+    for(int col = imgCols/2 - whiteSquareSize/2;
+            col < imgCols/2 + whiteSquareSize/2;
+            col++){
+      for(
+         int row = imgRows/2 - whiteSquareSize/2;
+         row < imgRows/2 + whiteSquareSize/2;
+         row++){
+        //Set values for red, green, and blue
+        // colors in the white square.
+        temp3D[row][col][1] = 255;//red
+        temp3D[row][col][2] = 255;//green
+        temp3D[row][col][3] = 255;//blue
+      }//end inner for loop
+    }//end outer for loop
+
+    //Return the array of image data.
+    return temp3D;
+  }//end createThreeDImage
+  //-------------------------------------------//
+
+
+  /*Write the image to a file named junk.jpg.
+    Note that this program can't handle the alpha
+    byte when writing the file.  Rather, the
+    program only writes the three color bytes
+    into the output file, apparently setting the
+    alpha byte to 255. This file writing
+    capability is based on information at:
+    https://jaistuff.dev.java.net/data.html and
+    https://jaistuff.dev.java.net/Code/data/
+      CreateRGBImage.java
+  */
+  static void writeImageFile(int[][][] threeDPix,
+                             int imgCols,
+                             int imgRows){
+    byte[] imageDataBytes = new byte[
+                              imgCols*imgRows*3];
+    int count = 0;
+
+    for(int h = 0;h < imgRows;h++)
+      for(int w = 0;w < imgCols;w++){
+        //Rearrange the data into a one-
+        // dimensional array of type byte. Note
+        // that this array does not contain alpha
+        // byte values.
+        imageDataBytes[count+0] =
+                        (byte)threeDPix[h][w][3];
+        imageDataBytes[count+1] =
+                        (byte)threeDPix[h][w][2];
+        imageDataBytes[count+2] =
+                        (byte)threeDPix[h][w][1];
+        count += 3;
+      }//end for loop
+
+    // Create a Data Buffer from the values in
+    // the single image array.
+    DataBufferByte dbuffer = new DataBufferByte(
+               imageDataBytes,imgCols*imgRows*3);
+
+    // Create a pixel-interleaved data sample
+    // model.
+    SampleModel sampleModel =
+       RasterFactory.
+         createPixelInterleavedSampleModel(
+                            DataBuffer.TYPE_BYTE,
+                            imgCols,
+                            imgRows,
+                            3);
+
+    // Create a compatible ColorModel.
+    ColorModel colorModel =
+       PlanarImage.createColorModel(sampleModel);
+    // Create a WritableRaster.
+    Raster raster =
+           RasterFactory.createWritableRaster(
+             sampleModel,dbuffer,new Point(0,0));
+
+    // Create a TiledImage using the SampleModel.
+    TiledImage tiledImage = new TiledImage(0,0,
+                             imgCols,imgRows,0,0,
+                             sampleModel,
+                             colorModel);
+    // Set the data of the tiled image to be the
+    // raster.
+    tiledImage.setData(raster);
+    // Save the image in a file using one of the
+    // overloaded versions of the create method.
+    // Note that other file types can be written
+    // by using a different value for the third
+    // parameter as in the following:
+    //JAI.create("filestore",tiledImage,
+    //                        "junk.tif","TIFF");
+    JAI.create("filestore",tiledImage,
+                              "junk.jpg","JPEG");
+  }//end writeImageFile
+}//end ImgMaker01 class
+
+<b>Listing 20</b>
+</pre>
+</td>
+</tr>
+</tbody>                                
+</table><p>
+<table border="1" cols="1" width="400" bgcolor="#FFFF00">
+<tbody>
+<tr>
+<td>                     
+<pre>
+/*File ImgMaker02.java
+Copyright 2004, R.G.Baldwin
+
+The purpose of this program is to write an output
+jpg file named junk.jpg containing a single white
+impulse centered in a square black image.  The
+length of the sides of the image is provided by
+the user as a command line parameter.  If the
+user doesn't provide this value, the default size
+of the image is 31 pixels on each side.
+
+This program is useful for creating a jpg file
+that can be used to get the 2D impulse response
+of a 2D convolution filter.
+
+Usage:
+java ImageMaker01 ImageSize
+where:
+ImageSize is the number of pixels on the side of
+  the square image.
+
+The red,green, and blue values of the pixels in
+the white impulse are all 255.  The value of the
+alpha byte is 255 (see later discussion of the
+alpha byte).
+
+The program writes the image into a file named
+junk.jpg.  Note that this program can't handle
+alpha bytes with different values when writing
+the file.  Rather, it writes the three color
+bytes into the output file, apparently setting
+the alpha byte to 255.
+
+This file writing capability is based on
+information obtained from the following web
+sites:
+https://jaistuff.dev.java.net/data.html
+https://jaistuff.dev.java.net/Code/data/
+  CreateRGBImage.java
+
+The program stores the pixel data for the white
+impulse into a 3D array of type:
+
+int[row][column][depth].
+
+The first two dimensions of the array correspond
+to the rows and columns of pixels in the image.
+The third dimension always has a value of 4 and
+contains the following values by index value:
+
+0 alpha (not set in the program)
+1 red
+2 green
+3 blue
+
+Note that these values are stored as type int
+rather than type unsigned byte which is the
+format of pixel data in the an image.  The values
+are converted to type unsigned byte during the
+writing of the jpg file.
+
+Tested using SDK 1.4.2 under WinXP.
+************************************************/
+
+import java.awt.*;
+import java.awt.image.*;
+import javax.media.jai.*;
+
+class ImgMaker02 extends Frame{
+
+  public static void main(String[] args){
+    int imgCols = 31;//default values
+    int imgRows = 31;
+
+
+    if(args.length == 2){
+      //Get size of image from command-line args.
+      imgCols = Integer.parseInt(args[0]);
+      imgRows = imgCols;
+    }//end else
+    int[][][] threeDPix = createThreeDImage(
+                                imgCols,imgRows);
+    writeImageFile(threeDPix,imgCols,imgRows);
+  }//end main
+  //-------------------------------------------//
+
+  static int[][][] createThreeDImage(int imgCols,
+                                    int imgRows){
+    int[][][] temp3D =
+                    new int[imgRows][imgCols][4];
+
+    int col = imgCols/2;
+    int row = imgRows/2;
+
+    //Set values for red, green, and
+    // blue colors in the white impulse.
+    temp3D[row][col][1] = 255;//red
+    temp3D[row][col][2] = 255;//green
+    temp3D[row][col][3] = 255;//blue
+
+    //Return the array of image data.
+    return temp3D;
+  }//end createThreeDImage
+  //-------------------------------------------//
+
+  /*Write the image to a file named junk.jpg.
+    Note that this program can't handle the alpha
+    byte when writing the file.  Rather, the
+    program only writes the three color bytes
+    into the output file, apparently setting the
+    alpha byte to 255. This file writing
+    capability is based on information at:
+    https://jaistuff.dev.java.net/data.html and
+    https://jaistuff.dev.java.net/Code/data/
+      CreateRGBImage.java
+  */
+  static void writeImageFile(int[][][] threeDPix,
+                             int imgCols,
+                             int imgRows){
+    byte[] imageDataBytes = new byte[
+                              imgCols*imgRows*3];
+    int count = 0;
+
+    for(int h = 0;h < imgRows;h++)
+      for(int w = 0;w < imgCols;w++){
+        //Rearrange the data into a one-
+        // dimensional array of type byte. Note
+        // that this array does not contain alpha
+        // byte values.
+        imageDataBytes[count+0] =
+                        (byte)threeDPix[h][w][3];
+        imageDataBytes[count+1] =
+                        (byte)threeDPix[h][w][2];
+        imageDataBytes[count+2] =
+                        (byte)threeDPix[h][w][1];
+        count += 3;
+      }//end for loop
+
+    // Create a Data Buffer from the values in
+    // the single image array.
+    DataBufferByte dbuffer = new DataBufferByte(
+               imageDataBytes,imgCols*imgRows*3);
+
+    // Create a pixel-interleaved data sample
+    // model.
+    SampleModel sampleModel =
+       RasterFactory.
+         createPixelInterleavedSampleModel(
+                            DataBuffer.TYPE_BYTE,
+                            imgCols,
+                            imgRows,
+                            3);
+
+    // Create a compatible ColorModel.
+    ColorModel colorModel =
+       PlanarImage.createColorModel(sampleModel);
+    // Create a WritableRaster.
+    Raster raster =
+           RasterFactory.createWritableRaster(
+             sampleModel,dbuffer,new Point(0,0));
+
+    // Create a TiledImage using the SampleModel.
+    TiledImage tiledImage = new TiledImage(0,0,
+                             imgCols,imgRows,0,0,
+                             sampleModel,
+                             colorModel);
+
+    // Set the data of the tiled image to be the
+    // raster.
+    tiledImage.setData(raster);
+
+    // Save the image in a file using one of the
+    // overloaded versions of the create method.
+    // Note that other file types can be written
+    // by using a different value for the third
+    // parameter as in the following:
+    //JAI.create("filestore",tiledImage,
+    //                        "junk.tif","TIFF");
+    JAI.create("filestore",tiledImage,
+                              "junk.jpg","JPEG");
+  }//end writeImageFile
+}//end ImgMaker02 class
+
+<b>Listing 21</b>
+</pre>
+</td>
+</tr>
+</tbody>                                
+</table></p><p>
+<table border="1" cols="1" width="400" bgcolor="#FFFF00">
+<tbody>
+<tr>
+<td>                     
+<pre>
+/*File ImgMod24.java.java
+Copyright 2004, R.G.Baldwin
+
+This program allows for multiple successive
+convolutions using a fixed 3x3 flat convolution
+filter.  The result approaches a Gaussian
+filter as more successive convolutions are
+performed.
+
+This program normalizes the output so that the
+largest color value in the output always matches
+the largest color value in the input.  This may
+or may not be desirable depending on the
+circumstances.
+
+This program is designed to be driven by the
+program named ImgMod02.  Enter the following at
+the command line to run this program.
+
+java ImgMod02 ImgMod24 ImageFileName
+
+This program illustrates the use of area
+(two-dimensional) convolution filtering to
+smooth or blur an image.  In particular, it
+illustrates the process of multiple successive
+convolutions, which causes the convolution
+operation to approach the convolution of the
+image with a Gaussian filter.
+
+The program displays two frames on the screen.
+The large frame on the left shows the original
+image at the top and the filtered image at the
+bottom.  It also has a button labeled Replot at
+the very bottom.
+
+The small frame on the right contains a TextField
+for user input.  When the program starts running,
+this TextField displays the value 1.  The
+value in the text field specifies the number of
+successive convolutions that are to be performed
+on the image using a flat 3x3 convolution
+filter.
+
+To specify the number of convolutions, type an
+integer value into the TextField and click the
+Replot button.  This will cause the process to
+start over and cause the filter to be applied the
+specified number of times before the new results
+are displayed.
+
+This is a low-pass filter that suppresses high
+frequency changes in color values.  It adds
+all of the pixel values for each color within the
+area covered by the filter.  Then it moves to the
+next registration point and adds the pixel
+values then contained in the area.  When the
+convolution operation is complete, all of the
+color values in the output are scaled so that the
+peak color value in the output matches the peak
+color value in the input.
+
+Each pixel, except those in the outer edges of
+the image, is used as a registration point.  The
+pixels around the outer edges are not used as
+registration points because that would cause the
+area to extend outside the valid pixel values.
+
+The visual effect of applying this filter is to
+cause the image to go increasingly out of focus
+as the number of convolutions is increased.  The
+effect is most obvious with images that have
+well-defined lines such as characters.
+
+The transparency or alpha value of each pixel is
+preserved.  If you don't see what you expect to
+see when you run this program with a particular
+image, it may be because your image contains
+transparent areas.  This will be evidenced by the
+yellow background color of the canvas showing
+through the image.
+
+Tested using SDK 1.4.2 and WinXP
+************************************************/
+import java.awt.*;
+
+class ImgMod24 extends Frame implements
+                                      ImgIntfc02{
+
+  int numberConvolutions;
+  String inputData;//Obtained via the TextField
+  TextField input;//User input field
+
+  ImgMod24(){//constructor
+    setLayout(new FlowLayout());
+
+    Label instructions = new Label(
+               "Number of convolutions/replot.");
+    add(instructions);
+
+    input = new TextField("1",5);
+    add(input);
+
+    setTitle("Copyright 2004, Baldwin");
+    setBounds(400,0,200,100);
+    setVisible(true);
+  }//end constructor
+  //-------------------------------------------//
+
+  //This method is required by ImgIntfc02.  This
+  // method applies the convolution filter
+  // to the incoming 3D array of pixel data and
+  // returns a normalized filtered 3D array of
+  // pixel data.  The output array is normalized
+  // such that the peak output color value 
+  // matches the peak input color value.
+  public int[][][] processImg(
+                            int[][][] threeDPix,
+                            int imgRows,
+                            int imgCols){
+
+    System.out.println("\nWidth = " + imgCols);
+    System.out.println("Height = " + imgRows);
+
+    //Get numberConvolutions value from the
+    // TextField
+    numberConvolutions = Integer.parseInt(
+                                input.getText());
+
+    //Make a working copy of the 3D array to
+    // avoid making permanent changes to the
+    // original image data.  Get and save the
+    // maximum value along the way.
+    int inputPeak = 0;
+    int colorValue = 0;
+    int[][][] working3D =
+                    new int[imgRows][imgCols][4];
+    for(int row = 0;row < imgRows;row++){
+      for(int col = 0;col < imgCols;col++){
+        working3D[row][col][0] =
+                          threeDPix[row][col][0];
+        colorValue = threeDPix[row][col][1];
+        working3D[row][col][1] = colorValue;
+        if(colorValue > inputPeak){
+          inputPeak = colorValue;
+        }//end if
+
+        colorValue = threeDPix[row][col][2];
+        working3D[row][col][2] = colorValue;
+        if(colorValue > inputPeak){
+          inputPeak = colorValue;
+        }//end if
+
+        colorValue = threeDPix[row][col][3];
+        working3D[row][col][3] = colorValue;
+        if(colorValue > inputPeak){
+          inputPeak = colorValue;
+        }//end if
+
+      }//end inner loop
+    }//end outer loop
+    System.out.println(
+                     "inputPeak = " + inputPeak);
+
+    //Create an empty output array of the same
+    // size as the incoming array.
+    int[][][] output =
+                    new int[imgRows][imgCols][4];
+
+    //Copy all alpha values from input to output.
+    for(int row = 0;row < imgRows;row++){
+      for(int col = 0;col < imgCols;col++){
+        output[row][col][0] =
+                          working3D[row][col][0];
+      }//end inner loop
+    }//end outer loop
+
+    //Perform the convolution one or more times
+    // in succession
+    for(int cnt = 0;
+                 cnt < numberConvolutions;cnt++){
+
+      //Use nested for loops to treat each pixel
+      // (other than those along the edges of the
+      // image) as registration points and to
+      // perform the two-dimensional convolution
+      // using a shift-sum-scale approach. Note
+      // that this algorithm is somewhat
+      // different and probably more efficient
+      // than the algorithm used in the program
+      // named ImgMod12.  However, it is also
+      // less flexible in terms of the shapes
+      // of the convolution filters that can be
+      // used.
+      try{
+        //Iterate on each pixel as a registration
+        // point.
+        for(int row = 0 + 1;row < imgRows - 2;
+                                          row++){
+          for(int col = 0 + 1;
+                        col < imgCols - 2;col++){
+
+            int redSum =
+                 working3D[row - 1][col - 1][1] +
+                 working3D[row - 1][col - 0][1] +
+                 working3D[row - 1][col + 1][1] +
+                 working3D[row - 0][col - 1][1] +
+                 working3D[row - 0][col - 0][1] +
+                 working3D[row - 0][col + 1][1] +
+                 working3D[row + 1][col - 1][1] +
+                 working3D[row + 1][col - 0][1] +
+                 working3D[row + 1][col + 1][1];
+
+            int greenSum =
+                 working3D[row - 1][col - 1][2] +
+                 working3D[row - 1][col - 0][2] +
+                 working3D[row - 1][col + 1][2] +
+                 working3D[row - 0][col - 1][2] +
+                 working3D[row - 0][col - 0][2] +
+                 working3D[row - 0][col + 1][2] +
+                 working3D[row + 1][col - 1][2] +
+                 working3D[row + 1][col - 0][2] +
+                 working3D[row + 1][col + 1][2];
+
+
+            int blueSum =
+                 working3D[row - 1][col - 1][3] +
+                 working3D[row - 1][col - 0][3] +
+                 working3D[row - 1][col + 1][3] +
+                 working3D[row - 0][col - 1][3] +
+                 working3D[row - 0][col - 0][3] +
+                 working3D[row - 0][col + 1][3] +
+                 working3D[row + 1][col - 1][3] +
+                 working3D[row + 1][col - 0][3] +
+                 working3D[row + 1][col + 1][3];
+
+            //Store the convolution output values
+            // in the output array.
+            output[row][col][1] = redSum;
+            output[row][col][2] = greenSum;
+            output[row][col][3] = blueSum;
+
+          }//end for loop on col
+        }//end for loop on row
+
+      }catch(Exception e){
+        e.printStackTrace();
+      }//end catch
+
+      //Normalize output peak value to match
+      // input peak value.
+      //First get output peak value
+      int outputPeak = 0;
+      for(int row = 0;row < imgRows;row++){
+        for(int col = 0;col < imgCols;col++){
+          if(output[row][col][1] > outputPeak){
+            outputPeak = output[row][col][1];
+          }//end if
+          if(output[row][col][2] > outputPeak){
+            outputPeak = output[row][col][2];
+          }//end if
+          if(output[row][col][3] > outputPeak){
+            outputPeak = output[row][col][3];
+          }//end if
+        }//end inner loop
+      }//end outer loop
+      //System.out.println(
+      //           "outputPeak = " + outputPeak);
+
+      //Normalize to peak value
+      double outputScale =
+                  ((double)inputPeak)/outputPeak;
+      for(int row = 0;row < imgRows;row++){
+        for(int col = 0;col < imgCols;col++){
+          output[row][col][1] =
+             (int)(output[row][col][1]*
+                                    outputScale);
+          output[row][col][2] =
+             (int)(output[row][col][2]*
+                                    outputScale);
+          output[row][col][3] =
+             (int)(output[row][col][3]*
+                                    outputScale);
+        }//end inner loop
+      }//end outer loop
+
+      //Copy output into input to prepare for
+      // another convolution (no need to copy
+      //alpha)
+      for(int row = 0;row < imgRows;row++){
+        for(int col = 0;col < imgCols;col++){
+          working3D[row][col][1] =
+                            output[row][col][1];
+          working3D[row][col][2] =
+                            output[row][col][2];
+          working3D[row][col][3] =
+                            output[row][col][3];
+        }//end inner loop
+      }//end outer loop
+    }//end for loop on numberConvolutions
+
+    System.out.println("Processing Done");
+    //Return a reference to the array containing
+    // the filtered pixels.
+    return output;
+
+  }//end processImg method
+  //-------------------------------------------//
+
+}//end class ImgMod24
+
+<b>Listing 22</b>
+</pre>
+</td>
+</tr>
+</tbody>                                
+</table></p>
+<p>
+<table border="1" cols="1" width="400" bgcolor="#FFFF00">
+<tbody>
+<tr>
+<td>                     
+<pre>
+/*File ImgMod12.java
+Copyright 2004, R.G.Baldwin
+
+This program is designed to be driven by the
+program named ImgMod02.  Enter the following at
+the command line to run this program.
+
+java ImgMod02 ImgMod12 ImageFileName
+
+This program illustrates the use of area
+(two-dimensional) convolution filtering to blur
+an image.
+
+The program displays two frames on the screen.
+The large frame on the left shows the original
+image at the top and the filtered image at the
+bottom.  It also has a button labeled Replot at
+the very bottom.
+
+The small frame on the right contains a TextField
+for user input.  When the program starts running,
+this TextField displays the size of the default
+convolution area in pixels.
+
+To modify the convolution area, type a number
+into the TextField and click the Replot button.
+The new filter will be applied to the image and
+the filtered image will be displayed.
+
+The program supports non-square convolution area
+values of 1, 2, 3, 4, 6, and 8 pixels.  (The
+shape of the convolution area is shown as a grid
+of X characters on the screen.)
+
+Area values of 0, 5, and 7 are not supported.
+
+In addition, the program supports all area values
+that are perfect squares beginning with an area
+value of 4 pixels.  However, for area values
+greater than 9, the  value entered by the user is
+automatically rounded to the nearest perfect
+square before processing takes place.  For
+example, if the user enters 10, the actual area
+used for convolution will be a square with 3
+pixels on each side.  If the user enters 15, the
+area used for convolution will be a square with 4
+pixels on each side.
+
+The convolution operator is a box with each
+coefficient having a value of 1.  (See
+discussion of normalization later.)
+
+This is a low-pass filter that suppresses high
+frequency changes in color values.  It adds
+all of the pixel values for each color within the
+area covered by the filter.  Then it moves to the
+next registration point and adds the pixel
+values then contained in the area.
+
+Every pixel, except those in the outer edges of
+the image is used as a registration point.  The
+pixels around the outer edges are not used as
+registration points because that would cause the
+area to extend outside the valid pixel values.
+
+Once the convolution process is finished, the
+output data is normalized such that the peak
+color value in the output matches the peak color
+value in the input.  This may, or may not be
+appropriate depending on the circumstances.
+However, it does preserve the dynamic range of
+the display.
+
+The visual effect of applying this filter is to
+cause the image to go increasingly out of focus
+as the size of the area is increased.  The effect
+is most obvious with images that have well
+defined lines such as characters.
+
+The transparency or alpha value of each pixel is
+preserved.  If you don't see what you expect to
+see when you run this program with a particular
+image, it may be because your image contains
+transparent areas.  This will be evidenced by the
+yellow background color of the canvas showing
+through the image.
+
+Tested using SDK 1.4.2 and WinXP
+************************************************/
+import java.awt.*;
+
+class ImgMod12 extends Frame implements
+                                      ImgIntfc02{
+
+  int area;//The area value in pixels
+  String inputData;//Obtained via the TextField
+  TextField input;//User input field
+
+  ImgMod12(){//constructor
+    setLayout(new FlowLayout());
+
+    Label instructions = new Label(
+               "Type an area value and replot.");
+    add(instructions);
+
+    input = new TextField("2",5);
+    add(input);
+
+    setTitle("Copyright 2004, Baldwin");
+    setBounds(400,0,200,100);
+    setVisible(true);
+  }//end constructor
+  //-------------------------------------------//
+
+  //This method is required by ImgIntfc02.  This
+  // method applies the convolution filter
+  // to the incoming 3D array of pixel data and
+  // returns a filtered 3D array of pixel data.
+  public int[][][] processImg(
+                            int[][][] threeDPix,
+                            int imgRows,
+                            int imgCols){
+
+    System.out.println("\nWidth = " + imgCols);
+    System.out.println("Height = " + imgRows);
+
+    //Get area value from the TextField
+    area = Integer.parseInt(input.getText());
+
+    //Create an empty output array of the same
+    // size as the incoming array.
+    int[][][] output =
+                    new int[imgRows][imgCols][4];
+
+    //Make a working copy of the 3D array to
+    // avoid making permanent changes to the
+    // original image data.  Get and save the
+    // maximum value along the way.
+    int inputPeak = 0;
+    int colorValue = 0;
+    int[][][] working3D =
+                    new int[imgRows][imgCols][4];
+    for(int row = 0;row < imgRows;row++){
+      for(int col = 0;col < imgCols;col++){
+        working3D[row][col][0] =
+                          threeDPix[row][col][0];
+        colorValue = threeDPix[row][col][1];
+        working3D[row][col][1] = colorValue;
+        if(colorValue > inputPeak){
+          inputPeak = colorValue;
+        }//end if
+
+        colorValue = threeDPix[row][col][2];
+        working3D[row][col][2] = colorValue;
+        if(colorValue > inputPeak){
+          inputPeak = colorValue;
+        }//end if
+
+        colorValue = threeDPix[row][col][3];
+        working3D[row][col][3] = colorValue;
+        if(colorValue > inputPeak){
+          inputPeak = colorValue;
+        }//end if
+
+      }//end inner loop
+    }//end outer loop
+    System.out.println(
+                     "inputPeak = " + inputPeak);
+
+    //Copy all alpha values from input to output.
+    for(int row = 0;row < imgRows;row++){
+      for(int col = 0;col < imgCols;col++){
+        output[row][col][0] =
+                          working3D[row][col][0];
+      }//end inner loop
+    }//end outer loop
+
+    //The following three variables are used to
+    // accumulate the products of the pixel color
+    // values and the convolution filter
+    // coefficients.
+    int redSum = 0;
+    int greenSum = 0;
+    int blueSum = 0;
+
+    //The following variables are used for
+    // control purposes while performing the
+    // sum of products operation using for loops.
+    int rowNo = 0;
+    int colNo = 0;
+    int row = 0;
+    int col = 0;
+    int firstRow = 0;
+    int lastRow = 0;
+    int firstCol = 0;
+    int lastCol = 0;
+    int minusRow = 0;
+    int plusRow = 0;
+    int minusCol = 0;
+    int plusCol = 0;
+
+    //The following switch statement is used to
+    // set the control variables listed above for
+    // area values of 1, 2, 3, 4, 6, and 8 on
+    // an individual area basis.
+    //Area values of 5 and 7 are not supported.
+    //Area values of 9 and greater default to
+    // the nearest perfect square, such as 9, 16,
+    // 25, 36, etc.
+    switch(area){
+      case 0:
+        System.out.println(
+                   "Area value 0 not supported");
+        break;
+      case 1://A single pixel reproduces image
+        firstRow = 0;
+        lastRow = imgRows;
+        firstCol = 0;
+        lastCol = imgCols;
+        minusRow = 0;
+        plusRow = 0;
+        minusCol = 0;
+        plusCol = 0;
+      break;
+      case 2://Two pixels in a row
+        firstRow = 0;
+        lastRow = imgRows;
+        firstCol = 1;
+        lastCol = imgCols;
+        minusRow = 0;
+        plusRow = 0;
+        minusCol = 1;
+        plusCol = 0;
+      break;
+      case 3://Three pixels in a row
+        firstRow = 0;
+        lastRow = imgRows;
+        firstCol = 1;
+        lastCol = imgCols - 1;
+        minusRow = 0;
+        plusRow = 0;
+        minusCol = 1;
+        plusCol = 1;
+      break;
+      case 4://Four pixels in a square
+        firstRow = 1;
+        lastRow = imgRows;
+        firstCol = 1;
+        lastCol = imgCols;
+        minusRow = 1;
+        plusRow = 0;
+        minusCol = 1;
+        plusCol = 0;
+      break;
+      case 5:
+        System.out.println(
+                   "Area value 5 not supported");
+      break;
+      case 6://Two rows of 3 pixels
+        firstRow = 1;
+        lastRow = imgRows;
+        firstCol = 1;
+        lastCol = imgCols - 1;
+        minusRow = 1;
+        plusRow = 0;
+        minusCol = 1;
+        plusCol = 1;
+      break;
+      case 7:
+        System.out.println(
+                   "Area value 7 not supported");
+      break;
+      case 8://Two rows of 4
+        firstRow = 1;
+        lastRow = imgRows;
+        firstCol = 2;
+        lastCol = imgCols - 1;
+        minusRow = 1;
+        plusRow = 0;
+        minusCol = 2;
+        plusCol = 1;
+      break;
+      //Default to nearest perfect square for
+      // area values greater than 8.
+      default:
+        //Get the side of the square area,
+        // rounded to the nearest square.
+        double dSide = Math.sqrt(area);
+        int side = (int)Math.round(dSide);
+
+        //Set the area value to the nearest
+        // perfect square.  This is necessary
+        // because it is used to scale the
+        // accumulated values later.
+        area = side*side;
+
+        //Because a square area with an even
+        // number of pixels on a side doesn't
+        // have a pixel at the center, it must
+        // be treated differently from a square
+        // area with an odd number of pixels on a
+        // side.  For the even case, the area
+        // above and to the left of the
+        // registration point is slightly greater
+        // than the area below and to the right.
+        if(side%2 == 0){//side is even
+          firstRow = side/2;
+          lastRow = imgRows - side/2 + 1;
+          firstCol = side/2;
+          lastCol = imgCols - side/2 + 1;
+          minusRow = side/2;
+          plusRow = side/2 - 1;
+          minusCol = side/2;
+          plusCol = side/2 -1;
+        }else{//side is odd
+          firstRow = side/2;
+          lastRow = imgRows - side/2;
+          firstCol = side/2;
+          lastCol = imgCols - side/2;
+          minusRow = side/2;
+          plusRow = side/2;
+          minusCol = side/2;
+          plusCol = side/2;
+        }//end else
+    }//end switch statement
+
+    //Use nested for loops to treat each pixel
+    // (other than those along the edges of the
+    // image) as registration points and to
+    // perform the two-dimensional convolution.
+    try{
+      //First iterate on each pixel as a
+      // registration point.
+      for(row = firstRow;row < lastRow;row++){
+        for(col = firstCol;col < lastCol;col++){
+
+          //Now use the registration point as a
+          // base and iterate on the pixels
+          // contained within the area covered by
+          // the convolution filter.  Display a
+          // grid of X characters on the screen
+          // showing the shape of the area
+          // covered by the convolution filter.
+          // Display the grid only once while
+          // processing the first registration
+          // point.
+          for(rowNo = row - minusRow;
+                 rowNo <= row + plusRow;rowNo++){
+
+            //Start a new line in the grid of X
+            // characters.
+            if((row == firstRow)
+                           && (col == firstCol)){
+              System.out.println();
+            }//end if
+
+            for(colNo = col - minusCol;
+                 colNo <= col + plusCol;colNo++){
+
+              //Display the next X in the grid of
+              // X characters.
+              if((row == firstRow)
+                           && (col == firstCol)){
+                System.out.print("X");
+              }//end if
+
+              //Accumulate the pixel values
+              // multiplied by the coefficient
+              // values in the convolution
+              // filter.  Note that all
+              // coefficients have a value of 1.
+              // The accumulated value will later
+              // be divided by the area, causing
+              // the effective values of the
+              // coefficients to be the
+              // reciprocal of the area.
+              redSum +=
+                      working3D[rowNo][colNo][1];
+              greenSum +=
+                      working3D[rowNo][colNo][2];
+              blueSum +=
+                      working3D[rowNo][colNo][3];
+            }//end for loop on y
+          }//end for loop on x
+
+          //Store the accumlator values in the
+          // output array.
+          output[row][col][1] = redSum;
+          output[row][col][2] = greenSum;
+          output[row][col][3] = blueSum;
+
+          //Clear the accumulators in preparation
+          // for processing the next registration
+          // point.
+          redSum = 0;
+          greenSum = 0;
+          blueSum = 0;
+
+        }//end for loop on col
+      }//end for loop on row
+
+    }catch(Exception e){
+      e.printStackTrace();
+    }//end catch
+
+    //Normalize output peak value to match
+    // input peak value.
+    //First get output peak value
+    int outputPeak = 0;
+    for(row = 0;row < imgRows;row++){
+      for(col = 0;col < imgCols;col++){
+        if(output[row][col][1] > outputPeak){
+          outputPeak = output[row][col][1];
+        }//end if
+        if(output[row][col][2] > outputPeak){
+          outputPeak = output[row][col][2];
+        }//end if
+        if(output[row][col][3] > outputPeak){
+          outputPeak = output[row][col][3];
+        }//end if
+      }//end inner loop
+    }//end outer loop
+
+    //Normalize to peak value
+    double outputScale =
+                ((double)inputPeak)/outputPeak;
+    for(row = 0;row < imgRows;row++){
+      for(col = 0;col < imgCols;col++){
+        output[row][col][1] =
+           (int)(output[row][col][1]*
+                                  outputScale);
+        output[row][col][2] =
+           (int)(output[row][col][2]*
+                                  outputScale);
+        output[row][col][3] =
+           (int)(output[row][col][3]*
+                                  outputScale);
+      }//end inner loop
+    }//end outer loop
+
+    //Return a reference to the array containing
+    // the filtered pixels.
+    return output;
+
+  }//end processImg method
+  //-------------------------------------------//
+
+}//end class ImgMod12
+
+<b>Listing 23</b>
+</pre>
+</td>
+</tr>
+</tbody>                                
+</table></p>
+<p>
+<hr size="3" width="100%" align="center">    
+<p>Copyright 2005, Richard G. Baldwin.&nbsp; Reproduction in whole or in
+part in any form or medium without express written permission from Richard
+Baldwin is prohibited. </p>
+     
+<h4> <a name="About_the_author">About the author</a></h4><b>
+<a href="mailto:baldwin@dickbaldwin.com">Richard Baldwin</a></b><i>
+  is a college professor (at Austin Community College in Austin, TX) and
+private  consultant whose primary focus is a combination of Java, C#, and
+XML. In addition to the many platform and/or language independent benefits
+of Java and C# applications, he believes that a combination of Java, C#,
+and XML will become the primary driving force in the delivery of structured
+information on the Web.</i>    
+<p><i>Richard has participated in numerous consulting projects and he frequently 
+ provides onsite training at the high-tech companies located in and around 
+ Austin, Texas.&nbsp; He is the author of Baldwin's Programming <a
+ href="http://www.dickbaldwin.com">Tutorials</a>,
+  which has gained a worldwide following among experienced and aspiring programmers.
+  He has also published articles in JavaPro magazine.</i> </p>
+     
+<p><i>In addition to his programming expertise, Richard has many years of 
+ practical experience in Digital Signal Processing (DSP).&nbsp; His first
+ job after he earned his Bachelor's degree was doing DSP in the Seismic Research 
+ Department of Texas Instruments.&nbsp; (TI is still a world leader in DSP.)&nbsp; 
+ In the following years, he applied his programming and DSP expertise to other
+ interesting areas including sonar and underwater acoustics.</i> </p>
+     
+<p><i>Richard holds an MSEE degree from Southern Methodist University and
+  has many years of experience in the application of computer technology
+to  real-world problems.</i> </p>
+     
+<p><i><a href="mailto:baldwin@dickbaldwin.com">Baldwin@DickBaldwin.com</a></i>
+  </p>
+     
+<p><b>Keywords</b><br>
+Java pixel convolution filter Gaussian smooth blur image jpg color linear DSP 3D 
+2D</p>
+<p>-end- </p>
+   </body>
+</html>

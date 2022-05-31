@@ -1,0 +1,799 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type"
+content="text/html; charset=iso-8859-1">
+<meta name="author" content="richard g. baldwin">
+<meta name="GENERATOR" content="Microsoft FrontPage Express 2.0">
+<title>... in Java by Richard G Baldwin</title>
+</head>
+
+<body bgcolor="#FFFFFF">
+<!--start-->
+<h3 align="center"><b><i>Richard G Baldwin (512) 223-4758, </i></b><a
+href="mailto:baldwin@austin.cc.tx.us"><b><i>baldwin@austin.cc.tx.us</i></b></a><b><i>,
+</i></b><a href="http://www2.austin.cc.tx.us/baldwin/"><b><i>http://www2.austin.cc.tx.us/baldwin/</i></b></a></h3>
+
+<h2 align="center"><b><!--title-->JDK 1.1, Using Reflection with Object
+Serialization and Retrieved Objects<!--endtitle--></b></h2>
+
+<p>Java Programming, Lecture Notes # 270, Revised 12/17/98. </p>
+
+<ul>
+    <li><a href="#introduction">Introduction</a></li>
+    <li><a href="#sample program">Sample Program</a></li>
+    <li><ul>
+            <li><a href="#discussion, overview">Discussion,
+                Overview</a></li>
+            <li><a href="#Interesting Code Fragments">Interesting
+                Code Fragments</a></li>
+            <li><a href="#program listing">Program Listing</a></li>
+        </ul>
+    </li>
+</ul>
+
+<hr>
+
+<h2 align="center"><a name="introduction"></a><font
+color="#FF0000"><b>Introduction</b></font></h2>
+
+<p>Students in Prof. Baldwin's <b>Advanced Java Programming</b>
+classes at ACC are responsible for knowing and understanding all
+of the material in this lesson. </p>
+
+<p>This lesson contains a sample program that illustrates much of
+what has been discussed in earlier lessons on object
+serialization and reflection.</p>
+
+<p>One of the features in JDK 1.1 is the ability to create <i>persistent</i>
+objects using <i>object serialization</i>. </p>
+
+<p>Another new feature is the capability to create <i>inner
+classes.</i> </p>
+
+<p>A third new feature is <i>reflection</i>. </p>
+
+<h2 align="center"><a name="sample program"></a><font
+color="#FF0000">Sample Program</font></h2>
+
+<p align="left">The following sample program illustrates many,
+but not nearly all of the features discussed in previous lessons
+on object serialization and reflection. </p>
+
+<h3 align="center"><a name="discussion, overview"></a><font
+color="#FF0000">Discussion, Overview</font></h3>
+
+<p><font color="#000000">This application is designed to
+illustrate the <b>reflection</b> capability of JDK 1.1 when used
+in conjunction with <b>Object Serialization</b> and <b>Inner
+Classes</b>.</font> </p>
+
+<p><font color="#000000">The application creates and displays a
+fairly complex object and uses <b>Object Serialization</b> to
+save it to a disk file.</font> </p>
+
+<p><font color="#000000">The object contains several instance
+variables and one instance method.</font> </p>
+
+<p><font color="#000000">One of the instance variables is an
+embedded object which is an instance of an Inner Class of the
+outer object class. (Hence the complexity.)</font> </p>
+
+<p><font color="#000000">Both the outer and inner classes
+implement the <b>Serializable </b>interface which is required in
+order to use Object Serialization.</font></p>
+
+<p><font color="#000000">The embedded object also contains an
+instance variable and an instance method.</font> </p>
+
+<p><font color="#000000">All instance variables and methods of
+both classes are public so that they can be accessed through
+reflection for illustration purposes.</font> </p>
+
+<p><font color="#000000">When invoked, the instance methods in
+both classes display the instance variables of an object of that
+class.</font> </p>
+
+<p><font color="#000000">The instance methods require a parameter
+which has no functional purpose other than to illustrate certain
+aspects of reflection.</font> </p>
+
+<p><font color="#000000">After first displaying the object, the
+application closes the file and sets the reference variable to
+the object to null, making the object eligible for garbage
+collection.</font> </p>
+
+<p><font color="#000000">The application then opens the file for
+reading.</font> </p>
+
+<p><font color="#000000">The object is retrieved from the file
+using object serialization<b> </b>and referred to by a generic
+reference variable of type <b>Object</b>.</font> </p>
+
+<p><font color="#000000">After the object is retrieved,
+reflection<b> </b>is used to investigate and display several
+important attributes of the object.</font> </p>
+
+<p><font color="#000000">The reflection process culminates with
+the invocation of the instance method of the object using
+reflection<b> </b>methods.</font> </p>
+
+<p><font color="#000000">Invocation of the instance method causes
+the instance variables of the object and its embedded object to
+be displayed.</font> </p>
+
+<p><font color="#000000">This program was successfully tested
+using JDK 1.1.6 under Win95</font>. </p>
+
+<p>It was also tested using the first released version of JDK 1.2
+under Win95 on 12/17/98. Unfortunately, that test was not
+successful. When compiled and run under JDK 1.2, the program
+threw an <strong>&quot;IllegalArgumentException: field type
+mismatch&quot;</strong> at the point in the program immediately
+following the display of the string <strong>&quot;Assume decision
+here to investigate field 1&quot;</strong>. As of this writing on
+12/17/98, I haven't had the time to investigate this apparent
+compatibility problem between JDK 1.1.6 and JDK 1.2.</p>
+
+<p align="left"><font color="#000000">The complete output from
+running this program on one particular occasion is shown in
+comments at the beginning of the program.</font></p>
+
+<h3 align="center"><a name="Interesting Code Fragments"><font
+color="#FF0000">Interesting Code Fragments</font></a></h3>
+
+<p><font color="#000000">This section <u>highlights code
+fragments</u> that are important in gaining an understanding of
+how <b>reflection</b>, <b>Object Serialization</b>, and <b>inner
+classes</b> are implemented in the sample program.</font> </p>
+
+<p><font color="#000000">Note that the <b>Core Reflection API</b>
+supports a number of capabilities that are <u>not illustrated</u>
+by this program. Some of them will be discussed and illustrated
+in subsequent lessons.</font> </p>
+
+<p><font color="#000000">The following code fragment instantiates
+an object named <b>outStream</b> that supports <b>Object
+Serialization</b> making it possible to write <b>Serializable</b>
+objects directly to an output file without a requirement to
+decompose them and write out their component parts. <b>Serializable
+</b>objects are instances of classes that implement the <b>Serializable
+</b>interface.</font></p>
+
+<table border="1" bgcolor="#FFFF00">
+    <tr>
+        <td><pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; FileOutputStream fout = new FileOutputStream(&quot;tmp&quot;);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ObjectOutputStream&nbsp; outStream&nbsp; =&nbsp; new&nbsp; <b>ObjectOutputStream</b>(fout);</pre>
+        </td>
+    </tr>
+</table>
+
+<p>The next fragment instantiates and displays an object of type <b>MyClass</b>.
+This code passes a parameter to the <b>showData()</b> method
+which serves no useful purpose other than to later illustrate
+certain aspects of <b>reflection </b>(finding the number and the
+type of arguments in the argument list).</p>
+
+<table border="1" bgcolor="#FFFF00">
+    <tr>
+        <td><pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; MyClass temp = <b>new MyClass()</b>;//instantiate object
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; temp.<b>showData</b>(&quot;String parameter to display method.&quot;);//display</pre>
+        </td>
+    </tr>
+</table>
+
+<p>The next fragment uses <b>Object Serialization</b> to write
+the object to the output file.</p>
+
+<table border="1" bgcolor="#FFFF00">
+    <tr>
+        <td><pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; outStream.<b>writeObject</b>(temp);//save object</pre>
+        </td>
+    </tr>
+</table>
+
+<p>The next fragment instantiates an input stream object that can
+be used to read a <b>Serializable</b> object from the disk file.</p>
+
+<table border="1" bgcolor="#FFFF00">
+    <tr>
+        <td><pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; FileInputStream fin = new FileInputStream(&quot;tmp&quot;);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ObjectInputStream inStream = new <b>ObjectInputStream</b>(fin);</pre>
+        </td>
+    </tr>
+</table>
+
+<p>The next fragment <u>reads the object from the file</u> and
+assigns it to a reference variable of the generic type <b>Object</b>.
+Recall that <b>Object</b> is the superclass of all objects in
+Java. Hence, a reference variable of type <b>Object</b> can be
+used to <u>refer to any object</u>.</p>
+
+<p>A reference to an object as type <b>Object</b> imparts little
+information about the nature, makeup, or composition of the
+object. We will use <b>reflection</b> to obtain information about
+the object. </p>
+
+<table border="1" bgcolor="#FFFF00">
+    <tr>
+        <td><pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Object obj = inStream.<b>readObject</b>();//retrieve the object</pre>
+        </td>
+    </tr>
+</table>
+
+<p>The next fragment displays the object using the overridden <b>toString()</b>
+method. All objects can be displayed using <b>toString()</b>. In
+this case, the value displayed was: </p>
+
+<p><b><tt>MyClass@1cd017</tt></b></p>
+
+<table border="1" bgcolor="#FFFF00">
+    <tr>
+        <td><pre>System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &quot;The toString() representation of the object is: &quot;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + obj.<b>toString()</b>);</pre>
+        </td>
+    </tr>
+</table>
+
+<p><font color="#FF0000" size="4" face="Times New Roman"><b><tt>Begin
+Using Reflection</tt></b></font><font size="4"> </font></p>
+
+<p>Now we have reached the point where we actually begin using
+the <b>reflection </b>capability of JDK 1.1. </p>
+
+<p>The next fragment uses the <b>getClass()</b> method in class <b>java.lang.Object</b>
+to return the runtime class of the object named <b>obj</b>. This
+gives us access to information about the object at runtime. </p>
+
+<p>Then the <b>getName()</b> method of class <b>java.lang.Class</b>
+is used to return the <u>name of the class</u> represented by the
+<strong>Class</strong> object as a <b>String</b> object. </p>
+
+<p>In this case, the name <b>MyClass</b> is returned.</p>
+
+<table border="1" bgcolor="#FFFF00">
+    <tr>
+        <td><pre>System.out.println(&quot;The class name is: &quot; 
+                                  + <b>obj.getClass().getName())</b>;</pre>
+        </td>
+    </tr>
+</table>
+
+<p>Next, we use the frollowing fragment to return the name of the
+<i>superclass </i>of the object represented by the <strong>Class</strong>
+object. The returned value is <b>class java.lang.Object.</b> </p>
+
+<table border="1" bgcolor="#FFFF00">
+    <tr>
+        <td><pre>System.out.println(&quot;The Superclass is: &quot; 
+                            + <b>obj.getClass().getSuperclass())</b>;</pre>
+        </td>
+    </tr>
+</table>
+
+<p>Next, we <u>turn our attention to the fields</u> of the
+object.</p>
+
+<p>The next fragment invokes the <b>getFields()</b> method on the
+class object which returns an array of type <b>Field</b>. Recall
+that <b>Field</b> is also one of the classes in the <b>Core
+Reflection API</b>. </p>
+
+<p>Once we have an array of <b>Field</b> objects. we can access
+the <b>length</b> attribute of the array to determine the number
+of fields. In the sample program, the number of fields is
+reported to be 3. </p>
+
+<p>We can also use the methods of the <b>Field</b> class to learn
+more about the individual fields as we will see later.</p>
+
+<table border="1" bgcolor="#FFFF00">
+    <tr>
+        <td><pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>Field[]</b> myFields = obj.<b>getClass().getFields()</b>;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(&quot;The number of fields is: &quot; 
+                                            + myFields.<b>length</b>);</pre>
+        </td>
+    </tr>
+</table>
+
+<p>Now that we have an array of <b>Field</b> objects where each
+object in the array contains information about one of the fields
+in the class, we will use methods of the <b>Field</b> class to
+investigate those fields.</p>
+
+<p>The next code fragment uses the <b>getName()</b> method inside
+a loop to obtain and display the names of each of the fields in
+the object. This method returns the name of the field as a <b>String</b>
+object. </p>
+
+<p>The output produced is (boldface added by this author for
+emphasis): </p>
+
+<p><tt>The name of field 0 is: </tt><b><tt>myOuterString</tt></b><br>
+<tt>The name of field 1 is: </tt><b><tt>myIntVariable</tt></b><br>
+<tt>The name of field 2 is: </tt><b><tt>myEmbeddedObject</tt></b>
+</p>
+
+<p><font size="4" face="Times New Roman"><tt>Later when we view a
+listing of the complete program, you will recognize these as the
+field names defined in the definition of the class.</tt></font><font
+size="4"> </font></p>
+
+<table border="1" bgcolor="#FFFF00">
+    <tr>
+        <td><pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for(int cnt = 0; cnt &lt; myFields.length; cnt++)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(&quot;The name of field &quot; + cnt 
+                          + &quot; is: &quot;&nbsp;+ myFields[cnt].<b>getName()</b>);</pre>
+        </td>
+    </tr>
+</table>
+
+<p>We can also use the methods of the <b>Field </b>class to
+determine the types of the individual fields, as in the next code
+fragment.</p>
+
+<p>In this case, the output is: </p>
+
+<p><tt>The type of field 0 is: </tt><b><tt>class java.lang.String</tt></b><br>
+<tt>The type of field 1 is: </tt><b><tt>int</tt></b><br>
+<tt>The type of field 2 is: </tt><b><tt>class
+MyClass$MyInnerClass</tt></b> </p>
+
+<p>Pay particular attention to the type of field 2. This is the
+type indication for the class named <b>MyInnerClass</b> embedded
+as an inner class of the class named <b>MyClass</b>. </p>
+
+<table border="1" bgcolor="#FFFF00">
+    <tr>
+        <td><pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for(int cnt = 0; cnt &lt; myFields.length; cnt++)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(&quot;The type of field &quot; + cnt 
+                          + &quot; is: &quot;&nbsp;+ myFields[cnt].<b>getType()</b>);</pre>
+        </td>
+    </tr>
+</table>
+
+<p>Now that we have determined the type of each field, we can use
+methods of the class <b>Field</b> such as <b>getInt()</b> to
+obtain the values of each field. This is illustrated in the next
+code fragment where we use the <b>getInt()</b> method to obtain
+the value of field 1 only. The values of the other fields could
+also have been obtained using similar code.</p>
+
+<p>Note the syntax here which is possibly less obvious that what
+we have seen up to this point. </p>
+
+<p>The syntax requires you to invoke the method on a <b>Field</b>
+object that has been extracted from the object under
+investigation. </p>
+
+<p>In addition, the syntax requires you to pass the object under
+investigation to the method as a parameter. In this case, the
+program reports that the field has a value of <b>4096 </b>which
+will be as expected from a later examination of the class
+definition of the <b>MyClass</b> class. </p>
+
+<table border="1" bgcolor="#FFFF00">
+    <tr>
+        <td><pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(&quot;The value of field 1 is &quot;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + myFields[1].<b>getInt(obj)</b>);</pre>
+        </td>
+    </tr>
+</table>
+
+<p>Next we will turn our attention to an investigation of the
+instance methods of the object and culminate that investigation
+by invoking one of the methods.</p>
+
+<p>Here we will declare a reference variable to an array of the <b>Method</b>
+class and then invoke the method named <b>getMethods()</b> on the
+class object to store information about each method of the class
+in the array. </p>
+
+<p>The next fragment creates an array of <b>Method</b> objects
+and then iterates through the array using the <b>getName() </b>method
+of the <b>Method</b> class to obtain and display the names of the
+methods. </p>
+
+<table border="1" bgcolor="#FFFF00">
+    <tr>
+        <td><pre>&nbsp;&nbsp;&nbsp;&nbsp;<b> Method[]</b> myMethods = obj.<b>getClass().getMethods()</b>;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for(int cnt = 0; cnt &lt; myMethods.length; cnt++)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(&quot;The name of method &quot; 
+           + cnt + &quot; is: &quot;&nbsp;+ myMethods[cnt].<b>getName()</b>);</pre>
+        </td>
+    </tr>
+</table>
+
+<p>At this point, we may be initially surprised by the output
+which is:</p>
+
+<p><tt>The name of method 0 is: </tt><b><tt>getClass</tt></b><br>
+<tt>The name of method 1 is: </tt><b><tt>hashCode</tt></b><br>
+<tt>The name of method 2 is: </tt><b><tt>equals</tt></b><br>
+<tt>The name of method 3 is: </tt><b><tt>toString</tt></b><br>
+<tt>The name of method 4 is: </tt><b><tt>notify</tt></b><br>
+<tt>The name of method 5 is: </tt><b><tt>notifyAll</tt></b><br>
+<tt>The name of method 6 is: </tt><b><tt>wait</tt></b><br>
+<tt>The name of method 7 is: </tt><b><tt>wait</tt></b><br>
+<tt>The name of method 8 is: </tt><b><tt>wait</tt></b><br>
+<tt>The name of method 9 is: </tt><b><tt>showData</tt></b> </p>
+
+<p>Recall that the instance methods of the object include all of
+the methods defined in the class of which that object is an
+instance, plus the methods of all the <i>superclasses </i>of that
+class. Hence we see a list of all the methods defined in the
+family tree of our class. </p>
+
+<p>Next we will turn our attention to a more detailed
+investigation of the methods aimed at ultimately invoking one of
+the methods. For brevity, we will concentrate on method 9 which
+is the only method defined in the class of the object. </p>
+
+<p>First, let's determine the types of parameters in the formal
+argument list for the method. </p>
+
+<p>The <b>Method</b> class has a method named <b>getParameterTypes()</b>
+that returns an array of <b>Class </b>objects representing the
+formal parameter types, in declaration order, of the method
+represented by this <b>Method </b>object. The next fragment uses
+that method to obtain parameter types for method 9. </p>
+
+<table border="1" bgcolor="#FFFF00">
+    <tr>
+        <td><pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>Class[]</b> myParams =&nbsp;
+                     myMethods[9].<b>getParameterTypes()</b>;</pre>
+        </td>
+    </tr>
+</table>
+
+<p>Once we have an array of <b>Class</b> objects where each
+object contains information about one of the parameters, we can
+determine the number of parameters by extracting the <b>length</b>
+property of the array. In this case, the length of the aray was
+one element, telling us that there was only one parameter in the
+argument list. (Note that it was for the illustration of this
+capability that we included a parameter which had no functional
+purpose as mentioned earlier.)</p>
+
+<p>Displaying a <b>Class</b> object gives the name of the class
+(the type). Hence, we can determine the type of each of the
+parameters using code such as the following. In this case, there
+was only one parameter, and its type was reported to be <b>class
+java.lang.String</b>. </p>
+
+<table border="1" bgcolor="#FFFF00">
+    <tr>
+        <td><pre>for(int cnt = 0; cnt &lt; myParams.length; cnt++)&nbsp;
+&nbsp; System.out.println(&quot;The type for parameter &quot; + cnt&nbsp;
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + &quot; of method 9 is: &quot; + <b>myParams[cnt]</b>);</pre>
+        </td>
+    </tr>
+</table>
+
+<p>Our next objective will be to <u>invoke the method</u>. We
+will accomplish this by</p>
+
+<ul>
+    <li>invoking the method named <b>invoke()</b></li>
+    <li>of the class named <b>Method</b></li>
+    <li>on the object of type <b>Method</b></li>
+    <li>which is element [9] in the array of <b>Method</b>
+        objects.</li>
+</ul>
+
+<p>We will use code such as the following.</p>
+
+<table border="1" bgcolor="#00FFFF">
+    <tr>
+        <td><pre><font face="Courier New">myMethods[9].<b>invoke(obj,args)</b>;</font></pre>
+        </td>
+    </tr>
+</table>
+
+<p><u>First</u>, however, we will need to understand how to
+construct the argument list for the method named <b>invoke()</b>.</p>
+
+<p>A partial description of the <b>invoke()</b> method, as
+extracted from the JDK 1.1 documentation is as follows: </p>
+
+<table border="1" bgcolor="#00FFFF">
+    <tr>
+        <td><b><tt>public Object invoke(Object obj, Object
+        args[])</tt></b><tt> throws ...</tt> <p>Invokes the
+        underlying method represented by the Method object, on
+        the specified object with the specified parameters. </p>
+        <p>Individual parameters are automatically unwrapped to
+        match primitive formal parameters, and both primitive and
+        reference parameters are subject to widening conversions
+        as necessary. </p>
+        <p>The value returned by the underlying method is
+        automatically wrapped in an object if it has a primitive
+        type. </p>
+        <p>If the underlying method is static, then the specified
+        object argument is ignored. It may be null. (In our case,
+        the underlying method is not static. Rather, it is an
+        instance method so a valid object must be specified.) </p>
+        <p>Several possibilities exist for throwing exceptions.
+        You should review the JDK 1.1 documentation to learn of
+        these possibilities. </p>
+        </td>
+    </tr>
+</table>
+
+<p>As you can see from the above description, the <u>actual
+parameters</u> which are passed to the underlying method when it
+is invoked are provided <u>as an array</u> of type <b>Object</b>.
+</p>
+
+<p>Since <b>Object</b> is the superclass of all classes in Java,
+the elements in this array may be of any class including wrapper
+classes for the primitive types. </p>
+
+<p>If the underlying method is an instance method, it is invoked
+using dynamic method lookup as documented in The Java Language
+Specification, section 15.11.4.4; in particular, overriding based
+on the runtime type of the target object will occur. </p>
+
+<p>If the underlying method is static, it is invoked as exactly
+the method on the declaring class. </p>
+
+<p>If the method completes normally, the value it returns is
+returned to the caller of <b>invoke,</b> and if it is of a
+primitive type, it is wrapped in an object. If the underlying
+method return type is <b>void</b>, the invocation returns <b>null</b>.</p>
+
+<p>The next fragment first creates a one-element array of type <b>Object</b>
+named <b>args</b> and stores a string parameter in element 0.</p>
+
+<p>Then the <b>invoke()</b> method is invoked on element [9] of
+the array of <b>Method </b>arguments, passing the object under
+investigation, <b>obj</b>, and the array of arguments, <b>args</b>,
+as parameters. </p>
+
+<table border="1" bgcolor="#FFFF00">
+    <tr>
+        <td><pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>Object[] args = new Object[1];
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; args[0] = &quot;Invoking method 9&quot;;
+</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; myMethods[9].<b>invoke(obj,args)</b>;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end try block&nbsp; </pre>
+        </td>
+    </tr>
+</table>
+
+<p>The output produced by this code fragment is:</p>
+
+<p><tt>Incoming parameter for this method: Invoking method 9</tt><br>
+<tt>Value of the String variable: Instance Variable in the Outer
+Object</tt><br>
+<tt>Value of the int variable: 4096</tt><br>
+<tt>Value of String variable: Instance Variable in the Embedded
+Object</tt> </p>
+
+<p><font color="#FF0000"><b>Remainder of the Program</b></font> </p>
+
+<p>That completes the portion of this program which is <u>new
+material</u> based on the <u>Core Reflection API</u>. The
+remainder of the program simply consists of a couple of class
+definitions used to construct the object in the first place.
+Material of this type has been discussed in many previous lessons
+and won't be discussed here.</p>
+
+<p>The important thing to note when reviewing the remainder of
+the program is that </p>
+
+<ul>
+    <li>one class is defined as an inner class of the other, and
+        that</li>
+    <li>both classes implement the <b>Serializable</b> interface.</li>
+</ul>
+
+<h3 align="center"><a name="program listing"></a><font
+color="#FF0000">Program Listing</font></h3>
+
+<pre>A listing of the program with additional comments follows:</pre>
+
+<table border="1" bgcolor="#FFFF00">
+    <tr>
+        <td><pre>/*File ObjSer03.java, Copyright 1997, R.G.Baldwin
+Designed to be compiled and run under JDK 1.1
+
+This application is designed to illustrate the new Reflection
+capability of JDK 1.1 when used in conjunction with Object
+Serialization and Inner Classes.
+
+This program was tested using JDK 1.1 under Win95
+
+The output from running this program on one particular occasion was:
+
+Copyright 1997, R.G.Baldwin
+Execution date: Sat Mar 01 08:49:00 PST 1997
+Instantiate and display an object of type MyClass
+Incoming parameter for this method: String parameter to display method.
+Value of the String variable: Instance Variable in the Outer Object
+Value of the int variable: 4096
+Value of String variable: Instance Variable in the Embedded Object
+Now save the object in a file using Object Serialization.
+The original object has been saved in a disk file.
+The reference to the original object has been set to null.
+Now open the file for input.
+Now retrieve the object from the disk file and disect it.
+The toString() representation of the object is: MyClass@1cd017
+The class name is: MyClass
+The Superclass is: class java.lang.Object
+Now investigate the fields of the object.
+The number of fields is: 3
+The name of field 0 is: myOuterString
+The name of field 1 is: myIntVariable
+The name of field 2 is: myEmbeddedObject
+The type of field 0 is: class java.lang.String
+The type of field 1 is: int
+The type of field 2 is: class MyClass$MyInnerClass
+Assume decision here to investigate field 1
+The value of field 1 is 4096
+Now investigate the methods of the object.
+The name of method 0 is: getClass
+The name of method 1 is: hashCode
+The name of method 2 is: equals
+The name of method 3 is: toString
+The name of method 4 is: notify
+The name of method 5 is: notifyAll
+The name of method 6 is: wait
+The name of method 7 is: wait
+The name of method 8 is: wait
+The name of method 9 is: showData
+Assume decision here to investigate method 9.
+The number of parameters for method 9 is: 1
+The type for parameter 0 of method 9 is: class java.lang.String
+Assume decision here to invoke method 9 which will display the object.
+Incoming parameter for this method: Invoking method 9
+Value of the String variable: Instance Variable in the Outer Object
+Value of the int variable: 4096
+Value of String variable: Instance Variable in the Embedded Object
+
+*/
+//==================================================================
+import java.io.*;
+import java.util.*;
+import java.lang.Class.*;
+import java.lang.reflect.*;
+//==================================================================
+class ObjSer03{
+&nbsp; static public void main(String[] args){
+&nbsp; MyProcess myProcess = new MyProcess();&nbsp;&nbsp;
+&nbsp; }//end main()
+}//end class ObjSer03
+//==================================================================
+class MyProcess{
+&nbsp; MyProcess(){//constructor
+&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; FileOutputStream fout = new FileOutputStream(&quot;tmp&quot;);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ObjectOutputStream&nbsp; outStream&nbsp; =&nbsp; new&nbsp; <b>ObjectOutputStream</b>(fout);
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(&quot;Copyright 1997, R.G.Baldwin&quot;);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(&quot;Execution date: &quot; + new Date().toString());&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &quot;Instantiate and display an object of type MyClass&quot;);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; MyClass temp = new MyClass();//instantiate object
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; temp.showData(&quot;String parameter to display method.&quot;);//display
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &quot;Now save the object in a file using Object Serialization.&quot;);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; outStream.<b>writeObject</b>(temp);//save object
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; temp = null;//make object eligible for garbage collection
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; outStream.flush();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; outStream.close();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &quot;The original object has been saved in a disk file.&quot;);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &quot;The reference to the original object has been set to null.&quot;);
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(&quot;Now open the file for input.&quot;);&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; FileInputStream fin = new FileInputStream(&quot;tmp&quot;);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ObjectInputStream inStream = new <b>ObjectInputStream</b>(fin);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &quot;Now retrieve the object from the disk file and disect it.&quot;);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Object obj = inStream.<b>readObject</b>();//retrieve the object
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &quot;The toString() representation of the object is: &quot;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + obj.toString());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(&quot;The class name is: &quot;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + <b>obj.getClass().getName())</b>;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(&quot;The Superclass is: &quot;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + <b>obj.getClass().getSuperclass())</b>;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(&quot;Now investigate the fields of the object.&quot;);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>Field[]</b> myFields = obj.<b>getClass().getFields()</b>;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(&quot;The number of fields is: &quot;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + myFields.length);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for(int cnt = 0; cnt &lt; myFields.length; cnt++)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(&quot;The name of field &quot; + cnt + &quot; is: &quot;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + myFields[cnt].<b>getName()</b>);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for(int cnt = 0; cnt &lt; myFields.length; cnt++)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(&quot;The type of field &quot; + cnt + &quot; is: &quot;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + myFields[cnt].<b>getType()</b>);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &quot;Assume decision here to investigate field 1&quot;);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(&quot;The value of field 1 is &quot;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + myFields[1].<b>getInt(obj)</b>);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }catch(IllegalAccessException e){System.out.println(e);}
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &quot;Now investigate the methods of the object.&quot;);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Method[] myMethods = obj.<b>getClass().getMethods()</b>;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for(int cnt = 0; cnt &lt; myMethods.length; cnt++)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(&quot;The name of method &quot; + cnt + &quot; is: &quot;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + myMethods[cnt].<b>getName()</b>);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &quot;Assume decision here to investigate method 9.&quot;);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>Class[]</b> myParams =&nbsp;&nbsp; myMethods[9].<b>getParameterTypes()</b>;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &quot;The number of parameters for method 9 is: &quot;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + myParams.length);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for(int cnt = 0; cnt &lt; myParams.length; cnt++)&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(&quot;The type for parameter &quot; + cnt&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + &quot; of method 9 is: &quot; + <b>myParams[cnt]</b>);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &quot;Assume decision here to invoke method 9 which will &quot;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + &quot;display the object.&quot;);&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>Object[] args = new Object[1];
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; args[0] = &quot;Invoking method 9&quot;;
+</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; myMethods[9].<b>invoke(obj,args)</b>;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end try block
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; catch(IllegalAccessException e){System.out.println(e);}
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; catch(InvocationTargetException e){System.out.println(e);}
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }catch(ClassNotFoundException e){System.out.println(e);}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; inStream.close();&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; }catch(IOException e){System.out.println(e);}
+&nbsp; }//end constructor
+}//end class MyProcess
+//=============================================================
+
+
+//Note that this class and the Inner Class both implement&nbsp;
+// the <b>Serializable </b>interface.
+
+class MyClass implements <b>Serializable</b>{
+&nbsp; //Note the following inner class definition <b>inside MyClass</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp; class MyInnerClass implements <b>Serializable</b>{
+&nbsp;&nbsp;&nbsp; public String myEmbeddedString = //<b>instance variable of inner class
+</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &quot;Instance Variable in the Embedded Object&quot;;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; public void showEmbeddedData(){//<b>instance method of inner class
+</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(&quot;Value of String variable: &quot;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + myEmbeddedString);
+&nbsp;&nbsp;&nbsp; }//end showEmbeddedData()&nbsp;&nbsp;
+&nbsp; }//end class MyInnerClass
+
+&nbsp; //The following are <b>instance variables of the outer class</b>.
+&nbsp; public String myOuterString =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &quot;Instance Variable in the Outer Object&quot;;
+&nbsp; public int myIntVariable = 4096;
+&nbsp; public MyInnerClass myEmbeddedObject = <b>new MyInnerClass()</b>;
+
+&nbsp; public void showData(String inputStr){//instance method of outer class
+&nbsp;&nbsp;&nbsp; System.out.println(&quot;Incoming parameter for this method: &quot;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + inputStr);
+&nbsp;&nbsp;&nbsp; System.out.println(&quot;Value of the String variable: &quot;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + myOuterString);
+&nbsp;&nbsp;&nbsp; System.out.println(&quot;Value of the int variable: &quot; + myIntVariable);
+&nbsp;&nbsp;&nbsp; myEmbeddedObject.showEmbeddedData();//<b>display embedded object
+</b>&nbsp; }//end showData()&nbsp;&nbsp;
+
+}//end class MyClass
+//=============================================================&nbsp; </pre>
+        </td>
+    </tr>
+</table>
+
+<p>-end-<!--end--></p>
+</body>
+</html>

@@ -1,0 +1,3556 @@
+<!DOCTYPE doctype PUBLIC "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+  <meta http-equiv="Content-Type"
+ content="text/html; charset=iso-8859-1">
+  <title>... in Java by Richard G Baldwin</title>
+</head>
+<body link="#0000ff" vlink="#666666" alink="#ff0000" lang="EN-US">
+<h2>Dynamic Loading/Reloading of Classes and Dynamic Method Invocation, Part 1</h2>
+<i>Learn how to write a program that modifies its fundamental behavior at 
+runtime by dynamically modifying, compiling, loading, and reloading classes.</i><p><b>Published:</b>&nbsp; 
+May 16, 2006<br>
+<b>By <a href="mailto:Baldwin@DickBaldwin.com">Richard G. Baldwin</a></b>
+</p>
+<p>Java Programming Notes # 1494</p>
+<ul>
+  <li> <a href="#Preface">Preface</a></li>
+  <li> <a href="#Preview">Preview</a></li>
+	<li><a href="#General%20Background%20Information">General
+Background Information</a></li>
+<ul>
+	<li><a href="#Class_Loaders">Class Loaders</a></li>
+	<li><a href="#Dynamic_Method_Invocation">Dynamic Method Invocation using 
+	Reflection</a></li>
+</ul>
+	<li><a href="#Discussion%20and%20Sample%20Programs">Discussion and
+Sample Code</a></li>
+<ul>
+	<li><a href="#The_program_named_Reload01">The Program Named Reload01</a></li>
+	<li><a href="#The_program_named_Reload02">The Program Named Reload02</a></li>
+</ul>
+	<li><a href="#Run%20the%20program">Run the Program</a></li>
+	<li><a href="#Summary">Summary</a></li>
+	<li><a href="#Whats%20Next">What's Next?</a></li>
+	<li><a href="#References">References</a></li>
+	<li><a href="#Complete%20Program%20Listings">Complete Program
+Listing</a></li>
+</ul>
+<hr size="3" width="100%" align="center">
+<center>
+<h2> <a name="Preface"></a>Preface</h2>
+</center>
+<p> In my opinion, one of the most complex topics in all of Java involves 
+dynamic loading, unloading, and reloading of classes.&nbsp; Not far behind in 
+terms of syntactical complexity is the dynamic invocation of methods using 
+reflection.</p>
+<p> In this lesson, I will teach you how to write a program that modifies its fundamental behavior at 
+runtime by dynamically modifying, compiling, loading, and reloading classes.&nbsp; 
+I will also teach you how to use reflection for dynamic method invocation.</p>
+<p> <font color="#FF0000"><b>A practical example</b></font></p>
+<p> Whenever possible, I like to demonstrate Java programming concepts by 
+writing a small but useful program that incorporates those concepts to advantage.&nbsp; 
+I thought long and hard before finally coming up with an idea for a small but 
+useful program that 
+clearly demonstrates the benefits of dynamic class loading.</p>
+<p> I settled on a program that writes, compiles, loads and executes new Java code 
+on the fly with no requirement to stop and restart the program to 
+incorporate the new code.&nbsp; The new code is code that was completely unknown 
+to me when I wrote the program.&nbsp; The new code may also be code that is 
+unknown to the user when she starts the program running.</p>
+<p> <font color="#FF0000"><b>A plotting program</b></font></p>
+<p> Stated briefly, the program allows a user to enter chunks <i>
+(multiple statements)</i> of Java code into a text field during runtime.&nbsp;
+<i>(The reason for doing this will be explained in detail 
+<a href="#A_useful_program">later</a>.)</i>&nbsp; 
+Having entered a new chunk of code, the user clicks a button, which causes the 
+new code to be compiled, loaded, and executed as the body of a method.&nbsp; The 
+results produced by executing the method are then plotted in a Cartesian coordinate 
+system as shown in <a href="#Figure_1">Figure 1</a>.&nbsp; The user can repeat 
+this process for as long as she has new chunks of code to evaluate with no 
+requirement to stop and restart the program along the way.</p>
+<p> <font color="#FF0000"><b>From very simple to very complex</b></font></p>
+<p> The chunk of Java code can be as simple or as complex as may be needed to 
+satisfy the user's needs.&nbsp; For example, the chunk of code could be as 
+simple as the following equation of 
+a straight line.</p>
+<p><pre>y = 6*x+5;</pre></p>
+<p> On the other hand, the chunk of code could be as complex as or more complex 
+than the 
+following which includes the definition and use of a local inner class along 
+with the <b>getTime</b> instance method from the <b>Date</b> class and the 
+static <b>sqrt</b> method from <a name="complex_expression">the <b>Math</b> class</a>.</p>
+<p><pre>
+final double z = 65;class LocalClass{public long p = 
+new java.util.Date().getTime();public double method(
+double data){return sqrt(p/(data*z*1.0E09));}}LocalClass 
+q = new LocalClass();y = q.method(18.6)*x;
+</pre></p>
+<blockquote>
+	<p><i>(Line 
+breaks were manually inserted into the example given above to force it to fit 
+into this narrow publication format.)</i></p>
+</blockquote>
+<p> <b><font color="#ff0000">Viewing tip</font></b> </p>
+<p>You may find it useful to open another copy of this lesson in a
+separate browser window.&nbsp; That will make it easier for you to
+scroll back
+and forth among the different listings and figures while you are
+reading
+about them.</p>
+<p><b><font color="#ff0000">Supplementary material</font></b> </p>
+<p>I recommend that you also study the other lessons in my extensive
+collection of online Java tutorials.&nbsp; You will find those lessons
+published
+at <a href="http://softwaredev.earthweb.com/java">Gamelan.com</a>.&nbsp;
+However, as of the date of this writing, Gamelan doesn't maintain a
+consolidated index of my Java tutorial lessons, and sometimes they are
+difficult to locate there.&nbsp; You will find a consolidated index at <font
+ color="#000000"> <a href="http://www.dickbaldwin.com/">www.DickBaldwin.com</a>.</font></p>
+<p>I also encourage you to review the material in the lessons 
+listed in the <a href="#References">References</a> section of this document.</p>
+<h2 align="center"><font color="#000000"><a name="Preview">Preview</a></font></h2>
+<p> <font color="#FF0000"><b><a name="A_useful_program">A useful program</a></b></font></p>
+<p> I claim no special expertise in the complex areas of class loaders or dynamic method 
+invocation.&nbsp; In fact, I find much of what I read on the web about these 
+topics to be confusing and often contradictory.&nbsp; However, I have learned enough about these topics to 
+put them to work.&nbsp; As an example, I will present and explain a very useful program that might be called an <i>
+equation solver</i> at the low end, and might be called an <i>interactive code exerciser</i> 
+at the high end.&nbsp; I will share the knowledge that I have gained on these 
+topics with you in 
+this two-part lesson.</p>
+<p> <font color="#FF0000"><b>A screen shot of the program GUI</b></font></p>
+<p> I will begin by showing you a screen shot that illustrates the program in 
+operation.&nbsp; Then I will briefly explain the operation of the program.&nbsp; 
+After that, I will explain the program code in detail.</p>
+<p> A screen 
+shot of the program GUI is shown in <a name="Figure_1">Figure 1</a>.</p>
+
+
+
+
+
+
+<p>
+<table border="1" cols="1" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><img border="0" src="java1494a01.jpg" width="476" height="431"><br></pre>
+      <pre><b>Figure 1</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Dynamic class loading and method invocation</b></font></p>
+<p>This program, which is named <b>Reload02</b>, demonstrates the use of dynamic 
+class loading and dynamic method invocation.&nbsp; When the program executes, it 
+defines, writes, compiles, loads, instantiates, and invokes methods on an object of a new 
+class that is designed automatically according to input from the user.</p>
+<p><font color="#FF0000"><b>A plotting program</b></font></p>
+<p>As you can see from <a href="#Figure_1">Figure 1</a>, this is a plotting program.&nbsp; It is 
+designed to automatically create and load a new class file named <b>Reload02a.class</b>, 
+to instantiate a new instance <i>(object)</i> of the class, and to 
+plot the behavior of three instance methods belonging to the object.&nbsp; The 
+user can repeat this cycle indefinitely, entering specifications for the new 
+classes into the text fields at the top of the GUI, with no requirement to stop 
+and restart the program.</p>
+<p><font color="#FF0000"><b>Three methods</b></font></p>
+<p>The three methods are named <b>f1</b>, <b>f2</b>, and <b>f3</b>.&nbsp; The 
+behavior of each of the three methods is specified in text form by the user who 
+enters the specifying text into three corresponding text fields at the top of 
+<a href="#Figure_1">Figure 1</a>.</p>
+<p><font color="#FF0000"><b>Creating and loading a new class</b></font></p>
+<p>By modifying the text, checking the check box near the top, and clicking the 
+button near the bottom, the user can cause a new class to be created, compiled, 
+and loaded.&nbsp; The 
+new class contains three methods with behavior matching the text entered by the 
+user.</p>
+<p><font color="#FF0000"><b>Plotting the behavior of the methods</b></font></p>
+<p>The behavior of each of the three methods is then plotted on a common set of 
+Cartesian coordinates.&nbsp; Once the methods are defined and plotted for the 
+first time, the user 
+can modify the plotting parameters in the text fields at the bottom of <a href="#Figure_1">Figure 1</a> 
+and cause the methods to be plotted again and again with different plotting 
+parameters.</p>
+<p><font color="#FF0000"><b>Zooming in</b></font></p>
+<p>For example, <a name="Figure_2">Figure 2</a> shows the result of adjusting the 
+plotting parameters so as to zoom in on the region near the origin of the graph 
+shown in <a href="#Figure_1">Figure 1</a>.</p>
+<table border="1" cols="1" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><img border="0" src="java1494a02.jpg" width="476" height="431"><br></pre>
+      <pre><b>Figure 2</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The user can replot the graph as many times as may be needed using different 
+plotting parameters for each new graph.</p>
+<p><font color="#FF0000"><b>New method specifications</b></font></p>
+<p>When the user is satisfied with the plots of those three methods, she can modify the text in the text fields near the top and start over with three new 
+methods.&nbsp; It is important to note that, due to dynamic reloading of the 
+class, this does not require the termination and/or restarting of the program.</p>
+<p>Modifying the text specification for one or more of the three methods, 
+checking the checkbox, and clicking the <b>Graph</b> button causes a 
+new class to be defined, written, compiled, loaded, and instantiated, and causes 
+the three methods belonging to the object of the new class to be executed and 
+plotted.&nbsp; The new class is designed automatically according to the input 
+provided in the text fields by the user.</p>
+<p><font color="#FF0000"><b>Plotting format</b></font></p>
+<p>As you can see in <a href="#Figure_1">Figure 1</a> and <a href="#Figure_2">Figure 2</a>, the three methods 
+named <b>f1</b>, <b>f2</b>, and <b>f3</b> are plotted in black, red, and blue respectively.&nbsp; A 
+coordinate system with axes, tic marks, and labels is plotted in green.</p>
+<p>The 
+labels on the axes correspond to the values at the extreme edges of the plotting 
+surface.&nbsp; As shown in <a href="#Figure_1">Figure 1</a>, the initial plotting range extends from -151 to +151 on each 
+dimension.&nbsp; This causes points plotted within the range from -150 to +150 
+inclusive to be visible inside the plotting surface.</p>
+<p>As shown in <a href="#Figure_2">Figure 2</a>, the plotting range on the 
+positive or negative side of either dimension can easily be changed by the 
+user.</p>
+<p>The overall default size of the GUI is 475 pixels wide by 430 pixels tall.&nbsp; This size 
+was chosen to satisfy the size requirements of my publisher.&nbsp; You may want to 
+expand the overall size of the GUI in order to be able to view more detail.</p>
+<p><font color="#FF0000"><b>User input, graphic output</b></font></p>
+<p>As discussed above and as shown in <a href="#Figure_1">Figure 1</a> and <a href="#Figure_2">Figure 2</a>, the program provides three text fields 
+near the top of the GUI into which the user can enter text expressions written in java syntax.&nbsp; 
+These expressions are evaluated to produce the plots shown in the center of the 
+GUI.&nbsp; For example, when the following equation 
+is entered into one of the text fields, the check box is checked, and the <b>
+Graph</b> button is clicked, the value of y is plotted on the vertical axis as a function of x on the 
+horizontal axis.<i>&nbsp; (Note that the semicolon is required.)</i></p>
+<p><pre><b><a name="y_=_100.0*(cos(x/10.0)*sin(x/11.0));">y = 100.0*(cos(x/10.0)*sin(x/11.0));</a></b></pre></p>
+
+<p>In 
+this case, the <b>cos</b> and <b>sin</b> methods of the <b>Math</b> class are used to evaluate the 
+equation.&nbsp; <i>(This produces the blue curve in <a href="#Figure_1">Figure 1</a> and <a href="#Figure_2">Figure 2</a>.)</i></p>
+<p>All computations are performed as type <b>double</b>.&nbsp; Then the results are 
+converted to integer values for plotting.</p>
+<p><font color="#FF0000"><b>From simple to complex</b></font></p>
+<p>The text entered into the text fields can be as simple or as complex as 
+is required to satisfy the user's needs.&nbsp; For example, a beginning algebra student might be 
+interested in graphing the following three equations of a straight line and 
+comparing the different graphs:</p>
+<p>
+<pre><b>y = 10*x + 15;</b></pre>
+<pre><b>y = -5*x - 0;</b></pre>
+<p></p>
+<pre><b>y = 3*x -50;</b></pre></p>
+<p><font color="#FF0000"><b>DSP</b></font></p>
+<p>On the other hand, someone interested in understanding Digital Signal Processing <i>(DSP)</i>, 
+might be interested in the plotted form of the sinusoidal equation shown
+<a href="#y_=_100.0*(cos(x/10.0)*sin(x/11.0));">above</a>.&nbsp; <i>(As 
+mentioned earlier, this is the blue curve in <a href="#Figure_1">Figure 1</a> and <a href="#Figure_2">Figure 2</a>.)</i></p>
+<p><font color="#FF0000"><b>Java programming and DSP</b></font></p>
+<p>Someone having Java 
+programming knowledge can enter more advanced text into the text fields, such as 
+the complex chunk of Java code shown <a href="#complex_expression">earlier</a>.</p>
+<p>For example, the following text will plot as a series of 
+impulses, as 
+shown in <a href="#Figure_3">Figure 3</a>.</p>
+<p><pre><b>if(x%10 == 0){y = 50;}else{y = -50;}</b></pre></p>
+<p><i>(This is another functional form that might be of great interest to someone 
+interested in DSP because we frequently deal with impulse trains in 
+<a name="Figure_3">DSP</a>.)</i></p>
+<table border="1" cols="1" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><img border="0" src="java1494a03.jpg" width="476" height="431"><br></pre>
+      <pre><b>Figure 3</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Eliminating two of the three graphs</b></font></p>
+<p>Note that two of the three graphs were effectively eliminated from <a href="#Figure_3">Figure 3</a> 
+by entering equations that caused the value for y to be a constant which was 
+off the page.</p>
+<p><font color="#FF0000"><b>Static import directive</b></font></p>
+<p>The program uses a static import directive for the <b>Math</b> class 
+requiring the use of J2SE 5.0 or later.&nbsp; Therefore, it is not necessary to qualify methods from 
+the <b>Math</b> class with the 
+name of the class as in <b>Math.cos(...)</b>.&nbsp; As shown in <a href="#Figure_2">Figure 2</a>, all that is required is
+<b>cos(...)</b>.&nbsp; Thus, all 
+of the methods of the <b>Math</b> class are directly available to be included in the 
+text specifications for the three methods.</p>
+<p><font color="#FF0000"><b>Using other classes</b></font></p>
+<p>If it is desired to use other classes from the Java API, it is necessary to 
+fully qualify the references to those classes using their package name, as shown 
+in the following text specification.&nbsp; <i>(This example has no purpose other 
+than to illustrate the syntax involved.)</i></p>
+<p><pre><b><a name="y_=_(x_*_((new_java.util.Date().getTime())/">y = (x * ((new java.util.Date().getTime())/</a>
+(new java.util.Date().getTime())));</b></pre>This is the text that is plotted in 
+red in <a href="#Figure_1">Figure 1</a> and <a href="#Figure_2">Figure 2</a>.&nbsp; <i>(Note that a line break was manually inserted in the middle of the 
+<a href="#y_=_(x_*_((new_java.util.Date().getTime())/">above equation</a> to 
+force it to fit into this narrow publication format.)</i><p>
+<font color="#FF0000"><b>Design, write, compile, load, instantiate, evaluate, 
+and plot a new class</b></font></p>
+<p>
+As shown in the above figures, the three 
+text fields used for entry of text specifications are located near the top of the GUI.&nbsp; In 
+addition, a check box is also located near the top of the GUI.&nbsp; There is a 
+<b>Graph</b> 
+button at the bottom of the GUI.</p>
+<p>
+If the check box is checked when the <b>Graph</b> 
+button is clicked, a new class that matches the specifications that have been entered 
+into the text fields is automatically designed, written, compiled, loaded and 
+instantiated before 
+the methods are evaluated and plotted.</p>
+<p>
+<font color="#FF0000"><b>If the check box is not checked...</b></font></p>
+<p>If the check box has not been checked when the <b>Graph</b> button is clicked, 
+a new class is not loaded. Rather, the methods 
+in the existing class are simply re-plotted, potentially with different plotting 
+parameters.&nbsp; <i>(You can change the plotting parameters by changing the values in 
+the text 
+fields at the bottom of the GUI.)</i></p>
+<p><font color="#FF0000"><b>Method specifications at startup</b></font></p>
+<p>As shown in <a href="#Figure_1">Figure 1</a>, the program plots the following three text expressions 
+by default at startup in order to provide a visual confirmation that the program is 
+working, and also to illustrate the syntax that should be used to enter 
+text specifications into the text fields:</p>
+<pre><b><a name="y_=_(x*x*x_+_40*x*x_+_100*x_-6000)/100;">y = (x*x*x + 40*x*x + 100*x -6000)/100;</a></b></pre>
+<pre><b><a name="y_=_(x_*_((new_java.util.Date().getTime">y = (x * ((new java.util.Date().getTime</a>())/
+(new java.util.Date().getTime())));</b></pre>
+<pre><b><a name="y_=_100.0*(cos(x/10.0)*sin">y = 100.0*(cos(x/10.0)*sin</a>(x/11.0));</b></pre>
+<p><i>(Note that a line break was manually entered 
+into the </i> <a href="#y_=_(x_*_((new_java.util.Date().getTime">second 
+equation</a><i> above to force it to fit into this narrow 
+publication format.)</i></p>
+<p><font color="#FF0000"><b>A simple cubic function</b></font></p>
+<p>The <a href="#y_=_(x*x*x_+_40*x*x_+_100*x_-6000)/100;">first equation</a> shown above is a 
+simple cubic function with roots at x values of -20, -30, and +10.</p>
+<p><font color="#FF0000"><b>Classes other than the Math class</b></font></p>
+<p>The <a href="#y_=_(x_*_((new_java.util.Date().getTime">second 
+equation</a> illustrates how classes other than the <b>Math</b> class can be incorporated 
+into the text specifications.</p>
+<p><font color="#FF0000"><b>Methods of the Math class</b></font></p>
+<p>The <a href="#y_=_100.0*(cos(x/10.0)*sin">third equation</a> illustrates how methods of the <b>Math</b> class can 
+be incorporated into the text specifications.</p>
+<p><font color="#FF0000"><b>Adjusting the plotting parameters</b></font></p>
+<p>In addition to the text fields at the top of the 
+GUI, this program also provides the following text fields and a button labeled
+<b>Graph</b> at the bottom of the GUI.&nbsp; The combination of these text fields and the 
+button makes it possible for the user to adjust the plotting parameters and to 
+replot the graph as many times with as many plotting-parameter settings as may 
+be needed.</p>
+<ul>
+	<li>xMin = minimum x-axis value</li>
+	<li>xMax = maximum x-axis value</li>
+	<li>yMin = minimum 
+y-axis value</li>
+	<li>yMax = maximum y-axis value</li>
+	<li>xTicInt = tic interval on x-axis</li>
+	<li>yTicInt = 
+tic interval on y-axis</li>
+	<li>xCalcInc = calculation interval <i>(should normally be set to 
+1.0)</i></li>
+</ul>
+<p>The user can modify any of these parameters and then click the <b>Graph</b> button 
+to cause the three methods to be re-plotted according to the new parameters.</p>
+<p><font color="#FF0000"><b>Output on the command-line screen</b></font></p>
+<p>In addition to the output shown in the GUI in <a href="#Figure_1">Figure 1</a>, the program also produces status 
+output on the command-line screen as shown in <a name="Figure_4">Figure 4</a>.</p>
+
+<p>
+<table border="1" cols="1" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><img border="0" src="java1494a04.jpg" width="469" height="348"><br></pre>
+      <pre><b>Figure 4</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>In 
+order to plot new and different equations, it is only necessary to:</p>
+<ul>
+	<li>Enter the new specifications into the text fields at the top of the GUI</li>
+	<li>Check the check box at the 
+top of the GUI, and</li>
+	<li>Click the <b>Graph</b> button.</li>
+</ul>
+<p><font color="#FF0000"><b>Possible compilation problems</b></font></p>
+<p>This will cause a new class containing three methods that represent the 
+text specifications in the three text fields to be compiled and loaded.&nbsp; If the new class is compiled and 
+loaded successfully, the new graphs will appear on the GUI fairly quickly.&nbsp; If the compilation process fails to 
+return within five seconds, the compilation process will be aborted and a 
+<i>&quot;Compilation timeout error&quot;</i> will be declared on the 
+command-line screen as shown in <a href="#Figure_4">Figure 4</a>.</p>
+<p>It is also possible that the compilation 
+process could return within five seconds with a compilation error.&nbsp; In either 
+case, a <i>&quot;Probable compile error&quot;</i> will be declared on the 
+command-line screen.</p>
+<p><font color="#FF0000"><b>If at first you don't succeed, try, try again</b></font></p>
+<p>However, the program does not terminate 
+as a result of a probable compile error.&nbsp; You can fix the problem in the 
+text specification and try again by checking the checkbox and clicking the <b>
+Graph</b> button.</p>
+<p><font color="#FF0000"><b>How do you know how to fix the problem?</b></font></p>
+<p>The source code for the new class file named <b>Reload02a.java</b> is 
+deposited in a subdirectory <i>(of the current directory)</i> named <b>Temp</b>.</p>
+<p>In the event of a compiler error, the command-line screen shown in <a href="#Figure_4">Figure 4</a> 
+does not provide any diagnostic information.&nbsp; Therefore, it isn't of much 
+help in fixing the problem.&nbsp; In that case, it might be a 
+good idea to manually recompile the source-code file named <b>Reload02a.java</b> 
+in the subdirectory named <b>Temp</b> using the <b>javac.exe</b> 
+program from Sun before attempting to repair the text specification in the text 
+field shown in <a href="#Figure_1">Figure 1</a>.</p>
+<p>In that instance, the source code should not compile successfully, but useful 
+diagnostic information should be produced.&nbsp; My approach at that point would 
+probably be to repair the source code file in order to get a good compilation.&nbsp; 
+Having determined the nature of the problem with the specification, I would then 
+repair the text specification in the text field of <a href="#Figure_1">Figure 1</a>, check the check 
+box, and click the <b>Graph</b> button again.</p>
+<p><font color="#FF0000"><b>Two programs in Part 1</b></font></p>
+
+<p> I will present and explain two programs in Part 1 of this lesson.&nbsp; The 
+first program is named <b>Reload01</b>.&nbsp; 
+The purpose of this program is simply to illustrate the methodology for 
+dynamically compiling and loading a new class, instantiating an object of the new class, and 
+invoking a method belonging to that object.&nbsp; This program has no particular 
+use other than to illustrate the concepts listed above.</p>
+<p> The second program that I will present and explain in Part 1 of this lesson 
+is named <b>Reload02</b>.&nbsp; This program will incorporate the three concepts 
+listed above into the plotting program described earlier.</p>
+<p> <font color="#FF0000"><b>Three ways to do the job</b></font></p>
+<p> There are at least three ways to make use of a class that has been 
+dynamically loaded.&nbsp; Both of the programs presented in Part 1 of this 
+lesson will use the <b>invoke</b> method of the <b>Method</b> class <i>
+(reflection)</i> to 
+dynamically invoke methods belonging to objects of the newly-loaded class.</p>
+<p> Part 2 of this lesson will demonstrate the second approach for accomplishing 
+the same results using interfaces while avoiding the complexities of reflection.&nbsp; Part 2 will also describe, but 
+probably will not demonstrate the 
+third approach.</p>
+<h2 align="center"><font color="#000000"> <a
+ name="General Background Information">General Background Information</a></font></h2>
+<p>This section will provide general background information on <i>class loaders</i> and 
+<i>dynamic method invocation</i>.</p>
+<h3><a name="Class_Loaders">Class Loaders</a></h3>
+<p>What does it mean to load a class?&nbsp; I can't provide a complete 
+technical description, but I can tell you that once a class has been loaded, a 
+special object of the 
+class named <b>Class</b> will have been automatically instantiated.&nbsp; The <b>Class</b> object 
+represents the newly-loaded class, and you can do lots of things with it.&nbsp;
+<i>(See for example the introspection example in the earlier lesson entitled
+<a href="http://www.developer.com/java/other/article.php/600571">Swing from A to 
+Z: Analyzing Swing Components, Part 2, GUI Setup</a>.)</i></p>
+<p><font color="#FF0000"><b>Putting class loaders to work</b></font></p>
+<p>As I explained earlier, I claim no special expertise in the complex area of 
+class loaders.&nbsp; However, I have learned enough about them to put them to 
+work and I will share that knowledge with you.</p>
+<p><font color="#FF0000"><b>Two kinds of class loaders</b></font></p>
+<p>I am led to believe that there are two kinds of class loaders:</p>
+<ul>
+	<li>The <i>primordial</i> class loader</li>
+	<li>Class loader objects</li>
+</ul>
+<p>There is only one primordial class loader in a running Java program, and it is part of the Java Virtual 
+Machine.</p>
+<p>There may in addition be one or more class loader objects, which are created 
+by the program at runtime.</p>
+<p><font color="#FF0000"><b>When can a class be reloaded?</b></font></p>
+<p>I am led to believe that once a class is loaded, it can only be reloaded if 
+it was loaded by a class loader object.&nbsp; Classes loaded by the primordial 
+class loader cannot be reloaded.&nbsp; If a class cannot be reloaded, it also 
+cannot be replaced by a new class having the same name.</p>
+<p><font color="#FF0000"><b>Class loading priority</b></font></p>
+<p>After creating a class loader object, you can ask it to load classes 
+according to certain restrictions.&nbsp; However, I believe that even if you ask a class 
+loader object to load a class, the primordial class loader is given an 
+opportunity to load the class first.&nbsp; If the primordial class loader finds 
+the class on the classpath, it will load it.</p>
+<p><font color="#FF0000"><b>Avoid putting your re-loadable classes on the 
+classpath</b></font></p>
+<p>As mentioned above, once a 
+class is loaded by the primordial class loader, it cannot be reloaded.&nbsp; 
+Therefore, classes that you intend to load and reload using class 
+loader objects must not be on the class path.&nbsp; If they are, they will be 
+loaded by the primordial loader, and once loaded cannot be reloaded.</p>
+<p><font color="#FF0000"><b>The URLClassLoader class</b></font></p>
+<p>It is possible to define your own class loader objects to deal with special 
+class loading requirements.&nbsp; However, that 
+is not demonstrated in this lesson.&nbsp; Rather, this lesson instantiates an 
+object of the <b>URLClassLoader</b> class and uses it to load classes.&nbsp; The
+<b>URLClassLoader</b> class is contained in the standard Java class library.</p>
+<p><font color="#FF0000"><b>Loading a class</b></font></p>
+<p>Once you have a <b>URLClassLoader</b> object, you can ask it to load a class 
+by invoking the <b>loadClass</b> method on the object passing the name of the 
+class as a <b>String</b>.&nbsp; If the class is successfully loaded, the <b>
+loadClass</b> method will return a reference to a <b>Class</b> object that 
+represents the newly-loaded class.&nbsp; <i>(The <b>loadClass</b> method throws 
+the <b>ClassNotFoundException</b> if it can't find the class file.)</i></p>
+<p><font color="#FF0000"><b>Instantiating an object of the newly-loaded class</b></font></p>
+<p>Once you have a <b>Class</b> object that represents the newly-loaded class, 
+you can instantiate an object of the class by invoking the <b>newInstance</b> 
+method on the <b>Class</b> object.</p>
+<p><font color="#FF0000"><b>What is the type of the new object's reference?</b></font></p>
+<p>However, the type of the reference 
+returned by the <b>newInstance</b> method is not the name of the class 
+represented by the <b>Class</b> object.&nbsp; Rather, in J2SE 5.0 and later, it is the generic type 
+&lt;T&gt;.</p>
+<p><font color="#FF0000"><b>Cannot cast to the true type</b></font></p>
+<p>Furthermore, because the newly-loaded class is not on the classpath, 
+it is not known to the compiler at compile time, so you cannot compile a 
+statement that will cast the object's reference to the type of the newly-loaded 
+class.</p>
+<blockquote>
+	<p><i>(However, to get on more familiar ground, you can save the 
+	reference as type <b>Object</b> if you are uncomfortable with the concept of 
+	the generic type &lt;T&gt;.&nbsp; Prior to the release of J2SE 5.0 and its 
+	concept of <a href="http://www.developer.com/java/other/article.php/3495121">
+	Generics</a>, the <b>
+	newInstance</b> method of the <b>Class</b> class actually returned a 
+	reference of type <b>Object</b> .)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>How do you invoke a method belonging to the new 
+object?</b></font></p>
+<p>That brings us to the next topic.&nbsp; If your reference to the new object 
+is not of the correct type, how do you invoke methods belonging to the new 
+object?</p>
+<p>As I mentioned earlier, there are at least three ways to invoke the new object's 
+methods.&nbsp; Both of the programs that I will explain in Part 1 of this lesson will use the
+<b>invoke</b> method of the <b>Method</b> class <i>(reflection)</i> to dynamically invoke methods 
+belonging to the object.</p>
+<p>Part 2 of this lesson will demonstrate the second 
+approach, which uses a common interface while avoiding the 
+complexity of dynamic method invocation.&nbsp; Part 2 will also describe, but 
+probably will not demonstrate the third approach. </p>
+<h3><a name="Dynamic_Method_Invocation">Dynamic Method Invocation using 
+Reflection</a></h3>
+<p>The <b>Class</b> object that represents a class provides a large number of 
+methods that make it possible for you to get information pertaining to the class 
+represented by the object.&nbsp; For example, the method named <b>
+getDeclaredMethods </b><i>(plural form)</i>:</p>
+<blockquote>
+	<p><i>&quot;Returns an array of <b>Method</b> objects reflecting all the methods 
+	declared by the class or interface represented by this Class object.&quot;</i></p>
+</blockquote>
+<p>Similarly, the method named <b>getDeclaredMethod</b> <i>(singular form)</i>:</p>
+<blockquote>
+	<p><i>&quot;Returns a <b>Method</b> object that reflects the specified declared 
+	method of the class or interface represented by this Class object.&quot;</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Will use the singular form of the method</b></font></p>
+<p>Since I already know the <i>names, return types, </i>and <i>parameter types</i> 
+for the methods of interest in the programs in this lesson, I won't need a list 
+of all the methods belonging to the object.&nbsp; Therefore, I can use the 
+singular form, <b>getDeclaredMethod</b>, described above.</p>
+<p><font color="#FF0000"><b>The Method class</b></font></p>
+<p>The <b>getDeclaredMethod</b> method returns a reference to an object of the 
+class <b>Method</b>.&nbsp; According to the Sun documentation:</p>
+<blockquote>
+	<p><i>&quot;A <b>Method</b> provides information about, and access to, a single 
+	method on a class or interface. The reflected method may be a class method 
+	or an instance method (including an abstract method).&quot;</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>The <i>invoke</i> method of the <i>Method</i> class</b></font></p>
+<p>Among the many methods provided by the <b>Method</b> class is the method 
+named <b>invoke</b>.&nbsp; Again, according to the Sun documentation, this 
+method:</p>
+<blockquote>
+	<p><i>&quot;Invokes the underlying method represented by this <b>Method</b> 
+	object, on the specified object with the specified parameters.&quot;</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Makes it possible to invoke a particular method...</b></font></p>
+<p>Thus, once you have a <b>Method</b> object that represents a particular 
+method, it is possible to invoke the method 
+named <b>invoke</b> on the <b>Method</b> object to cause that particular method 
+belonging to a particular object to be executed.</p>
+<p><font color="#FF0000"><b>Does not require a reference of the true type</b></font></p>
+<p>Furthermore, that is possible even if the type of your object's reference is not the true type of the object.&nbsp; For example, your reference 
+could be the generic type <b>Object</b>.</p>
+<blockquote>
+	<p><i>(Normally, if you have a reference to an object as type <b>Object</b>, 
+	you cannot directly invoke a method on the object unless the method is one 
+	of the eleven methods defined in the class named <b>Object</b>.&nbsp; 
+	However, you can get around that restriction by using the dynamic method 
+	invocation process described above.&nbsp; I will demonstrate the process in 
+	the two programs in this document.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Someone once said, &quot;The devil is in the details.&quot;</b></font></p>
+<p>There are quite a few tedious details involved in the use of dynamic method 
+invocation.&nbsp; I will explain some of those details in the explanation of the 
+code in the sections that follow.</p>
+<center>
+<h2> <a name="Discussion and Sample Programs"></a><font color="#000000">Discussion
+and Sample Code</font></h2>
+</center>
+I will provide a detailed explanation of the following two programs in Part 1 of this lesson:<ul>
+	<li>Reload01</li>
+	<li>Reload02</li>
+</ul>
+<p>The first program listed above is designed to illustrate how to use dynamic class loading and 
+dynamic method invocation.&nbsp; This is a relatively simple, but not particularly useful program.</p>
+<p>The second program listed above is designed to incorporate dynamic class loading and 
+dynamic method invocation into a useful but much more complex program.</p>
+<h3><a name="The_program_named_Reload01">The Program Named Reload01</a></h3>
+<p>The program named <b>Reload01</b> illustrates writing, compiling, 
+loading, recompiling, and reloading a new class, and invoking a method on an 
+object instantiated from that newly-loaded class totally under program control 
+at runtime.</p>
+<p><font color="#FF0000"><b>Write a simple source code file</b></font></p>
+<p>The program begins by automatically writing the simple class definition shown 
+in <a name="Listing_1">Listing 1</a> into a source code file named <b>Reload01a.java</b> in a subdirectory <i>(of the current 
+directory)</i> named <b>temp</b>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>public class Reload01a{
+  public String theMethod(String str,double val){
+    System.out.println(\"Executing theMethod\");
+    return str + " " + "Tom" + " " + val/3;
+  }
+}<br><br><b><font face="Courier New,Courier">Listing 1</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+	<p>
+<p><font color="#FF0000"><b>The program GUI</b></font></p>
+<p>The program displays the simple GUI shown in <a name="Figure_5">Figure 5</a>.</p>
+
+<p>
+<table border="1" cols="1" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><img border="0" src="java1494a05.jpg" width="251" height="101"><br></pre>
+      <pre><b>Figure 5</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>This GUI has a single button labeled <b>Recompile and Reload</b>.&nbsp; Each time you click the button, the program compiles and reloads the class 
+named <b>Reload01a</b>, which was originally written as shown in 
+<a href="#Listing_1">Listing 1</a>, but 
+which may have modified by you, external to the program after it was originally written.</p>
+<p>Then the program instantiates an object of the newly-loaded class and 
+invokes the method named <b>theMethod</b> on the object.</p>
+<p><font color="#FF0000"><b>If you modify the source code...</b></font></p>
+<p>If you modify the source code 
+file for the class using a text editor outside the program, the next time you click the button to cause the file to be 
+recompiled and reloaded, the new behavior that matches your modifications will be 
+exhibited.</p>
+<p><font color="#FF0000"><b>Compiler errors</b></font></p>
+<p>When you modify the source code for the class, you may inadvertently insert a 
+syntax error.&nbsp; If the compilation 
+process fails to return within five seconds, the compilation process is aborted 
+and a <i>&quot;Compilation timeout error&quot;</i> is declared.</p>
+<p>It is also possible that the 
+compilation process could return within five seconds with a compilation error.&nbsp; In 
+either case, a <i>&quot;Probable compile error&quot;</i> will be declared and 
+displayed on the command-line screen.</p>
+<p>However, the program does not terminate as a result of a probable compile error, so you can fix the problem 
+in the source code and try again by clicking the button again.</p>
+<p><font color="#FF0000"><b>The location of the class file</b></font></p>
+<p>The location of the class 
+file is hard-coded as the subdirectory <i>(of the current directory)</i> named 
+<b>temp</b>, but could be anywhere <i>(including being located at some URL on 
+the internet)</i> that is accessible by the program if you were to modify the 
+program accordingly.&nbsp; In other words, classes can be dynamically loaded at 
+runtime from a variety of locations.</p>
+<p><font color="#FF0000"><b>Watch out for the classpath</b></font></p>
+<p>You must make certain that there is not a copy of a compiled 
+version of the class named <b>Reload01a</b> on the classpath.&nbsp; If the program finds a 
+copy on the classpath, that version of the class will be loaded by the 
+primordial loader, and will not be reloaded when a reload is requested.</p>
+<p><font color="#FF0000"><b>Program output</b></font></p>
+<p><a name="Figure_6">Figure 6</a> shows typical output produced by the 
+program on the command-line screen.</p><p>
+<table border="1" cols="1" width="482" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><b>Writing the class file.
+
+In actionPerformed
+Compiling temp\Reload01a.java
+Waiting for completion
+Compile complete
+Executing theMethod
+Hello Tom 3.3666666666666667
+
+In actionPerformed
+Compiling temp\Reload01a.java
+Waiting for completion
+Compilation timeout error.
+Probable compiler error.
+
+In actionPerformed
+Compiling temp\Reload01a.java
+Waiting for completion
+Compile complete
+Executing theMethod
+Hello Bill 3.3666666666666667
+
+In actionPerformed
+Compiling temp\Reload01a.java
+Waiting for completion
+Compile complete
+Executing theMethod
+Hello Bill 2.525</b><br></pre>
+      <pre><b>Figure 6</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Modified source code</b></font></p>
+<p>The source code for the class was modified between each click of the button 
+in <a href="#Figure_5">Figure 5</a> producing the output shown in <a href="#Figure_6">Figure 6</a>. &nbsp; Thus, the behavior of the recompiled and reloaded class 
+was different each time the button was clicked.&nbsp; <i>(Note in particular the names and the 
+numeric values.)</i>&nbsp; In one case, a syntax error was purposely created in 
+such a way as to produce a 
+compiler error.</p>
+<p><font color="#FF0000"><b>Program testing</b></font></p>
+<p>This program was tested using J2SE 5.0 under Windows XP.</p>
+<p><font color="#FF0000"><b>Will explain the code in fragments</b></font></p>
+<p>A complete listing of the program is provided in <a href="#Listing_35">Listing 35</a> near the end of 
+the lesson.&nbsp; I will explain the code in fragments.</p>
+<p><font color="#FF0000"><b>Event-driven programming code</b></font></p>
+<p>Much of the code in this program involves event-driven programming and the 
+<i>Delegation</i> or <i>JavaBeans</i> event model.&nbsp; If you have studied my
+<a href="http://www.dickbaldwin.com/tocmed.htm">earlier lessons</a> on these 
+topics, this material should be familiar to you.</p>
+<blockquote>
+	<p><i>(This event-driven programming code is included in 
+the program simply as a means of controlling the process and is not an inherent 
+	part of dynamic class loading.)</i></p>
+</blockquote>
+<p>I won't bore you by explaining the event-driven programming code in detail, but will skip 
+over it fairly rapidly and mention it fairly briefly.&nbsp; I will concentrate on the code 
+required to write, compile, 
+load, recompile, and reload the new class named <b>Reload01a</b>, and to invoke a method on an 
+object instantiated from that newly-loaded class totally under program control 
+at runtime.</p>
+<p><font color="#FF0000"><b>The Reload01 class</b></font></p>
+<p>The beginning of the class and the <b>main</b> method for the class named <b>
+Reload01</b> is shown in <a name="Listing_2">Listing 2</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>class <b>Reload01</b> extends JFrame{
+  File targetDir;//location of the file named Reload01a
+  
+  public static void <b>main</b>(String[] args){
+    new Reload01().writeTheClassFile();
+  }//end main<br><br><b><font face="Courier New,Courier">Listing 2</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The code in <a href="#Listing_2">Listing 2</a> instantiates a new object of the class named <b>
+Reload01</b> and invokes the method named <b>writeTheClassFile</b> on that 
+object.&nbsp; The purpose of the method named <b>writeTheClassFile</b> is to 
+write the source code file for the class named <b>Reload01a</b> in a 
+subdirectory <i>(of the current directory)</i> named <b>temp</b>.</p>
+<p><font color="#FF0000"><b>The method named writeTheClassFile</b></font></p>
+<p>The method named <b>writeTheClassFile</b> is shown in its entirety in 
+<a name="Listing_3">Listing 
+3</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  //Write the source code for the file named Reload01a
+  // into a subdirectory named temp. If the file
+  // exists, it will be overwritten.  
+  void writeTheClassFile(){
+    try{
+      //Create a File object that points to a directory
+      // where the class file will reside.
+      targetDir = new File(System.getProperty("user.dir")
+               + File.separator + "temp" + File.separator);
+        
+      //If the directory doesn't exist, make it.
+      if(!targetDir.exists()){
+        targetDir.mkdir();
+      }//end if
+      
+      //Get an output stream for writing the source code
+      // for the new class file.
+      DataOutputStream dataOut = new DataOutputStream(
+             new FileOutputStream("temp" + File.separator +
+                                        "Reload01a.java"));
+
+      //Create the source code for the new class file.
+      System.out.println("Writing the class file.");
+      dataOut.writeBytes(
+       
+      "public class Reload01a{" +
+        "public String theMethod(String str,double val){" +
+          "System.out.println(\"Executing theMethod\");" +
+          "return str + \" \" + \"Tom\" + \" \" + val/3;" +
+        "}" +
+      "}"
+
+      );//end writeBytes method
+      
+      dataOut.close();//Close the output file.
+
+    }catch(Exception e){
+      e.printStackTrace();
+    }//end catch
+  }//end writeTheClassFile<br><br><b><font face="Courier New,Courier">Listing 3</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Most of the code in <a href="#Listing_3">Listing 3</a> should be familiar to you, particularly if you 
+have studied my previous lesson entitled
+<a href="http://www.dickbaldwin.com/java/Java060.htm">Core Java Classes, Input 
+and Output Streams</a>.&nbsp; Therefore, I won't discuss the code in <a href="#Listing_3">Listing 3</a> 
+any further.</p>
+<p><font color="#FF0000"><b>The constructor</b></font></p>
+<p>The constructor for the class named <b>Reload01</b> begins in 
+<a name="Listing_4">Listing 4</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  Reload01(){//constructor
+    setTitle("Copyright 2006, R.G.Baldwin");
+    JButton button = new JButton("Recompile and Reload");
+    getContentPane().add(button);
+    
+<b>    button.addActionListener(
+      new ActionListener(){
+        public void actionPerformed(ActionEvent e){
+          System.out.println("\nIn actionPerformed");</b><br><br><b><font face="Courier New,Courier">Listing 4</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>An anonymous inner class</b></font></p>
+<p>The boldface code in <a href="#Listing_4">Listing 4</a> shows the beginning of the definition of an 
+anonymous listener class, and the instantiation of an anonymous listener object 
+of the anonymous class.</p>
+<p>This code is something less than straightforward.&nbsp; If you are unfamiliar 
+with the use of anonymous inner classes, I recommend that you go back and review 
+my earlier lesson entitled
+<a href="http://www.developer.com/java/other/article.php/3300881">The Essence of 
+OOP using Java, Anonymous Classes</a> along with other lessons that I have 
+published on this topic.&nbsp; You can access those other lessons using the links at
+<a href="http://www.dickbaldwin.com/tocmed.htm">
+http://www.dickbaldwin.com/tocmed.htm</a>.&nbsp; You might also want to review 
+the lessons on <a href="http://www.developer.com/java/other/article.php/3085271">
+member classes</a> and
+<a href="http://www.developer.com/java/other/article.php/3107181">local classes</a> 
+while you are at it.</p>
+<p>The last two lines in <a href="#Listing_4">Listing 4</a> show the beginning of the definition of the
+<b>actionPerformed</b> method, which is executed each time the user clicks the 
+button shown in <a href="#Figure_5">Figure 5</a>.</p>
+<p><font color="#FF0000"><b>Invoke the <i>compile</i> method</b></font></p>
+<p>Continuing in the <b>actionPerformed</b> method, the code in <a name="Listing_5">Listing 5</a> invokes the method named <b>compile</b> to cause the 
+new source file named <b>Reload01a</b> to be compiled.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>          try{
+            boolean compileStatus = <b>compile</b>(
+               "temp" + File.separator + "Reload01a.java");<br><br><b><font face="Courier New,Courier">Listing 5</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The method named <b>compile</b> returns <i>true</i> on a successful compile and 
+<i>false</i> otherwise.&nbsp; The return value is saved in the variable named <b>
+compileStatus</b> for later use.</p>
+<blockquote>
+	<p><i>(If you are unfamiliar with the use of File.separator, you can look it 
+	up in the <a href="http://java.sun.com/docs/">Java documentation</a> from 
+	Sun.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>The method named <i>compile</i></b></font></p>
+<p>The code for the method named <b>compile</b> begins in <a name="Listing_6">Listing 6</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  private static boolean <b>compile</b>(String file)
+                                        throws IOException{
+    System.out.println("Compiling " + file);<br><br><b><font face="Courier New,Courier">Listing 6</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The code in <a href="#Listing_6">Listing 6</a> simply displays a message on the command-line screen.&nbsp;</p>
+<p><font color="#FF0000"><b>Executing the Java compiler in a separate process</b></font></p>
+<p>The really important code in the <b>compile</b> method is shown in the single statement in 
+<a name="Listing_7">Listing 7</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    Process p = Runtime.getRuntime().exec("javac " + file);<br><br><b><font face="Courier New,Courier">Listing 7</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>In case you have never done this before, <a href="#Listing_7">Listing 7</a> shows how you can cause 
+Java programs to execute other programs written in other languages.&nbsp; 
+According to Sun, the <b>exec</b> method of the <b>Runtime</b> class:</p>
+<blockquote>
+	<p><i>&quot;Executes the specified string command in a separate process.&quot;</i></p>
+</blockquote>
+<p>In 
+this case, the code in <a href="#Listing_7">Listing 7</a> causes the Java compiler named <b>javac.exe</b> 
+to be executed to compile the file named <b>Reload01a</b> in the subdirectory 
+named <b>temp</b>.</p>
+<blockquote>
+	<p><i>(I explained this process (used for an entirely 
+different purpose) in an earlier lesson entitled
+	<a href="http://www.dickbaldwin.com/java/Java1472.htm">Introduction to the Java 
+Robot Class</a>.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>An object of the Process class</b></font></p>
+<p>As you can see, the invocation of the <b>exec</b> method in <a href="#Listing_7">Listing 7</a> returns 
+a reference to an object of the class <b>Process</b>.</p>
+<p>Part of what Sun has to say about a <b>Process</b> object is shown in 
+<a name="Figure_7">Figure 
+7</a>.</p>
+<table border="1" cols="1" width="482" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      &quot;The ProcessBuilder.start() and <b>Runtime.exec</b> methods create a native process and return an instance of a subclass of 
+		<b>Process</b> that can be used to control the process and obtain information about it. The class 
+		<b>Process</b> provides methods for performing input from the process, performing output to the process, 
+		<i><b>waiting for the process to complete,</b></i> checking the exit status of the process, and 
+		<i><b>destroying (killing) the process</b></i>.&quot;
+      <pre><b>Figure 7</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>In this program, I will be particularly interested in the following two 
+capabilities listed in <a href="#Figure_7">Figure 7</a>:</p>
+<ul>
+	<li>Waiting for the process to complete</li>
+	<li>Destroying <i>(killing)</i> the process</li>
+</ul>
+<p><font color="#FF0000"><b>Will invoke the <i>waitFor</i> method</b></font></p>
+<p>Once I start the compilation process, I will invoke the <b>waitFor</b> method on 
+the <b>Process</b> object to cause the program to block until the compilation is 
+finished.&nbsp; However, I have determined experimentally that sometimes the <b>waitFor</b> 
+method hangs up and fails to return when there is a compiler 
+error.</p>
+<p><font color="#FF0000"><b>A five-second timer</b></font></p>
+<p>Therefore, I designed some special code to deal with that problem.&nbsp; The 
+code that I designed allows five seconds for the compilation to complete 
+successfully and for the <b>waitFor</b> method to return.&nbsp; If the <b>
+waitFor</b> method fails to return within five seconds, the code</p>
+<ul>
+	<li>Declares a <i>&quot;Compilation timeout error&quot;</i></li>
+	<li>Invokes the <b>destroy</b> method on the <b>Process</b> object</li>
+	<li>Returns false to indicate a compiler error</li>
+</ul>
+<p>However, it doesn't terminate the program and the user may correct the source 
+code for the class 
+and try again.</p>
+<p><font color="#FF0000"><b>Complex flow of control</b></font></p>
+<p>I will be trying to explain the program <i>flow of 
+control </i>involving two threads that are executing in parallel in the 
+paragraphs that follow.&nbsp; This can 
+become a little difficult to explain.</p>
+<p><font color="#FF0000"><b>The <i>compiling thread</i> and the <i>timer thread</i></b></font></p>
+<p>For want of a better approach, I will refer to the thread that executes the 
+code in <a href="#Listing_8">Listing 8</a> as the <i>compiling thread.</i>&nbsp; I will refer to the 
+other thread as the <i>timer thread.</i></p>
+<p><font color="#FF0000"><b>Two browser windows would be useful</b></font></p>
+<p>This is a place where it would definitely be useful for you to have this 
+lesson open in two or more browser windows so that you can conveniently view two 
+or more code listings at the same time.</p>
+<p><font color="#FF0000"><b>Start a five-second timer</b></font></p>
+<p>The code in <a name="Listing_8">Listing 8</a>, which is executing in the <i>compiling thread</i>, 
+instantiates a new <b>Thread</b> object of the <b>Timer</b> class and starts it running 
+as a 
+different thread, which is the <i>timer thread</i>.&nbsp; The timer is set to 
+run for 5000 milliseconds, or five seconds.</p>
+<blockquote>
+	<p><i>(If you are unfamiliar with multithreaded programming in Java, see my 
+	earlier lesson entitled
+	<a href="http://www.dickbaldwin.com/java/Java058.htm">Threads of Control</a>.)</i>
+	</p>
+</blockquote>
+
+<p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    Thread myTimer = new Thread(
+                   new Timer(Thread.currentThread(),5000));
+    //Start Timer thread
+    myTimer.start();<br><br><b><font face="Courier New,Courier">Listing 8</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>The Timer class</b></font></p>
+<p>The <b>Timer</b> class, which is instantiated in <a href="#Listing_8">Listing 8</a>, is shown in its 
+entirety in <a name="Listing_9">Listing 9</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>class Timer implements Runnable{
+  Thread theCompilingThread;
+  int delay;//time interval to sleep
+  //-----------------------------------------------------//
+  
+  Timer(Thread theCompilingThread, int delay){//constructor
+    this.theCompilingThread = theCompilingThread;
+    this.delay = delay;
+  }//end constructor
+  //-----------------------------------------------------//
+  
+  public void <b>run</b>(){
+    try{
+      Thread.currentThread().sleep(delay);
+    }catch(InterruptedException e){
+      //No action is required when this sleeping thread is
+      // interrupted.
+      return;
+    }//end catch
+
+    //Control is transferred to here when the sleeping
+    // thread awakens naturally after the specified delay
+    // period.  This means that the compilation process is
+    // probably hung up.  Interrupt the compilation
+    // process and terminate the run method.
+    theCompilingThread.interrupt();
+  }//end run method
+}//end Timer class<br><br><b><font face="Courier New,Courier">Listing 9</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>The constructor</b></font></p>
+<p>The constructor for the <b>Timer</b> class receives and saves two incoming 
+values:</p>
+<ul>
+	<li>A reference back to the <i>compiling thread</i>.</li>
+	<li>The amount of time to count down in milliseconds.</li>
+</ul>
+<p><font color="#FF0000"><b>The run method</b></font></p>
+<p>The essential functionality of a <b>Thread</b> object is written into its <b>
+run</b> method, so that is what I will concentrate on.</p>
+<p>The <b>run</b> method is executed after the code in <a href="#Listing_8">Listing 8</a> invokes the <b>
+start</b> method on the <b>Timer</b> object.</p>
+<blockquote>
+	<p><i>(Apparently the <b>start</b> method takes care of some necessary 
+	tasks, and then invokes the <b>run</b> method on the <b>Thread</b> object.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Go to sleep</b></font></p>
+<p>The code in the <b>run</b> method begins by putting the <i>timer thread</i> to sleep 
+for the specified delay interval <i>(5000 milliseconds or 5 seconds in this 
+case)</i>.&nbsp; The thread will sleep for that amount of time and then wake up 
+and continue executing statements unless awakened prematurely.</p>
+<p><font color="#FF0000"><b>Waking up prematurely</b></font></p>
+<p>A sleeping thread is awakened prematurely when code that is executing in 
+some other thread invokes the <b>interrupt</b> method on the sleeping thread.&nbsp; 
+You will see shortly how that can happen in this program.</p>
+<p><font color="#FF0000"><b>An InterruptedException</b></font></p>
+<p>When a sleeping thread is awakened prematurely, it will wake up and throw an
+<b>InterruptedException</b>.&nbsp; This, in turn, causes the thread to execute 
+the code in the matching <i>catch</i> block.</p>
+<p>For now, just note that when the thread is awakened prematurely, no special 
+action is required.&nbsp; The code in the matching catch block in <a href="#Listing_9">Listing 9</a> 
+simply executes a <b>return</b> statement, which causes the <b>run</b> 
+method to terminate and the thread to die.</p>
+<p><font color="#FF0000"><b>When the thread wakes up naturally</b></font></p>
+<p>The case that is of particular interest to us at this point in the program is 
+the case where the sleeping thread wakes up naturally after having slept for 
+five seconds.&nbsp; When this happens, the code below the catch block in 
+<a href="#Listing_9">Listing 
+9</a> is executed.</p>
+<p><font color="#FF0000"><b>The <i>compiling thread</i> must be hung up</b></font></p>
+<p>The code in the <i>compiling thread</i> is responsible for completing the 
+compilation process and invoking the <b>interrupt</b> method on the <i>timer thread</i> 
+to awaken the <i>timer thread</i> before the five seconds has elapsed.</p>
+<p>Therefore, if control reaches this point in the program, the assumption is 
+that the <b>waitFor</b> method that was invoked on the <b>Process</b> object in 
+the <i>compiling thread</i> is hung up in the <i>wait</i> state for some reason.&nbsp; 
+It is also assumed that this is probably due to a compiler error.</p>
+<p><font color="#FF0000"><b>Interrupt the <i>compiling thread</i></b></font></p>
+<p>Having concluded that a compiler error has probably occurred, the last 
+statement in <a href="#Listing_9">Listing 9</a> invokes the <b>interrupt</b> method on the 
+<i>compiling 
+thread</i> on which the <b>waitFor</b> method was invoked.&nbsp; This causes the <b>
+waitFor</b> method to terminate and to throw an <b>InterruptedException</b>, 
+which in turn causes the code in the <i>catch</i> block in <a href="#Listing_11">
+Listing 11</a> to be executed.</p>
+<blockquote>
+	<p><i>(I will explain the code in the catch block in <a href="#Listing_11">
+	Listing 11</a> shortly.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>The sequence of events</b></font></p>
+<p>Returning now to a review of <a href="#Listing_8">Listing 8</a>, note that the code in <a href="#Listing_8">Listing 8</a> 
+instantiates the object of the <b>Timer</b> class and causes the <b>run</b> 
+method to be invoked on that object, starting the five-second timeout interval to begin on 
+the <i>timer thread</i>, which is running in parallel with the <i>compiling thread</i> that 
+executes the code in <a href="#Listing_8">Listing 8</a>.</p>
+<p>Then control moves to the code on the <i>compiling thread</i> shown in 
+<a name="Listing_10">Listing 10</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    System.out.println("Waiting for completion");
+    
+    try{
+      p.<b>waitFor</b>();//wait for completion
+
+      //The waitFor method has returned,
+      if(myTimer.isAlive()){
+        //Stop the timer.
+        myTimer.interrupt();
+      }//end if<br><br><b><font face="Courier New,Courier">Listing 10</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Wait for the compilation to complete</b></font></p>
+<p>After starting the five-second timer on the <i>timer thread</i>, the code in 
+<a href="#Listing_10">Listing 
+10</a> displays a message and then immediately enters a <b>try</b> block where it 
+invokes the <b>waitFor</b> method on the <b>Process</b> object.&nbsp; This 
+effectively puts the <i>compiling thread</i> to sleep also, awaiting completion of the 
+compilation of the class file that was started in <a href="#Listing_7">Listing 7</a>.</p>
+<p><font color="#FF0000"><b>If all goes well...</b></font></p>
+<p>If all goes well, the compilation process will have completed <i>(either 
+successfully or unsuccessfully)</i> before the five-second timer wakes up, and 
+control will have passed to the <b>if</b> statement shown in <a href="#Listing_10">Listing 10</a>.</p>
+<p>The <b>if</b> statement checks to see if the <i>timer thread</i> is still alive <i>
+(meaning that it is still sleeping in this case)</i> and if so, invokes the <b>
+interrupt</b> method on the <i>timer thread</i> to cause it to wake up prematurely.&nbsp; 
+When the <i>timer thread</i> is awakened prematurely, it executes the code in the <b>
+catch</b> block in <a href="#Listing_9">Listing 9</a>.&nbsp; As mentioned earlier, this causes the 
+<i>timer 
+thread</i> to die quietly.</p>
+<p><font color="#FF0000"><b>If things don't go well...</b></font></p>
+<p>However, if the <b>waitFor</b> method fails to return within the five-second 
+timeout interval of the timer, the <i>timer thread</i> in <a href="#Listing_9">Listing 9</a> will awaken naturally and 
+will invoke the <b>interrupt </b>method on the <i>compiling thread</i> running in 
+<a href="#Listing_10">Listing 10</a>.</p>
+<blockquote>
+	<p><i>(Again recall that this is based on the assumption that the 
+	compilation should easily complete within five seconds.&nbsp; If five 
+	seconds has elapsed, it is assumed that the <b>waitFor</b> method is hung 
+	up, and it is also assumed that this is probably the result of a compiler 
+	error.)</i></p>
+</blockquote>
+<p>This causes the <b>waitFor</b> method to terminate and to throw an <b>
+InterruptedException</b>, transferring control to the catch block shown in 
+<a name="Listing_11">Listing 11</a>.</p>
+
+
+
+
+
+
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    }catch(InterruptedException e){
+      //The timer expired before the waitFor method
+      // returned and interrupted the waitFor method.
+      System.out.println("Compilation timeout error.");
+      p.destroy();
+      return false;
+    }//end catch<br><br><b><font face="Courier New,Courier">Listing 11</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Handling the InterruptedException</b></font></p>
+<p>The code in <a href="#Listing_11">Listing 11</a>:</p>
+<ul>
+	<li>Displays a <i>Compilation timeout error</i> message, </li>
+	<li>Invokes the <b>destroy</b> method on the <b>Process</b> object for the 
+	purpose of terminating the compilation operation that began in <a href="#Listing_7">Listing 7</a>,</li>
+	<li>Terminates the <b>compile</b> method, returning a value of <i>false</i> 
+	to indicate a probable compiler error.</li>
+</ul>
+<p><font color="#FF0000"><b>When the waitFor method returns within five seconds</b></font></p>
+<p>The code in <a name="Listing_12">Listing 12</a> <i>(at the end of the <b>compile</b> method)</i> is 
+executed only if the <b>waitFor</b> method that was called in <a href="#Listing_10">Listing 10</a> 
+returned during the five-second timeout interval.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>
+    //The waitFor method returned in five seconds or less.
+
+    //p.exitValue() other than 0 indicates a compiler
+    // error.
+    return p.<b>exitValue</b>() == 0;
+  }//end method compile<br><br><b><font face="Courier New,Courier">Listing 12</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Not necessarily a successful compilation</b></font></p>
+<p>The fact that the <b>waitFor</b> method returned within five seconds does not 
+necessarily mean that the compilation was successful.&nbsp; For the amount of 
+code being compiled in this program, one would hope that the method would always 
+return within five seconds whether or not the compilation was successful.</p>
+<blockquote>
+	<p><i>(The fact that it frequently doesn't return within five seconds 
+	indicates some sort of an inter-process communication bug to me.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>The process exit value</b></font></p>
+<p>In any event, there is an <b>exitValue</b> associated with the <b>Process</b> 
+object.&nbsp; By convention, this value will be 0 for a successful completion of 
+the process.&nbsp; The last statement in <a href="#Listing_12">Listing 12</a> gets and compares the <b>
+exitValue</b> with 0, returning <i>true</i> for success and <i>false</i> for 
+failure.</p>
+<p><font color="#FF0000"><b>Back to the actionPerformed method</b></font></p>
+<p>That brings us back to the code in the <b>actionPerformed</b> method of 
+<a href="#Listing_5">Listing 5</a> where the <b>compile</b> method was called with the return value of <i>
+true</i> or <i>false</i> being saved in a local boolean variable named <b>
+compileStatus</b>.</p>
+<p><font color="#FF0000"><b>When the compilation is successful</b></font></p>
+<p><a name="Listing_13">Listing 13</a> shows the beginning of an <b>if-else</b> statement 
+in the <b>actionPerformed</b> method that deals with 
+the possibility that the compilation either was, or was not successful.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>            if(compileStatus){//If compile was successful.
+              System.out.println("Compile complete");<br><br><b><font face="Courier New,Courier">Listing 13</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The <b>println</b> statement in <a href="#Listing_13">Listing 13</a> is executed when the compile process was 
+successful.</p>
+<blockquote>
+	<p><i>(If you would like to do so, you can skip ahead to
+	<a href="#Listing_24">Listing 24</a> to see what happens when the compile 
+	process is not successful.)</i></p>
+</blockquote>
+<p><a href="#Listing_14">Listing 14</a> continues with the behavior of the program as a result of a 
+successful compilation.</p>
+<p><font color="#FF0000"><b>Load/reload the class</b></font></p>
+<p>At this point, the class has been defined <i>(once by the program and 
+possibly more than once by the user external to the program).</i>&nbsp; The 
+class has also been successfully compiled.</p>
+<blockquote>
+	<p><i>(In fact, the file may have been compiled many times with 
+manual changes to the source code by the user in between compilations.)</i></p>
+</blockquote>
+<p>In any event, a compiled class file is available at this point for loading or 
+reloading.</p>
+<p><a name="Listing_14">Listing 14</a> invokes the method named <b>reloadTheClass</b> to cause the class 
+file named <b>Reload01a.class</b> to be loaded.&nbsp; The method named <b>reloadTheClass</b> 
+returns a reference to a
+<b>Class</b> object that represents the newly-loaded version of the class.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>              Class loadedClass = 
+                                reloadTheClass("Reload01a",
+                                                targetDir);<br><br><b><font face="Courier New,Courier">Listing 14</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The code in <a href="#Listing_14">Listing 14</a> passes the name of the class 
+along with the directory containing 
+the class file that is to be loaded to the method named <b>reloadTheClass</b>.</p>
+<p><font color="#FF0000"><b>The method named reloadTheClass</b></font></p>
+<p>The purpose of this method is to load a class that is specified by name as a
+<b>String</b> from a subdirectory specified by a <b>File</b> parameter named <b>
+dir</b>.</p>
+<p>As I mentioned earlier, the class will be loaded using a class loader object 
+of type <b>URLClassLoader</b>, which is a class in the standard Java class 
+library.</p>
+<p>The method named <b>reloadTheClass</b> begins in <a name="Listing_15">Listing 15</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  static Class reloadTheClass(String reloadableClass,
+                              File dir){
+    URL[] theUrl = null;<br><br><b><font face="Courier New,Courier">Listing 15</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>An array reference variable of type URL[]</b></font></p>
+<p><a href="#Listing_15">Listing 15</a> declares an array reference variable of type URL[] initializing 
+its value to null.&nbsp; The code in the method will use the information about the directory 
+containing the class file to create a <b>URL</b> object and will use that <b>URL</b> 
+object to instantiate and populate the <b>URL</b> array object.&nbsp; </p>
+<p><font color="#FF0000"><b>Create the URL object</b></font></p>
+<p>At this point, we need to get a <b>URL</b> object that points to the directory containing the class file for the class that is to be loaded.</p>
+<p>Following the recommendations in the Sun documentation, the code in 
+<a name="Listing_16">Listing 
+16</a> converts the incoming <b>File</b> object to a <b>URI</b> and then converts the
+<b>URI</b> to a <b>URL</b>.&nbsp; The reference to the <b>URL</b> object is 
+deposited in a new one-element <b>URL</b> array object.&nbsp; The 
+array object's reference is stored in the reference variable named <b>theUrl</b>, 
+which was declared in <a href="#Listing_15">Listing 15</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    try{
+      URI uri = dir.toURI();                   
+      URL url = uri.toURL();
+      theUrl = new URL[]{url};
+    }catch(Exception e){
+      e.printStackTrace();
+    }//end catch<br><br><b><font face="Courier New,Courier">Listing 16</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Next step is to load the class</b></font></p>
+<p>The next step in the process is to load the class, getting and returning a <b>
+Class</b> object that represents the class in the process.</p>
+<p><a name="Listing_17">Listing 17</a> declares a reference variable of type <b>Class</b>, 
+which will be 
+populated later with a reference to the <b>Class</b> object that represents the 
+newly-loaded class.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    Class theClass = null;<br><br><b><font face="Courier New,Courier">Listing 17</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Get a URLClassLoader object</b></font></p>
+<p><a name="Listing_18">Listing 18</a> instantiates a new class loader object of type <b>URLClassLoader</b> associated with the directory containing the 
+class file that is to be loaded.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    try{
+      ClassLoader classLoader = new URLClassLoader(theUrl);<br><br><b><font face="Courier New,Courier">Listing 18</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>An array of URL object references</b></font></p>
+<p>Note that the constructor for the <b>URLClassLoader</b> class requires an 
+array of <b>URL</b> object references as an incoming parameter.&nbsp; The class 
+loader object that is constructed is capable of loading classes only from the 
+URLs that are specified by the references to <b>URL</b> objects stored in the 
+array.</p>
+<p>In this case, that list of URLs is restricted to the single 
+directory containing the class that is to be loaded.&nbsp; However, for a larger 
+program, it may be necessary to load classes from a variety of different URLs.&nbsp; 
+If so, each of those URLs would be specified by references to <b>URL</b> objects 
+stored in the array.</p>
+<p><font color="#FF0000"><b>Load the class</b></font></p>
+<p>Finally, the code in <a name="Listing_19">Listing 19</a> invokes the <b>loadClass</b> method on the 
+<b>URLClassLoader</b> object, passing the <b>String</b> name of the class that is to be 
+loaded as a parameter.&nbsp; The class loader object will search the specified 
+URLs for which it was constructed, looking for a class file having the specified name and 
+will attempt to load it if 
+it is found.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>      theClass = classLoader.<b>loadClass</b>(reloadableClass);
+    }catch (Exception e){
+      e.printStackTrace();
+    }//end catch<br><br><b><font face="Courier New,Courier">Listing 19</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Success or failure in loading the class</b></font></p>
+<p>If the load is successful, the <b>loadClass</b> method returns a reference to 
+a <b>Class</b> object that represents the newly-loaded class.&nbsp; That 
+reference is saved in the reference variable named <b>theClass</b>.</p>
+<p>If the load is unsuccessful, the method throws a <b>ClassNotFoundException</b>.&nbsp; 
+In this case, the exception handler simply prints a stack trace describing the 
+problem.</p>
+<p><font color="#FF0000"><b>Return the Class object's reference</b></font></p>
+<p><a name="Listing_20">Listing 20</a> returns the reference to the <b>Class</b> object that represents the newly-loaded 
+class and terminates the method named <b>reloadTheClass</b>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    return theClass; 
+  }//end reloadTheClass<br><br><b><font face="Courier New,Courier">Listing 20</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Note that if the load was unsuccessful, <a href="#Listing_20">Listing 20</a> returns null.</p>
+<p><font color="#FF0000"><b>Returning to the actionPerformed method</b></font></p>
+<p>Returning once more to the code in <a href="#Listing_14">Listing 14</a>, which is part of the <b>
+actionPerformed</b> method being registered on the button shown in <a href="#Figure_5">Figure 5</a>, this code saves 
+the reference to the <b>Class</b> object that represents the newly-loaded class in a reference variable named <b>
+loadedClass</b>.</p>
+<p><font color="#FF0000"><b>Instantiate an object</b></font></p>
+<p><a name="Listing_21">Listing 21</a> invokes the <b>newInstance</b> method on the <b>Class</b> object 
+to instantiate an object of the newly-loaded class, and saves the object's 
+reference in a reference variable of type <b>Object</b> named <b>obj</b>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>              Object obj = loadedClass.newInstance();<br><br><b><font face="Courier New,Courier">Listing 21</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Need to invoke the method named <i>theMethod</i></b></font></p>
+<p>Our objective is to invoke the method named <b>theMethod</b> on the object 
+instantiated in <a href="#Listing_21">Listing 21</a>.&nbsp; 
+However, as explained earlier, it is not possible to invoke that method directly 
+on the object's reference while the reference is being treated as type <b>Object</b>.&nbsp; 
+It is also not possible to cast the object's reference to the class type <b>Reload01a</b> 
+because the compiler knows nothing about that class at compile time.&nbsp; 
+Therefore, another approach must be found to invoke the method named <b>
+theMethod</b>.</p>
+<p><font color="#FF0000"><b>Will use <i>reflection</i></b></font></p>
+<p>This program will invoke that method using <i>reflection.</i>&nbsp; This 
+entails invoking the <b>invoke</b> method on an object of the <b>Method</b> 
+class that represents the method named <b>theMethod</b> belonging to the object 
+of the newly-loaded <b>Reload01a</b> class.</p>
+<p><font color="#FF0000"><b>Get a Method object</b></font></p>
+<p><a name="Listing_22">Listing 22</a> does the following:</p>
+<ul>
+	<li>Invokes <b>getDeclaredMethod</b> of the <b>Class</b> 
+class </li>
+	<li>To get a reference to an object of type <b>Method</b> </li>
+	<li>That represents the 
+instance method named <b>theMethod</b> </li>
+	<li>That requires two parameters, one of type <b>String</b> and the other of 
+	type <b>double</b></li>
+	<li>Defined in the class that is represented 
+by the <b>Class</b> object </li>
+	<li>Whose reference is stored in the reference variable 
+named <b>loadedClass</b>.</li>
+</ul>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>              Method methodObj = 
+                 loadedClass.<b>getDeclaredMethod</b>(
+                   "theMethod",
+                   new Class[]{String.class,double.class});<br><br><b><font face="Courier New,Courier">Listing 22</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<blockquote>
+	<p><i>(The method named <b>theMethod</b> belonging to the target object will be 
+	invoked later by invoking the method named <b>invoke</b> on the object of 
+	type <b>Method</b>, passing the target object's reference as a parameter to 
+	the <b>invoke</b> method.)</i></p>
+</blockquote>
+<p>Note that nowhere does the code in <a href="#Listing_22">Listing 22</a> 
+mention the name of the target class, <b>Reload01a</b>.</p>
+<p><font color="#FF0000"><b>The name of the target method</b></font></p>
+<p>The first parameter passed to <b>getDeclaredMethod</b> specifies the name 
+of the target method that will be invoked later.&nbsp; In this case, the name is
+<b>theMethod</b>, and the name of the method is passed as a reference to an 
+object of type<b> String</b>.</p>
+<p><font color="#FF0000"><b>Number and types of parameters</b></font></p>
+<p>The second parameter specifies the number and types of parameters required by 
+the method named <b>theMethod</b>.&nbsp; In this case, the method requires two 
+parameters, one of type <b>String</b> and the other of type <b>double</b>.</p>
+<p><font color="#FF0000"><b>Specify parameters in an array of type Class</b></font></p>
+<p>Note that the number and types of the parameters are specified by passing a 
+reference to an array object of type <b>Class</b>.&nbsp; The number of elements 
+in the array specifies the number of parameters.&nbsp; In this case, the number 
+of elements is two.&nbsp; The class <i>(or type)</i> 
+represented by each of the <b>Class</b> objects referred to by the elements in 
+the array specifies the types of the parameters.&nbsp; In this case, the types are
+<b>String</b> and <b>double</b>.</p>
+<p><font color="#FF0000"><b>The target method could be overloaded</b></font></p>
+<p>Keep in mind that a class could define many different overloaded versions of 
+methods having the same name.&nbsp; In that case, a different <b>Method</b> object could 
+be obtained for each overloaded version by invoking <b>getDeclaredMethod</b> more than once with the 
+first parameter being the same in each case, but the second parameter being 
+different in each case.</p>
+<p><font color="#FF0000"><b>Save the reference to the Method object</b></font></p>
+<p>The reference to the <b>Method</b> object returned by <b>
+getDeclaredMethod</b> is saved in the reference variable of type <b>Method</b> 
+named <b>methodObj</b>.</p>
+<p><font color="#FF0000"><b>Cause <i>theMethod</i> to be invoked by reflection</b></font></p>
+<p><a name="Listing_23">Listing 23</a> causes the method named <b>theMethod</b> to be invoked on the 
+target object by invoking the method 
+named <b>invoke</b> on the <b>Method</b> object, passing the target object's 
+reference and a reference to a parameter array as parameters to the <b>invoke</b> 
+method.</p><p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>              String returnVal = (String)methodObj.<b>invoke</b>(
+                   obj,
+                   new Object[]{"Hello",new Double(10.1)});
+
+              System.out.println(returnVal);<br><br><b><font face="Courier New,Courier">Listing 23</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Display the returned value</b></font></p>
+<p>The <b>invoke</b> method returns type <b>Object</b>.&nbsp; <a href="#Listing_23">Listing 23</a> casts the return value from <b>Object</b> to <b>String</b> and stores it in a <b>
+String</b> variable named <b>returnVal</b>.&nbsp; Then <a href="#Listing_23">Listing 23</a> displays the 
+return value.</p>
+<p><font color="#FF0000"><b>Passing parameters for the target method</b></font></p>
+<p>Note that parameters for the target method are passed to the <b>invoke</b> 
+method in an array of type <b>Object</b>.&nbsp; Each parameter occupies one 
+element in the array.&nbsp; When the target method requires primitive 
+parameters, they must be wrapped in an object of the corresponding wrapper class 
+for passing to the <b>invoke</b> method.&nbsp; In this case, the <b>double </b>
+value 10.1 is wrapped in an object of type <b>Double</b> for passing to the <b>
+invoke</b> method.</p>
+<p>The primitive parameters are automatically unwrapped by the system for 
+delivery to the target method when it is executed.</p>
+<p><font color="#FF0000"><b>Returned values</b></font></p>
+<p>Similarly, when the target method returns a value of a primitive type, the <b>
+invoke</b> method wraps that value in an object of the corresponding wrapper 
+class and returns it as type <b>Object</b>.</p>
+<p>As a result, the code that calls the <b>invoke</b> method must cast the 
+returned reference to the appropriate wrapper type and extract the primitive 
+value from the wrapper object.&nbsp; That wasn't the case in this example 
+because the return type for the target method was <b>String</b>.</p>
+<p><font color="#FF0000"><b>Wrapping things up</b></font></p>
+<p><a name="Listing_24">Listing 24</a> shows the closing portions of the <b>if-else</b> statement that 
+began in <a href="#Listing_13">Listing 13</a>.&nbsp; If the compilation process fails, the value of <b>
+compileStatus</b> is <i>false</i>.&nbsp; In that event, all of the code in the <b>if</b> 
+clause of the statement is skipped, and the code in the <b>else</b> clause shown 
+in <a href="#Listing_24">Listing 24</a> is executed.</p><p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>            }//end if on compileStatus
+            <b>else</b>{
+              System.out.println(
+                               "Probable compiler error.");
+            }//end else<br><br><b><font face="Courier New,Courier">Listing 24</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The code in the <b>else</b> clause simply displays a message on the command-line screen announcing a
+<i>Probable compiler error</i>.&nbsp; At that point, the user can correct the 
+source code and click the button in <a href="#Figure_5">Figure 5</a> to try again.</p>
+<p><font color="#FF0000"><b>Complete the anonymous listener class definition</b></font></p>
+<p><a name="Listing_25">Listing 25</a> contains cleanup code for the <b>actionPerformed</b> method 
+and for the anonymous listener class definition that began in <a href="#Listing_4">Listing 4</a>.</p><p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>          }catch(Exception ex){
+            ex.printStackTrace();
+          }//end catch
+
+        }//end actionPerformed
+      }//end new ActionListener
+    );//end addActionListener<br><br><b><font face="Courier New,Courier">Listing 25</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Complete the constructor</b></font></p>
+<p>Finally, <a name="Listing_26">Listing 26</a> contains the cleanup code for the constructor that began in 
+<a href="#Listing_4">Listing 4</a>.</p><p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    setSize(250,100);
+    setVisible(true);
+  }//end constructor<br><br><b><font face="Courier New,Courier">Listing 26</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><a href="#Listing_26">Listing 26</a> also signals the end of the program named <b>Reload01</b>.&nbsp; 
+And that wraps up the explanation of the program named <b>Reload01</b>.&nbsp; 
+Next, I will explain the more substantive program named <b>Reload02</b>.</p>
+<h3><a name="The_program_named_Reload02">The Program Named Reload02</a></h3>
+<p>The program named <b>Reload02</b> is the plotting program that I described in 
+some detail <a href="#Preview">earlier</a>.&nbsp; Therefore, I won't repeat that 
+description here.</p>
+		<p><font color="#FF0000"><b>Two versions of the same program</b></font></p>
+<p>I will present and explain two versions of this program in the two parts of this 
+lesson.&nbsp; The version that I will explain in Part 1 <i>(this document)</i> 
+uses reflection to access and execute the three methods <i>(<b>f1</b>, <b>f2</b>, 
+and <b>f3</b>)</i> belonging to an object of a newly-loaded class named <b>
+Reload02a</b>.</p>
+<p>In Part 2, I will present and explain a version of the program that uses a 
+common interface to access and execute those methods, thus avoiding the 
+complexity of reflection.&nbsp; I will also describe, but probably won't 
+demonstrate a third approach to dealing with the same issue.<br>
+<br>
+<font color="#FF0000"><b>Location of the class file</b></font></p>
+<p>A new class file named <b>Reload02a.class</b> is created in a subdirectory of the current directory named
+<b>temp</b>.&nbsp; This class file defines three methods named <b>f1</b>, <b>f2</b>, 
+and <b>f3</b>.&nbsp; The three methods are evaluated and plotted in the GUI 
+shown in <a href="#Figure_1">Figure 1</a>.</p>
+<p>If the subdirectory doesn't exist, it will be created.&nbsp; If a class file having the same name already exists in that subdirectory, it will be overwritten.</p>
+<p><font color="#FF0000"><b>Program testing</b></font><br>
+<br>
+This program was tested using J2SE 5.0 under Windows XP.&nbsp; Because this 
+program uses static import directives, it requires J2SE 5.0 or later to compile and run successfully.</p>
+<p><font color="#FF0000"><b>Will discuss in fragments</b></font></p>
+<p>I will discuss this program in fragments.&nbsp; You will find a complete 
+listing of the program in <a href="#Listing_36">Listing 36</a> near the end of the lesson.</p>
+<p><font color="#FF0000"><b>Plotting code has been explained before</b></font></p>
+<p>Those of you who are familiar with my earlier publications may have 
+recognized the plotting format shown in <a href="#Figure_1">Figure 1</a> as being very similar to 
+plotting formats that I have used in earlier lessons.&nbsp; In fact, the 
+plotting code, as well as the code that manages the bottom portion of the GUI 
+shown in <a href="#Figure_1">Figure 1</a>, is very similar to code that I have explained in earlier 
+lessons.</p>
+<p>The explanations in the earlier lessons began with the lesson entitled
+<a href="http://www.developer.com/java/other/article.php/10936_1554511_1">
+Plotting Engineering and Scientific Data using Java</a>.&nbsp; Therefore, I won't bore you by explaining that code again.&nbsp; 
+Rather, I will concentrate on code that is new to this lesson.&nbsp; If you are 
+unfamiliar with the plotting code, please refer back to those earlier lessons.</p>
+<p><font color="#FF0000"><b>The class named Reload02</b></font></p>
+<p>The class named <b>Reload02</b> is shown in its entirety in 
+<a name="Listing_27">Listing 27</a>.</p><p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>class Reload02{
+  public static void main(String[] args){
+    new ScienceGraph();
+  }//end main
+}//end class Reload02<br><br><b><font face="Courier New,Courier">Listing 27</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The <b>main</b> method in <a href="#Listing_27">Listing 27</a> simply instantiates a GUI object of the
+<b>ScienceGraph</b> class as shown in <a href="#Figure_1">Figure 1</a>.&nbsp; Thus, most of the 
+substance of this program is written into the GUI class named <b>ScienceGraph</b>.</p>
+<p><font color="#FF0000"><b>The ScienceGraph class</b></font></p>
+<p>The definition of the <b>ScienceGraph</b> class begins in <a href="#Listing_28">Listing 28</a>.&nbsp; 
+As explained above, I deleted the plotting code from <a name="Listing_28">Listing 28</a> for brevity.&nbsp; 
+You can view that code in its entirety in <a href="#Listing_36">Listing 36</a> near the end of the lesson.</p><p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>class ScienceGraph extends JFrame 
+                                 implements ActionListener{
+
+<font color="#FF0000">//Plotting code deleted for brevity</font>
+  
+  //Text fields for methods with default equations
+  // inserted.
+  JTextField f1Txt = new JTextField(
+             "y = (x*x*x + 40*x*x + 100*x -6000)/100;",40);
+  JTextField f2Txt = new JTextField(
+            "y = (x * ((new java.util.Date().getTime())/" +
+                 "(new java.util.Date().getTime())));",40);
+  JTextField f3Txt = new JTextField(
+                "y = 100.0*(cos(x/10.0)*sin(x/11.0));",40);
+  
+  //Check box used to force rewrite, recompile, and reload
+  // of the class.
+  JCheckBox reloadCkBox = new JCheckBox(
+              "Rewrite, Recompile, and Reload the Class " +
+              "using the Above Equations",false);
+
+  //Panels to contain a label and a text field
+  JPanel pan0 = new JPanel();
+  JPanel pan1 = new JPanel();
+  JPanel pan2 = new JPanel();
+  JPanel pan3 = new JPanel();
+  JPanel pan4 = new JPanel();
+  JPanel pan5 = new JPanel();
+  JPanel pan6 = new JPanel();
+  JPanel pan7 = new JPanel();
+  JPanel pan8 = new JPanel();
+  JPanel pan9 = new JPanel();
+
+  //Misc instance variables
+  int frmWidth = 475;
+  int frmHeight = 430;
+  int width;
+  int height;
+
+  //A reference to a newly-loaded class.
+  Class loadedClass = null;
+
+  //Plot is drawn on this canvas
+  MyCanvas canvas;<br><br><b><font face="Courier New,Courier">Listing 28</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Although long and tedious, the code in <a href="#Listing_28">Listing 28</a> simply declares a large number of instance variables 
+used later in the program.&nbsp; The comments in <a href="#Listing_28">Listing 28</a> should suffice and 
+no further explanation of the code in <a href="#Listing_28">Listing 28</a> should be required.</p>
+<p><font color="#FF0000"><b>Implements the ActionListener interface</b></font></p>
+<p>It is worth noting, however, that the <b>ScienceGraph</b> class implements 
+the <b>ActionListener</b> interface.&nbsp; Therefore, an object of the <b>
+ScienceGraph</b> class can and will be registered on the button in the bottom of 
+<a href="#Figure_1">Figure 1</a> to listen for action events on that button.</p>
+<p><font color="#FF0000"><b>The constructor</b></font></p>
+<p>The constructor for the <b>ScienceGraph</b> class begins in 
+<a name="Listing_29">Listing 29</a>.&nbsp; </p><p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  ScienceGraph(){//constructor
+    System.out.println(
+           "Write, compile, and load initial class file.");
+
+    boolean compileStatus = <b>updateClass</b>();
+    
+    if(!compileStatus){
+      System.out.println(
+                        "Unable to compile initial class");
+    }//end if<br><br><b><font face="Courier New,Courier">Listing 29</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The <b>updateClass</b> method is invoked in <a href="#Listing_29">Listing 29</a> for the purpose of 
+writing, compiling, and loading an initial class file.&nbsp; The <b>updateClass</b> 
+method returns <i>true</i> on success and <i>false</i> on a failure to compile.</p>
+<p>The returned value from the <b>updateClass</b> method is stored in the <b>
+boolean</b> variable named <b>compileStatus</b>.&nbsp; If the returned value is
+<i>false</i>, the code in <a href="#Listing_29">Listing 29</a> posts an <i>Unable to compile initial class</i> 
+message on the command-line screen.</p>
+<p><font color="#FF0000"><b>The <i>updateClass</i> method</b></font></p>
+<p>Setting the discussion of the constructor aside for awhile, 
+<a name="Listing_30">Listing 30</a> 
+shows the beginning of the <b>updateClass</b> method.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  boolean updateClass(){
+    boolean compileStatus = false;
+  
+    try{
+      //Create a File object that points to a directory
+      // where the class file will reside.
+      File targetDir = new File(
+                System.getProperty("user.dir")
+                + File.separator +"temp" + File.separator);
+        
+      //If the directory doesn't exist, make it.
+      if(!targetDir.exists()){
+        targetDir.mkdir();
+      }//end if
+      
+      //Get an output stream for writing the source code
+      // for the new class file.
+      DataOutputStream dataOut = new DataOutputStream(
+             new FileOutputStream("temp" + File.separator +
+                                        "Reload02a.java"));<br><br><b><font face="Courier New,Courier">Listing 30</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Very similar code</b></font></p>
+<p>Because this program uses the same methodology for compiling, loading, and 
+instantiating classes, and for invoking the methods belonging to the objects of 
+those newly-loaded classes, much of the code in this program is very similar to 
+code that was explained earlier in conjunction with the program named <b>
+Reload01</b>.</p>
+<blockquote>
+	<p><i>(The purpose of presenting and explaining the program named <b>
+	Reload01</b> was to explain 
+	the code necessary to support those concepts in a relatively simple 
+	program.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Won't repeat the explanation</b></font></p>
+<p>In those cases where the code in this program is very similar to the code in 
+the earlier program, I won't bore you by repeating the explanation.&nbsp; 
+Rather, I will simply refer you back to the earlier explanation.</p>
+<p>For example, the code in <a href="#Listing_30">Listing 30</a> is very similar to the code that was 
+explained in conjunction with <a href="#Listing_3">Listing 3</a> earlier.&nbsp; Please refer to that 
+explanation and mentally apply it to the code in <a href="#Listing_30">Listing 30</a></p>
+<p><font color="#FF0000"><b>Create the class file source code</b></font></p>
+<p>This program creates the source code for three different class files whereas 
+the program named <b>Reload01</b> created the source code for only one class 
+file.&nbsp; In addition, the definitions of the class files in this program are 
+based on information provided by the user in the three text fields shown at the 
+top of the GUI in <a href="#Figure_1">Figure 1</a>.</p>
+<p>The code in <a name="Listing_31">Listing 31</a> causes the source code files for the three class files 
+to be written.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>      //Get the equations from the text fields.
+      String <b>eq1</b> = f1Txt.getText();
+      String <b>eq2</b> = f2Txt.getText();
+      String <b>eq3</b> = f3Txt.getText();
+
+      //Create the source code for the new class file.
+      dataOut.writeBytes(
+
+        "import static java.lang.Math.*;" +
+        "public class Reload02a{" +
+          "public double f1(double x)"+
+          "{" +
+            "double y = 0.0;" + 
+            <b>eq1</b> + 
+            "return y;" +
+          "}" +
+          
+          "public double f2(double x)"+
+          "{" +
+            "double y = 0.0;" + 
+            <b>eq2</b> + 
+            "return y;" +
+          "}" +          
+          
+          "public double f3(double x)"+
+          "{" +
+            "double y = 0.0;" + 
+            <b>eq3</b> + 
+            "return y;" +
+          "}" +
+        "}"
+      );//end writeBytes method
+      
+      dataOut.close();//Close the output file.<br><br><b><font face="Courier New,Courier">Listing 31</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Get the text from the text fields</b></font></p>
+<p><a href="#Listing_31">Listing 31</a> begins by invoking the <b>getText</b> method to extract the 
+current text from each of the three text fields at the top of <a href="#Figure_1">Figure 1</a>.&nbsp; 
+This text is saved in the <b>String</b> variables named <b>eq1</b>, <b>eq2</b>, 
+and <b>eq3</b>.</p>
+<p><font color="#FF0000"><b>Insert the text into skeleton methods</b></font></p>
+<p>Then those three strings are concatenated into strings that provide the 
+skeletons for three methods named <b>f1</b>, <b>f2</b>, and <b>f3</b>.&nbsp; Those 
+strings are written into the output file named <b>Reload02a.java</b> in a manner 
+very similar to that explained for <a href="#Listing_3">Listing 3</a> earlier 
+in the lesson.</p>
+<p><font color="#FF0000"><b>Compile and load the class file</b></font></p>
+<p>The remainder of the <b>updateClass</b> method shown in <a name="Listing_32">Listing 32</a> 
+compiles and loads the class file in a manner very similar to that explained for <a href="#Listing_5">Listing 5</a> 
+through <a href="#Listing_20">Listing 20</a> earlier.</p>
+</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>
+      //Now compile the new class file
+      compileStatus = compile(
+               "temp" + File.separator + "Reload02a.java");
+
+      if(compileStatus){
+        System.out.println("Compile complete");
+
+        //The class has been defined and compiled.  Now
+        // force it to be loaded.
+        //Get a URL object that points to the directory 
+        // containing the class file.  A File object that
+        // points to that directory was created earlier.
+        //The compiled class file for the reloadable class 
+        // is stored in a directory that is pointed to by a
+        // reference variable of type File named targetDir.
+        //Following the recommendations in the Sun docs, 
+        // convert the File object to a URI and convert the
+        // URI to a URL.  Deposit the reference to the URL
+        // object into an one-element array of type URL.
+        URI uri = targetDir.toURI();                   
+        URL url = uri.toURL();
+        URL[] theUrl = new URL[]{url};
+  
+        //Create a new class loader associated with the 
+        // directory (URL) containing the reloadable class.
+        ClassLoader classLoader = 
+                                new URLClassLoader(theUrl);
+    
+        // Load the specified class, creating a Class
+        // object that represents the class in the process.
+        loadedClass = classLoader.loadClass("Reload02a");
+    
+      }else{
+        System.out.println("Probable compile error");
+      }//end else
+
+    }catch (Exception e){
+      e.printStackTrace();
+      System.exit(0);
+    }//end catch
+    
+    return compileStatus;
+  }//end updateClass method<br><br><b><font face="Courier New,Courier">Listing 32</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Returning to the constructor</b></font></p>
+<p>Now, returning to the discussion of the constructor from <a href="#Listing_29">Listing 29</a> above, 
+<a href="#Listing_33">Listing 33</a> assembles the GUI shown in <a href="#Figure_1">Figure 1</a> by creating and adding various 
+components to the <b>JFrame</b> object.&nbsp; The boldface code in 
+<a name="Listing_33">Listing 33</a> 
+registers the object of the <b>Reload02</b> class as an action listener on the
+<b>Graph</b> button shown in the bottom of the GUI in <a href="#Figure_1">Figure 1</a>.</p>
+</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    //Now build the GUI.  
+    canvas = new MyCanvas();
+    
+    JPanel southPanel = new JPanel();
+    //Set the layout manager to GridLayout with 
+    // 2 rows x 4 cols
+    southPanel.setLayout(new GridLayout(2,4));
+                  
+    JPanel northPanel = new JPanel();
+    northPanel.setLayout(new GridLayout(4,1));
+
+    //Button for replotting the graph
+    JButton graphBtn = new JButton("Graph");
+<b>    graphBtn.addActionListener(this);</b>
+
+    //Populate each small panel with a label
+    // and a text field
+    pan0.add(new JLabel("xMin"));
+    pan0.add(xMinTxt);
+
+    pan1.add(new JLabel("xMax"));
+    pan1.add(xMaxTxt);
+
+    pan2.add(new JLabel("yMin"));
+    pan2.add(yMinTxt);
+
+    pan3.add(new JLabel("yMax"));
+    pan3.add(yMaxTxt);
+
+    pan4.add(new JLabel("xTicInt"));
+    pan4.add(xTicIntTxt);
+
+    pan5.add(new JLabel("yTicInt"));
+    pan5.add(yTicIntTxt);
+
+    pan6.add(new JLabel("xCalcInc"));
+    pan6.add(xCalcIncTxt);
+    
+    pan7.add(new JLabel("f1"));
+    pan7.add(f1Txt);
+    
+    //Make the color of the labels that identify the 
+    // equations for f2 and f3 match the color that will
+    // be used to plot those two equations.  f1 is 
+    // already black so I didn't need to change its color.
+    JLabel f2Label = new JLabel("f2");
+    f2Label.setForeground(Color.RED);
+    pan8.add(f2Label);
+    pan8.add(f2Txt);
+
+    JLabel f3Label = new JLabel("f3");
+    f3Label.setForeground(Color.BLUE);
+    pan9.add(f3Label);
+    pan9.add(f3Txt);
+
+    //Add the populated panels, the button, and the check
+    // box to the control panels for the South and North
+    // locations.
+    southPanel.add(pan0);
+    southPanel.add(pan1);
+    southPanel.add(pan2);
+    southPanel.add(pan3);
+    southPanel.add(pan4);
+    southPanel.add(pan5);
+    southPanel.add(pan6);
+    southPanel.add(graphBtn);
+    
+    northPanel.add(pan7);
+    northPanel.add(pan8);
+    northPanel.add(pan9);
+    northPanel.add(reloadCkBox);
+
+    //Add the sub-assemblies to the frame.  Set the frame's
+    // location, size, and title, and make it visible.
+    getContentPane().add(northPanel,BorderLayout.NORTH);
+    getContentPane().add(southPanel,BorderLayout.SOUTH);
+    getContentPane().add(canvas,BorderLayout.CENTER);
+    canvas.setBackground(Color.WHITE);
+    setBounds(0,0,frmWidth,frmHeight);
+    setTitle(
+       "ScienceGraph, Copyright 2006, Richard G. Baldwin");
+                 
+    setVisible(true);//Make the GUI visible
+    
+    //Set to exit on X-button
+    setDefaultCloseOperation(EXIT_ON_CLOSE);
+
+    //Get and save the size of the plotting surface
+    width = canvas.getWidth();
+    height = canvas.getHeight();
+    
+    //Cycle visibility once to force the initial methods
+    // to be displayed.  There must be a better way to
+    // accomplish this.  Without this, the initial
+    // methods are not displayed at startup.  This
+    // appears to be the result of a timing problem
+    // involving compilation, etc.
+    setVisible(false);
+    setVisible(true);
+
+  }//end constructor<br><br><b><font face="Courier New,Courier">Listing 33</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Although the code in <a href="#Listing_33">Listing 33</a> is long and tedious, it is straightforward 
+and shouldn't require any explanation beyond that provided in the comments.&nbsp; 
+If you are unfamiliar with this kind of code, you may want to review my earlier 
+tutorial lessons on the topic that you will find
+<a href="http://www.dickbaldwin.com/tocmed.htm">here</a> and
+<a href="http://www.dickbaldwin.com/tocadv.htm">here</a>.</p>
+<p><font color="#FF0000"><b>The actionPerformed method</b></font></p>
+<p>As mentioned earlier, because the <b>Reload02</b> class implements the <b>
+ActionListener</b> interface, an object of the class can be, and is registered 
+on the <b>Graph</b> button at the bottom of the GUI shown in <a href="#Figure_1">Figure 1</a>.&nbsp; <i>
+(See the boldface code in <a href="#Listing_33">Listing 33</a>.)</i>&nbsp; Also, because the <b>Reload02</b> 
+class implements the <b>ActionListener</b> interface, and the class is not 
+declared abstract, the class must define the interface method named <b>
+actionPerformed</b>.</p>
+<p>The <b>actionPerformed</b> method, with some of the plotting code deleted for 
+brevity, is shown in <a name="Listing_34">Listing 34</a>.</p>
+</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  public void actionPerformed(ActionEvent evt){
+    System.out.println("\nExecuting actionPerformed");
+
+<font color="#FF0000">//Plotting code deleted for brevity.</font>
+
+    boolean compileStatus = true;
+    
+    if(reloadCkBox.isSelected()){
+      //Clear the checkbox, recompile, and reload.
+      reloadCkBox.setSelected(false);
+      compileStatus = <b>updateClass</b>();
+    }//end if on reloadCkBox.isSelected()
+    
+    if(compileStatus){
+      //Repaint the plotting surface
+      canvas.repaint();
+    }else{
+      System.out.println("Unable to compile new class");
+    }//end else
+  }//end actionPerformed<br><br><b><font face="Courier New,Courier">Listing 34</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>This event handler is registered on the button to cause the methods to be 
+re-plotted.&nbsp; In addition, if the checkbox at the top of the GUI is checked, 
+the class is rewritten, recompiled, and reloaded before being evaluated to 
+produce the plots.</p>
+<p><font color="#FF0000"><b>If the check box is checked...</b></font></p>
+<p>If the check box at the top of the GUI is checked, the <b>updateClass</b> 
+method discussed earlier is invoked to recompile and reload the class.</p>
+<p>If the recompilation is successful, the <b>repaint</b> method is invoked on 
+the <b>Canvas</b> object to cause the methods named <b>f1</b>, <b>f2</b>, and <b>
+f3</b> to be evaluated and plotted.&nbsp; If the recompilation is unsuccessful, 
+an <i>Unable to compile new class</i> message is posted on the command-line 
+screen and no attempt is made to evaluate and plot the methods.</p>
+<p><font color="#FF0000"><b>The remaining program code</b></font></p>
+<p>All of the remaining code in the program, including the overridden <b>paint</b> 
+method, is either plotting code that is very similar to code that was explained 
+in earlier lessons, or code that is very similar to code that was explained 
+earlier in this lesson in conjunction with the program named <b>Reload01</b>.&nbsp; 
+Therefore, I won't explain the remaining code in the program.&nbsp; You can view 
+the remaining code in <a href="#Listing_36">Listing 36</a> near the end of the lesson.<br>
+</p>
+<center>
+<h2><a name="Run the program"></a>Run the Program</h2>
+</center>
+<p>I encourage you to copy the code from <a href="#Listing_35">Listing 35</a> and <a href="#Listing_36">Listing 36</a> into your text
+editor, compile it, and execute it.&nbsp; Experiment with it, making
+changes, and observing the results of your changes.</p>
+<h2 align="center"><a name="Summary">Summary</a></h2>
+<p>In this lesson, I taught you how to write a program that modifies its 
+fundamental behavior at runtime by dynamically modifying, compiling, loading, 
+and reloading classes.</p>
+<p>This involves writing code, which in turn writes new code in the form of 
+source code for new class definitions.</p>
+<p>It also involves writing code that causes the source code for the new classes 
+to be compiled and loaded.</p>
+<p>Finally, it involves writing code that uses reflection to invoke 
+instance methods belonging to objects instantiated from the newly-loaded 
+classes.</p>
+<ul>
+</ul>
+<h2 align="center"><a name="Whats Next">What's Next?</a></h2>
+<p>In Part 2 of this lesson, I will show you two alternative ways to accomplish 
+the same thing using an approach that avoids the complexity of reflection.</p>
+<h2 align="center"><a name="References">References</a></h2>
+<p>The following online documents contain information that is relevant to the 
+material covered in this tutorial lesson:</p>
+<ul>
+	<li>Lesson 58 <a href="http://www.dickbaldwin.com/java/Java058.htm">Threads 
+	of Control</a></li>
+	<li>Lesson 60 <a href="http://www.dickbaldwin.com/java/Java060.htm">Core 
+	Java Classes, Input and Output Streams</a></li>
+	<li>Lesson 1062
+	<a href="http://www.developer.com/java/other/article.php/600571">Swing from 
+	A to Z: Analyzing Swing Components, Part 2, GUI Setup</a></li>
+	<li>Lesson 1468
+	<a href="http://www.developer.com/java/other/article.php/1554511">Plotting 
+	Engineering and Scientific Data using Java</a></li>
+	<li>Lesson 1472 <a href="http://www.dickbaldwin.com/java/Java1472.htm">
+	Introduction to the Java Robot Class</a></li>
+	<li>Lesson 1640
+	<a href="http://www.developer.com/java/other/article.php/3300881">The 
+	Essence of OOP using Java, Anonymous Classes</a></li>
+	<li>Lesson 2300
+	<a href="http://www.developer.com/java/other/article.php/3495121">Generics 
+	in J2SE 5.0, Getting Started</a></li>
+	<li><a href="http://www.securingjava.com/chapter-two/chapter-two-7.html">The 
+	Class Loader Architecture</a> by Gary McGraw and Ed Felten</li>
+</ul>
+<center>
+<h2> <a name="Complete Program Listings"></a>Complete Program Listing</h2>
+</center>
+Complete listings of the programs discussed in this lesson are shown in 
+<a name="Listing_35">Listing 
+35</a> and <a href="#Listing_36">Listing 36</a> below. <br>
+&nbsp;
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>/*File Reload01.java
+Copyright 2006, R.G.Baldwin
+Revised 03/02/04
+
+Illustrates writing, compiling, loading, reloading, and
+instantiating an object of a class, and invoking a method
+on that object totally under program control.
+
+The program begins by automatically writing the following 
+simple class into a source code file in a subdirectory (of 
+the current directory) named temp:
+
+public class Reload01a{
+  public String theMethod(String str,double val){
+    System.out.println(\"Executing theMethod\");
+    return str + " " + "Tom" + " " + val/3;
+  }
+}
+
+The program displays a GUI having a single button.
+
+Each time you click the button, the program compiles and 
+reloads the class named Reload01a.  Then it instantiates 
+an object of the newly-loaded class and invokes the method 
+named theMethod on the object.
+
+If you modify the source code file for the class, the next 
+time you click the button to cause the file to be compiled 
+and reloaded, the new behavior will be evident.
+
+If the compilation process fails to return within five 
+seconds, the compilation process is aborted and a 
+"Compilation timeout error" is declared.  It is also 
+possible that the compilation process could return within 
+five seconds with a compilation error.  In either case, a 
+"Probable compile error" will be declared.  The program is 
+not terminated as a result of a probable compile error, so 
+you can fix the problem in the source code and try again
+by clicking the button.
+
+The location of the class file is hard-coded as the
+subdirectory named temp, but could be anywhere on the disk
+that is accessible to the program if the program were
+modified accordingly.
+
+You need to make certain that there is not a copy of 
+a compiled version of the class named Reload01a on the 
+classpath.  If the program finds a copy on the classpath, 
+the class will not be reloaded when a reload is requested.
+
+Once this program is running, use an editor to modify the
+source code for class and then click the button.
+
+Here is a typical output produced by the program by
+modifying the source code file for the class between each 
+click of the button.  In one case, a syntax error was
+purposely created so as to produce a compiler error.
+
+Writing the class file.
+
+In actionPerformed
+Compiling temp\Reload01a.java
+Waiting for completion
+Compile complete
+Executing theMethod
+Hello Tom 3.3666666666666667
+
+In actionPerformed
+Compiling temp\Reload01a.java
+Waiting for completion
+Compilation timeout error.
+Probable compiler error.
+
+In actionPerformed
+Compiling temp\Reload01a.java
+Waiting for completion
+Compile complete
+Executing theMethod
+Hello Bill 3.3666666666666667
+
+In actionPerformed
+Compiling temp\Reload01a.java
+Waiting for completion
+Compile complete
+Executing theMethod
+Hello Bill 2.525
+
+Tested using J2SE 5.0 under Windows XP.
+**********************************************************/
+import java.net.*;
+import java.io.*;
+import java.lang.reflect.*;
+import java.awt.event.*;
+import javax.swing.*;
+
+class Reload01 extends JFrame{
+  
+  File targetDir;//location of the file named Reload01a
+  
+  public static void main(String[] args){
+    new Reload01().writeTheClassFile();
+  }//end main
+  //-----------------------------------------------------//
+  
+  Reload01(){//constructor
+    setTitle("Copyright 2006, R.G.Baldwin");
+    JButton button = new JButton("Recompile and Reload");
+    getContentPane().add(button);
+    
+    button.addActionListener(
+      new ActionListener(){
+        public void actionPerformed(ActionEvent e){
+          System.out.println("\nIn actionPerformed");
+
+          try{
+            //Now compile the new class file.  The compile
+            // method returns true on a successful compile,
+            // and false otherwise.
+            boolean compileStatus = compile(
+               "temp" + File.separator + "Reload01a.java");
+      
+            if(compileStatus){//If compile was successful.
+              System.out.println("Compile complete");
+      
+              //The class has been defined and compiled.
+              //Force the class named Reload01a to be
+              // reloaded and get a Class object that
+              // represents the reloaded version of the
+              // class in the process.
+              //Specify the name of the class and the
+              // directory containing the class file that
+              // is to be reloaded.
+              Class loadedClass = 
+                                reloadTheClass("Reload01a",
+                                                targetDir);
+              
+              //Instantiate a new object of the class.
+              Object obj = loadedClass.newInstance();
+              
+              //Get a reference to an object of type Method
+              // that represents the instance method
+              // belonging to the object.  The method
+              // belonging to the object will be invoked
+              // later by invoking the method named invoke
+              // on the object of type Method.
+              //The first parameter specifies the name of
+              // the target method that will be invoked 
+              // later.  In this case, the name is
+              // theMethod.
+              //The second parameter specifies that the
+              // method named theMethod requires two
+              // parameters, the first of type String and
+              // the second of type double.
+              Method methodObj = 
+                 loadedClass.getDeclaredMethod(
+                   "theMethod",
+                   new Class[]{String.class,double.class});
+              
+              //Invoke the method named theMethod by
+              // invoking the method named invoke on the
+              // Method object, passing the reference to
+              // the object and a reference to a parameter
+              // array as parameters to the invoke method.
+              //Cast the return value from Object to
+              // String. Then display the return values.
+              //When the target method requires primitive
+              // parameters, they must be wrapped in an
+              // object of the corresponding wrapper class
+              // for passing to the invoke method.  They
+              // are automatically unwrapped by the system
+              // for passing to the target method.
+              //Similarly, when the target method returns a
+              // value of a primitive type, the invoke
+              // method will return that value wrapped in
+              // an object of the corresponding wrapper
+              // class.
+              String returnVal = (String)methodObj.invoke(
+                   obj,
+                   new Object[]{"Hello",new Double(10.1)});
+              System.out.println(returnVal);
+            }//end if on compileStatus
+            else{
+              System.out.println(
+                               "Probable compiler error.");
+            }//end else
+          
+          }catch(Exception ex){
+            ex.printStackTrace();
+          }//end catch
+
+        }//end actionPerformed
+      }//end new ActionListener
+    );//end addActionListener
+    
+    setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    setSize(250,100);
+    setVisible(true);
+  }//end constructor
+  //-----------------------------------------------------//
+
+  //Write the source code for the file named Reload01a
+  // into a subdirectory named temp. If the file
+  // exists, it will be overwritten.  
+  void writeTheClassFile(){
+    try{
+      //Create a File object that points to a directory
+      // where the class file will reside.
+      targetDir = new File(System.getProperty("user.dir")
+               + File.separator + "temp" + File.separator);
+        
+      //If the directory doesn't exist, make it.
+      if(!targetDir.exists()){
+        targetDir.mkdir();
+      }//end if
+      
+      //Get an output stream for writing the source code
+      // for the new class file.
+      DataOutputStream dataOut = new DataOutputStream(
+             new FileOutputStream("temp" + File.separator +
+                                        "Reload01a.java"));
+
+      //Create the source code for the new class file.
+      System.out.println("Writing the class file.");
+      dataOut.writeBytes(
+       
+      "public class Reload01a{" +
+        "public String theMethod(String str,double val){" +
+          "System.out.println(\"Executing theMethod\");" +
+          "return str + \" \" + \"Tom\" + \" \" + val/3;" +
+        "}" +
+      "}"
+
+      );//end writeBytes method
+      
+      dataOut.close();//Close the output file.
+
+    }catch(Exception e){
+      e.printStackTrace();
+    }//end catch
+  }//end writeTheClassFile
+  //-----------------------------------------------------//
+
+  //The purpose of this method is to re-load a class that
+  // is specified by name as a String from a subdirectory
+  // specified by a File parameter named dir.
+  static Class reloadTheClass(String reloadableClass,
+                              File dir){
+    //Get a URL object that points to the directory 
+    // containing the class file for the class that is
+    // to be loaded.
+    URL[] theUrl = null;
+    try{
+      //The compiled class file for the reloadable class is
+      // stored in a directory that was specified by an
+      // incoming parameter named dir of type File.
+      //Following the recommendations in the Sun docs, 
+      // convert the File object to a URI and convert the
+      // URI to a URL.  Deposit the reference to the URL
+      // object into an one-element array of type URL.
+      URI uri = dir.toURI();                   
+      URL url = uri.toURL();
+      theUrl = new URL[]{url};
+    }catch(Exception e){
+      e.printStackTrace();
+    }//end catch
+
+    Class theClass = null;
+    try {
+      //Create a new class loader associated with the 
+      // directory containing the reloadable class.
+      ClassLoader classLoader = new URLClassLoader(theUrl);
+  
+      // Load the specified class, creating a Class object
+      // that represents the class in the process.
+      theClass = classLoader.loadClass(reloadableClass);
+    }catch (Exception e){
+      e.printStackTrace();
+    }//end catch
+    
+    //Return a reference to the Class object that
+    // represents the newly-loaded class.
+    return theClass; 
+  }//end reloadTheClass
+  //-----------------------------------------------------//
+
+  //Method to compile the java source code file. Returns
+  // true if successful, false otherwise.
+  private static boolean compile(String file)
+                                        throws IOException{
+    System.out.println("Compiling " + file);
+    Process p = Runtime.getRuntime().exec("javac " + file);
+    
+    //Note:  Sometimes the method named waitFor hangs up
+    // and fails to return when there is a compiler error.
+    // The following code is designed to deal with that
+    // problem.  This code allows five seconds for the
+    // compilation to complete successfully and the
+    // waitFor method to return.  If the waitFor method
+    // fails to return within five seconds, the code
+    // declares a "Compilation timeout error" and
+    // terminates the compilation process, returning false
+    // from the method to indicate a compiler error.
+    // However, it doesn't terminate the program and the
+    // user may correct the program and try again.
+    
+    Thread myTimer = new Thread(
+                   new Timer(Thread.currentThread(),5000));
+    //Start  Timer thread
+    myTimer.start();
+    
+    System.out.println("Waiting for completion");
+    
+    try{
+      p.waitFor();//wait for completion
+
+      //The waitFor method has returned,
+      if(myTimer.isAlive()){
+        //Stop the timer.
+        myTimer.interrupt();
+      }//end if
+    }catch(InterruptedException e){
+      //The timer expired before the waitFor method
+      // returned and interrupted the waitFor method.
+      System.out.println("Compilation timeout error.");
+      p.destroy();
+      return false;
+    }//end catch
+
+    //The waitFor method returned in five seconds or less.
+
+    //p.exitValue() other than 0 indicates a compiler
+    // error.
+    return p.exitValue() == 0;
+  }//end method compile
+  //-----------------------------------------------------//
+}//end class Reload01
+//=======================================================//
+
+class Timer implements Runnable{
+  Thread theCompilingThread;
+  int delay;//time interval to sleep
+  //-----------------------------------------------------//
+  
+  Timer(Thread theCompilingThread, int delay){//constructor
+    this.theCompilingThread = theCompilingThread;
+    this.delay = delay;
+  }//end constructor
+  //-----------------------------------------------------//
+  
+  //The significant functionality of all thread objects is
+  // written into  run() method for the object.
+  public void run(){
+    try{
+      Thread.currentThread().sleep(delay);
+    }catch(InterruptedException e){
+      //No action is required when this sleeping thread is
+      // interrupted.
+      return;
+    }//end catch
+
+    //Control is transferred to here when the sleeping
+    // thread awakens naturally after the specified delay
+    // period.  This means that the compilation process is
+    // probably hung up.  Interrupt the compilation
+    // process and terminate the run method.
+    theCompilingThread.interrupt();
+  }//end run method
+}//end Timer class
+//=======================================================//<br><br><b><font face="Courier New,Courier">Listing 35</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<p> </p>
+<p><a name="Listing_36">Listing 36</a></p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>/**********************************************************
+File Reload02.java
+Copyright 2006, R.G.Baldwin
+Revised 03/02/06
+
+This program demonstrates the use of dynamic class loading.
+
+This version uses the invoke method of the Method class to
+access and execute the methods belonging to an object of
+a newly-loaded class.  See Reload03 for a version that
+uses an interface to access and reload those methods.
+
+When the program executes, it writes, compiles, loads, 
+instantiates, and invokes methods on an object of a new 
+class that is designed automatically according to input 
+from the user.
+
+This is a plotting program.  It is designed to create and 
+to access a new class file named Reload02a and to plot 
+three methods that are defined in that class.  The 
+methods are named f1, f2, and f3.
+
+The behavior of each of the three methods is specified in
+text form by the user who enters equations in three 
+corresponding text fields.
+
+By modifying the equations, checking a check box, and 
+clicking a button, the user can cause a new class to be 
+created.
+
+The new class contains three methods with behavior 
+matching the equations entered by the user.  The three
+methods are then plotted on a common set of Cartesian 
+coordinates.  Once the methods are defined and plotted,
+the user can modify many plotting parameters and cause the
+methods to be plotted over and over with different
+plotting parameters.
+
+Once the user is satisfied with the plots of those three 
+methods, the user can modify the equations and start 
+over with three new equations without terminating the 
+program or manually defining any new code.
+
+The three methods named f1, f2, and f3 are plotted in 
+black, red, and blue respectively.
+
+A coordinate system with axes, tic marks, and labels is 
+plotted in green.  The labels on the axes correspond to
+the values at the extreme edges of the plotting surface.
+The initial plotting range extends from -151 to +151 on
+each dimension.  This causes points plotted within the 
+range from -150 to +150 inclusive to be visible on the
+plotting surface.
+
+The plotting range on the positive or negative side of 
+either dimension can easily be changed by the user.
+
+The default size of the GUI is 475 pixels wide by 430 
+pixels tall.  This size was chosen to satisfy the size
+requirements of my publisher.  You may want to expand the
+size in order to be able to view more detail.
+
+The new class file named Reload02a.class is created in a 
+subdirectory of the current directory named temp.  If the 
+subdirectory doesn't exist, it will be created.  
+
+CAUTION:  If a class file having the same name already 
+exists in that subdirectory, it will be overwritten.
+
+The program provides three text fields into which the user 
+enters equations expressed in java syntax.  For example, 
+the following equation causes the value of y to be plotted 
+on the vertical as a function of x on the horizontal axis.
+(Note that the semicolon is required.)
+
+y = 100.0*(cos(x/10.0)*sin(x/11.0));
+
+In this case, the cos and sin methods of the Math class are
+used to evaluate the equation.  All computations are 
+performed as type double.  Then the results are converted 
+to integer values for plotting.
+
+For the student with more advanced Java programming 
+knowledge, the text entered into the text field can be
+more advanced.  For example, the following will plot as 
+a series of spikes.
+
+if(x%10 == 0){y = 50;}else{y = -50;}
+
+The program uses a static import directive for the Math 
+class.  Therefore, it is not necessary to qualify methods 
+from that class with the name of the class as in 
+Math.cos(...).  All that is required is cos(...).  Thus, 
+all of the methods of the Math class are directly available
+to be included in the equations.
+
+If it is desired to make use of other classes, it is 
+necessary to fully qualify the references to those classes
+using their package name.  Here is an example of such 
+qualification, which has no purpose other than to 
+illustrate the syntax involved:
+
+y =  x * ((new java.util.Date().getTime())/
+(new java.util.Date().getTime()));
+
+(Note that line break was manually inserted in the middle
+of the above equation.)
+
+As it turns out, this is a very complicated way to express
+the equation for a straight line, so the plot is a straight
+line.
+
+The three text fields described above are located in the 
+NORTH portion of the GUI.  In addition, a check box is 
+also located in the NORTH of the GUI.  There is a Graph 
+button at the bottom of the GUI.  If the check box is 
+checked when the Graph button is clicked, a new class that 
+matches the equations that have been entered into the text
+fields described above will be created, compiled, and 
+loaded before the equations are plotted.  If the check box 
+has not been checked, the equations in the existing class 
+will be replotted, potentially with different plotting 
+parameters.  (You can change the plotting parameters by
+changing the values in text fields at the bottom of the 
+GUI.)
+
+The program plots the following three equations by default 
+at startup to provide a visual confirmation that the 
+program is working, and also to illustrate the syntax that 
+should be used to enter equations into the text fields:
+
+y = (x*x*x + 40*x*x + 100*x -6000)/100;
+
+y = x * ((new java.util.Date().getTime())/
+  (new java.util.Date().getTime()));
+  
+y = 100.0*(cos(x/10.0)*sin(x/11.0));
+
+(Note that a line break was manually entered into the
+middle equation in the above list.)
+
+The first equation shown above is a cubic function with 
+roots at values for x of -20, -30, and +10.
+
+The second equation illustrates how classes other than the 
+Math class can be incorporated into equations.
+
+The third equation illustrates how methods of the Math 
+class can be incorporated into equations.
+
+In addition to the text fields at the top of the GUI as 
+described above, this program also provides the following 
+text fields at the bottom of the GUI for user input.  The 
+program also provides a button labeled Graph at the bottom 
+of the GUI.  The combination of these text fields and the 
+button make it possible for the user to adjust the 
+plotting parameters and to replot the graph as many times 
+with as many plotting-parameter settings as may be needed.
+
+xMin = minimum x-axis value
+xMax = maximum x-axis value
+yMin = minimum y-axis value
+yMax = maximum y-axis value
+xTicInt = tic interval on x-axis
+yTicInt = tic interval on y-axis
+xCalcInc = calculation interval (should normally be set
+ to 1.0)
+
+The user can modify any of these parameters and then click 
+the Graph button to cause the three methods to be 
+re-plotted according to the new parameters.
+
+In order to plot new and different equations, it is only 
+necessary to enter the new equations into the text fields
+at the top of the GUI, check the check box at the top of 
+the GUI, and click the Graph button.
+
+If the compilation process fails to return within five 
+seconds, the compilation process is aborted and a 
+"Compilation timeout error" is declared.  It is also 
+possible that the compilation process could return within 
+five seconds with a compilation error.  In either case, a 
+"Probable compile error" will be declared.  The program is 
+not terminated as a result of a probable compile error, so 
+you can fix the problem in the source code and try again
+by clicking the button.
+
+The program was tested using J2SE 5.0 under Windows XP.  
+This program uses static import directives.  Therefore, it 
+requires J2SE 5.0 or later to compile and run successfully.
+**********************************************************/
+import java.net.*;
+import java.io.*;
+import java.lang.reflect.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.awt.geom.*;
+import javax.swing.*;
+
+class Reload02{
+  public static void main(String[] args){
+    //Instantiate a GUI object.
+    new ScienceGraph();
+  }//end main
+}//end class Reload02
+//=======================================================//
+
+class ScienceGraph extends JFrame 
+                                 implements ActionListener{
+
+  //Define plotting parameters and their default values.
+  double xMin = -151.0;
+  double xMax = 151.0;
+  double yMin = -151.0;
+  double yMax = 151.0;
+
+  double xTicInt = 10.0;//Tic interval
+  double yTicInt = 10.0;//Tic interval
+
+  //Calculation interval along x-axis.  This should
+  // normally be left at 1.0 unless you have a special need
+  // to use more coarse sampling.
+  double xCalcInc = 1.0;
+
+  //Tic lengths
+  double xTicLen = (yMax-yMin)/50;
+  double yTicLen = (xMax-xMin)/50;
+
+  //Text fields for plotting parameters
+  JTextField xMinTxt = new JTextField("" + xMin,6);
+  JTextField xMaxTxt = new JTextField("" + xMax,6);
+  JTextField yMinTxt = new JTextField("" + yMin,6);
+  JTextField yMaxTxt = new JTextField("" + yMax,6);
+  JTextField xTicIntTxt = new JTextField("" + xTicInt,5);
+  JTextField yTicIntTxt = new JTextField("" + yTicInt,5);
+  JTextField xCalcIncTxt = new JTextField("" + xCalcInc,4);
+  
+  //Text fields for methods with default equations
+  // inserted.
+  JTextField f1Txt = new JTextField(
+             "y = (x*x*x + 40*x*x + 100*x -6000)/100;",40);
+  JTextField f2Txt = new JTextField(
+            "y = (x * ((new java.util.Date().getTime())/" +
+                 "(new java.util.Date().getTime())));",40);
+  JTextField f3Txt = new JTextField(
+                "y = 100.0*(cos(x/10.0)*sin(x/11.0));",40);
+  
+  //Check box used to force rewrite, recompile, and reload
+  // of the class.
+  JCheckBox reloadCkBox = new JCheckBox(
+              "Rewrite, Recompile, and Reload the Class " +
+              "using the Above Equations",false);
+
+  //Panels to contain a label and a text field
+  JPanel pan0 = new JPanel();
+  JPanel pan1 = new JPanel();
+  JPanel pan2 = new JPanel();
+  JPanel pan3 = new JPanel();
+  JPanel pan4 = new JPanel();
+  JPanel pan5 = new JPanel();
+  JPanel pan6 = new JPanel();
+  JPanel pan7 = new JPanel();
+  JPanel pan8 = new JPanel();
+  JPanel pan9 = new JPanel();
+
+  //Misc instance variables
+  int frmWidth = 475;
+  int frmHeight = 430;
+  int width;
+  int height;
+
+  //A reference to a newly-loaded class.
+  Class loadedClass = null;
+
+  //Plot is drawn on this canvas
+  MyCanvas canvas;
+  //-----------------------------------------------------//
+  
+  ScienceGraph(){//constructor
+    System.out.println(
+           "Write, compile, and load initial class file.");
+
+    //Write, compile, and load the new class based on the
+    // default equations in the text fields.  Returns 
+    // true on success, false on failure to compile.
+    boolean compileStatus = updateClass();
+    
+    if(!compileStatus){
+      System.out.println(
+                        "Unable to compile initial class");
+    }//end if
+
+    //Now build the GUI.  
+    canvas = new MyCanvas();
+    
+    JPanel southPanel = new JPanel();
+    //Set the layout manager to GridLayout with 
+    // 2 rows x 4 cols
+    southPanel.setLayout(new GridLayout(2,4));
+                  
+    JPanel northPanel = new JPanel();
+    northPanel.setLayout(new GridLayout(4,1));
+
+    //Button for replotting the graph
+    JButton graphBtn = new JButton("Graph");
+    graphBtn.addActionListener(this);
+
+    //Populate each small panel with a label
+    // and a text field
+    pan0.add(new JLabel("xMin"));
+    pan0.add(xMinTxt);
+
+    pan1.add(new JLabel("xMax"));
+    pan1.add(xMaxTxt);
+
+    pan2.add(new JLabel("yMin"));
+    pan2.add(yMinTxt);
+
+    pan3.add(new JLabel("yMax"));
+    pan3.add(yMaxTxt);
+
+    pan4.add(new JLabel("xTicInt"));
+    pan4.add(xTicIntTxt);
+
+    pan5.add(new JLabel("yTicInt"));
+    pan5.add(yTicIntTxt);
+
+    pan6.add(new JLabel("xCalcInc"));
+    pan6.add(xCalcIncTxt);
+    
+    pan7.add(new JLabel("f1"));
+    pan7.add(f1Txt);
+    
+    //Make the color of the labels that identify the 
+    // equations for f2 and f3 match the color that will
+    // be used to plot those two equations.  f1 is 
+    // already black so I didn't need to change its color.
+    JLabel f2Label = new JLabel("f2");
+    f2Label.setForeground(Color.RED);
+    pan8.add(f2Label);
+    pan8.add(f2Txt);
+
+    JLabel f3Label = new JLabel("f3");
+    f3Label.setForeground(Color.BLUE);
+    pan9.add(f3Label);
+    pan9.add(f3Txt);
+
+    //Add the populated panels, the button, and the check
+    // box to the control panels for the South and North
+    // locations.
+    southPanel.add(pan0);
+    southPanel.add(pan1);
+    southPanel.add(pan2);
+    southPanel.add(pan3);
+    southPanel.add(pan4);
+    southPanel.add(pan5);
+    southPanel.add(pan6);
+    southPanel.add(graphBtn);
+    
+    northPanel.add(pan7);
+    northPanel.add(pan8);
+    northPanel.add(pan9);
+    northPanel.add(reloadCkBox);
+
+    //Add the sub-assemblies to the frame.  Set the frame's
+    // location, size, and title, and make it visible.
+    getContentPane().add(northPanel,BorderLayout.NORTH);
+    getContentPane().add(southPanel,BorderLayout.SOUTH);
+    getContentPane().add(canvas,BorderLayout.CENTER);
+    canvas.setBackground(Color.WHITE);
+    setBounds(0,0,frmWidth,frmHeight);
+    setTitle(
+       "ScienceGraph, Copyright 2006, Richard G. Baldwin");
+                 
+    setVisible(true);//Make the GUI visible
+    
+    //Set to exit on X-button
+    setDefaultCloseOperation(EXIT_ON_CLOSE);
+
+    //Get and save the size of the plotting surface
+    width = canvas.getWidth();
+    height = canvas.getHeight();
+    
+    //Cycle visibility once to force the initial methods
+    // to be displayed.  There must be a better way to
+    // accomplish this.  Without this, the initial
+    // methods are not displayed at startup.  This
+    // appears to be the result of a timing problem
+    // involving compilation, etc.
+    setVisible(false);
+    setVisible(true);
+
+  }//end constructor
+  //-----------------------------------------------------//
+
+  //Method to compile the java source code file. Returns
+  // true if successful, false otherwise.
+  private static boolean compile(String file)
+                                        throws IOException{
+    System.out.println("Compiling " + file);
+    Process p = Runtime.getRuntime().exec("javac " + file);
+    
+    //Note:  Sometimes the method named waitFor hangs up
+    // and fails to return when there is a compiler error.
+    // The following code is designed to deal with that
+    // problem.  This code allows five seconds for the
+    // compilation to complete successfully and the
+    // waitFor method to return.  If the waitFor method
+    // fails to return within five seconds, the code
+    // declares a "Compilation timeout error" and
+    // terminates the compilation process, returning false
+    // from the method to indicate a compiler error.
+    // However, it doesn't terminate the program and the
+    // user may correct the program and try again.
+    
+    Thread myTimer = new Thread(
+                   new Timer(Thread.currentThread(),5000));
+    //Start  Timer thread
+    myTimer.start();
+    
+    System.out.println("Waiting for completion");
+    
+    try{
+      p.waitFor();//wait for completion
+
+      //The waitFor method has returned,
+      if(myTimer.isAlive()){
+        //Stop the timer.
+        myTimer.interrupt();
+      }//end if
+    }catch(InterruptedException e){
+      //The timer expired before the waitFor method
+      // returned and interrupted the waitFor method.
+      System.out.println("Compilation timeout error.");
+      p.destroy();
+      return false;
+    }//end catch
+
+    //The waitFor method returned in five seconds or less.
+
+    //p.exitValue() other than 0 indicates a compiler
+    // error.
+    return p.exitValue() == 0;
+  }//end method compile
+  //-----------------------------------------------------//
+  
+  //Method to write, compile, and load the new class.
+  boolean updateClass(){
+    boolean compileStatus = false;
+  
+    try{
+      //Create a File object that points to a directory
+      // where the class file will reside.
+      File targetDir = new File(
+                System.getProperty("user.dir")
+                + File.separator +"temp" + File.separator);
+        
+      //If the directory doesn't exist, make it.
+      if(!targetDir.exists()){
+        targetDir.mkdir();
+      }//end if
+      
+      //Get an output stream for writing the source code
+      // for the new class file.
+      DataOutputStream dataOut = new DataOutputStream(
+             new FileOutputStream("temp" + File.separator +
+                                        "Reload02a.java"));
+
+      //Get the equations from the text fields.
+      String eq1 = f1Txt.getText();
+      String eq2 = f2Txt.getText();
+      String eq3 = f3Txt.getText();
+
+      //Create the source code for the new class file.
+      dataOut.writeBytes(
+
+        "import static java.lang.Math.*;" +
+        "public class Reload02a{" +
+          "public double f1(double x)"+
+          "{" +
+            "double y = 0.0;" + 
+            eq1 + 
+            "return y;" +
+          "}" +
+          
+          "public double f2(double x)"+
+          "{" +
+            "double y = 0.0;" + 
+            eq2 + 
+            "return y;" +
+          "}" +          
+          
+          "public double f3(double x)"+
+          "{" +
+            "double y = 0.0;" + 
+            eq3 + 
+            "return y;" +
+          "}" +
+        "}"
+      );//end writeBytes method
+      
+      dataOut.close();//Close the output file.
+
+      //Now compile the new class file
+      compileStatus = compile(
+               "temp" + File.separator + "Reload02a.java");
+
+      if(compileStatus){
+        System.out.println("Compile complete");
+
+        //The class has been defined and compiled.  Now
+        // force it to be loaded.
+        //Get a URL object that points to the directory 
+        // containing the class file.  A File object that
+        // points to that directory was created earlier.
+        //The compiled class file for the reloadable class 
+        // is stored in a directory that is pointed to by a
+        // reference variable of type File named targetDir.
+        //Following the recommendations in the Sun docs, 
+        // convert the File object to a URI and convert the
+        // URI to a URL.  Deposit the reference to the URL
+        // object into an one-element array of type URL.
+        URI uri = targetDir.toURI();                   
+        URL url = uri.toURL();
+        URL[] theUrl = new URL[]{url};
+  
+        //Create a new class loader associated with the 
+        // directory (URL) containing the reloadable class.
+        ClassLoader classLoader = 
+                                new URLClassLoader(theUrl);
+    
+        // Load the specified class, creating a Class
+        // object that represents the class in the process.
+        loadedClass = classLoader.loadClass("Reload02a");
+    
+      }else{
+        System.out.println("Probable compile error");
+      }//end else
+
+    }catch (Exception e){
+      e.printStackTrace();
+      System.exit(0);
+    }//end catch
+    
+    return compileStatus;
+  }//end updateClass method
+  //-----------------------------------------------------//
+
+  //This event handler is registered on the JButton to
+  // cause the methods to be replotted.
+  public void actionPerformed(ActionEvent evt){
+    System.out.println("\nExecuting actionPerformed");
+    //Set plotting parameters using data from the text
+    // fields.
+    xMin = Double.parseDouble(xMinTxt.getText());
+    xMax = Double.parseDouble(xMaxTxt.getText());
+    yMin = Double.parseDouble(yMinTxt.getText());
+    yMax = Double.parseDouble(yMaxTxt.getText());
+    xTicInt = Double.parseDouble(xTicIntTxt.getText());
+    yTicInt = Double.parseDouble(yTicIntTxt.getText());
+    xCalcInc = Double.parseDouble(xCalcIncTxt.getText());
+
+    //Calculate new values for the length of the tic marks
+    // on the axes.
+    xTicLen = (yMax-yMin)/50;
+    yTicLen = (xMax-xMin)/50;
+
+    boolean compileStatus = true;
+    
+    if(reloadCkBox.isSelected()){
+      //Clear the checkbox, recompile, and reload.
+      reloadCkBox.setSelected(false);
+      compileStatus = updateClass();
+    }//end if on reloadCkBox.isSelected()
+    
+    if(compileStatus){
+      //Repaint the plotting surface
+      canvas.repaint();
+    }else{
+      System.out.println("Unable to compile new class");
+    }//end else
+  }//end actionPerformed
+  //-----------------------------------------------------//
+  
+  //This is an inner class, which is used to override the
+  // paint method on the plotting surface.
+  class MyCanvas extends Canvas{
+    //Factors to convert from double values to integer
+    // pixel locations.
+    double xScale;
+    double yScale;
+    //---------------------------------------------------//
+    
+    //Override the paint method
+    public void paint(Graphics g){
+  
+      //Calculate the scale factors
+      xScale = width/(xMax-xMin);
+      yScale = height/(yMax-yMin);
+  
+      //Set the origin based on the minimum values in
+      // x and y
+      g.translate((int)((0-xMin)*xScale),
+                 (int)((0-yMin)*yScale));
+  
+      drawAxes(g);//Draw the axes
+
+      //Don't try to plot if the class has not been
+      // successfully loaded.
+      if(loadedClass != null){
+        try{
+          //Instantiate a new object of the class
+          Object obj = loadedClass.newInstance();
+          
+          //Get a reference to an object of type Method
+          // that represents the instance method belonging
+          // to the object.  The method belonging to the
+          // object will be invoked later by invoking the
+          // method named invoke on the object of type
+          // Method.
+          //The first parameter specifies the name of the
+          // method that will be invoked.  In this case,
+          // the name is f1.
+          //The second parameter specifies that the method
+          // named f1 requires one parameter of type
+          // double.
+          Method methodObj = loadedClass.getDeclaredMethod(
+                                "f1",
+                                new Class[]{double.class});
+          
+          //Invoke the method named f1 by invoking the
+          // method named invoke on the Method object
+          // passing the object's reference and a
+          // reference to a parameter array as parameters.
+          // Cast the return value from Object to Double.
+          // Extract the double value from the returned
+          // value and save it in tempY.
+          //Note that the double parameter value is wrapped
+          // in an object of type Double.  It will be
+          // unwrapped automatically and delivered to the
+          // f1 method as type double.
+          //Similarly, when the method named f1 returns a
+          // value of type double, it is automatically
+          // wrapped in an object of type Double and 
+          // returned by the invoke method as type Object.
+          // Thus, it is necessary to cast the return 
+          // value to type Double and extrace the double
+          // value that it encapsulates.
+          
+          //Plot the first method in black.
+          g.setColor(Color.BLACK);
+          double xVal = xMin;
+          int oldX = getX(xVal);
+          
+          double tempY = ((Double)methodObj.invoke(obj,new 
+                Object[]{new Double(xVal)})).doubleValue();
+          int oldY = getY(tempY);
+          
+          //Enter a while loop using the same process to
+          // invoke the method named f1 several times in
+          // succession and plotting returned value.
+          while(xVal &lt; xMax){
+            tempY = ((Double)methodObj.invoke(obj,new 
+                Object[]{new Double(xVal)})).doubleValue();
+            int yVal = getY(tempY);
+            int x = getX(xVal);
+            g.drawLine(oldX,oldY,x,yVal);
+            xVal += xCalcInc;
+            oldX = x;
+            oldY = yVal;
+          }//end while loop
+          
+          //Now do the same thing for the other two
+          // methods named f2 and f3.
+          //Get a Method object that represents the
+          // method named f2.
+          methodObj = loadedClass.getDeclaredMethod(
+                                "f2",
+                                new Class[]{double.class});
+          //Plot the second method in red
+          g.setColor(Color.RED);
+          xVal = xMin;
+          oldX = getX(xVal);
+          
+          tempY = ((Double)methodObj.invoke(obj,new 
+                Object[]{new Double(xVal)})).doubleValue();
+          oldY = getY(tempY);
+          
+          while(xVal &lt; xMax){
+            tempY = ((Double)methodObj.invoke(obj,new 
+                Object[]{new Double(xVal)})).doubleValue();
+            int yVal = getY(tempY);
+            int x = getX(xVal);
+            g.drawLine(oldX,oldY,x,yVal);
+            xVal += xCalcInc;
+            oldX = x;
+            oldY = yVal;
+          }//end while loop
+
+          //Get a Method object that represents f3.
+          methodObj = loadedClass.getDeclaredMethod(
+                                "f3",
+                                new Class[]{double.class});
+          //Plot the third method in BLUE
+          g.setColor(Color.BLUE);
+          xVal = xMin;
+          oldX = getX(xVal);
+          
+          tempY = ((Double)methodObj.invoke(obj,new 
+                Object[]{new Double(xVal)})).doubleValue();
+          oldY = getY(tempY);
+          
+          while(xVal &lt; xMax){
+            tempY = ((Double)methodObj.invoke(obj,new 
+                Object[]{new Double(xVal)})).doubleValue();
+            int yVal = getY(tempY);
+            int x = getX(xVal);
+            g.drawLine(oldX,oldY,x,yVal);
+            xVal += xCalcInc;
+            oldX = x;
+            oldY = yVal;
+          }//end while loop
+          
+        }catch(Exception e){
+          e.printStackTrace();
+          System.exit(0);
+        }//end catch
+  
+      }else{
+        System.out.println("Class was not loaded");
+      }//end if-else on loadedClass
+  
+    }//end overridden paint method
+    //---------------------------------------------------//
+  
+    //Method to draw axes with tic marks and labels in the
+    // color GREEN
+    void drawAxes(Graphics g){
+      g.setColor(Color.GREEN);
+  
+      //Lable left x-axis and bottom y-axis.  These are
+      // the easy ones.  Separate the labels from the ends
+      // of the tic marks by two pixels.
+      g.drawString(
+              "" + (int)xMin,getX(xMin),getY(xTicLen/2)-2);
+      g.drawString(
+              "" + (int)yMin,getX(yTicLen/2)+2,getY(yMin));
+  
+      //Label the right x-axis and the top y-axis.  These
+      // are the hard ones because the position must be 
+      // adjusted by the font size and the number of
+      // characters.
+      //Get the width of the string for right end of x-axis
+      // and the height of the string for top of y-axis.
+      //Create a string that is an integer representation
+      // of the label for the plus end of the x-axis.  Then
+      // get a character array that represents the string.
+      int xMaxInt = (int)xMax;
+      String xMaxStr = "" + xMaxInt;
+      char[] array = xMaxStr.toCharArray();
+  
+      //Get a FontMetrics object that can be used to get
+      // the size of the string in pixels.
+      FontMetrics fontMetrics = g.getFontMetrics();
+      //Get a bounding rectangle for the string
+      Rectangle2D r2d = fontMetrics.getStringBounds(
+                                   array,0,array.length,g);
+      //Get the width and the height of the bounding
+      // rectangle.  The width is the width of the label on
+      // the positive x-axis.  The height applies to all
+      // the labels, but is needed specifically for the
+      // label at the positive end of the y-axis.
+      int labWidth = (int)(r2d.getWidth());
+      int labHeight = (int)(r2d.getHeight());
+  
+      //Label the positive x-axis and the positive y-axis
+      // using the width and height from above to position
+      // the labels.  These labels apply to the very ends
+      // of the axes at the edge of the plotting surface.
+      g.drawString("" + (int)xMax,getX(xMax)-labWidth,
+                                        getY(xTicLen/2)-2);
+      g.drawString("" + (int)yMax,getX(yTicLen/2)+2,
+                                     getY(yMax)+labHeight);
+  
+      //Draw the axes
+      g.drawLine(getX(xMin),getY(0.0),
+                                     getX(xMax),getY(0.0));
+  
+      g.drawLine(getX(0.0),getY(yMin),
+                                     getX(0.0),getY(yMax));
+  
+      //Draw the tic marks on axes
+      xTics(g);
+      yTics(g);
+    }//end drawAxes
+    //---------------------------------------------------//
+  
+    //Method to draw tic marks on x-axis
+    void xTics(Graphics g){
+      double xDoub = 0;
+      int x = 0;
+      int topEnd = getY(xTicLen/2);
+      int bottomEnd = getY(-xTicLen/2);
+  
+      //Loop and draw a series of short lines to serve as
+      // tic marks.
+      //Begin with the positive x-axis moving to the right
+      // from zero.
+      
+      while(xDoub &lt; xMax){
+        x = getX(xDoub);
+        g.drawLine(x,topEnd,x,bottomEnd);
+        xDoub += xTicInt;
+      }//end while
+  
+      //Now do the negative x-axis moving to the left from
+      // zero
+      xDoub = 0;
+      while(xDoub &gt; xMin){
+        x = getX(xDoub);
+        g.drawLine(x,topEnd,x,bottomEnd);
+        xDoub -= xTicInt;
+      }//end while
+  
+    }//end xTics
+    //---------------------------------------------------//
+  
+    //Method to draw tic marks on y-axis
+    void yTics(Graphics g){
+      double yDoub = 0;
+      int y = 0;
+      int rightEnd = getX(yTicLen/2);
+      int leftEnd = getX(-yTicLen/2);
+  
+      //Loop and draw a series of short lines to serve as
+      // tic marks. Begin with the positive y-axis moving
+      // up from zero.
+      while(yDoub &lt; yMax){
+        y = getY(yDoub);
+        g.drawLine(rightEnd,y,leftEnd,y);
+        yDoub += yTicInt;
+      }//end while
+  
+      //Now do the negative y-axis moving down from zero.
+      yDoub = 0;
+      while(yDoub &gt; yMin){
+        y = getY(yDoub);
+        g.drawLine(rightEnd,y,leftEnd,y);
+        yDoub -= yTicInt;
+      }//end while
+  
+    }//end yTics
+    //---------------------------------------------------//
+  
+    //This method translates and scales a double y value
+    // to plot properly in the integer coordinate system.
+    // In addition to scaling, it causes the positive
+    // direction of the y-axis to be from bottom to top.
+    int getY(double y){
+      double yDoub = (yMax+yMin)-y;
+      int yInt = (int)(yDoub*yScale);
+      return yInt;
+    }//end getY
+    //---------------------------------------------------//
+  
+    //This method scales a double x value to plot properly
+    // in the integer coordinate system.
+    int getX(double x){
+      return (int)(x*xScale);
+    }//end getX
+    //---------------------------------------------------//
+  }//end inner class MyCanvas
+}//end class ScienceGraph
+//=======================================================//
+
+class Timer implements Runnable{
+  Thread theCompilingThread;
+  int delay;//time interval to sleep
+  //-----------------------------------------------------//
+  
+  Timer(Thread theCompilingThread, int delay){//constructor
+    this.theCompilingThread = theCompilingThread;
+    this.delay = delay;
+  }//end constructor
+  //-----------------------------------------------------//
+  
+  //The significant functionality of all thread objects is
+  // written into  run() method for the object.
+  public void run(){
+    try{
+      Thread.currentThread().sleep(delay);
+    }catch(InterruptedException e){
+      //No action is required when this sleeping thread is
+      // interrupted.
+      return;
+    }//end catch
+
+    //Control is transferred to here when the sleeping
+    // thread awakens naturally after the specified delay
+    // period.  This means that the compilation process is
+    // probably hung up.  Interrupt the compilation
+    // process and terminate the run method.
+    theCompilingThread.interrupt();
+  }//end run method
+}//end Timer class
+//=======================================================//<br><br><b><font face="Courier New,Courier">Listing 36</font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<p> </p>
+
+<hr align="center" size="3" width="100%">
+<p>Copyright 2006, Richard G. Baldwin.&nbsp; Reproduction in whole or in part in any 
+form or medium without express written permission from Richard Baldwin is 
+prohibited. </p>
+<h4>About the author</h4>
+<b><a href="mailto:Baldwin@DickBaldwin.com">Richard Baldwin</a></b><i> is a 
+college professor (at Austin Community College in Austin, TX) and private 
+consultant whose primary focus is a combination of Java, C#, and XML. In 
+addition to the many platform and/or language independent benefits of Java and 
+C# applications, he believes that a combination of Java, C#, and XML will become 
+the primary driving force in the delivery of structured information on the Web.</i>    
+<p><i>Richard has participated in numerous consulting projects and he 
+frequently provides onsite training at the high-tech companies located in and 
+around Austin, Texas.&nbsp; He is the author of Baldwin's Programming
+<a href="http://www.dickbaldwin.com">Tutorials</a>, which have gained a 
+worldwide following among experienced and aspiring programmers. He has also 
+published articles in JavaPro magazine.</i> </p>
+<p><i>In addition to his programming expertise, Richard has many years of 
+practical experience in Digital Signal Processing (DSP).&nbsp; His first job after he 
+earned his Bachelor's degree was doing DSP in the Seismic Research Department of 
+Texas Instruments.&nbsp; (TI is still a world leader in DSP.)&nbsp; In the following 
+years, he applied his programming and DSP expertise to other interesting areas 
+including sonar and underwater acoustics.</i> </p>
+<p><i>Richard holds an MSEE degree from Southern Methodist University and has 
+many years of experience in the application of computer technology to real-world 
+problems.</i> </p>
+<p><i><a href="mailto:baldwin@dickbaldwin.com">Baldwin@DickBaldwin.com</a></i>
+</p>
+<p><b>Keywords</b><br>
+java dynamic class loader reflection </p>
+<p>-end- </p>
+<p>&nbsp;</p>
+<p> <br>
+&nbsp; </p>
+<br>
+<br>
+<br>
+<br>
+</body>
+</html>

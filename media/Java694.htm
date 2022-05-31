@@ -1,0 +1,481 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>... in Java by Richard G Baldwin</TITLE>
+<META NAME="Template" CONTENT="C:\PROGRAM FILES\MICROSOFT OFFICE\OFFICE\html.dot">
+</HEAD>
+<BODY LINK="#0000ff" VLINK="#800080" BGCOLOR="#ffffff">
+
+<P><!--start--></P>
+<I><H3 ALIGN="CENTER">Richard G Baldwin (512) 223-4758, </I><A HREF="mailto:baldwin@austin.cc.tx.us"><I>baldwin@austin.cc.tx.us</I></A><I>, </I><A HREF="http://www2.austin.cc.tx.us/baldwin/"><I>http://www2.austin.cc.tx.us/baldwin/</I></A></H3>
+<H2 ALIGN="CENTER"><!--title-->Servlets, Session Tracking Using the Session Tracking API <!--endtitle--></H2>
+<P>Java Programming, Lecture Notes # 694, Revised 3/18/99. </P>
+<P><A HREF="#Preface">Preface</A> </P>
+<P><A HREF="#Introduction">Introduction</A> </P>
+<P><A HREF="#Cookie_Class">The HttpSession Interface</A></P>
+<P><A HREF="#sample_program">Sample Program</A> </P><DIR>
+<DIR>
+
+<P><A HREF="#Interesting_Code_Fragments">Interesting Code Fragments</A> </P>
+<P><A HREF="#program_listing">Program Listing</A> </P></DIR>
+</DIR>
+
+<P><HR></P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Preface">Preface</A></H2>
+</FONT><P>Students in Prof. Baldwin's <B><U>Advanced Java Programming</B></U> classes at ACC will be responsible for knowing and understanding all of the material in this lesson beginning with the spring semester of 1999. </P>
+<P>This lesson was originally written on March 17, 1999. </P>
+<P>The sample servlet in this lesson was tested using Win95, Netscape Navigator, the JDK 1.2 download package from JavaSoft, the JSDK 2.0 download package from JavaSoft, and the <STRONG>servletrunner</STRONG> program that is included in the JSDK. The sample program was tested using <B>servletrunner</B> both from the same machine, and from a different machine on the network.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Introduction">Introduction</A></H2>
+</FONT><P>This is one of a series of lessons designed to show you some of the ways to implement session tracking using servlets. The purpose of the sample program in this lesson is to illustrate session tracking using the <I>session tracking API </I>that is part of the JSDK.</P>
+<P>Previous lessons have shown you several ways to implement session tracking with servlets. I began by implementing session tracking using hidden fields. Then I progressed through one version of URL rewriting followed by a discussion of the use of cookies. All of the sample programs in these earlier lessons were written at a fairly low level.</P>
+<P>Now I am going to show you how to use the session tracking API that allows you to program at a somewhat higher level. Before you get too excited, however, be aware that this may or may not be the answer to your needs. In some cases, depending on the server involved, you may find that the session tracking API relies exclusively on cookies, albeit at a very high level. If your clients don't allow cookies, then in this case the API won't solve your problems and you may find yourself back at square one -- hidden fields.</P>
+<P>The capability that I have referred to as the session tracking API is primarily based on the HttpSession Interface that I will discuss below. It also includes some other interfaces and classes as well.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Cookie_Class">The HttpSession Interface</A></H2>
+</FONT><P>I will begin the discussion with the following code fragment where <B>req</B> is the standard object of type <B>HttpServletRequest</B> passed to the <B>doGet()</B> method when it is invoked.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>HttpSession ses = req.<B>getSession</B>(true);</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The invocation of the <B>getSession(true)</B> method in this statement returns an object of the interface type <B>HttpSession</B>.</P>
+<P>This object is used to provide an association between an HTTP client and HTTP server. This association, or session, persists over multiple connections and/or requests during a given time period. Sessions are used to maintain state and user identity across multiple page requests. </P>
+<P>Apparently the manner in which the association is maintained varies from one server to the next. The documentation states, "A session can be maintained either by using cookies or by URL rewriting." One of my books states that the minimum requirement for servers is to maintain the session using cookies, and that the server may optionally support URL rewriting as well. There are inferences in the documentation to the effect that some servers may not support URL rewriting.</P>
+<P>An earlier lesson on cookies discussed the problems with knowing whether or not the client has disabled cookies. The JSDK 2.0 documentation states, "To expose whether the client supports cookies, <B>HttpSession</B> defines an <B>isCookieSupportDetermined()</B> method and an <B>isUsingCookies()</B> method."</P>
+<P>This suggests that one or both of these methods can be used to determine if the client browser has disabled cookies. Unfortunately, as near as I can determine, these two methods are not supported by JSDK 2.0. At least there is no documentation for them, and my efforts to invoke them met with compiler errors.</P>
+<P>The <B>HttpSession</B> object returned by the previous code fragment behaves as a container for the storage of:</P>
+
+<UL>
+<LI>Information about the session </LI>
+<LI>Data (objects) that persist from one invocation of the servlet to the next invocation of the servlet by the same client.</LI></UL>
+
+<P>The requirement to maintain the identification of each individual client is transparent to the programmer. That information is encapsulated in the <B>HttpSession</B> object and the process that backs it up. </P>
+<P>An <B>HttpSession</B> object represents an ongoing session with a particular client. The session continues until the client exits the browser, the servlet purposely invalidates the session, or the server invalidates the session due to timeout or other condition.</P>
+<P>All that the programmer has to do to maintain session state is to put objects into the <B>HttpSession </B>object, and to get objects from the <B>HttpSession </B>object. The programmer can also get information about the session from the <B>HttpSession</B> object as well.</P>
+<P>Data objects are stored in the <B>HttpSession</B> object using a dictionary-like interface. Each object stored in the <B>HttpSession</B> object is stored under a <B>String</B> name. Data objects are stored and retrieved under the name associated with the object.</P>
+<P>The fact that the data objects are actually being stored on the client machine (possibly as a cookie) is transparent to the programmer. The fact that the data objects are being stored in a cookie on the client machine can be verified by setting the browser preferences to ask permission to set each cookie. Then when the server attempts to set a cookie, the user will be notified. </P>
+<P>By paying attention to the requests to set cookies while running the sample program in this lesson, it appears that a single cookie is used to store the entire container that includes potentially many data objects. This gets around the limitation of 20 cookies per host provided the total size of the cookie doesn't exceed the requisite 4-Kbytes.</P>
+<P>If you instantiate your data objects from classes of your own design, you can process events which are generated whenever the object is put in or removed from the <B>HttpSession</B> object. In order to be able to receive events, your classes must implement the <B>HttpSessionBindingListener</B> interface.</P>
+<P>When an object of a class that implements the <B>HttpSessionBindingListener</B> interface is put into the <B>HttpSession</B> object, the following method is invoked on that object:</P>
+<B><P>valueBound(HttpSessionBindingEvent e)</B> </P>
+<P>When an object of a class that implements the <B>HttpSessionBindingListener</B> interface is removed from the <B>HttpSession</B> object, the following method is invoked on that object:</P>
+<B><P>valueUnbound(HttpSessionBindingEvent e)</B> </P>
+<P>No special registration of the event listeners is required as is typically the case in Java programming. Simply implementing the interface on the object is sufficient to cause it to receive events when it is put into or removed from the <B>HttpSession</B> object. You can define these two methods to provide whatever behavior may be needed when the events occur.</P>
+<P>An implementation of <B>HttpSession</B> represents the server's view of the session. The server considers a session to be <I>new</I> until the client has joined it. Until the client joins the session, the <B>isNew()</B> method returns true. </P>
+<P>A value of true can indicate one of the following three cases: </P>
+
+<UL>
+<LI>The client does not yet know about the session </LI>
+<LI>The session has not yet begun </LI>
+<LI>The client chooses not to join the session. </LI></UL>
+
+<P>The third case will occur if the client supports only cookies and chooses to reject any cookies sent by the server (the client has disabled cookies on the browser). </P>
+<P>According to the documentation, if the server supports URL rewriting, this case will not commonly occur. However, according to one of my books, even if the server supports URL rewriting, that capability is not freely available. The programmer must provide special programming constructs to take advantage of URL rewriting.</P>
+<P>Each URL exposed by servlet must be passed through one of two special encoding methods before sending URL to the client. Apparently, the encoding methods add the session ID to the URL.</P>
+<P>It is the responsibility of the programmer to design the application to account for situations where a client has not joined a session. </P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="sample_program"></A>Sample Program</H2>
+</FONT><P>The name of the servlet is <B>Servlet11</B>. </P>
+<P>The program begins by getting a valid <B>HttpSession</B> object for the current request from the client. If this is the first request for a new session, the object is created.</P>
+<P>The program instantiates a "hit counter" object and stores it in the session object. Each time the servlet is invoked, the value stored in the counter is incremented.</P>
+<P>Each time the servlet is invoked, a new <B>Date</B> object containing the current date and time is instantiated and stored in the session object. Each <B>Date</B> object is stored under a name created by converting the current date and time in milliseconds to a <B>String</B>. Thus, the amount of data stored in the session object increases with each invocation of the servlet.</P>
+<P>When the value of the hit counter is 1, an object of type <B>MyClass</B> is instantiated and stored in the session object. This object is removed from the session object when the value of the hit counter is 4.</P>
+<P>This object is a listener for events of type <B>HttpSessionBindingEvent</B>. Therefore, it receives an event when it is put into the session object, and receives another event when it is removed from the session object. Information about the two events is displayed on the client screen when the events occur.</P>
+<P>Each time the servlet is invoked, several pieces of information about the session are obtained from the session object and displayed on the client screen.</P>
+<P>Also, each time the servlet is invoked, information about each of the objects stored in the session object is obtained and displayed on the client screen. During the first four hits, this consists of counter information, information about each of the <B>Date</B> objects, and information about the object of type <B>MyClass</B>. On and after the fourth hit, the <B>MyClass</B> object is no longer contained in the session object so only information about the counter and the <B>Date</B> objects is displayed.</P>
+<P>The following box shows the screen output for the first invocation of the servlet. I highlighted three lines using boldface to separate the three types of information being displayed.</P>
+<P>The <B>Event </B>output resulted from the fact that the object of type <B>MyClass</B> was put into the session object. This caused the <B>valueBound()</B> method to be called.</P>
+<P>The <B>Session Characteristics</B> show that the creation time and the time last accessed are equal, and the session is a new session.</P>
+<P>The <B>Session Data</B> shows information on one counter object, one <B>Date</B> object, and one object of type <B>MyClass</B>.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#00ffff">
+<PRE><B>Event
+</B>In valueBound method
+Name = MyClassObj
+
+<B>Session Characteristics:
+</B>New Session: true
+Session ID: TNSBMZAAAAAABQFINYPQAAA
+Session Context: sun.servlet.http.SessionContextImpl@1cc86c
+Creation Time: Wed Mar 17 22:07:00 CST 1999
+Last Accessed: Wed Mar 17 22:07:00 CST 1999
+
+<B>Session Data:
+</B>counter: 1
+921730020980: Wed Mar 17 22:07:00 CST 1999
+MyClassObj: This is a MyClass object</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The next box shows the screen output for the fourth invocation of the servlet. This is the invocation where the <B>MyClass</B> object was removed from the session object. Hence an <B>Event</B> occurred showing that the <B>valueUnbound()</B> method was called.</P>
+<P>The <B>Session Characteristics</B> show that the session is no longer new, the Session ID has not changed, and the creation time is no longer equal to the time last accessed.</P>
+<P>The <B>Session Data</B> consists of one counter object and four <B>Date</B> objects. The <B>MyClass</B> object no longer appears.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#00ffff">
+<PRE><B>Event
+</B>In valueUnbound method
+Name = MyClassObj
+
+<B>Session Characteristics:
+</B>New Session: false
+Session ID: TNSBMZAAAAAABQFINYPQAAA
+Session Context: sun.servlet.http.SessionContextImpl@1cc86c
+Creation Time: Wed Mar 17 22:07:00 CST 1999
+Last Accessed: Wed Mar 17 22:07:50 CST 1999
+
+<B>Session Data:
+</B>counter: 4
+921730063990: Wed Mar 17 22:07:43 CST 1999
+921730070580: Wed Mar 17 22:07:50 CST 1999
+921730020980: Wed Mar 17 22:07:00 CST 1999
+921730068760: Wed Mar 17 22:07:48 CST 1999</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The next box shows the screen output for the seventh invocation of the servlet. There is no <B>Event</B> output and the <B>Session Characteristics</B> are the same as before except for the time last accessed.</P>
+<P>The <B>Session Data</B> consists of one counter object and seven <B>Date</B> objects.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#00ffff">
+<PRE><B>Session Characteristics:
+</B>New Session: false
+Session ID: TNSBMZAAAAAABQFINYPQAAA
+Session Context: sun.servlet.http.SessionContextImpl@1cc86c
+Creation Time: Wed Mar 17 22:07:00 CST 1999
+Last Accessed: Wed Mar 17 22:08:30 CST 1999
+
+<B>Session Data:
+</B>counter: 7
+921730063990: Wed Mar 17 22:07:43 CST 1999
+921730070580: Wed Mar 17 22:07:50 CST 1999
+921730106170: Wed Mar 17 22:08:26 CST 1999
+921730020980: Wed Mar 17 22:07:00 CST 1999
+921730110840: Wed Mar 17 22:08:30 CST 1999
+921730108640: Wed Mar 17 22:08:28 CST 1999
+921730068760: Wed Mar 17 22:07:48 CST 1999</PRE></TD>
+</TR>
+</TABLE>
+
+<P>As I mentioned earlier, my browser preferences were set to provide following notification: </P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=397>
+<TR><TD VALIGN="TOP" BGCOLOR="#c0c0c0">
+<P>"The server baldwin:8080 wishes to set a cookie that will be sent only back to itself. The name and value of cookie are …</P>
+<P ALIGN="CENTER">Do you wish to allow cookie to be set?"</TD>
+</TR>
+</TABLE>
+
+<P>I received only one notification when the servlet was first invoked. Apparently after getting permission to set the cookie, the browser doesn't request permission each time the server modifies the contents of the cookie. As you can see from the above screen output, the contents of the cookie were modified each time the servlet was invoked. </P>
+<P>&nbsp;</P>
+<FONT COLOR="#ff0000"><H3 ALIGN="CENTER"><A NAME="Interesting_Code_Fragments">Interesting Code Fragments</A></H3>
+</FONT><P>As usual, the first fragment shows the beginning of the controlling class and the beginning of the <B>doGet()</B> method. The fragment also sets the content type and gets the output writer. </P>
+<P>There is one minor difference relative to the code that you have seen before. The output stream is declared as an instance variable to make it available to the methods in the event handlers. Otherwise, you have seen this code before, so I won't discuss it further.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>public class Servlet11 extends HttpServlet{
+  PrintWriter <B>out</B>;//output stream to client
+  
+  public void doGet(HttpServletRequest req, 
+                    HttpServletResponse res)
+                      throws ServletException, IOException{
+                        
+
+    res.setContentType("text/html");
+    <B>out</B> = res.getWriter();</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The next fragment gets the current valid <B>HttpSession</B> object associated with the client request. The true parameter causes the <B>getSession()</B> method to instantiate a new <B>HttpSession</B> object if this is the first request of a session.</P>
+<P>Apparently the server identifies the first request of the session by the fact that the browser doesn't send a cookie (or the URL hasn't been rewritten).</P>
+<P>To ensure that the session is properly maintained, the <B>getSession()</B> method must be called at least once before any output is written to the response object.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>    HttpSession ses = req.getSession(true);</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The next fragment creates or processes an existing hit counter object. This object is stored in the session object under the name <B>"counter"</B>. </P>
+<P>The counter object is instantiated during the first invocation of the servlet, initialized to a value of one, and stored in the session object. </P>
+<P>During successive invocations of the servlet, the counter is incremented and the updated version is stored in the session object, replacing the old version that was previously stored there. Since an object of the <B>Integer</B> class is immutable, the only way to increment the counter is to create a new <B>Integer</B> object to replace the existing one.</P>
+<P>This fragment illustrates both <B>putValue()</B> and <B>getValue(), </B>which are the two methods used to store and retrieve objects from the session object. <B>putValue()</B> requires two parameters, an object and the <B>String </B>name under which the object is being stored. <B>getValue()</B> requires the <B>String</B> name of the object to retrieve.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>    Integer cnt = (Integer)ses.<B>getValue</B>("counter");
+    if(cnt == null) cnt = <B>new</B> Integer(1);
+    else cnt = new Integer(cnt.intValue() +1);
+    ses.<B>putValue</B>("counter",cnt);</PRE></TD>
+</TR>
+</TABLE>
+
+<P>A new <B>Date</B> object containing the current date and time is instantiated and stored in the session object each time the servlet is invoked. A <B>String</B> representation of the current date and time in milliseconds is used as the unique name for each such <B>Date</B> object.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>    Date theDate = new Date();
+    long millis = theDate.getTime();
+    String strMillis = "" + millis;
+    ses.<B>putValue</B>(strMillis,theDate);</PRE></TD>
+</TR>
+</TABLE>
+
+<P>During the first invocation of the servlet, when the value of the hit counter is one, a new object of type <B>MyClass</B> is instantiated and put it in the session object under the name <B>MyClassObj.</P>
+</B><P>Because <B>MyClass</B> implements <B>HttpSessionBindingListener</B>, this object is a listener for events of type <B>HttpSessionBindingEvent</B>. </P>
+<P>An <B>HttpSessionBindingEvent</B> event happens when the object is put into the session object and happens again when the object is removed from the session object.</P>
+<P>The <B>MyClass</B> object is removed from the session object when the value of the hit counter reaches four. The handlers for the two events cause a message to be displayed on the client screen when the events occur.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>    if(cnt.intValue() == 1) 
+                 ses.putValue("MyClassObj", new MyClass());
+    if(cnt.intValue() == 4) ses.removeValue("MyClassObj");</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The next fragment contains some standard HTML boilerplate that you have seen many times before. I won't comment on it further here.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>    out.println("&lt;HTML&gt;");
+    out.println("&lt;HEAD&gt;&lt;TITLE&gt;Servlet11&lt;/TITLE&gt;&lt;/HEAD&gt;");</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The next fragment uses methods of the <B>HttpSession</B> interface to get and display information about the session on the client screen. This is straightforward programming and shouldn't need any further explanation.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>    out.println("&lt;BODY&gt;&lt;BR&gt;Session Characteristics:&lt;BR&gt;"); 
+    out.println("New Session: " + ses.<B>isNew</B>()+ "&lt;BR&gt;");
+    out.println("Session ID: " + ses.<B>getId</B>()+ "&lt;BR&gt;");
+    out.println("Session Context: " 
+                        + ses.<B>getSessionContext</B>()+ "&lt;BR&gt;");
+    out.println("Creation Time: " 
+               + new Date(ses.<B>getCreationTime</B>()) + "&lt;BR&gt;");
+    out.println("Last Accessed: " 
+           + new Date(ses.<B>getLastAccessedTime</B>()) + "&lt;BR&gt;");</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The next fragment displays information about all of the objects currently in the session object. Note that the order of retrieval and display of the objects doesn't seem to follow any particular pattern.</P>
+<P>This code uses the <B>getValueNames()</B> method to create a <B>String</B> array containing the names of each of the objects currently stored in the session object. A <B>for</B> loop then iterates on that array, invoking the <B>getValue()</B> method on each name to get and display each of the objects stored in the session object.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>    out.println("&lt;BR&gt;Session Data:&lt;BR&gt;");
+    String[] names = ses.<B>getValueNames</B>();
+
+    <B>for</B>(int i = 0; i &lt; names.length; i++){
+      out.println(names[i] + ": " 
+                        + ses.<B>getValue</B>(names[i]) + "&lt;BR&gt;");
+    }//end for loop
+
+    out.println("&lt;/BODY&gt;&lt;/HTML&gt;");
+  }//end doGet()</PRE></TD>
+</TR>
+</TABLE>
+
+<P>That ends the <B>doGet()</B> method.</P>
+<P>The next fragment is an inner class. It could have been implemented as a top-level class. However, I elected to make it an inner class in order to provide easy access to the output stream used to write on the client screen.</P>
+<P>An object of this class is instantiated and put into the session object during the first invocation of the servlet. The object is removed during the fourth invocation of the servlet when the hit counter equals four. </P>
+<P>Because the class implements the <B>HttpSessionBindingListener </B>interface, an object of the class is a listener for events of type <B>HttpSessionBindingEvent</B>. An event of this type occurs when the object is first put into the session object. Another event of this type occurs when the object is removed from the session object. </P>
+<P>Unlike typical Java event programming, it is not necessary to register the listener on a source. Simply implementing the interface is sufficient to cause the object to be notified of the events when an object of the class is put into or removed from the session object.</P>
+<P>When an event occurs, the event handler methods named <B>valueBound()</B> and <B>valueUnbound()</B> receive a reference to an object of type <B>HttpSessionBindingEvent</B> as a parameter. The event handlers invoke the methods of the event class to display information about the events on the client screen when the events occur.</P>
+<P>In addition to the two event handler methods, this class also overrides the <B>toString()</B> method.</P>
+<P>Except for the fact that there is no requirement to register the event listener object on a source, this is straightforward source-listener event handling material.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>class MyClass implements HttpSessionBindingListener,
+                                              Serializable{
+    public String <B>toString</B>(){
+      return "This is a MyClass object";
+    }//end toString()
+    //---------------------------------------------------//
+    
+    //This method is called when the object is put into
+    // the session.
+    public void <B>valueBound</B>(HttpSessionBindingEvent e){
+      out.println("&lt;BR&gt;Event&lt;BR&gt;");
+      out.println("In valueBound method&lt;BR&gt;");
+      //Returns the name of the object as identified when
+      // put into the session
+      out.println("Name = " +e.getName() + "&lt;BR&gt;");
+    }//end valueBound()
+    //---------------------------------------------------//
+
+    //This method is called when the object is removed
+    // from the session.
+    public void <B>valueUnbound</B>(HttpSessionBindingEvent e){
+      out.println("&lt;BR&gt;Event&lt;BR&gt;");
+      out.println("In valueUnbound method&lt;BR&gt;");
+      out.println("Name = " +e.getName() + "&lt;BR&gt;");
+    }//end valueUnbound()
+
+  }//end inner class named MyClass 
+  //=====================================================//  
+
+}//end class Servlet11</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The entire servlet can be viewed in the listing in the next section.</P>
+<FONT COLOR="#ff0000"><H3 ALIGN="CENTER"><A NAME="program_listing"></A>Program Listing</H3>
+</FONT><P>A complete listing of the program follows.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Servlet11.java, Copyright 1999, R.G.Baldwin
+Revised 3/17/99
+
+This servlet illustrates use of the session tracking API.
+A variety of different aspects of session tracking using
+the API are illustrated.
+
+Tested using JDK 1.2, JSDK 2.0, and servletrunner under
+Win95.
+**********************************************************/
+import java.io.*;
+import java.util.*;
+import javax.servlet.*;
+import javax.servlet.http.*;
+
+public class Servlet11 extends HttpServlet{
+  PrintWriter out;//output stream to client
+  
+  public void doGet(HttpServletRequest req, 
+                    HttpServletResponse res)
+                      throws ServletException, IOException{
+                        
+
+    res.setContentType("text/html");
+    out = res.getWriter();
+    
+    
+    //Get the current valid session associated with this 
+    // request, If necessary, create a new session for the
+    // request. 
+    //To ensure the session is properly maintained,this 
+    // method must be called at least once before any 
+    // output is written to the response. 
+    //Returns the session associated with this request.
+    HttpSession ses = req.getSession(true);
+    
+    //Create a hit counter for this servlet to be stored
+    // in the session under the name "counter".First, 
+    // get access to the counter stored in the session. 
+    Integer cnt = (Integer)ses.getValue("counter");
+    //If the session doesn't have a "counter", create one
+    // and initialize its value to 1.
+    if(cnt == null) cnt = new Integer(1);
+    //If the session already has a "counter" increment it
+    else cnt = new Integer(cnt.intValue() +1);
+    //Put the new or incremented counter back in the 
+    // session replacing the one that was previously there.
+    ses.putValue("counter",cnt);
+    
+    //Each time the servlet in invoked, create a new Date
+    // object containing the current date and time and put
+    // it in the session.  Use a String representation of
+    // the current date and time in milliseconds as the
+    // name of each new Date object.
+    Date theDate = new Date();
+    long millis = theDate.getTime();
+    String strMillis = "" + millis;
+    ses.putValue(strMillis,theDate);
+    
+    //When the value of the hit counter is 1, instantiate
+    // an new object of type MyClass and put it in the
+    // session under the name "MyClassObj".  Because 
+    // MyClass implements HttpSessionBindingListener, this
+    // object will be a listener for events of type
+    // HttpSessionBindingEvent.  Such an event happens
+    // when the object is put into the session and happens
+    // again when the object is removed from the session.
+    //Remove the object from the session when the value
+    // of the hit counter is 4.
+    //The handlers for the two events cause a message to
+    // be displayed on the client screen when the events
+    // occur.
+    if(cnt.intValue() == 1) 
+                 ses.putValue("MyClassObj", new MyClass());
+    if(cnt.intValue() == 4) ses.removeValue("MyClassObj");
+
+    
+    out.println("&lt;HTML&gt;");
+    out.println("&lt;HEAD&gt;&lt;TITLE&gt;Servlet11&lt;/TITLE&gt;&lt;/HEAD&gt;");
+
+    //Display information about the session.
+    out.println("&lt;BODY&gt;&lt;BR&gt;Session Characteristics:&lt;BR&gt;"); 
+    out.println("New Session: " + ses.isNew()+ "&lt;BR&gt;");
+    out.println("Session ID: " + ses.getId()+ "&lt;BR&gt;");
+    out.println("Session Context: " 
+                        + ses.getSessionContext()+ "&lt;BR&gt;");
+    out.println("Creation Time: " 
+               + new Date(ses.getCreationTime()) + "&lt;BR&gt;");
+    out.println("Last Accessed: " 
+           + new Date(ses.getLastAccessedTime()) + "&lt;BR&gt;");
+
+    //Display information about all of the objects
+    // currently in the session.  Note that the order of
+    // the display of objects doesn't seem to follow any 
+    // particular pattern.
+    out.println("&lt;BR&gt;Session Data:&lt;BR&gt;");
+    String[] names = ses.getValueNames();
+    for(int i = 0; i &lt; names.length; i++){
+      out.println(names[i] + ": " 
+                        + ses.getValue(names[i]) + "&lt;BR&gt;");
+    }//end for loop
+
+
+    //The following methods are mentioned in documentation
+    // but apparently are not supported by JSDK 2.0.  It
+    // appears that these methods could be used to 
+    // determine if cookies are disabled on the client
+    // browser if they were supported.
+    //ses.isCookieSupportDetermined();
+    //ses.isUsingCookies();
+
+    out.println("&lt;/BODY&gt;&lt;/HTML&gt;");
+  }//end doGet()
+
+
+  //This is an inner class.  An object of this class is
+  // put into the session at the beginning and then
+  // removed when the hit counter equals 4.  Because the
+  // class implements the HttpSessionBindingListener
+  // interface, an object of the class is a listener for
+  // events of type HttpSessionBindingEvent.  An event of
+  // this type occurs when the object is put into the 
+  // session and another event of this type occurs when
+  // the object is removed from the session.  Note that it
+  // is not necessary to register the listener.  Simply
+  // implementing the interface is sufficient to cause
+  // the object to be notified of the events when an
+  // object of the class is put into or removed from the
+  // session.
+  //The event handlers display a message on the client
+  // screen when these events occur.
+  
+  class MyClass implements HttpSessionBindingListener,
+                                              Serializable{
+    public String toString(){
+      return "This is a MyClass object";
+    }//end toString()
+    
+    //This method is called when the object is put into
+    // the session.
+    public void valueBound(HttpSessionBindingEvent e){
+      out.println("&lt;BR&gt;Event&lt;BR&gt;");
+      out.println("In valueBound method&lt;BR&gt;");
+      //Returns the name of the object as identified when
+      // put into the session
+      out.println("Name = " +e.getName() + "&lt;BR&gt;");
+    }//end valueBound()
+
+    //This method is called when the object is removed
+    // from the session.
+    public void valueUnbound(HttpSessionBindingEvent e){
+      out.println("&lt;BR&gt;Event&lt;BR&gt;");
+      out.println("In valueUnbound method&lt;BR&gt;");
+      out.println("Name = " +e.getName() + "&lt;BR&gt;");
+    }//end valueUnbound()
+  }//end inner class named MyClass 
+  
+
+}//end class Servlet11</PRE></TD>
+</TR>
+</TABLE>
+
+<P>-end-<!--end--></P></BODY>
+</HTML>

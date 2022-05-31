@@ -1,0 +1,2935 @@
+<!DOCTYPE doctype PUBLIC "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+  <meta http-equiv="Content-Type"
+ content="text/html; charset=iso-8859-1">
+  <title>... in Java by Richard G Baldwin</title>
+</head>
+<body link="#0000ff" vlink="#666666" alink="#ff0000" lang="EN-US">
+<h2 align="center">Drawing grids, Bézier curves and elliptical arcs using Java and SVG</h2>
+Learn how to write Java code that uses an SVG graphics library and the SVG/XML 
+path element to efficiently draw grid lines, geometric shapes, cubic 
+Bezier curves, quadratic Bezier curves, and elliptical arcs.<p><b>Published:</b>&nbsp; 
+July 17, 2007<br>
+<b>By <a href="mailto:Baldwin@DickBaldwin.com">Richard G. Baldwin</a></b>
+</p>
+<p>Java Programming Notes # 2220</p>
+<ul>
+	<li><a href="#Preface">Preface</a><ul>
+		<li><a href="#General">General</a></li>
+		<li><a href="#Viewing_tip">Viewing tip</a><ul>
+			<li><a href="#Figures">Figures</a></li>
+			<li><a href="#Listings">Listings</a></li>
+		</ul></li>
+		<li><a href="#Supplementary_material">Supplementary material</a></li>
+	</ul>
+	</li>
+
+	<li><a href="#General%20Background%20Information">General
+	background information</a><ul>
+		<li><a href="#What_is_a_path_element">What is a path element?</a></li>
+		<li><a href="#The_graphic_output_from_the_program">The graphic output from the program</a></li>
+		<li><a href="#The_SVG_graphics_library">The SVG graphics library</a></li>
+		<li><a href="#The_moveto_command">The moveto command</a></li>
+		<li><a href="#Working_with_straight_lines">Working with straight lines</a></li>
+		<li><a href="#Working_with_text">Working with text</a></li>
+		<li><a href="#Working_with_Bezier_curves">Working with Bezier curves</a></li>
+		<li><a href="#Working_with_elliptical_arcs">Working with elliptical arcs</a></li>
+	</ul>
+	</li>
+	<li><a href="#Preview">Preview</a></li>
+	<li><a href="#Discussion%20and%20Sample%20Programs">Discussion and
+	sample code</a><ul>
+		<li><a href="#Description_of_the_program">Description of the program</a></li>
+		<li><a href="#The_beginning_of_the_class_named_Svg12">The beginning of the class named Svg12</a></li>
+		<li><a href="#Draw_a_diagonal_line">Draw a diagonal line</a></li>
+		<li><a href="#Draw_the_light_blue_grid_lines">Draw the light blue grid lines</a></li>
+		<li><a href="#Label_the_grid">Label the grid</a></li>
+		<li><a href="#Draw_the_red_and_blue_triangle">Draw the red and blue triangle</a></li>
+		<li><a href="#Draw_three_cubic_Bezier_curves">Draw three cubic Bezier curves</a></li>
+		<li><a href="#Draw_a_quadratic_Bezier_curve">Draw a quadratic Bezier curve</a></li>
+		<li><a href="#Draw_six_elliptical_arcs">Draw six elliptical arcs</a></li>
+	</ul>
+	</li>
+	<li><a href="#Run%20the%20program">Run the program</a></li>
+	<li><a href="#Summary">Summary</a></li>
+	<li><a href="#Whats%20Next">What's next?</a></li>
+	<li><a href="#Resources">Resources</a></li>
+	<li><a href="#Complete%20Program%20Listings">Complete program
+	listing</a></li>
+	<li><a href="#Copyright">Copyright</a></li>
+	<li><a href="#About_the_author">About the author</a></li>
+</ul>
+<hr size="3" width="100%" align="center">
+<center>
+<h2> <a name="Preface"></a>Preface</h2>
+</center>
+
+<h3><a name="General">General</a></h3>
+<p>Although <b>Bézier</b> is the proper spelling of <b>Pierre Bézier's </b>name, 
+the use of the special character as the second character in the name makes it 
+very difficult to compose text using a standard computer keyboard.&nbsp; The name 
+will appear dozens of times in this lesson.&nbsp; 
+Therefore, to make it easier to compose the remainder of this tutorial, I will 
+take the liberty of spelling it <b>Bezier</b>.</p>
+<p><font color="#FF0000"><b>Part of a series</b></font></p>
+<p>This lesson is part of a series <i>(see <a href="#Resources">Resources</a>)</i> 
+with the following major objectives:</p>
+<ul>
+	<li><a name="To_teach_you_how">To teach you how</a> to write Java code that will produce SVG/XML output, 
+	which can be rendered in graphic form by an SVG graphics engine such as 
+	Firefox 1.5.</li>
+	<li><a name="To_teach">To teach</a> you how to write servlets that will produce SVG/XML output, 
+	which can be rendered in graphic form by an SVG-capable browser such as 
+	Firefox 1.5.</li>
+</ul>
+<p><font color="#FF0000"><b>What you have learned</b></font></p>
+<p>In previous lessons, you have learned:</p>
+<ul>
+	<li>How to write Java code that will deposit SVG/XML code into an 
+	output file that I refer to as an SVG file.</li>
+	<li>How to write Java code that will deposit in-line SVG code 
+	into an XHTML file.</li>
+	<li>How to write Java servlet code that will deposit in-line SVG 
+	code into XHTML code in the servlet's output data stream.</li>
+	<li>How to write Java code that will create an output XHTML file 
+	that references an external SVG file.</li>
+	<li>How to write Java servlet code that will create an output 
+	XHTML data stream that references an external SVG file.</li>
+	<li>How to write a Java/SVG graphics library that removes much of 
+	the pain from writing Java code to produce SVG/XML output.</li>
+	<li>How to program and use many of the features of SVG to produce 
+	rich graphics in an SVG-capable browser window.</li>
+</ul>
+<p><font color="#FF0000"><b>The servlet objective has been satisfied</b></font></p>
+<p>At this point, I believe that I have satisfied the <a href="#To_teach">second</a> objective listed 
+above involving servlets.&nbsp; However, even though I have taught you a lot about the 
+many features of SVG, there are other important features that I have not yet 
+covered.&nbsp; Therefore, the <a href="#To_teach_you_how">first</a> objective listed above has not 
+yet been 
+satisfied.</p>
+<p><font color="#FF0000"><b>Will assume that you understand SVG/servlet code in 
+general</b></font></p>
+<p>Beginning with this lesson, most of the remaining lessons in this series will 
+assume that once you understand how to write Java code to implement a particular 
+SVG feature, you will already understand how to incorporate that Java code into 
+a servlet such that the output data stream from the servlet will deposit that 
+SVG code into an XHTML data output stream.&nbsp; Consequently, I will have 
+little to say about servlets in the remaining lessons in the series, and will 
+concentrate on helping you to understand how to write the Java code necessary to 
+take advantage of various SVG features.&nbsp; Typically, the sample programs 
+will produce output SVG files that can be rendered in graphic form by an SVG 
+graphics engine such as Firefox 1.5.</p>
+<p><font color="#FF0000"><b>What you will learn in this lesson</b></font></p>
+<p>In this lesson you will learn how to write Java code that uses an SVG 
+graphics library and the SVG <b>path</b> element to efficiently draw grid 
+lines, geometric shapes, cubic Bezier curves, 
+quadratic Bezier curves, and elliptical arcs.</p>
+<p><font color="#ff0000"><b>An SVG graphics library</b></font></p>
+<p>In earlier lessons, I taught you how write your own Java 
+SVG graphics library to eliminate, or at least alleviate the requirement to 
+write raw XML code or raw JAXP DOM code.&nbsp; The use of the SVG graphics library 
+makes it possible for you to produce SVG output simply by making typical Java 
+method calls.&nbsp; I updated my version of the Java SVG graphics library to 
+contain several new methods for use in this lesson.</p>
+<h3><a name="Viewing_tip">Viewing tip</a></h3>
+<p>I recommend that you open another copy of this document in a separate browser 
+window and use the following links to easily find and view the figures and 
+listings while you are reading about them.</p>
+<h4> <a name="Figures">Figures</a></h4>
+<ul>
+	<li><a href="#Figure_1">Figure 1</a>. The graphic output from the program.</li>
+	<li><a href="#Figure_2">Figure 2</a>. Sample cubic Bezier curves.</li>
+	<li><a href="#Figure_3">Figure 3</a>. Sample <i>d</i> attribute value for a 
+	cubic Bezier curve.</li>
+	<li><a href="#Figure_4">Figure 4</a>. Combinations of large-arc-flag and 
+	sweep-flag.</li>
+	<li><a href="#Figure_5">Figure 5</a>. A portion of the SVG/XML code for the 
+	grid.</li>
+	<li><a href="#Figure_6">Figure 6</a>. A text element.</li>
+	<li><a href="#Figure_7">Figure 7</a>. XML code for the red cubic Bezier 
+	curve.</li>
+	<li><a href="#Figure_8">Figure 8</a>. XML code for the green cubic Bezier 
+	curve.</li>
+	<li><a href="#Figure_9">Figure 9</a>. XML code for the blue cubic Bezier 
+	curve.</li>
+</ul>
+<h4> <a name="Listings">Listings</a></h4>
+<ul>
+	<li><a href="#Listing_1">Listing 1</a>. The beginning of the class named 
+	Svg12.</li>
+	<li><a href="#Listing_2">Listing 2</a>. Draw a diagonal line.</li>
+	<li><a href="#Listing_3">Listing 3</a>. Draw the light blue grid lines.</li>
+	<li><a href="#Listing_4">Listing 4</a>. The makePath method.</li>
+	<li><a href="#Listing_5">Listing 5</a>. The makeGridString method.</li>
+	<li><a href="#Listing_6">Listing 6</a>. Label the grid.</li>
+	<li><a href="#Listing_7">Listing 7</a>. The makeText method.</li>
+	<li><a href="#Listing_8">Listing 8</a>. Draw the red and blue triangle.</li>
+	<li><a href="#Listing_9">Listing 9</a>. Draw the red polyline.</li>
+	<li><a href="#Listing_10">Listing 10</a>. Draw the red cubic Bezier curve.</li>
+	<li><a href="#Listing_11">Listing 11</a>. Draw the green cubic Bezier curve.</li>
+	<li><a href="#Listing_12">Listing 12</a>. Draw the blue cubic Bezier curve.</li>
+	<li><a href="#Listing_13">Listing 13</a>. The quadratic Bezier curve.</li>
+	<li><a href="#Listing_14">Listing 14</a>. An elliptical arc with no 
+	rotation.</li>
+	<li><a href="#Listing_15">Listing 15</a>. An elliptical arc with a 45-degree 
+	rotation.</li>
+	<li><a href="#Listing_16">Listing 16</a>. Four combinations of 
+	large-arc-flag and sweep-flag.</li>
+	<li><a href="#Listing_17">Listing 17</a>. Program code for Svg012</li>
+</ul>
+<h3 align="left"> <a name="Supplementary_material">Supplementary material</a></h3>
+<p> I recommend that you also study the other lessons in my extensive collection 
+of online Java tutorials.&nbsp; You will find a consolidated index at
+<font
+ color="#000000"> <a href="http://www.dickbaldwin.com/toc.htm">
+www.DickBaldwin.com</a>.</font></p>
+<h2 align="center"><font color="#000000"> <a
+ name="General Background Information">General background information</a></font></h2>
+	<h3><a name="What_is_a_path_element">What is a <i>path</i> element?</a></h3>
+<p>Paraphrasing the information in the SVG documentation, an SVG <i>path</i> represents 
+the outline of a shape.&nbsp; The shape can be filled, stroked, used as a 
+clipping path, or any combination of the three.&nbsp; It can also be used to 
+cause text to be positioned on curving lines, which will be the topic for a 
+future lesson.</p>
+<p>A path is described using the concept of a current point.&nbsp; In an analogy 
+with drawing on paper, the current point can be thought of as the current 
+location of the pen. The position of the pen can be changed, and the outline of 
+a shape can be traced by dragging the pen in either straight lines or curves.&nbsp; 
+The shape can be either open or closed.</p>
+<p>Paths represent the geometry of the outline of a shape, defined in terms of 
+the following commands:</p>
+<ul>
+	<li><b>moveto</b> <i>(set a 
+	new current point)</i></li>
+	<li><b>lineto</b> <i>(draw a 
+	straight line)</i></li>
+	<li><b>curve</b> <i>(draw a 
+	curve using a cubic or quadratic Bezier curve or an elliptical arc)</i></li>
+	<li><b>closepath</b> <i>
+	(close the current shape by drawing a straight line to the last </i><b>
+	moveto</b><i> point)</i></li>
+</ul>
+<p>A path is defined in SVG using the <b><span class="code-fragment">path</span></b> 
+element.</p>
+<p><font color="#FF0000"><b><a name="The_required_d_attribute">The required <i>d</i> attribute</a></b></font></p>
+<p>A <b>path</b> element can have a large number of optional attributes.&nbsp; 
+It appears from the documentation that all but two are common attributes that 
+can be applied to many different elements such as the attributes named <b>
+transform</b>, <b>style</b>, etc.</p>
+<p>It also appears from the documentation that there are at least two attributes 
+that are specific to a <b>path</b> element:</p>
+<ul>
+	<li><b>d</b>=&quot;path data&quot;</li>
+	<li><b>pathLength</b> = &quot;number&quot;</li>
+</ul>
+<p><font color="#FF0000"><b>A required data set</b></font></p>
+<p>The <b>d</b> attribute is required while the <b>pathLength</b> attribute is 
+optional.&nbsp; The value for the <b>d</b> 
+attribute must be a data set that describes the path.&nbsp; In other words, the 
+data in the data set is the definition of the outline of the shape.</p>
+<p>In summary, a <i>path</i> is defined by defining a <b>path</b> 
+element, which contains a <b>d</b> attribute, where the <b>d</b>-attribute value contains the <b>
+moveto</b>, <b>lineto</b>,
+<b>curve</b>, and
+<b>closepath</b> commands and the 
+associated coordinate values necessary to define the outline of the shape.</p>
+<p><font color="#FF0000"><b><a name="Syntax_of_the_path_data_set">Syntax of the path data set</a></b></font></p>
+<p>The syntax of the path data set is designed to minimize download time and 
+associated bandwidth 
+requirements for downloading and drawing the path.&nbsp; The following rules generally describe the syntax of the 
+value of the <b>d</b> attribute:</p>
+<ul>
+	<li>For download efficiency, all instructions <i>(commands)</i> are expressed 
+	using a single character.&nbsp; For example, a
+	<b>moveto</b> command is 
+	expressed as either <b>M</b> or <b>m</b>.</li>
+	<li>Superfluous white space and separators such as commas can be eliminated.&nbsp; 
+	For example, <i>&quot;M 100 100 L 200 200&quot;</i> contains unnecessary spaces and 
+	could be expressed as <i>&quot;M100 100L200 200&quot;</i>.</li>
+	<li>The command letter can be eliminated on subsequent commands if the same 
+	command is used multiple times in a row.&nbsp; For example, you can drop the 
+	second &quot;L&quot; in <i>&quot;M 100 200 L 200 100 L -100 -200&quot;</i> and use <i>&quot;M 100 200 
+	L 200 100 -100 -200&quot;</i> instead.</li>
+	<li>Relative versions of all commands are available <i>(uppercase means 
+	absolute coordinates, lowercase means relative coordinates)</i>.</li>
+	<li>For the relative versions of the commands, all coordinate values are 
+	relative to the current point at the start of the command.</li>
+	<li>Alternate forms of the <b>lineto</b> 
+	command are 
+	available to optimize the special cases of horizontal and vertical lines.</li>
+	<li>Alternate forms of the <b>
+	curve</b> command are available to optimize the special cases where the 
+	first control point on the current segment can be determined automatically from 
+	the last control point on the previous segment.</li>
+	<li>The path data syntax is a prefix notation <i>(commands are followed by 
+	parameters)</i>.</li>
+	<li>The only allowable non-numeric characters for numeric parameter values 
+	are the minus (&quot;-&quot;) and period (&quot;.&quot;) characters.&nbsp; No other delimiter characters are allowed 
+	within the parameter value. <i>(For example, the following is 
+	an invalid numeric value in path data: &quot;13,000.56&quot;.)</i></li>
+</ul>
+<p><font color="#FF0000"><b>The commands</b></font></p>
+<p>If I counted correctly, there are twenty single-character commands that fall 
+in four general categories.&nbsp; The four categories and their single character 
+commands are given below:</p>
+<ul>
+	<li>moveto:&nbsp; <b>M</b> or <b>m</b></li>
+	<li>closepath:&nbsp; <b>Z</b> or <b>z</b></li>
+	<li>lineto
+	<ul><li><b>L</b> or <b>l</b> <i>(general lineto, [note the lowercase L])</i></li>
+		<li><b>H</b> or <b>h</b> <i>(horizontal lineto)</i></li>
+		<li><b>V</b> or <b>v</b> <i>(vertical lineto)</i></li></ul>
+	<li>curve:
+	<ul><li>Cubic Bezier: <b>C</b>, <b>c</b>, <b>S</b>, and <b>s</b> <i>(will 
+		explain in detail later)</i></li>
+		<li>Quadratic Bezier: <b>Q</b>, <b>q</b>, <b>T</b>, and <b>t</b> <i>
+		(will explain in detail later)</i></li>
+		<li>Elliptical arc: <b>A</b> and <b>a
+		</b><i>(will explain in detail later)</i></li></ul>
+	</ul>
+<p>Recall that the uppercase version of each command indicates that the coordinate values 
+following the command are to be interpreted as absolute values and the lowercase version 
+of the command indicates that the coordinate values following the command are to be 
+interpreted as being 
+relative to <i>&quot;the current point at the start of the command.&quot;</i></p>
+<p>The information in the above list is provided mainly to give you an overview.&nbsp; 
+I will discuss the different categories and their commands in much more detail later 
+in this lesson.</p>
+<h3><a name="The_graphic_output_from_the_program">The graphic output from the program</a> 
+</h3>
+<p>Figure 1 shows the graphic output that is produced by the program that I will 
+present and explain in this lesson.</p>
+
+<p>
+ <b><a name="Figure_1">Figure 1</a>. The graphic output from the program. </b>
+<table cols="1" bgcolor="#ffffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><img border="0" src="java2220a01.jpg" width="464" height="559"></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Figure 1 illustrates a diagonal line, grid lines that give the appearance of 
+graph paper, a simple triangle composed of straight lines, three different cubic 
+Bezier curves, one quadratic Bezier curve, and six elliptical arcs.&nbsp; Each 
+of the shapes in Figure 1 was designed to illustrate one or more 
+features of the SVG <b>path</b> element.&nbsp; I will refer back to Figure 1 frequently throughout the remainder of this 
+lesson.</p>
+<h3><a name="The_SVG_graphics_library">The SVG graphics library</a></h3>
+<p>Throughout most of the earlier lessons in this series, I have been using a 
+Java/SVG 
+graphics library of my own design to make it easier to generate the detailed 
+SVG/XML 
+code required to render SVG graphics in an SVG-capable graphics engine.&nbsp; In several 
+previous lessons, I 
+have updated the library to add new functionality, and this lesson is no 
+exception.</p>
+<p>I added the following new methods to my Java SVG graphics library for this lesson.</p>
+<ul>
+	<li>makePath</li>
+	<li>makeGridString</li>
+	<li>makeText</li>
+</ul>
+<p>I will present and explain the code 
+for these methods later.&nbsp; At this point, however, we are still 
+viewing the graphics process from a somewhat higher level and we don't need to 
+know the details of the code.</p>
+<h3><a name="The_moveto_command">The moveto command</a></h3>
+<p>The <b>moveto</b> commands <i>(<b>M</b> or <b>m</b>)</i> 
+establish a new current point. The effect is as if the &quot;pen&quot; were lifted from 
+the paper and moved to a new location where it is then dropped back onto the 
+paper.&nbsp; A path data segment must begin with a <b>moveto</b> command. Subsequent
+<b>moveto</b> commands represent the start of a new sub-path.&nbsp; <i>(Note, 
+however, that I don't deal with multiple sub-paths in this lesson.)</i></p>
+<p>
+<table width="275" cellpadding="0" cellspacing="0" border="0" align="right">
+<tr>
+<td width="10">
+<td>
+  <table width="100%" cellpadding="5" cellspacing="0" border="1">
+  <tr><td bgcolor="#eeeeee">
+  <b>Some special cases.</b><br />
+  If a relative moveto (<b>m</b>) appears as the first element of the 
+path, it is treated as a pair of absolute coordinates. If a moveto is 
+followed by multiple pairs of coordinates, the subsequent pairs are treated as 
+implicit lineto commands.</td></tr></table>
+</td>
+</tr>
+</table>
+
+The <b>moveto</b> command must be followed by a pair of coordinate values that 
+specify the new current point.&nbsp; Depending on whether the command is an 
+uppercase <b>M</b> or a lowercase <b>m</b>, the coordinate values may be 
+either absolute or relative.&nbsp; The <b>moveto</b> command starts a new 
+sub-path at the location specified by the coordinate values.<h3><a name="Working_with_straight_lines">Working with straight lines</a></h3>
+<p><font color="#FF0000"><b>The lineto command</b></font></p>
+<p>The various <b>lineto</b> commands draw straight lines from the current point 
+to a new point that is specified by a pair of coordinate values following the 
+command.</p>
+<p><font color="#FF0000"><b>The <i>L</i> or <i>l</i> lineto command</b></font></p>
+<p>This command draws a line from the current point to the specified 
+coordinate which becomes the new current point.&nbsp; As usual, uppercase
+<b>L</b> indicates that absolute coordinates will follow.&nbsp; 
+Lowercase <b>l</b> indicates that relative coordinates will follow.</p>
+<p>A number of coordinate pairs may be specified to draw a polyline <i>(not to 
+be confused with a <b>polyline</b> element)</i>. At the end 
+of the command, the new current point is set to the final set of coordinates 
+provided.</p>
+<p><font color="#FF0000"><b><a name="The_H_or_h_lineto_command">The <i>H</i> or 
+<i>h</i> lineto command</a></b></font></p>
+<p>This is a special case of the <b>lineto</b> command that requires only a 
+single coordinate value following the command.&nbsp; The single coordinate value 
+is a new horizontal coordinate.&nbsp; This command draws a horizontal line from 
+the current point to the new horizontal coordinate at the same vertical 
+coordinate.&nbsp; <i>(This command was used to draw the horizontal lines in the 
+blue background grid in Figure 1.)</i></p>
+<p><font color="#FF0000"><b>The <i>V</i> or <i>v</i> lineto command</b></font></p>
+<p>This is another special case of the <b>lineto</b> command that requires only 
+a single coordinate value following the command.&nbsp; The single coordinate 
+value is a new vertical coordinate.&nbsp; This command draws a vertical line 
+from the current point to the new vertical coordinate at the same horizontal 
+coordinate.<i>&nbsp; (This command was used to draw the vertical lines in the 
+blue background grid in Figure 1.)</i></p>
+<p><font color="#FF0000"><b>The closepath command</b></font></p>
+<p>The <b>closepath</b> command <i>(<b>Z</b> or <b>z</b>)</i> 
+ends the current sub-path and causes an automatic straight line to be drawn from 
+the current point to the initial point of the current sub-path.</p>
+<p>If a <b>closepath</b> is followed immediately by a <b>moveto</b>, then the <b>
+moveto</b> identifies the start point of the next sub-path. If a <b>closepath</b> 
+is followed immediately by any other command, then the next sub-path starts at 
+the same initial point as the current sub-path.</p>
+<p><font color="#FF0000"><b>The light blue grid pattern</b></font></p>
+<p>The first thing that I will call your attention to in Figure 1 is the blue 
+grid of straight horizontal and vertical lines that causes the image to resemble a sheet of graph paper.</p>
+<p><font color="#FF0000"><b>Why use the path element to draw straight lines?</b></font></p>
+<p>You learned about the <b>line</b> and <b>polyline</b> elements in earlier 
+lessons in this series <i>(see <a href="#Resources">Resources</a>)</i>.&nbsp; 
+The reality is that the use of the <b>path</b> element to draw straight lines is 
+conceptually more difficult than the use of the <b>line</b> element to draw straight lines.&nbsp; This may cause you to wonder 
+why you would ever use the <b>path</b> element to draw straight lines.&nbsp; The 
+reason is that in some cases, <i>(such as the drawing of the background grid in 
+Figure 1)</i>, the use of the <b>path</b> element can significantly reduce the 
+size of the XML data download and the corresponding bandwidth requirements.</p>
+<p><font color="#FF0000"><b><a name="download-efficiency">XML data required for a line element</a></b></font></p>
+<p>Note the light blue diagonal line in Figure 1.&nbsp; This line was drawn 
+using a <b>line</b> element, and its only purpose for being in Figure 1 is to 
+illustrate the improved download efficiency of the <b>path</b> element relative 
+to the <b>line</b> element in 
+certain cases.</p>
+<p>The XML code required to draw this line and to set its color to light blue 
+consisted of a total of 74 characters.&nbsp; This total would not 
+change significantly with changes in the length or the orientation of the line.</p>
+<p>Downloading 74 characters to draw a line is not a problem if you are drawing only a few lines.&nbsp; However, 
+the light blue background grid in Figure 1 contains 45 horizontal lines and 45 
+vertical lines for a total of 90 lines.&nbsp; If each of those 90 lines had been 
+drawn and colored using an individual <b>line</b> element, approximately 6660 
+XML characters would have been required to draw all 90 lines.</p>
+<p><font color="#FF0000"><b>Using a path element instead</b></font></p>
+<p>As you will 
+see later, I developed a method named<b> makeGridString</b> that uses
+<a href="#The_H_or_h_lineto_command">special</a> horizontal and 
+vertical <b>lineto</b> commands of the <b>path</b> element to reduce the 
+download size and attendant bandwidth requirements for drawings that contain a 
+large number of horizontal and vertical lines in a uniform grid pattern.&nbsp; 
+This method returns a string, which is used as the value for the attribute named
+<b>d</b> for a <b>path</b> element that draws the lines described by the 
+contents of the string.&nbsp; Although the code to accomplish this is somewhat 
+more complicated than would be the case for drawing the grid using simple <b>
+line</b> elements, the download size and bandwidth requirements are 
+significantly reduced with the use of the <b>path</b> element.</p>
+<p><font color="#FF0000"><b>A significant reduction in XML data volume</b></font></p>
+<p>
+<table width="275" cellpadding="0" cellspacing="0" border="0" align="right">
+<tr>
+<td width="10">
+<td>
+  <table width="100%" cellpadding="5" cellspacing="0" border="1">
+  <tr><td bgcolor="#eeeeee">
+  <b><i>polyline</i> is more efficient than <i>line</i>.</b><br />
+  I also wrote a test program and determined that the amount of XML code 
+	required to draw the light blue grid using a <b>polyline</b> element was 
+	about 1325 characters.&nbsp;&nbsp; Thus, the <b>path</b> element is also 
+	more efficient than the <b>polyline</b> element, but not by nearly as large 
+	a factor as when compared to the repeated use of the <b>line</b> element to 
+	draw the grid.</td></tr></table>
+</td>
+</tr>
+</table>
+
+If I counted correctly, the XML code required to draw and color 
+all 90 of the light blue horizontal and vertical grid lines in Figure 1 using a
+<b>path</b> element consists of 
+about 1150 characters.&nbsp; Thus, the use of the <b>path</b> 
+element to draw the light blue background grid reduced the amount of XML data by 
+almost a factor of 6 relative to the amount required to draw and color the grid using 
+individual
+<b>line</b> elements.</p>
+<p><font color="#FF0000"><b>The red and blue triangle</b></font></p>
+<p>Next, I want to call your attention to the red triangle with the blue border 
+in the upper left corner of Figure 1.&nbsp; I used the <b>moveto</b>, <b>lineto</b>, 
+and <b>closepath</b> commands to draw this triangle.&nbsp; In fact, this program 
+uses one absolute <b>moveto</b> command, one absolute <b>lineto</b> command, and 
+one relative <b>lineto</b> command plus the <b>closepath</b> command to draw the triangle.&nbsp; Once the triangle 
+had been drawn, separate calls to the <b>setAttribute</b> method were made to 
+fill the triangle with red and to give it a blue border.</p>
+<p>The triangle was drawn solely to illustrate the use of the <b>path</b> 
+element and the commands listed above.&nbsp; In reality, it would probably have 
+been easier to use simple <b>line</b> elements to draw this triangle than to 
+draw it using the <b>path</b> element.</p>
+<h3><a name="Working_with_text">Working with text</a></h3>
+<p>The use of text in SVG is an extensive topic, one facet of which is to create 
+a curved path and then to render the text along that path instead of simply 
+rendering it along a straight line.&nbsp; Text will be the primary topic of a 
+future lesson.</p>
+<p>However, I needed to put numeric labels on the graph shown in Figure 1 to make 
+it easier to read coordinate values off the graph.&nbsp; As you will see later, 
+I added a <b>makeText</b> method to my SVG graphics library to make this 
+relatively easy to 
+accomplish.</p>
+<h3><a name="Working_with_Bezier_curves">Working with Bezier curves</a></h3>
+<p>When you need to draw smooth curves to connect points, the <b>path</b> 
+element has a lot more to offer than just a reduction in the XML data volume, 
+although it has that to offer also.&nbsp; For this situation, the use of the <b>
+path</b> element also makes it possible to do some things relatively easily that 
+could be very difficult to do otherwise.</p>
+<p>
+<table width="275" cellpadding="0" cellspacing="0" border="0" align="right">
+<tr>
+<td width="10">
+<td>
+  <table width="100%" cellpadding="5" cellspacing="0" border="1">
+  <tr><td bgcolor="#eeeeee">
+  <b>Experimenting with Bezier curves.</b><br />
+  If you would like to learn a little more about cubic Bezier curves and have 
+	some fun in the process, take a look at the interactive Bezier Curve Demo in
+	<a href="#Resources">Resources</a>.&nbsp; <i>(Also see Figure 2.)</i></td></tr></table>
+</td>
+</tr>
+</table>
+
+<font color="#FF0000"><b>Cubic Bezier Curves</b></font></p>
+<p>A Bezier curve is a smooth curve that is used to connect two points.&nbsp; 
+SVG supports both <i>quadratic</i> and <i>cubic</i> Bezier curves.&nbsp; 
+Initially, this 
+discussion will be centered on cubic Bezier curves.&nbsp; Then it will move 
+to quadratic Bezier curves.</p>
+<p><font color="#FF0000"><b>Bezier curves according to Darrel Plant</b></font></p>
+<p>While describing cubic Bezier curves, Darrel Plant<i> </i>tells us, <i>&quot;Almost any type of curve that 
+contains one or two changes in direction can be described by a Bézier equation.&quot;</i> <i>&nbsp;(See &quot;What's a Bézier Curve?&quot; in
+<a href="#Resources">Resources</a>)</i>&nbsp; 
+He 
+goes on to describe how cubic Bezier curves can also be used to describe loops and 
+other complex shapes.</p>
+<p><font color="#FF0000"><b>Sample cubic Bezier curves</b></font></p>
+<p>Figure 2 shows four different cubic Bezier curves that I created 
+interactively using the Bezier Curve Demo in
+	<a href="#Resources">Resources</a>.</p>
+
+
+<p><b><a name="Figure_2">Figure 2</a>. Sample cubic Bezier curves.</b>
+<table bgcolor="#ffffff">
+	<tr>
+		<td><img border="0" src="java2220a02.jpg" width="174" height="265"></td>
+		<td><img border="0" src="java2220a03.jpg" width="174" height="265"></td>
+	</tr>
+		<tr>
+		<td><img border="0" src="java2220a04.jpg" width="174" height="265"></td>
+		<td><img border="0" src="java2220a05.jpg" width="174" height="265"></td>
+	</tr>
+</table>
+</p>
+
+
+<p>In each of the individual images in Figure 2, the curved line is the 
+actual Bezier curve <i>(or Bezier segment)</i>.&nbsp; The straight lines connect 
+the start point, two control points, and the end point that I will explain 
+in the next section.</p>
+<table width="275" cellpadding="0" cellspacing="0" border="0" align="right">
+<tr>
+<td width="10">
+<td>
+  <table width="100%" cellpadding="5" cellspacing="0" border="1">
+  <tr><td bgcolor="#eeeeee">
+  <b>A Bezier segment.</b><br />
+  The SVG 
+documentation refers to the four points and the curve that they produce as a Bezier segment.&nbsp; 
+	Thus, a Bezier curve may be made up of one or more Bezier segments.</td></tr></table>
+</td>
+</tr>
+</table>
+
+<font color="#FF0000"><b>Drawing a Bezier segment</b></font></p>
+<p>The locations of four points in coordinate space must be specified to draw a cubic Bezier segment.&nbsp; 
+There is a <i>start point</i>, two <i>control points</i>, and an <i>end point</i>.&nbsp; The segment is drawn from 
+the start point to the end point.&nbsp; The locations of the two control points 
+determine the shape of the curve as it winds its way from the start point to the 
+end point.&nbsp; Figure 2 shows some good examples of how the locations of 
+the two control points, relative to the locations of the start point and the end 
+point impact the shape of the actual Bezier curve or segment.</p>
+<p><font color="#FF0000"><b>Special forms of the <i>path</i> element in SVG</b></font></p>
+<p>With SVG, cubic Bezier segments are drawn using any one of several special forms of 
+the <b>path</b> element.&nbsp; There are four single-character commands that can be 
+used in the specification of the locations of the points:&nbsp; <b>C</b>, <b>c</b>, <b>S</b>, and <b>s</b>.</p>
+<p>For example, Figure 3 shows the beginning of the XML <b>path</b> element that 
+produced the red Bezier curve shown immediately down and to the right of the red 
+and blue triangle in Figure 1.</p>
+<p>
+ <b><a name="Figure_3">Figure 3</a>. Sample <i>d</i> attribute value for a cubic 
+	Bezier curve. </b>
+<table border="1" cols="1" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>&lt;path
+ d="M100,100 <font color="#FF0000"><b>C</b></font>100,50 175,50 175,100 <font color="#FF0000"><b>S</b></font>250,150 250,100"</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The <b>C</b>-command and the <b>S</b>-command are highlighted in boldface red 
+in Figure 3 to make them easy to for you to spot.&nbsp; <i>(They would not be red in the 
+actual XML code.)</i></p>
+<p><font color="#FF0000"><b>Either absolute or relative coordinates</b></font></p>
+<p>
+<table width="275" cellpadding="0" cellspacing="0" border="0" align="right">
+<tr>
+<td width="10">
+<td>
+  <table width="100%" cellpadding="5" cellspacing="0" border="1">
+  <tr><td bgcolor="#eeeeee">
+  <b>Keeping the text uncluttered.</b><br />
+  To keep the text from becoming too cluttered, the remainder of this discussion 
+	on Cubic Bezier curves will use the uppercase version of the commands, 
+	although in many cases the lowercase version could also be used.</td></tr></table>
+</td>
+</tr>
+</table>
+
+Once the start point has been established, the coordinates of the other three 
+points can be specified either in absolute coordinates or in coordinate values 
+that are relative to the location of the start point.&nbsp; If the uppercase 
+command is used, the coordinate values are interpreted to be absolute.&nbsp; If 
+the lowercase command is used, the coordinate values are interpreted to be 
+relative.&nbsp;<p><font color="#FF0000"><b>Poly-Bezier curves</b></font></p>
+<p>The specifications for multiple Bezier segments can be strung together following a Bezier 
+command to create a poly-Bezier curve.&nbsp; For example, each of the images 
+shown in Figure 2 is a single Bezier segment.&nbsp; On the other hand, the red 
+Bezier curve shown near the upper left in Figure 1 consists of two Bezier 
+segments concatenated end to end and is therefore a poly-Bezier curve.</p>
+<p>For the case of poly-Bezier curves, each group of three 
+coordinate values following the original Bezier segment is interpreted 
+to represent the specification of a new Bezier segment.&nbsp; The start point for 
+the new segment is assumed to be the end point from the previous segment, and hence 
+serves as the first of the four points that are required to specify a cubic 
+Bezier segment.</p>
+<p><font color="#FF0000"><b>
+<a name="Difference_between_C_and_S_Bezier_commands">Difference between <i>C</i> and <i>S</i> Bezier 
+commands</a></b></font></p>
+<p>Of the two types of Bezier commands, <i>(<b>C</b> and <b>S</b>)</i>, <b>C</b> is the more general 
+of the two.&nbsp; The <b>C</b> command can be used for a single 
+Bezier segment or for the construction 
+of a poly-Bezier curve.&nbsp; However, the <b>S</b> command applies only to the 
+construction of a poly-Bezier curve.</p>
+<p>
+<table width="275" cellpadding="0" cellspacing="0" border="0" align="right">
+<tr>
+<td width="10">
+<td>
+  <table width="100%" cellpadding="5" cellspacing="0" border="1">
+  <tr><td bgcolor="#eeeeee">
+  <b>A reflected point.</b><br />
+  In case you aren't certain what I mean when I speak of the reflection of a 
+	point, see the links to the reflection articles in <a href="#Resources">
+	Resources</a>.</td></tr></table>
+</td>
+</tr>
+</table>
+
+When the <b>S</b> command is used to specify the four required points for the next 
+segment, only the second control point and the end point are actually specified.&nbsp; As is always the case for a poly-Bezier curve, the start point 
+for the next segment is assumed to be the end point from the 
+previous segment.&nbsp; However, when an <b>S</b> command is used, the first control point for the new segment is 
+assumed to be the reflection of the second control point from the previous 
+segment, leaving only two points that must actually be specified for the new 
+segment.</p>
+<p><font color="#FF0000"><b>Quadratic Bezier curves</b></font></p>
+<p>A quadratic Bezier segment is defined by a start point, an end point, and 
+only one 
+control point.&nbsp; As with the cubic Bezier segment, there are four commands that are used to specify the locations of the three required points:&nbsp;
+<b>Q</b>, <b>q</b>, <b>T</b> and <b>t</b>.&nbsp; 
+The uppercase commands imply that the coordinate values are absolute while the 
+lowercase commands imply that the coordinate values are relative to the location 
+of the start point.</p>
+<p>The <b>Q</b> and <b>q</b> commands for the quadratic segment have essentially 
+the same meaning as the <b>C</b> and <b>c</b> commands for the cubic segment.&nbsp; 
+The <b>T</b> and <b>t</b> commands for a quadratic segment have essentially the 
+same meaning as the <b>S</b> and <b>s</b> commands for the cubic segment.</p>
+<p><font color="#FF0000"><b>The Bezier curves in Figure 1</b></font></p>
+<p>Figure 1 contains three cubic Bezier curves colored red, green, and blue, and one quadratic Bezier curve 
+colored red.&nbsp; 
+I will have more to say about each of these curves in conjunction with the 
+explanation of the Java code that produced them.</p>
+<h3><a name="Working_with_elliptical_arcs">Working with elliptical arcs</a></h3>
+<p><font color="#FF0000"><b><a name="Seven_parameters_are_required">Seven parameters are required</a></b></font></p>
+<p>An elliptical arc command is perhaps the most complex of all of the curve 
+commands.&nbsp; Each elliptical arc command requires seven parameters in the 
+following order:</p>
+<ol>
+	<li><b>rx</b> specifies the horizontal radius of the ellipse</li>
+	<li><b>ry</b> specifies the vertical radius of the ellipse</li>
+	<li><b>x-axis-rotation</b> specifies the rotation of the ellipse relative to 
+	the current coordinate system</li>
+	<li><b>large-arc-flag</b> <i>(will discuss in detail later)</i></li>
+	<li><b>sweep-flag</b> <i>(will discuss in detail later)</i></li>
+	<li><b>x</b> specifies the horizontal location of the end point of the arc</li>
+	<li><b>y</b> specifies the vertical location of the end point of the arc</li>
+</ol>
+<p><font color="#FF0000"><b>Behavior of the elliptical arc command</b></font></p>
+<p>The command draws an elliptical arc beginning at the current point and ending 
+at the location specified by <b>x</b> and <b>y</b>.</p>
+<p>The coordinates of the center of the ellipse are calculated automatically to 
+satisfy the constraints imposed by the other parameters.&nbsp; The <b>
+large-arc-flag</b> and <b>sweep-flag</b> parameters contribute to 
+the automatic calculations and help determine how the arc is drawn.</p>
+<p><font color="#FF0000"><b>The <i>large-arc-flag</i> and <i>sweep-flag</i> 
+parameters</b></font></p>
+<p>Each of the parameters named <b>large-arc-flag</b> and <b>sweep-flag</b> can 
+have a value of 0 or 1.&nbsp; This results in four possible combinations of 
+these two parameters.&nbsp; Thus, there are actually four different arcs <i>(two 
+different ellipses, each with two different arc sweeps)</i>, only one of which 
+can satisfy the 
+constraints imposed by a specific combination of these two parameters.&nbsp; </p>
+<p><font color="#FF0000"><b>The rules for drawing elliptical arcs</b></font></p>
+<p>The combination of <b>
+large-arc-flag</b> and <b>sweep-flag</b> indicates which one of 
+the four arcs will be drawn according to the following rules:</p>
+<ul>
+	<li>Of the four candidate arcs, two represent an arc sweep of greater than 
+	or equal to 180 degrees.&nbsp; This is a <i>large arc</i>.&nbsp; The other 
+	two candidates 
+	represent an arc sweep of less than or equal to 180 degrees.&nbsp; This is a
+	<i>small arc</i>.<br>
+	<br>
+	If the value of <b><a name="large-arc-flag">large-arc-flag</a></b> is 1, one of the two 
+	larger arc sweeps will be chosen.<br>
+	<br>
+	If the value of <b>large-arc-flag</b> is 0, one of the smaller arc 
+	sweeps will be chosen,<br>
+&nbsp;</li>
+	<li>The arc is drawn by evaluating the following equations where <b>cx</b> 
+	and <b>cy</b> are the coordinates of the center of the ellipse:<br>
+	<br>
+	x =<b> cx </b>+<b> rx</b>*cos(theta)<br>
+	y =<b>cy </b>+<b> ry</b>*sin(theta)<br>
+	<br>
+	If the value of <b><a name="sweep-flag">sweep-flag</a></b> is 1, then the equations are 
+	evaluated such that theta starts at an angle corresponding to the current 
+	point and increases positively until the arc reaches the end point.<br>
+	<br>
+	If the value of <b>sweep-flag</b> is 0, the equations are 
+	evaluated such that theta starts at an angle value corresponding to the 
+	current point and decreases until the arc reaches the end point.</li>
+</ul>
+<p><font color="#FF0000"><b>Elliptical arcs in the graphical output</b></font></p>
+<p>Six elliptical arcs are shown in Figure 1.&nbsp; The yellow arc with the red 
+border and the red arc with the yellow border illustrate the effect of the <b>
+x-axis-rotation</b> parameter on the appearance of the arc.&nbsp; The yellow arc 
+with the red border was drawn with an <b>x-axis-rotation</b> parameter value of 
+0.&nbsp; The red arc with the yellow border was drawn with an <b>x-axis-rotation</b> 
+parameter value of 45 degrees.</p>
+<p>In both cases, the start point was at the bottom of the straight-line segment 
+on the left and the end point was at the top of the straight-line segment.</p>
+<p>Also in both cases, the value of <b>
+large-arc-flag</b> was 1 and the value of <b>sweep-flag</b> 
+was 0.&nbsp; Thus, as explained above, one of the two 
+	larger arc sweeps was chosen in each case.&nbsp; Also as explained above, the equations 
+were evaluated such that theta started at an angle value corresponding to the 
+current point and decreased until the arc reached the end point.</p>
+<p>&nbsp;<font color="#FF0000"><b>Combinations of large-arc-flag and
+</b>
+<b>sweep-flag</b></font></p>
+<p>Each of the other four elliptical arcs at the bottom of Figure 1 represents 
+one of the four possible combinations of <b>large-arc-flag</b> and
+<b>sweep-flag</b> with an <b>x-axis-rotation</b> parameter value 
+of 0.&nbsp; Note that in each case, the horizontal and vertical radii were 
+the same, causing the elliptical arc to actually be a circular arc.&nbsp; Also 
+note that in each case, the start point of the elliptical arc was at the bottom 
+of the straight-line segment.</p>
+<p>Figure 4 shows the different combinations of these two parameters 
+for each elliptical arc going from left to right across Figure 1.&nbsp; 
+Hopefully a comparison of these parameter values with the images in Figure 1 
+will help you to understand the impact of each of the two parameters on the 
+appearance of the elliptical arc.</p>
+<p>
+ <b><a name="Figure_4">Figure 4</a>. Combinations of large-arc-flag and
+	</b>
+<b>sweep-flag.</b><table border="1" cols="1" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+<pre>
+Case 1: Fill color = red, border = blue
+ large-arc-flag = <b>1</b>
+ sweep-flag     = <b>0</b>
+    
+Case 2: Fill color = green, border = red
+ large-arc-flag = <b>1</b>
+ sweep-flag     = <b>1</b>
+    
+Case 3: Fill color = blue, border = red
+ large-arc-flag = <b>0</b>
+ sweep-flag     = <b>0</b>
+    
+Case 4: Fill color = yellow, border = blue
+ large-arc-flag = <b>0</b>
+ sweep-flag     = <b>1</b>
+</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>The large-arc flag</b></font></p>
+<p>The <a href="#large-arc-flag">behavior</a> of the 
+		<b>large-arc-flag</b>
+		is pretty straightforward and easy to understand.&nbsp; Basically the value of the large-arc-flag 
+determines whether the large portion or the small portion of the ellipse will be 
+displayed.&nbsp; If the <b> 
+large-arc-flag</b> has a value of 1, the large portion of the ellipse will be 
+displayed.&nbsp; If the <b> 
+large-arc-flag</b> has a value of 0, the small portion will be displayed<b>.</p>
+<p><font color="#FF0000"><b>The sweep-flag</b></font></p>
+</b> 
+<p>The <a href="#sweep-flag">behavior</a> of the  
+<b>sweep-flag</b> is not so straightforward, at least not for me anyway.&nbsp; 
+The value of the <b>sweep-flag</b> 
+determines which side of the straight-line segment the portion selected by the
+ 
+large-arc-flag</b> will be 
+displayed on.&nbsp; However, the difference between right and left in this case 
+depends on the locations of the start point and the end point.</b>&nbsp; 
+Although I haven't worked out the math, I feel reasonably confident in saying 
+that if you stand at the start point and look toward the end point, the arc will 
+be displayed on your right if the 
+		sweep-flag
+		has a value of 0, and will be displayed on your left if the </b>
+<b>sweep-flag</b> has a value of 1<b>.</p>
+<h2 align="center"><font color="#000000"><a name="Preview">Preview</a></font></h2>
+</b>
+<p>I will present and explain a program named <b>Svg12</b> in this lesson.&nbsp; 
+The primary purpose of this program is to teach you how to use an SVG <b>path</b> 
+element to draw straight lines, Bezier curves, and elliptical arcs.&nbsp; The program produces a single SVG file as its output.&nbsp; The 
+graphic output shown in Figure 1 was produced by rendering the SVG output file using 
+Firefox 1.5.</p>
+<p>As is my custom, I will present and explain the program in fragments.&nbsp; 
+You can view a listing of the entire program in Listing 17 near the end of the 
+lesson.</p>
+<center>
+<h2> <a name="Discussion and Sample Programs"></a><font color="#000000">Discussion
+and sample code</font></h2>
+</center>
+	<h3><a name="Description_of_the_program">Description of the program</a></h3>
+<p>Overall, the program creates a DOM tree 
+that describes the graphic image shown in Figure 1 in SVG format and writes it out into an 
+SVG 
+file named <b>Svg12.svg</b>.&nbsp; The output file produced by this program can be rendered by 
+loading it into Firefox 1.5.</p>
+<p><font color="#FF0000"><b>The path element</b></font></p>
+<p>The main purpose of this program is to demonstrate the use of a 
+Java method of my own design named <b>makePath</b> to create the SVG/XML output 
+code necessary to produce the graphic elements shown in Figure 1.&nbsp; A 
+secondary purpose is to demonstrate the use of a second Java method of my own 
+design named <b>makeGridString</b>.</p>
+<p>I updated my SVG graphics library during the writing of this program to add several new 
+methods, including <b>makePath</b> and <b>makeGridString</b>, and to update some of the default values for existing methods 
+as well.</p>
+<p><font color="#FF0000"><b>A diagonal blue line</b></font></p>
+<p>The program uses a <b>line</b> element to draw a diagonal line from the top 
+left corner of Figure 1 to the lower right corner.&nbsp; The purpose of this 
+line was to provide information about the <b>line</b> element that could be used 
+to calculate the improvement in <a href="#download-efficiency">download 
+efficiency</a> provided by the <b>path</b> element relative to the <b>line</b> 
+element for certain cases involving straight lines.</p>
+<p><font color="#FF0000"><b>A background grid</b></font></p>
+<p>
+<table width="275" cellpadding="0" cellspacing="0" border="0" align="right">
+<tr>
+<td width="10">
+<td>
+  <table width="100%" cellpadding="5" cellspacing="0" border="1">
+  <tr><td bgcolor="#eeeeee">
+  <b>What color is graph paper?</b><br />
+  In retrospect, thinking back to the days when I actually used graph 
+	paper, I probably should have made the background grid green.&nbsp; Then it 
+	would look even more like the graph paper that I remember from those days.
+</td></tr></table>
+</td>
+</tr>
+</table>
+
+After taking care of all the preliminary stuff that I have explained in 
+earlier lessons, the program uses the new method named <b>makeGridString</b>
+		in 
+conjunction with the new method named 
+		<b>makePath</b>
+		to draw a light blue background grid that 
+resembles graph paper.&nbsp; The 
+<b>makeGridString</b>
+		method uses the 
+		<b>moveto</b>
+		command and 
+special versions of the <i>horizontal</i> and <i>vertical</i> 
+		<b>lineto</b>
+		command to reduce the 
+amount of SVG/XML data needed to draw the grid.<p>As you can see in Figure 1, there are light blue horizontal 
+and vertical lines every 10th pixel.&nbsp; There are slightly darker blue lines every 
+50th pixel.&nbsp; There are even darker blue lines every 100th pixel.</p>
+<p><font color="#FF0000"><b>The text labels</b></font></p>
+<p>The program uses a new Java method of my own 
+design named <b>makeText</b> to place black text labels on the blue lines that mark every 50th pixel.</p>
+<p><font color="#FF0000"><b>A red triangle with a blue border</b></font></p>
+<p>Then the program uses the <b>moveto</b>, 
+<b>lineto</b>, and <b>closepath</b> commands to draw 
+a triangle.&nbsp; The <b>setAttribute</b> method is used to fill the triangle 
+with solid red color and to give it a blue border.</p>
+<p><font color="#FF0000"><b>Three cubic Bezier curves</b></font></p>
+<p>The program draws three cubic Bezier 
+curves, one red, one green, and one blue, illustrating the effect that the locations of the control points 
+have on the 
+shape of the curve.</p>
+<p><font color="#FF0000"><b>One quadratic Bezier curve</b></font></p>
+<p>Then the program overlays a 
+red quadratic Bezier curve on the blue cubic Bezier curve, illustrating the 
+difference in the degree to which the cubic and quadratic Bezier curves fit the 
+same envelope, where the envelope is defined by the start point, the control point(s), and the end point.</p>
+<p><font color="#FF0000"><b>Elliptical arc rotation</b></font></p>
+<p>The program draws two elliptical arc 
+curves to illustrate the effect of the <b>x-axis-rotation</b> parameter on the appearance 
+of the elliptical arcs.&nbsp; The yellow arc with the red border has a rotation 
+value of zero, while the red arc with the yellow border has a rotation value of 
+45 degrees.&nbsp; Otherwise, the two elliptical arcs were drawn with the same 
+parameter values.</p>
+<p><font color="#FF0000"><b>Combinations of <i>large-arc-flag</i> and <i>
+sweep-flag</i> parameters</b></font></p>
+<p>Finally, the program draws four more elliptical arc curves, 
+illustrating the difference in shape that results from all four combinations of 
+the <b>large-arc-flag</b> and 
+<b>sweep-flag</b> parameters.</p>
+<p><font color="#FF0000"><b>Program testing</b></font></p>
+<p>The program was tested using J2SE 5.0, Firefox v1.5.0.8, and WinXP.</p>
+<h3><a name="The_beginning_of_the_class_named_Svg12">The beginning of the class named Svg12</a></h3>
+<p>The class named <b>Svg12</b> begins in Listing 1.</p>
+
+<p>
+<b><a name="Listing_1">Listing 1</a>. The beginning of the class named Svg12. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>public class Svg12{
+
+  public static void main(String[] args){
+    int width = 450;
+    int height = 450;
+
+    //Begin by creating a DOM tree that represents the XML
+    // code that will render to produce the image of
+    // interest.
+
+    //Get the Document object.
+    Document document = SvgGraphics.getDocument();
+
+    //Create the root node named svg and append it to the
+    // document.  Specify the parent as null for the
+    // special case where the parent is the document.
+    Element svg = SvgGraphics.makeNode(
+        document,
+        null,//parent
+        "svg",//node type
+        new String[]{"xmlns","http://www.w3.org/2000/svg",
+                     "version","1.1",
+                     "width",""+ (width + 2),
+                     "height","" + (height + 2),
+                     "position","absolute",
+                     "top","0",
+                     "left","0",
+                    });//end makeNode method
+
+    //Create a node named g, which will be the parent for
+    // several graphic elements. Pass null for the
+    // reference to the array object for the special case
+    // where the node has no attributes.
+    Element g = SvgGraphics.makeNode(document,
+                                     svg,//parent
+                                     "g",
+                                     null);</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>I have explained the material in Listing 1 in previous lessons, so I won't 
+repeat that explanation here.</p>
+<h3><a name="Draw_a_diagonal_line">Draw a diagonal line</a></h3>
+<p>Listing 2 calls the <b>makeLine</b> method to draw a diagonal line from the 
+upper left corner to the bottom right corner in Figure 1, and then calls the <b>
+setAttribute</b> method to color it blue.</p>
+<p>
+<b><a name="Listing_2">Listing 2</a>. Draw a diagonal line. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>
+    Element diagLine = SvgGraphics.<b>makeLine</b>(
+                                  document,g,0,0,450,450);
+    diagLine.<b>setAttribute</b>("stroke","#8888ff");</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>I explained both of these methods in earlier lessons, and won't repeat that 
+explanation here.</p>
+<h3><a name="Draw_the_light_blue_grid_lines">Draw the light blue grid lines</a></h3>
+<p>Listing 3 calls the <b>makeGridString</b> method followed by the <b>makePath</b> 
+method and the <b>setAttribute</b> method to draw the light blue grid lines on a 
+ten-pixel spacing in Figure 1.&nbsp; This is the first of three sets of grid 
+lines, followed by a set on 50-pixel spacing and a set on 100-pixel spacing.</p>
+<p>
+<b><a name="Listing_3">Listing 3</a>. Draw the light blue grid lines. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    //First draw light blue grid lines every 10 pixels.
+    String <b>gridData</b> = SvgGraphics.<b>makeGridString</b>(
+                                         width,height,10);
+    //Create the path element.
+    Element temp;
+    temp = SvgGraphics.<b>makePath</b>(document,g,<b>gridData</b>);
+    //Set the color to light blue.
+    temp.<b>setAttribute</b>("stroke","#ccccff");</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Both the <b>makeGridString </b>method and the <b>makePath</b> method are new 
+to this lesson, so I will put the discussion of the <b>main</b> method on hold 
+while I explain these two methods.&nbsp; I will explain them in reverse order 
+because, in effect, the <b>makeGridString</b> method is a helper method for the
+<b>makePath</b> method.&nbsp; Therefore, I will explain the <b>makePath</b> 
+method first.</p>
+<p><font color="#FF0000">
+<b>The makePath method</b></font></p>
+<p>The <b>makePath</b> method is shown in its entirety in Listing 4.</p>
+<p>
+<b><a name="Listing_4">Listing 4</a>. The makePath method. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  static Element <b>makePath</b>(Document document,
+                          Element parent,
+                          <b>String d</b>){
+    Element path  = 
+                  (Element)document.createElement("path");
+    parent.appendChild(path);
+    <b>path.setAttribute("d",d);</b>
+    path.setAttribute("stroke","black");
+    path.setAttribute("stroke-width","1");
+    path.setAttribute("fill","none");
+    return path;
+  }//end makePath</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Let me begin by reviewing what is going on here.&nbsp; At this point in the 
+program, I am constructing a DOM tree that represents the graphic image shown in 
+Figure 1.&nbsp; At this point, the objective is to create nodes in the DOM tree 
+that will later be transformed into elements in the XML output code produced by 
+the program.</p>
+<p>With the exception of the diagonal line and some polylines, all of the shapes in Figure 1 will 
+be created using an SVG/XML <b>path</b> element.&nbsp; This includes the 
+background grid lines.&nbsp; Therefore, at this point, I need to create a node 
+of type <b>path</b> and append it to the Dom tree.</p>
+<p><font color="#FF0000"><b>Old stuff</b></font></p>
+<p>There is nothing new about the first two parameters to the <b>makePath</b> 
+method:&nbsp;&nbsp; <i>document</i> and <i>parent</i>.&nbsp; Almost all of the 
+methods in my SvgGraphics library require these parameters and I have explained 
+their use in earlier lessons.&nbsp; There is also nothing new about the first 
+statement or the last four statements in the method.&nbsp; I have also explained 
+these statements in earlier lessons.&nbsp; That leaves only one interesting 
+statement, and it is highlighted in boldface in Listing 4.</p>
+<p><font color="#FF0000"><b>New stuff</b></font></p>
+<p>In the earlier section titled <a href="#The_required_d_attribute">The 
+required d attribute</a>, I explained that an SVG <b>path</b> element must have 
+an attribute named <b>d</b>.&nbsp; I also explained that the value of the <b>d</b> 
+attribute must be a data set that describes the path.&nbsp; In other words, the 
+data in the data set is the definition of the outline of the shape represented 
+by the path.</p>
+<p>In the section titled <a href="#Syntax_of_the_path_data_set">Syntax of the 
+path data set</a> I explained the rules for constructing the string attribute 
+value for the <b>d</b> attribute.&nbsp; Briefly, that string must consist of 
+uppercase and lowercase alphabetic commands and numeric coordinate values.</p>
+<p><font color="#FF0000"><b>Establish the value of the attribute named d</b></font></p>
+<p>After constructing the <b>path</b> node and appending it to the DOM tree, the
+<b>makePath</b> method in Listing 4 calls the <b>setAttribute</b> method on the
+<b>path</b> node, passing the third parameter to the <b>makePath</b> method as 
+the only parameter to the <b>setAttribute</b> method.&nbsp; Therefore, the 
+string contents of the parameter named <b>d</b> will become the attribute value 
+for the <b>path</b> element when the DOM tree is transformed to XML.&nbsp; The
+<b>makePath</b> method will be called extensively in this program to create all 
+of the different graphic elements shown in Figure 1.&nbsp; The type of graphic 
+element that is created depends solely on the string contents of the parameter 
+named <b>d</b>.</p>
+<p><font color="#FF0000"><b>Set default attributes and return the path</b></font></p>
+<p>Finally, the method named <b>makePath</b> returns a reference to the new <b>
+path</b> node that was created.</p>
+<p>It is also worth noting that by default, the path will be stroked as a black 
+line <i>(which may be a curve)</i>, one pixel in width.&nbsp; If the path 
+happens to close, it won't be filled with anything.&nbsp; You can later set new 
+values for the <b>stroke</b>, <b>stroke-width</b>, and <b>fill</b> attributes if 
+you aren't satisfied with the default values.</p>
+<p><font color="#FF0000"><b>Set new attribute values</b></font></p>
+<p>If you refer back to Listing 3, you will see that the returned reference to 
+the <b>path</b> node is saved in a local variable named <b>temp</b>.&nbsp; Then 
+the <b>setAttribute</b> method is called on the reference to the object to reset 
+the stroke to a new color, which is the lightest shade of blue shown in Figure 
+1.</p>
+<p><font color="#FF0000"><b>So where are we?</b></font></p>
+<p>We are in the process of constructing a path node that 
+will eventually be transformed into SVG/XML code that will cause the SVG 
+rendering engine to draw the light blue grid shown in Figure 1.&nbsp; We know 
+that a call to the <b>makePath</b> method will return a reference to a <b>path</b> 
+node, for which the definition of the path is determined by the contents of the
+<b>String</b> parameter that is passed as the third parameter to the <b>makePath</b> 
+method.</p>
+<p>Referring once again to Listing 3, we see that a reference to a <b>String</b> 
+object that is stored in a local variable named <b>gridData</b> is passed as the 
+third parameter to the <b>makePath</b> method.&nbsp; Therefore, we can expect 
+that the contents of that <b>String</b> object will describe the grid with a 
+ten-pixel spacing shown in Figure 1.&nbsp; A reference to that <b>String</b> 
+object is returned from the earlier call to the <b>makeGridString</b> method.&nbsp; 
+Therefore, it is time for us to take a look at the method named <b>
+makeGridString</b>.</p>
+<p><font color="#FF0000">
+<b>The makeGridString method</b></font></p>
+<p>This is a highly specialized method that is designed to do one thing and one 
+thing only.&nbsp; However, that one thing is fairly common, so I decided that it 
+would be worth encapsulating the code into a method and putting the method into 
+my SVG graphics library.</p>
+<p>The <b>makeGridString</b> method is a utility method that is used to construct a string that describes a grid pattern consisting of horizontal and vertical lines 
+on a specified pixel spacing for a rectangular area of a specified width and a 
+specified height in pixels. </p>
+<p>The string that is returned is intended solely to be used as the data string for a call to the method named
+<b>makePath</b>.</p>
+<p>The <b>makeGridString</b> method can be viewed in its entirety in Listing 5.</p>
+<p>
+<b><a name="Listing_5">Listing 5</a>. The makeGridString method. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  static String <b>makeGridString</b>(
+                        int width,int height,int spacing){
+    //Construct the data string for the vertical lines.
+    String data = "M0,0 ";
+    for(int cnt = 0;cnt &lt; width;cnt += spacing){
+      data += "v" + height + " M" + cnt + ",0 ";
+    }//end for loop
+    //Add the final vertical line.
+    data += "v" + height + " \n";
+    
+    //Now add the horizontal lines to the data string.
+    data += "M0,0 ";
+    for(int cnt = 0;cnt &lt; height;cnt += spacing){
+      data += "h" + width + " M0," + cnt + " ";
+    }//end for loop
+    //Add the final horizontal line.
+    data += "h" + width + "\n ";
+    
+    return data;
+
+  }//end makeGridString</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>I'm not going to attempt to explain this code to you in detail.&nbsp; Rather, 
+I will simply refer you back to the material in the sections titled
+<a href="#The_moveto_command">The moveto command</a> and
+<a href="#Working_with_straight_lines">Working with straight lines</a> and let 
+you work through the details on your own.&nbsp; I will point out, however that 
+this method makes use of the special horizontal and vertical <b>lineto</b> commands
+<i>(<b>h</b> and <b>v</b>)</i> in an attempt to reduce the download size and the bandwidth requirements for a drawing containing a large number of horizontal and vertical lines in the grid pattern.</p>
+<p><font color="#FF0000">
+ <b>A portion of the XML code for the small grid</b></font></p>
+<p>Figure 5 shows a portion of the SVG/XML code that was generated by this 
+program.</p>
+<p>
+ <b><a name="Figure_5">Figure 5</a>. A portion of the SVG/XML code for the grid. </b>
+<table border="1" cols="1" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>&lt;path 
+d="M0,0 v450 
+M0,0 v450 
+M10,0 v450 
+M20,0 v450 
+M30,0 v450 
+... 
+M430,0 v450 
+M440,0 v450&amp;#10;
+M0,0 h450 
+M0,0 h450 
+M0,10 h450 
+M0,20 h450 
+M0,30 h450 
+...
+M0,430 h450 
+M0,440 h450&amp;#10; " 
+fill="none" 
+stroke="#ccccff" 
+stroke-width="1"/&gt;</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>The steps that produced the code</b></font></p>
+<p>Note that the code in Figure 5 was the result of performing the following 
+steps:</p>
+<ol>
+	<li>Generating the path data string by calling the <b>makeGridString</b> 
+	method shown in Listing 5, passing 450 for the width and 450 for the height 
+	and passing 10 for the spacing.</li>
+	<li>Creating the <b>path</b> node by calling the <b>makePath</b> method 
+	shown in Listing 4, passing the data string from step 1 above as the third 
+	parameter to the <b>makePath</b> method.&nbsp; The<b> path</b> node was 
+	appended to the DOM tree.</li>
+	<li>Calling the <b>setAttribute</b> method on the <b>path</b> node from step 
+	2 above in Listing 3 to change the color from the default black to the light 
+	blue defined by the hexadecimal value #ccccff.</li>
+	<li>Transforming the DOM tree to XML code and storing it in an output file.&nbsp; 
+	The SVG/XML code shown in Figure 5 was taken from that file.</li>
+</ol>
+<p><font color="#FF0000"><b>Drawing the darker grids</b></font></p>
+<p>If you take a look at the complete program in Listing 17, you will see that 
+essentially the same thing was done two more times.&nbsp; First, the process was 
+repeated for a spacing of 50 pixels.&nbsp; This new grid was assigned a stroke 
+color attribute value of "#aaaaff&quot;, which was slightly darker than the first 
+grid described above.&nbsp; The lines in this new grid were drawn on top of the 
+original grid, causing the grid lines on a spacing of 50 pixels to be a slightly 
+darker color of blue than the original grid, as shown in Figure 1.&nbsp; It is 
+important that these two grids be drawn in this order with the darker one on 
+top.&nbsp; If the darker grid had been drawn first, it would have been covered 
+by the lighter grid lines and the darker lines would not have been visible.</p>
+<p>Finally, the process was repeated one more time for a spacing of 100 pixels 
+and a stroke color attribute value of "#8888ff&quot;, which is an even darker shade 
+of blue.&nbsp; This resulted in the background grid in Figure 1 consisting of 
+very light blue grid lines on 10-pixel spacing, slightly darker grid lines on a 
+50-pixel spacing, and even darker grid lines on a 100-pixel spacing.</p>
+<h3><a name="Label_the_grid">Label the grid</a></h3>
+<p>As I mentioned earlier, although the topic of drawing text using SVG is an 
+extensive topic that I plan to cover in a subsequent lesson, I wanted to be able 
+to label the grid in this program, so I wrote a new method for my SVG graphics 
+library named <b>makeText</b>.</p>
+<p>Listing 6 makes two calls to the <b>makeText</b> method during each iteration 
+of a <b>for</b> loop to place a text label on the horizontal lines on the 50-pixel 
+spacing and to place a text label next to the vertical lines on the 50-pixel spacing.</p>
+<p>
+<b><a name="Listing_6">Listing 6</a>. Label the grid. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    for(int cnt = 0;cnt &lt; width;cnt += 50){
+      SvgGraphics.<b>makeText</b>(document,g,0,cnt,""+cnt);
+      SvgGraphics.<b>makeText</b>(document,g,cnt,height,""+cnt);
+    }//end for loop</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000">
+<b>The makeText method</b></font></p>
+<p>The <b>makeText</b> method is shown in its entirety in Listing 7.</p>
+<p>
+<b><a name="Listing_7">Listing 7</a>. The makeText method. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  static Element <b>makeText</b>(Document document,
+                          Element parent,
+                          int x,
+                          int y,
+                          String text){
+    Element textNode  = 
+                  (Element)document.createElement("text");
+    parent.appendChild(textNode);
+    
+    textNode.setAttribute("x",""+x);
+    textNode.setAttribute("y",""+y);
+    
+    textNode.appendChild(document.createTextNode(text));
+
+    return textNode;
+  }//end makePath</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>This method begins like most of the others in my SVG graphics library by 
+creating a new <b>text</b> node of type <b>Element</b> and appending it to the DOM tree.</p>
+<p>Then it sets the values for the attributes named <b>x</b> and <b>y</b>, which 
+specify the location of the text.</p>
+<p><font color="#FF0000"><b>Create and append the child node containing the 
+actual text content</b></font></p>
+<p>Finally, the method calls the <b>createTextNode</b> method&nbsp;to create a new <b>
+Text</b> object that encapsulates the actual text.&nbsp; Whereas the location of 
+the text is specified by the values of two attributes of an element named <b>
+text</b>, the text itself is the content of that element.&nbsp; This means that 
+it must appear in the DOM tree as a node in its own right and not simply as the 
+value of an attribute.</p>
+<p>The <b>makeText</b> method appends the new <b>Text</b> object to the <b>
+Element</b> node named <b>text</b>.&nbsp; This may seem a little strange, but 
+this is the JAXP mechanism for creating a DOM tree that contains nodes with text 
+content.&nbsp; In other words, in this case, the actual text is encapsulated in 
+the node of type <b>Text</b>, the node of type <b>Text</b> is a child of the <b>
+Element</b> node named <b>text</b>, and the <b>Element</b> node named <b>text</b> is a child of the 
+node named <b>g</b>. </p>
+<p><font color="#FF0000"><b>The corresponding XML code</b></font></p>
+<p>When the DOM tree is later transformed to XML code, the actual 
+text will appear as the content of an element named <b>text</b> as shown in 
+Figure 6.</p>
+<p>
+ <b><a name="Figure_6">Figure 6</a>. A text element. </b>
+<table border="1" cols="1" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>&lt;text x="200" y="450"&gt;<b>200</b>&lt;/text&gt;</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The XML code produced by the program contains one element like that shown in 
+Figure 6 for each of the text labels shown in Figure 1.&nbsp; The element shown 
+in Figure 6 represents the text label with the value of 200 about half way 
+across the bottom of Figure 1.</p>
+<p><font color="#FF0000"><b>The location of the text</b></font></p>
+<p>Note that by default, the text characters are drawn above and to the right of the specified 
+location.&nbsp; Also note that the text in Figure 1 is drawn in the default font 
+and size.&nbsp; I will have more to say about this in a future lesson that 
+discusses SVG text in detail.</p>
+<h3><a name="Draw_the_red_and_blue_triangle">Draw the red and blue triangle</a></h3>
+<p>Listing 8 makes another call to the <b>makePath</b> method to draw the red 
+triangle with the blue border shown in the upper left of Figure 1.&nbsp; Recall 
+that the <b>makePath</b> method can be called to draw many different kinds of 
+paths with the actual path specification being contained in a <b>String</b> 
+object that is passed as the third parameter to the method.</p>
+<p><font color="#FF0000"><b>The specification for the path</b></font></p>
+<p>If you examine the contents of that <b>String</b> object carefully, you will 
+see that Listing 8 uses the <b>moveto </b>(<b>M</b>), <b>lineto</b> (<b>L</b> and 
+<b>l</b>), and <b>closepath</b> 
+(<b>z</b>) commands to cause the <b>makePath</b> method to draw a triangle.&nbsp;
+<i>(The commands are highlighted in red boldface in Listing 8 to make them 
+easier for you to identify.&nbsp; However, they have no color in the actual 
+program code.)</i></p>
+<p>
+<b><a name="Listing_8">Listing 8</a>. Draw the red and blue triangle. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    Element pathA = SvgGraphics.<b>makePath</b>(
+                           document,
+                           g,//owner
+                           "<b><font color="#FF0000">M</font> 50 10 <font color="#FF0000">L</font> 100 10 <font color="#FF0000">l</font> -25 40 <font color="#FF0000">z</font></b>");
+
+    pathA.setAttribute("stroke","blue");
+    pathA.setAttribute("stroke-width","3");
+    pathA.setAttribute("fill","red");</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Then 
+Listing 8 calls the <b>setAttribute</b> method three times in succession to color 
+the triangle red, and to give it a blue border that is three pixels wide.</p>
+<p><font color="#FF0000"><b>The actual path commands</b></font></p>
+<p>
+<table width="275" cellpadding="0" cellspacing="0" border="0" align="right">
+<tr>
+<td width="10">
+<td>
+  <table width="100%" cellpadding="5" cellspacing="0" border="1">
+  <tr><td bgcolor="#eeeeee">
+  <b>Don't confuse the lowercase L.</b><br />
+  Don't confuse the lower-case L (l) between the numeric values of 10 and 
+	negative 25 in Listing 8 with the numeric character for one (1).</td></tr></table>
+</td>
+</tr>
+</table>
+
+For illustration purposes, this example uses one absolute <b>moveto</b> command 
+(<b>M</b>) to establish the starting point for the path, one absolute <b>lineto</b> command 
+(<b>L</b>) to draw the 
+line across the top of the triangle, and one relative <b>lineto</b> command (<b>l</b>) to 
+draw the line on the lower right side of the triangle.&nbsp; Then it uses one <b>closepath</b> command 
+(<b>z</b>) to draw the line on the lower left side of the triangle 
+and to close the triangle.<h3><a name="Draw_three_cubic_Bezier_curves">Draw 
+three cubic Bezier curves</a></h3>
+<p>
+<table width="275" cellpadding="0" cellspacing="0" border="0" align="right">
+<tr>
+<td width="10">
+<td>
+  <table width="100%" cellpadding="5" cellspacing="0" border="1">
+  <tr><td bgcolor="#eeeeee">
+  <b>The purpose of the polyline.</b><br />
+  It is very important to note that the purpose of the polyline is solely to show the locations of 
+	the start points, the control points, and the end points that will be used 
+	to draw the Bezier curve.&nbsp; The polyline has no functional purpose in the 
+	actual drawing of the Bezier curve.
+</td></tr></table>
+</td>
+</tr>
+</table>
+
+<font color="#FF0000">
+<b>Draw the light red polyline</b></font></p>
+<p>
+
+
+The next task of the program is to draw the red cubic Bezier curve shown 
+immediately to the right and down from the red triangle in Figure 1.&nbsp; 
+First, however, the program draws a light red polyline to show the start points, 
+the control points, and the end points that will be used to draw the Bezier 
+curve.&nbsp; I like to think of the polyline as forming an envelope whose shape 
+will determine the shape of the Bezier curve.</p>
+<p>
+<b><a name="Listing_9">Listing 9</a>. Draw the red polyline. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    Element polylineB = SvgGraphics.<b>makePolyline</b>(
+                 document,
+                 g,
+                 new int[] {100,100,100,50,175,50,175,100,
+                                175,150,250,150,250,100});
+    polylineB.setAttribute("stroke","#FF8888");
+    polylineB.setAttribute("stroke-width","2");</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>How the polyline describes the start, control, and 
+end points</b></font></p>
+<p>The Bezier curve will consist of two Bezier segments.&nbsp; The start point 
+for the first segment is at the beginning of the polyline on the left.&nbsp; The 
+end point for the first segment is the location where the polyline crosses the 
+blue grid line with a y-value of 100.&nbsp; The two control points for the first 
+segment are at the two corners of the polyline on the blue grid line with a 
+y-value of 50.</p>
+<p>The start point for the second Bezier segment coincides with the end 
+point from the first segment as described above.&nbsp; The two control points for the second Bezier segment are 
+at the two lower corners of the polyline on the right.&nbsp; The end point for the second 
+Bezier segment is at the right end of the polyline.</p>
+<p>Listing 9 calls the <b>makePolyline</b> method to draw the polyline.&nbsp; I 
+explained this method in an earlier lesson and should not need to repeat that 
+explanation here.</p>
+<p><font color="#FF0000">
+<b>Draw the red cubic Bezier curve</b></font></p>
+<p>Listing 10 makes another call to the <b>makePath</b> method to draw the red 
+Bezier curve.&nbsp; Once again, the contents of the <b>String</b> object passed 
+as the third parameter to the <b>makePath</b> method specify the actual path.&nbsp; Also, once 
+again the path commands are highlighted in red boldface in Listing 10 to make them easy for 
+you to identify.</p>
+<p>
+<b><a name="Listing_10">Listing 10</a>. Draw the red cubic Bezier curve. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    Element pathB = SvgGraphics.<b>makePath</b>(document,g,
+      "<b><font color="#FF0000">M</font>100,100 <font color="#FF0000">C</font>100,50 175,50 175,100 <font color="#FF0000">S</font>250,150 250,100</b>");
+    pathB.setAttribute("stroke","red");
+    pathB.setAttribute("stroke-width","2");</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Uses absolute coordinate values and the S command</b></font></p>
+<p>Note that the path specification in Listing 10 uses absolute <i>(uppercase <b>C</b> and <b>
+S</b>)</i> coordinate values only and also uses the <b>S</b> command <i>(see the 
+earlier section titled <a href="#Difference_between_C_and_S_Bezier_commands">
+Difference between C and S Bezier commands</a>)</i>.&nbsp; Consequently, only 
+two pairs of coordinate values are provided following the <b>S</b> command.</p>
+<p><font color="#FF0000"><b>An explanation of the various coordinate values</b></font></p>
+<p>As mentioned earlier, the red Bezier curve in Figure 1 consists of two Bezier segments.&nbsp; 
+The start point for the first segment is established by the <b>moveto</b> 
+command<i> (<b>M</b>)</i>.&nbsp; This is followed by a <b>curve</b> command <i>(<b>C</b>)</i> 
+followed by three pairs of coordinate values.&nbsp; The first two pairs of 
+coordinate values specify the control points for the first segment.&nbsp; The third pair specifies the 
+end point for the first segment.</p>
+<p>This is followed by the special <b>curve</b> command <i>(<b>S</b>)</i>.&nbsp; 
+Recall that the start point for the second and subsequent Bezier segments is 
+always assumed to be the end point for the previous segment.&nbsp; This 
+eliminates the need for one pair of coordinate values following the <b>S</b> 
+command.</p>
+<p>Also recall that this special <b>curve</b> command <i>(S)</i> 
+assumes that the first control point is the reflection of the second control 
+point from the previous segment.&nbsp; This eliminates the need for another pair 
+of coordinate values following the <b>S</b>.&nbsp; Therefore, the <b>S</b> 
+command in Listing 10 is followed by only two pairs of coordinate values.&nbsp; 
+The first pair specifies the second control point for the second Bezier segment.&nbsp; 
+The second pair specifies the end point for the second Bezier segment.</p>
+<p><font color="#FF0000">
+ <b>XML output for the red cubic Bezier curve</b></font></p>
+<p>Figure 7 shows the actual XML output produced by the program for drawing the 
+red Bezier curve.&nbsp; This will be useful for comparison with other XML 
+elements later.</p>
+<p>
+ <b><a name="Figure_7">Figure 7</a>. XML code for the red cubic Bezier curve.</b>
+ <table border="1" cols="1" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>&lt;path d=
+"M100,100 C100,50 175,50 175,100 S250,150 250,100" 
+fill="none" stroke="red" stroke-width="2"/&gt;</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000">
+<b>Draw the green cubic Bezier curve</b></font></p>
+<p>The code in Listing 11 draws the light green polyline and the dark green 
+cubic Bezier curve shown in Figure 1.&nbsp; This Bezier curve also consists of two Bezier segments.</p>
+<p>
+<b><a name="Listing_11">Listing 11</a>. Draw the green cubic Bezier curve. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    Element polylineC = SvgGraphics.<b>makePolyline</b>(
+                 document,
+                 g,
+                 new int[] {300,100,320,10,415,50,375,100,
+                                335,150,430,190,450,100});
+    polylineC.setAttribute("stroke","#88ff88");
+    polylineC.setAttribute("stroke-width","2");
+
+    //Now draw the two Bezier segments that constitute the
+    // Bezier curve.
+    Element pathC = SvgGraphics.<b>makePath</b>(document,g,
+                        "<b><font color="#FF0000">M</font>300,100 <font color="#FF0000">C</font>320,10 415,50 375,100 "
+                             + "335,150 430,190 450,100</b>");
+    pathC.setAttribute("stroke","green");
+    pathC.setAttribute("stroke-width","2");</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Note that this version of the path specification uses absolute coordinates 
+only but does not use the <b>S</b> command.&nbsp; Therefore, there are six pairs 
+of coordinate values following the <b>C</b> command.&nbsp; They are, in order:</p>
+<ol>
+	<li>First control point for the first segment</li>
+	<li>Second control point for the first segment</li>
+	<li>End point for first the segment <i>(also start point for the second 
+	segment)</i></li>
+	<li>First control point for the second segment</li>
+	<li>Second control point for the second segment</li>
+	<li>End point for the second segment</li>
+</ol>
+<p><font color="#FF0000">
+ <b>XML output for the green cubic Bezier curve</b></font></p>
+<p>Figure 8 shows the actual XML output produced by the program for drawing the 
+green Bezier curve.</p>
+<p>
+ <b><a name="Figure_8">Figure 8</a>. XML code for the green cubic Bezier 
+	curve. </b>
+<table border="1" cols="1" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>&lt;path d=
+"M300,100 C320,10 415,50 375,100 335,150 430,190 450,100" 
+fill="none" stroke="green" stroke-width="2"/&gt;</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>If you compare the number of characters in the XML code in Figure 8 with the 
+number of characters in Figure 7, you will see that this approach, <i>(which 
+doesn't take advantage of the <b>S</b> command)</i>, is a little less efficient from 
+a download and bandwidth viewpoint than the approach shown in Figure 7.&nbsp; 
+The relative importance of this difference in download efficiency will, of 
+course, depend on the number of Bezier curves that need to be drawn for a 
+particular graphic.</p>
+<p><font color="#FF0000">
+<b>Draw the blue cubic Bezier curve</b></font></p>
+<p>The code in Listing 12 draws the light blue triangular-wave polyline that 
+begins at an x-value of 50 and a y-value of 200 in Figure 1.&nbsp; Then it draws 
+the blue cubic Bezier curve shown inside that triangular envelope.</p>
+<p>
+<b><a name="Listing_12">Listing 12</a>. Draw the blue cubic Bezier curve. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    Element polylineD = SvgGraphics.<b>makePolyline</b>(
+                document,
+                g,
+                new int[] {50,200,100,150,100,150,150,200,
+                                200,250,200,250,250,200});
+    polylineD.setAttribute("stroke","#8888FF");
+    polylineD.setAttribute("stroke-width","2");
+
+    Element pathD = SvgGraphics.<b>makePath</b>(document,g,
+        "<b><font color="#FF0000">M</font>50,200 <font color="#FF0000">c</font>50,-50 50,-50 100,0 50,50 50,50 100,0</b>");
+    pathD.setAttribute("stroke","blue");
+    pathD.setAttribute("stroke-width","2");</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>As before, the blue Bezier curve consists of two Bezier segments.&nbsp; 
+However, there are at least two things about the Bezier curve in Listing 12 that 
+distinguish it from the previous two Bezier curves shown in Figure 1.</p>
+<ol>
+	<li>The two control points for each segment have the same coordinate values.&nbsp; 
+	In other words, they coincide or overlay one another.</li>
+	<li>After the start point has been established using an absolute <b>moveto</b> 
+	command <i>(<b>M</b>)</i>, all subsequent coordinate values are specified in 
+	relative terms using a relative <b>curve</b> command <i>(<b>c</b>)</i>.&nbsp;
+	<i>(As a reminder, for a Bezier segment, relative coordinate values are 
+	always specified relative to the location of the start point for that segment 
+	and not relative to the start point for the Bezier curve as a whole.)</i></li>
+</ol>
+<p><font color="#FF0000">
+ <b>XML code for the blue cubic Bezier curve</b></font></p>
+<p>The final XML code used to draw the blue cubic Bezier curve is shown in 
+Figure 9.&nbsp; Note that this example did not take advantage of the relative <b>
+s</b> command.</p>
+<p>
+ <b><a name="Figure_9">Figure 9</a>. XML code for the blue cubic Bezier curve. </b>
+<table border="1" cols="1" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>&lt;path d=
+"M50,200 c50,-50 50,-50 100,0 50,50 50,50 100,0" 
+fill="none" stroke="blue" stroke-width="2"/&gt;</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Even more efficient from a download viewpoint</b></font></p>
+<p>If you compare Figure 9 with Figure 8, you will see that the use of relative 
+coordinate values can also improve download efficiency.&nbsp; This is because 
+the absolute coordinate values are often large values, each one requiring 
+several characters to represent.&nbsp; On the other hand, relative values often 
+represent changes in absolute coordinate values, and the changes are often small 
+values requiring fewer characters to represent.</p>
+<p><font color="#FF0000"><b>Could be made even more efficient</b></font></p>
+<p>This approach could have been made even more efficient from a download 
+viewpoint by taking advantage of the relative curve command <i>(<b>s</b>)</i> 
+similar to the approach illustrated by Figure 7, but using relative coordinate 
+values instead of absolute coordinate values.</p>
+<p>If I did the calculations correctly, the use of the <b>s</b> command would 
+have eliminated five characters from the specification of the second Bezier 
+segment in Figure 9, causing it to contain six or seven fewer characters than 
+Figure 7.&nbsp; </p>
+<p>The benefits of using the <b>s</b> command would continue to mount as the 
+overall Bezier curve becomes longer with additional Bezier segments strung onto 
+the end of the first segment.&nbsp; An example might be drawing a large contour 
+map based on a large number of elevation samples.</p>
+<p>It seems to me, therefore, that if you need to draw long Bezier curves, the 
+best approach is probably to use the relative <b>s</b> command for the second 
+and all subsequent segments if possible.</p>
+<h3><a name="Draw_a_quadratic_Bezier_curve">Draw a quadratic Bezier curve</a></h3>
+<p>
+<table width="275" cellpadding="0" cellspacing="0" border="0" align="right">
+<tr>
+<td width="10">
+<td>
+  <table width="100%" cellpadding="5" cellspacing="0" border="1">
+  <tr><td bgcolor="#eeeeee">
+  <b>An exercise for the reader.</b><br />
+  Each quadratic Bezier segment defined using the <b>Q</b> or <b>q</b> command 
+	has only one control point.&nbsp; What would you expect to be the outcome if 
+	you strung together a large number of segments using the special curve 
+	commands <b>T</b> or <b>t</b> in place of <b>Q</b> or <b>q</b>?&nbsp;&nbsp; 
+	As an exercise of your understanding of this material, predict the outcome 
+	and then write a short program to test the accuracy of your prediction.</td></tr></table>
+</td>
+</tr>
+</table>
+
+</p>
+<p>One of the reasons that I drew the blue cubic Bezier curve in Figure 1 is to 
+make it possible to compare the curve-fitting capabilities of a cubic Bezier 
+curve with the curve-fitting capabilities of a quadratic Bezier curve.</p>
+<p><font color="#FF0000"><b>Superimpose the quadratic curve on the cubic curve</b></font></p>
+<p>Figure 1 shows a red quadratic Bezier curve overlaid on top of the blue cubic 
+Bezier curve discussed above.&nbsp; Recall, however, that a quadratic Bezier 
+segment has only one control point, in addition to the start point and the end 
+point.&nbsp; This quadratic Bezier curve consists of two Bezier segments.&nbsp; 
+The locations of the two control 
+points in Figure 1 are at (100,150) and (200,250).&nbsp; These are the same 
+locations where the each pair of control points for the blue cubic Bezier curve 
+were located on top of one another.&nbsp; Therefore, if I were to draw a polyline showing the start 
+points, the control points, and the end points for the quadratic Bezier curve, 
+it would exactly overlay the light blue polyline that was drawn for the blue 
+cubic Bezier curve.</p>
+<p><font color="#FF0000"><b>How do the curve fits compare?</b></font></p>
+<p>The objective here is to be able to compare the curve fitting capabilities of 
+the cubic and quadratic Bezier curves.&nbsp; As you can see in Figure 1, the 
+blue 
+cubic Bezier curve does a much better job of representing, but also smoothing 
+the triangular polyline than the quadratic Bezier curve.&nbsp; On the other 
+hand, the cubic curve also requires more download data due to the extra control 
+point in each segment, and probably requires 
+more computational resource as well.</p>
+<p><font color="#FF0000">
+<b>The quadratic Bezier curve</b></font></p>
+<p>Listing 13 shows the call to the <b>makePath</b> method and the two calls to 
+the <b>setAttribute</b> method that draw the red quadratic Bezier curve in 
+Figure 1.&nbsp; Note that an absolute <b>T</b> command was used.&nbsp; As a 
+result, there is only one pair of coordinate values following the <b>T</b> 
+command.</p>
+<p>
+<b><a name="Listing_13">Listing 13</a>. The quadratic Bezier curve. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    Element pathE = SvgGraphics.<b>makePath</b>(document,g,
+                     "<b><font color="#FF0000">M</font>50,200 <font color="#FF0000">Q</font>100,150 150,200 <font color="#FF0000">T</font>250,200</b>");
+    pathE.<b>setAttribute</b>("stroke","RED");
+    pathE.<b>setAttribute</b>("stroke-width","2");</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>By now, you should be able to understand the code in Listing 13 with no 
+further explanation.</p>
+<h3><a name="Draw_six_elliptical_arcs">Draw six elliptical arcs</a></h3>
+<p><font color="#FF0000">
+<b>An elliptical arc with no rotation</b></font></p>
+<p>The code in Listing 14 draws the yellow elliptical arc with a red border 
+shown in Figure 1 to illustrate the appearance of such an arc with no rotation.</p>
+<p>
+<b><a name="Listing_14">Listing 14</a>. An elliptical arc with no rotation. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    Element pathF = SvgGraphics.<b>makePath</b>(document,g,
+                        "<b>M230,250 a70,30 0 1,0 50,-50 z</b>");
+    pathF.setAttribute("stroke","red");
+    pathF.setAttribute("stroke-width","2");
+    pathF.setAttribute("fill","yellow");</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Recall that I told you <a href="#Seven_parameters_are_required">earlier</a> 
+that an elliptical arc command is perhaps the most complex of all of the curve 
+commands.&nbsp; Each elliptical arc command requires seven parameters.&nbsp; 
+Dissecting the path command in Listing 14 gives the following:</p>
+<ul>
+	<li>An absolute <b>moveto</b> command <i>(<b>M</b>)</i> followed by a pair 
+	of absolute coordinate values <i>(<b>230,250</b>)</i> that specify establish 
+	the start point of the elliptical arc.</li>
+	<li>A relative <b>curve</b> command <i>(<b>a</b>)</i>.</li>
+	<li>Two numeric values <i>(<b>70,30</b>)</i> that specify the horizontal and 
+	vertical radii of the ellipse.</li>
+	<li>An <b>x-axis-rotation</b> value of <b>0</b>.</li>
+	<li>A <b>large-arc-flag</b> value of <b>1</b>.</li>
+	<li>A <b>sweep-flag</b> value of <b>0</b>.</li>
+	<li>A pair of relative coordinate values <i>(<b>50,-50</b>)</i> that specify 
+	the end point of the elliptical arc.</li>
+	<li>A <b>closepath</b> command <i>(<b>z</b>)</i> that draws the 
+	straight-line segment of the yellow elliptical arc shape shown in Figure 1.</li>
+</ul>
+<p><font color="#FF0000"><b>An elliptical arc with a 45-degree rotation</b></font></p>
+<p>The code in Listing 15 draws the red elliptical arc with a yellow border 
+shown in Figure 1 to illustrate the appearance of such an arc with a rotation of 45 degrees.</p>
+<p>
+<b><a name="Listing_15">Listing 15</a>. An elliptical arc with a 45-degree 
+rotation. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    Element pathG = SvgGraphics.makePath(document,g,
+                       "<b>M350,250 a70,30 <font color="#FF0000">45</font> 1,0 50,-50 z</b>");
+    pathG.setAttribute("stroke","yellow");
+    pathG.setAttribute("stroke-width","2");
+    pathG.setAttribute("fill","red");</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The specification of the <b>x-axis-rotation</b> value of 45-degrees is 
+highlighted in red boldface in Listing 15 to make it easy for you to identify.&nbsp; 
+Other than the rotation, all of the parameter that control the shape of the 
+elliptical arc in Listing 15 are the same as the elliptical arc in Listing 14.</p>
+<p><font color="#FF0000"><b>Four combinations of large-arc-flag and sweep-flag</b></font></p>
+<p>The two parameters
+<b>large-arc-flag </b>and<b> sweep-flag</b> can each take on either of two 
+values, 0 or 1.&nbsp; Therefore, there are four possible combinations of these 
+two parameters.</p>
+<p>The code in Listing 16 calls the <b>makePath</b> method four times in 
+succession to draw the four elliptical arcs shown across the bottom of Figure 1.</p>
+<p>
+<b><a name="Listing_16">Listing 16</a>. Four combinations of large-arc-flag and 
+sweep-flag.</b><table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    //Case 1: Fill color = red, border = blue
+    // large-arc-flag = 1
+    // sweep-flag     = 0
+    Element pathH = SvgGraphics.<b>makePath</b>(document,g,
+                         "<b>M50,370 a50,50 0 <font color="#FF0000">1,0</font> 50,-50 z</b>");
+    pathH.setAttribute("stroke","blue");
+    pathH.setAttribute("stroke-width","2");
+    pathH.setAttribute("fill","red");
+
+    //Case 2: Fill color = green, border = red
+    // large-arc-flag = 1
+    // sweep-flag     = 1
+    Element pathI = SvgGraphics.<b>makePath</b>(document,g,
+                        "<b>M225,400 a50,50 0 <font color="#FF0000">1,1</font> 50,-50 z</b>");
+    pathI.setAttribute("stroke","red");
+    pathI.setAttribute("stroke-width","2");
+    pathI.setAttribute("fill","green");
+    
+    //Case 3: Fill color = blue, border = red
+    // large-arc-flag = 0
+    // sweep-flag     = 0
+    Element pathJ = SvgGraphics.<b>makePath</b>(document,g,
+                        "<b>M300,370 a50,50 0 <font color="#FF0000">0,0</font> 50,-50 z</b>");
+    pathJ.setAttribute("stroke","red");
+    pathJ.setAttribute("stroke-width","2");
+    pathJ.setAttribute("fill","blue");
+
+    //Case 4: Fill color = yellow, border = blue
+    // large-arc-flag = 0
+    // sweep-flag     = 1
+    Element pathK = SvgGraphics.<b>makePath</b>(document,g,
+                        "<b>M375,370 a50,50 0 <font color="#FF0000">0,1</font> 50,-50 z</b>");
+    pathK.setAttribute("stroke","blue");
+    pathK.setAttribute("stroke-width","2");
+    pathK.setAttribute("fill","yellow");</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Other than the values of
+<b>large-arc-flag </b>and<b> sweep-flag</b>, all of the parameter that control 
+the shape of these four elliptical arcs are the same.&nbsp; Therefore, by 
+comparing the code in Listing 16 with the images of the four elliptical arc 
+shapes in Figure 1, you should be able to gain an understanding of how these two 
+parameters impact the appearance of an elliptical arc.</p>
+<p><font color="#FF0000"><b>All remaining code is <i>&quot;old stuff&quot;</i></b></font></p>
+<p>All of the remaining code in this program is code that I have explained one 
+or more times in earlier lessons <i>(see <a href="#Resources">Resources</a>)</i>.&nbsp; 
+Therefore, I won't repeat those explanations in this lesson.</p>
+<p>That concludes my explanation of the <b>path</b> element and the program 
+named <b>Svg12</b>.</p>
+<center>
+<h2><a name="Run the program"></a>Run the program</h2>
+</center>
+<p>I encourage you to copy the code from Listing 17 into your text
+editor, compile it, and execute it.&nbsp; Load the SVG output file into an 
+SVG-capable graphics engine such as Firefox 1.5.&nbsp; Experiment with the code, making
+changes, and observing the results of your changes.</p>
+<p>Above all, enjoy the process. Programming, particularly graphics programming, 
+can be fun.</p>
+<h2 align="center"><a name="Summary">Summary</a></h2>
+<p>In this lesson, I taught you how to write Java code that uses an SVG graphics 
+library of my own design and the SVG/XML <b>path</b> element to efficiently draw 
+grid lines, simple geometric shapes composed of straight lines, cubic Bezier 
+curves, quadratic Bezier curves, and elliptical arcs.</p>
+<h2 align="center"><a name="Whats Next">What's next?</a></h2>
+<p>Future lessons in this series will teach you how to write servlets that:</p>
+<ul>
+	<li>Deal with the following graphics elements:<ul>
+		<li>text</li>
+		<li>image <i>(Deal with bit-mapped images in SVG.)</i></li>
+		<li>use <i>(Create and re-use graphics elements.)</i></li>
+	</ul>
+	</li>
+	<li>Use SVG <i>symbols</i>.</li>
+	<li>Deal with stroke caps in SVG in comparison with similar caps in Java 2D.</li>
+	<li>Use the <i>switch</i> element in SVG.</li>
+	<li>Deal with other features of SVG, such as animation.</li>
+</ul>
+<h2 align="center"><a name="Resources">Resources</a></h2>
+<p><b>Java 2D Graphics</b><br>
+<a href="http://www.dickbaldwin.com/java/Java300.htm">300</a> Java 2D Graphics, 
+Nested Top-Level Classes and Interfaces&nbsp; <br>
+<a href="http://www.dickbaldwin.com/java/Java302.htm">302</a> Java 2D Graphics, 
+The Point2D Class&nbsp; <br>
+<a href="http://www.dickbaldwin.com/java/Java304.htm">304</a> Java 2D Graphics, 
+The Graphics2D Class&nbsp; <br>
+<a href="http://www.dickbaldwin.com/java/Java306.htm">306</a> Java 2D Graphics, 
+Simple Affine Transforms&nbsp; <br>
+<a href="http://www.dickbaldwin.com/java/Java308.htm">308</a> Java 2D Graphics, 
+The Shape Interface, Part 1&nbsp; <br>
+<a href="http://www.dickbaldwin.com/java/Java310.htm">310</a> Java 2D Graphics, 
+The Shape Interface, Part 2&nbsp; <br>
+<a href="http://www.dickbaldwin.com/java/Java312.htm">312</a> Java 2D Graphics, 
+Solid Color Fill&nbsp; <br>
+<a href="http://www.dickbaldwin.com/java/Java314.htm">314</a> Java 2D Graphics, 
+Gradient Color Fill&nbsp; <br>
+<a href="http://www.dickbaldwin.com/java/Java316.htm">316</a> Java 2D Graphics, 
+Texture Fill&nbsp; <br>
+<a href="http://www.dickbaldwin.com/java/Java318.htm">318</a> Java 2D Graphics, 
+The Stroke Interface&nbsp; <br>
+<a href="http://www.dickbaldwin.com/java/Java320.htm">320</a> Java 2D Graphics, 
+The Composite Interface and Transparency&nbsp; <br>
+<a href="http://www.dickbaldwin.com/java/Java322.htm">322</a> Java 2D Graphics, 
+The Composite Interface, GradientPaint, and Transparency&nbsp; <br>
+<a href="http://www.dickbaldwin.com/java/Java324.htm">324</a> Java 2D Graphics, 
+The Color Constructors and Transparency<br>
+<a href="http://java.sun.com/j2se/1.5.0/docs/guide/2d/spec.html">Java 2D API 
+Specification</a><br>
+<a href="http://java.sun.com/products/java-media/2D/">Java 2D API</a></p>
+<p><b>Java API for XML Processing (JAXP)</b><br>
+<a href="http://www.developerva/other/article.php/3099751">2200</a> Java 
+API for XML Processing (JAXP), Getting Started<br>
+<a href="http://www.developer.com/xml/article.php/3113351">2202</a> Getting 
+Started with Java JAXP and XSL Transformations (XSLT)<br>
+<a href="http://www.developer.com/java/other/article.php/3292751">2204</a> Java 
+JAXP, Exposing a DOM Tree<br>
+<a href="http://www.developer.com/java/other/article.php/3313341">2206</a> Java 
+JAXP, Implementing Default XSLT Behavior in Java<br>
+<a href="http://www.developer.com/java/other/article.php/3361261">2208</a> Java 
+JAXP, Writing Java Code to Emulate an XSLT Transformation<br>
+<a href="http://www.developer.com/java/data/article.php/3398741">2210</a> Java 
+JAXP, Transforming XML to XHTML<br>
+<a href="http://www.dickbaldwin.com/tocxml.htm">Links to numerous XML tutorials 
+by Richard G. Baldwin</a><br>
+<br>
+<b>Scalable Vector Graphics (SVG)</b><br>
+<a href="http://www.developer.com/java/other/article.php/3655506">2212</a> Java JAXP, Creating graphics using Java and SVG<br>
+<a href="http://www.developer.com/java/other/article.php/3665131">2214</a> An improved approach for creating SVG/XML code and SVG/XML DOM nodes 
+using Java<br>
+<a href="http://www.developer.com/java/data/article.php/3676331">2216</a> Using Java to produce SVG code in XHTML data<br>
+<a href="http://www.developer.com/java/ent/article.php/3684126">2218</a> Writing Java servlets to produce XHTML code that references external SVG 
+files<br>
+<a href="http://www.w3.org/TR/SVG/">Scalable Vector Graphics (SVG) 1.1 
+Specification</a><br>
+<a href="http://www.adobe.com/svg/">Adobe SVG Viewer plug-in</a><br>
+<a href="https://www6.software.ibm.com/developerworks/education/x-svggraphics/index.html">
+Create vector graphics in the browser with SVG</a> by Uche Ogbuji<br>
+<a href="http://www.w3schools.com/svg/default.asp">SVG Tutorial</a><br>
+<a href="http://www.svgbasics.com/shapes.html">SVG Basics</a><br>
+<a href="http://www.carto.net/papers/svg/samples/svg_html.shtml">SVG in HTML 
+pages</a></p>
+<p><b>Bézier Curves<br>
+</b><a href="http://www.moshplant.com/direct-or/bezier/index.html">What's a 
+Bézier Curve?</a><br>
+<a href="http://en.wikipedia.org/wiki/Bézier_curve">Wikipedia, Bézier curve</a><br>
+<a href="http://www.math.ucla.edu/~baker/java/hoefer/Bezier.htm">Bézier Curve 
+Demo</a></p>
+<p><b>Miscellaneous<br>
+</b><a href="http://validator.w3.org/file-upload.html">W3C Markup Validation 
+Service</a><br>
+<a href="http://www.xmlvalidation.com/">XMLvalidation.com</a><br>
+<a href="http://regentsprep.org/Regents/Math/coreflec/reflect.htm">Reflection in 
+a Line</a><br>
+<a href="http://regentsprep.org/Regents/Math/reflect/Lreflect.htm">An Intuitive 
+Notion of Line Reflections</a></p>
+<center>
+<h2> <a name="Complete Program Listings"></a>Complete program listing</h2>
+</center>
+A complete listing of the program that I presented and explained in this lesson 
+is shown in Listing 17 below.
+<p>
+<b><a name="Listing_17">Listing 17</a>. Program code for Svg012 </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>/*File Svg12.java
+Copyright 2007 R.G.Baldwin
+
+THE path ELEMENT
+The purpose of this program is to demonstrate the use of 
+an SVG graphics method named makePath. The SVG graphics
+library in the class named SvgClass was updated during the
+writing of this program to add several new methods and to
+update some of the default values for existing methods.
+
+A BACKGROUND GRID
+The program begins by using a new method named 
+makeGridString in conjunction with a new method named
+makePath to draw a background grid that resembles graph
+paper. The makeGridString method uses the moveto command 
+and special versions of the horizontal and vertical lineto
+command to reduce the amount of XML SVG data needed to
+draw the grid. There are light blue horizontal and 
+vertical lines every 10th pixel. There are slightly darker
+blue lines every 50th pixel. There are even darker blue 
+lines every 100th pixel
+
+A RED AND BLUE TRIANGLE
+Then the program uses the moveto, lineto, and closepath
+commands to draw a triangle.
+
+THREE CUBIC BEZIER CURVES
+Then the program draws three cubic Bezier curves,
+illustrating the effect of the locations of the control
+points on the shape of the curve.
+
+ONE QUADRATIC BEZIER CURVE
+Then the program overlays a quadratic Bezier curve on the
+third cubic Bezier curve, illustrating the difference in
+the degree to which the cubic and quadratic Bezier curves
+fit the same envelope.
+
+ELLIPTICAL ARC ROTATION
+Then the program draws two elliptical arc curves 
+illustrating the effect of the x-axis-rotation parameter
+on the appearance of the elliptical arcs.
+
+COMBINATIONS OF large-arc-flag and sweep-flag PARAMETERS
+Finally, the program draws four more elliptical arc 
+curves, illustrating the difference in shape that results 
+from all four combinations of the large-arc-flag and 
+sweep-flag parameters.
+
+The program creates a DOM tree describing a specific 
+graphic image in SVG format and writes it out into an XML 
+file named Svg12.svg.
+
+The output file produced by this program can be rendered 
+by loading it into Firefox 1.5.
+
+Tested using J2SE 5.0, Firefox v1.5.0.8, and WinXP.
+*********************************************************/
+
+import javax.xml.parsers.*;
+import org.w3c.dom.*;
+import javax.xml.transform.*;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+import java.io.*;
+
+public class Svg12 {
+
+  public static void main(String[] args){
+    int width = 450;
+    int height = 450;
+
+    //Begin by creating a DOM tree that represents the XML
+    // code that will render to produce the image of
+    // interest.
+
+    //Get the Document object.
+    Document document = SvgGraphics.getDocument();
+
+    //Create the root node named svg and append it to the
+    // document.  Specify the parent as null for the
+    // special case where the parent is the document.
+    Element svg = SvgGraphics.makeNode(
+        document,
+        null,//parent
+        "svg",//node type
+        new String[]{"xmlns","http://www.w3.org/2000/svg",
+                     "version","1.1",
+                     "width",""+ (width + 2),
+                     "height","" + (height + 2),
+                     "position","absolute",
+                     "top","0",
+                     "left","0",
+                    });//end makeNode method
+
+    //Create a node named g, which will be the parent for
+    // several graphic elements. Pass null for the
+    // reference to the array object for the special case
+    // where the node has no attributes.
+    Element g = SvgGraphics.makeNode(document,
+                                     svg,//parent
+                                     "g",
+                                     null);
+
+
+    //**DIAGONAL LINE**
+    //Draw a blue diagonal line that will be used to
+    // illustrate the effect of the path element in
+    // reducing the size of the download and the attendant
+    // bandwidth requirements.
+    Element diagLine = SvgGraphics.makeLine(
+                                  document,g,0,0,450,450);
+    diagLine.setAttribute("stroke","#8888ff");
+
+
+    //** GRID LINES **
+    //Use the moveto command and the special horizontal
+    // and vertical lineto commands to draw three sets of
+    // grid lines that cause the output image to resemble
+    // a sheet of graph paper.
+    
+    //First draw light blue grid lines every 10 pixels.
+    String gridData = SvgGraphics.makeGridString(
+                                         width,height,10);
+    //Create the path element.
+    Element temp;
+    temp = SvgGraphics.makePath(document,g,gridData);
+    //Set the color to light blue.
+    temp.setAttribute("stroke","#ccccff");
+    
+    //Now draw darker grid lines every 50 pixels 
+    gridData = SvgGraphics.makeGridString(
+                                         width,height,50);
+    temp = SvgGraphics.makePath(document,g,gridData);
+    //Set the color to a slightly darker blue.
+    temp.setAttribute("stroke","#aaaaff");
+    
+    //Now draw even darker grid lines every 100 pixels.
+    gridData = SvgGraphics.makeGridString(
+                                        width,height,100);
+    temp = SvgGraphics.makePath(document,g,gridData);
+    //Set the color to an even darker blue.
+    temp.setAttribute("stroke","#8888ff");
+    
+    
+    //** LABEL THE GRID **
+    for(int cnt = 0;cnt &lt; width;cnt += 50){
+      SvgGraphics.makeText(document,g,0,cnt,""+cnt);
+      SvgGraphics.makeText(document,g,cnt,height,""+cnt);
+    }//end for loop
+    
+
+    //** RED AND BLUE TRIANGLE **
+    //Use the moveto, lineto, and closepath commands to
+    // draw a red triangle with a blue border.  This 
+    // example uses one absolute moveto command, one 
+    // absolute lineto command, and one relative lineto
+    // command.  (Don't confuse the lower-case L (1) 
+    // between the numeric values of 10 and -25 with the
+    // numeric character for one (1).)
+    Element pathA = SvgGraphics.makePath(
+                           document,
+                           g,//owner
+                           "M 50 10 L 100 10 l -25 40 z");
+    pathA.setAttribute("stroke","blue");
+    pathA.setAttribute("stroke-width","3");
+    pathA.setAttribute("fill","red");
+
+
+    //** THREE CUBIC BEZIER CURVES **
+    //Draw a red cubic Bézier curve. This curve consists
+    // of two Bezier segments. First draw a light red
+    // polyline whose nodes coincide with the start
+    // points, end points, and control points for the two
+    // segments. The purpose of the polyline is solely to
+    // show the locations of those points.  In has no
+    // functional purpose in the drawing of the curve.
+    // In this case, the three start and end points fall
+    // on a horizontal line with a y-coordinate value
+    // of 100.
+    Element polylineB = SvgGraphics.makePolyline(
+                 document,
+                 g,
+                 new int[] {100,100,100,50,175,50,175,100,
+                                175,150,250,150,250,100});
+    polylineB.setAttribute("stroke","#FF8888");
+    polylineB.setAttribute("stroke-width","2");
+    
+    //Draw the cubic curve. Note the use of absolute
+    // coordinate values only and also the use of the S
+    // command.
+    Element pathB = SvgGraphics.makePath(document,g,
+      "M100,100 C100,50 175,50 175,100 S250,150 250,100");
+    pathB.setAttribute("stroke","red");
+    pathB.setAttribute("stroke-width","2");
+    
+
+    //Draw a green cubic Bézier curve. This curve also
+    // consists of two Bezier segments. First draw a light
+    // green polyline whose nodes coincide with the start
+    // points, end points, and control points for the two
+    // segments.  
+    Element polylineC = SvgGraphics.makePolyline(
+                 document,
+                 g,
+                 new int[] {300,100,320,10,415,50,375,100,
+                                335,150,430,190,450,100});
+    polylineC.setAttribute("stroke","#88ff88");
+    polylineC.setAttribute("stroke-width","2");
+
+    //Now draw the two Bezier segments that constitute the
+    // Bezier curve. Note that this version uses
+    // absolute coordinates but doesn't use the S command.
+    Element pathC = SvgGraphics.makePath(document,g,
+                        "M300,100 C320,10 415,50 375,100 "
+                             + "335,150 430,190 450,100");
+    pathC.setAttribute("stroke","green");
+    pathC.setAttribute("stroke-width","2");
+    
+
+    //Fit a pair of cubic Bezier segments into a set of
+    // start points, end points, and control points where
+    // the two control points on each side of the
+    // horizontal axis coincide with one another so as to
+    // form a triangular envelope. Note that this curve is
+    // defined using relative coordinate values and does
+    // not use the S command. It is colored blue. Also
+    // note that a red quadratic Bezier curve will be
+    // drawn later so as to coincide with the start
+    // points, end points, and control points of this
+    // curve.
+    //As a reminder, for a Bezier segment, relative
+    // coordinate values are relative to the location of
+    // the start point for each segment.
+    Element polylineD = SvgGraphics.makePolyline(
+                document,
+                g,
+                new int[] {50,200,100,150,100,150,150,200,
+                                200,250,200,250,250,200});
+    polylineD.setAttribute("stroke","#8888FF");
+    polylineD.setAttribute("stroke-width","2");
+
+    Element pathD = SvgGraphics.makePath(document,g,
+        "M50,200 c50,-50 50,-50 100,0 50,50 50,50 100,0");
+    pathD.setAttribute("stroke","blue");
+    pathD.setAttribute("stroke-width","2");
+
+
+    //** ONE QUADRATIC BEZIER CURVE **
+    //Now fit a pair of quadratic Bezier segments into
+    // the same triangular envelope as the above cubic
+    // Bezier segments.  Recall that for a quadratic
+    // segment, there is a start point, an end point, 
+    // and only one control point. In this case, the
+    // control points for the two quadratic Bezier
+    // segments coincide with the overlaid control points
+    // for the cubic Bezier segments discussed above.
+    //This quadratic Bezier curve is colored red. This
+    // curve uses absolute coordinate values and also
+    // uses the T command to join the second segment to 
+    // the first segment.  Note that no polyline was
+    // created for this example because the same polyline
+    // that was used for the cubic Bezier curve discussed
+    // above also shows the locations of the start points,
+    // end points, and control points for this quadratic
+    // curve.
+    Element pathE = SvgGraphics.makePath(document,g,
+                     "M50,200 Q100,150 150,200 T250,200");
+    pathE.setAttribute("stroke","RED");
+    pathE.setAttribute("stroke-width","2");
+
+
+    //** ROTATION OF AN ELLIPTICAL ARC **
+    //Draw a yellow elliptical arc with a red border to
+    // illustrate the appearance of such an arc with no
+    // rotation.
+    Element pathF = SvgGraphics.makePath(document,g,
+                        "M230,250 a70,30 0 1,0 50,-50 z");
+    pathF.setAttribute("stroke","red");
+    pathF.setAttribute("stroke-width","2");
+    pathF.setAttribute("fill","yellow");
+    
+    
+    //Draw a red elliptical arc with a yellow border to
+    // illustrate the appearance of such an arc with a
+    // rotation of 45 degrees.
+    Element pathG = SvgGraphics.makePath(document,g,
+                       "M350,250 a70,30 45 1,0 50,-50 z");
+    pathG.setAttribute("stroke","yellow");
+    pathG.setAttribute("stroke-width","2");
+    pathG.setAttribute("fill","red");
+
+    
+    //** PARAMETERS large-arc-flag AND sweep-flag **
+    //Demonstrate four combinations of large-arc-flag and
+    // sweep-flag
+    
+    //Case 1: Fill color = red, border = blue
+    // large-arc-flag = 1
+    // sweep-flag     = 0
+    Element pathH = SvgGraphics.makePath(document,g,
+                         "M50,370 a50,50 0 1,0 50,-50 z");
+    pathH.setAttribute("stroke","blue");
+    pathH.setAttribute("stroke-width","2");
+    pathH.setAttribute("fill","red");
+
+    //Case 2: Fill color = green, border = red
+    // large-arc-flag = 1
+    // sweep-flag     = 1
+    Element pathI = SvgGraphics.makePath(document,g,
+                        "M225,400 a50,50 0 1,1 50,-50 z");
+    pathI.setAttribute("stroke","red");
+    pathI.setAttribute("stroke-width","2");
+    pathI.setAttribute("fill","green");
+    
+    //Case 3: Fill color = blue, border = red
+    // large-arc-flag = 0
+    // sweep-flag     = 0
+    Element pathJ = SvgGraphics.makePath(document,g,
+                        "M300,370 a50,50 0 0,0 50,-50 z");
+    pathJ.setAttribute("stroke","red");
+    pathJ.setAttribute("stroke-width","2");
+    pathJ.setAttribute("fill","blue");
+
+    //Case 4: Fill color = yellow, border = blue
+    // large-arc-flag = 0
+    // sweep-flag     = 1
+    Element pathK = SvgGraphics.makePath(document,g,
+                        "M375,370 a50,50 0 0,1 50,-50 z");
+    pathK.setAttribute("stroke","blue");
+    pathK.setAttribute("stroke-width","2");
+    pathK.setAttribute("fill","yellow");
+    
+
+    //** OUTLINE ON GRAPHIC DISPLAY **
+    Element outline = SvgGraphics.makeNode(
+                      document,
+                      g,//parent
+                      "rect",//type
+                      new String[]{"x","1",
+                                   "y","1",
+                                   "width",""+ width,
+                                   "height",""+ height,
+                                   "fill","none",
+                                   "stroke","black",
+                                   "stroke-width","1",
+                                  });//end makeNode method
+    //** END OF GRAPHICS **
+    
+    //Transform the DOM and write the output file.
+    SvgGraphics.transformTheDom(document,"Svg12.svg");
+
+  }// end main()
+  //----------------------------------------------------//
+  
+}// class Svg12
+//======================================================//
+
+//This class was updated on 01/06/07 to add several new
+// methods.
+
+//This is a proof-of-concept graphics class that
+// provides method calls for the creation of several
+// different DOM tree nodes.
+
+//Each method receives a reference to the overall document
+// along with a reference to the parent for the new node.
+//When the method returns, the new node has been appended
+// to the parent node.
+
+//The class also contains some utility methods that are
+// useful for the creation of graphic output using SVG.
+class SvgGraphics{
+  //----------------------------------------------------//
+
+  //This method creates a linear gradient node to which
+  // stop elements must be appended.
+  static Element makeLinearGradient(Document document,
+                                    Element parent,
+                                    String id){
+    Element gradient = 
+        (Element)document.createElement("linearGradient");
+    parent.appendChild(gradient);
+    gradient.setAttribute("id",id);
+    return gradient;
+  }//End makeLinearGradient
+  //----------------------------------------------------//
+  
+  //This method creates a radial gradient node to which
+  // stop elements must be appended. Note that numeric
+  // attributes are set as type String.
+  static Element makeRadialGradient(Document document,
+                                    Element parent,
+                                    String id,
+                                    String gradientUnits,
+                                    int cx,
+                                    int cy,
+                                    int r){
+    Element gradient = 
+        (Element)document.createElement("radialGradient");
+    parent.appendChild(gradient);
+    gradient.setAttribute("id",id);
+    gradient.setAttribute("gradientUnits",gradientUnits);
+    gradient.setAttribute("cx",""+cx);
+    gradient.setAttribute("cy",""+cy);
+    gradient.setAttribute("r",""+r);
+    return gradient;
+  }//End makeRadialGradient
+  //----------------------------------------------------//
+
+  //This method creates a gradient stop node to be
+  // appended to a linear gradient node or a radial
+  // gradient node.                                      
+  static Element makeGradientStop(Document document,
+                                  Element parent,
+                                  String location,
+                                  String color){
+    Element stopElement = 
+                  (Element)document.createElement("stop");
+    parent.appendChild(stopElement);
+    stopElement.setAttribute("offset",location);
+    stopElement.setAttribute("stop-color",color);
+    return stopElement;
+  }//End makeGradientStop
+  //----------------------------------------------------//
+  
+  //This method returns a reference to an ellipse. The
+  // xCoor and yCoor parameters specify the center of the
+  // ellipse.  The xRadius and yRadius parameters specify
+  // the width and height of the  ellipse respectively
+  // while it is in the horizontal plane before being
+  // rotated.  Numeric attributes are set at type String.
+  // By default, the ellipse is drawn with a black stroke
+  // one pixel wide and a fill of none.
+  static Element makeEllipse(Document document,
+                             Element parent,
+                             int xCoor,
+                             int yCoor,
+                             int xRadius,
+                             int yRadius){
+    Element ellipse  = 
+               (Element)document.createElement("ellipse");
+    parent.appendChild(ellipse);
+    ellipse.setAttribute("cx",""+xCoor);
+    ellipse.setAttribute("cy",""+yCoor);
+    ellipse.setAttribute("rx",""+xRadius);
+    ellipse.setAttribute("ry",""+yRadius);
+    ellipse.setAttribute("stroke","black");
+    ellipse.setAttribute("stroke-width","1");
+    ellipse.setAttribute("fill","none");
+    return ellipse;
+  }//end makeEllipse
+  //----------------------------------------------------//
+
+  //This method returns a reference to a circle. The
+  // xCoor and yCoor parameters specify the center of the
+  // circle.  The radius parameter specifies the radus of
+  // the circle.  Numeric attributes are set as type
+  // String.  By default, the stroke is black one pixel
+  // wide and the fill is none.
+  static Element makeCircle(Document document,
+                            Element parent,
+                            int xCoor,
+                            int yCoor,
+                            int radius){
+    Element circle  = 
+                (Element)document.createElement("circle");
+    parent.appendChild(circle);
+    circle.setAttribute("cx",""+xCoor);
+    circle.setAttribute("cy",""+yCoor);
+    circle.setAttribute("r",""+radius);
+    circle.setAttribute("stroke","black");
+    circle.setAttribute("stroke-width","1");
+    circle.setAttribute("fill","none");
+    return circle;
+  }//end makeCircle
+  //----------------------------------------------------//
+  
+  //This method returns a reference to a rectangle. The
+  // xCoor and yCoor parameters specify the location of
+  // the upper left corner.  The width and height
+  // parameters specify the width and the height while
+  // the rectangle is in the horizontal plane before
+  // being rotated.  Numeric attributes are set as type
+  // String.  By default, the stroke is set to black, one
+  // pixel wide and the fill is set to none.
+  static Element makeRect(Document document,
+                          Element parent,
+                          int xCoor,
+                          int yCoor,
+                          int width,
+                          int height){
+    Element rect  = 
+                  (Element)document.createElement("rect");
+    parent.appendChild(rect);
+    rect.setAttribute("x",""+xCoor);
+    rect.setAttribute("y",""+yCoor);
+    rect.setAttribute("width",""+width);
+    rect.setAttribute("height",""+height);
+    rect.setAttribute("stroke","black");
+    rect.setAttribute("stroke-width","1");
+    rect.setAttribute("fill","none");
+    return rect;
+  }//end makeRect
+  
+  //----------------------------------------------------//
+  
+  //This method returns a reference to a line. x1 and y1
+  // specify the starting point of the line before it is
+  // rotated. x2 and y2 specify the end point.  By
+  // default, the stroke is set to black one pixel wide.
+  // This can be overridden to speciy other colors and
+  // other widths if you need to do so.
+  static Element makeLine(Document document,
+                          Element parent,
+                          int x1,
+                          int y1,
+                          int x2,
+                          int y2){
+    Element line  = 
+                  (Element)document.createElement("line");
+    parent.appendChild(line);
+    line.setAttribute("x1",""+x1);
+    line.setAttribute("y1",""+y1);
+    line.setAttribute("x2",""+x2);
+    line.setAttribute("y2",""+y2);
+    line.setAttribute("stroke","black");
+    line.setAttribute("stroke-width","1");
+    return line;
+  }//end makeLine
+  //----------------------------------------------------//
+
+  //This method returns a reference to a polyline. The
+  // array of type int[] must contain an even number of
+  // values for things to work correctly.
+  //The values are extracted from the array and treated
+  // as coordinate values x1,y1, x2,y2, x3,y3 ... etc.
+  // By default, the stroke is set to black one pixel
+  // wide with no fill.  This can be overridden to other
+  // colors and other widths if you need to do so.
+  static Element makePolyline(Document document,
+                              Element parent,
+                              int[] points){
+    Element polyline  = 
+              (Element)document.createElement("polyline");
+    parent.appendChild(polyline);
+
+    String dataPoints = "";
+    for(int cnt=0;cnt&lt;points.length;cnt++){
+      dataPoints += "" + points[cnt] + ",";
+    }//end for loop
+    
+    polyline.setAttribute("points",dataPoints);
+    polyline.setAttribute("stroke","black");
+    polyline.setAttribute("stroke-width","1");
+    polyline.setAttribute("fill","none");
+    return polyline;
+  }//end makePolyline
+  //----------------------------------------------------//
+  
+  //This method returns a reference to a polygon. The
+  // array of type int[] must contain an even number of
+  // values for things to work correctly.
+  //The values are extracted from the array and treated
+  // as coordinate values x1,y1, x2,y2, x3,y3 ... etc.
+  // By default, the stroke is set to black, one pixel
+  // wide with no fill.  This can be overridden to other
+  // colors and other widths if you need to do so.
+  //The major difference between a polygon and a polyline
+  // is that a polyline leaves the last point dangling.
+  // However, a polygon automatically draws a line from
+  // the last point back to the first point to close
+  // the polygon.
+  static Element makePolygon(Document document,
+                           Element parent,
+                           int[] points){
+    Element polygon  = 
+               (Element)document.createElement("polygon");
+    parent.appendChild(polygon);
+
+    String dataPoints = "";
+    for(int cnt=0;cnt&lt;points.length;cnt++){
+      dataPoints += "" + points[cnt] + ",";
+    }//end for loop
+    
+    polygon.setAttribute("points",dataPoints);
+    polygon.setAttribute("stroke","black");
+    polygon.setAttribute("stroke-width","1");
+    polygon.setAttribute("fill","none");
+    return polygon;
+  }//end makePolygon
+  
+  //----------------------------------------------------//
+  
+  /*
+  One of the most frustrating things about using Java
+   to create elements in XML, XHTML, or HTML is having
+   to deal with the escape characters for the many
+   required quotation marks. This method constructs an
+   element, which may or may not have attributes. Also,
+   the element may or may not be empty.
+  The user of this method does not have to deal with the
+   required quotation marks surrounding attribute values
+   and the corresponding escape characters     
+  The first incoming parameter must be true if the
+   element is empty and false if the element is not
+   empty.
+  If the first parameter is true, the element is sealed
+   off in the required manner for an empty element. If
+   the first parameter is false, the method returns the
+   complete start tag for the element but does not
+   return a complete element. It is the responsibility
+   of the calling method to provide the content and the
+   end tag for the element.
+  The second parameter to the method must be a String
+   that specifies the name of the element.
+  The third parameter to the method must be a reference
+   to an array object of type String.  This array must 
+   contain an even number of elements.  Each pair of 
+   elements constitutes the name and the value of an 
+   attribute, in the order name, value, name, value, etc.
+
+  If the reference to the array object is null and the
+   first parameter is false, the method returns the start
+   tag for an element that has no attributes and is not 
+   empty.
+  If the reference is null and the first parameter is
+   true, the method returns a complete empty element with 
+   no attributes (which probably doesn't make any sense).
+   
+  An example of the recommended usage of the method
+   follows:
+   
+  String newElement = SvgGraphics.makeElement(
+                  true/false,
+                  name,
+                  new String[]{"name","value",
+                               "name","value",
+                               "name","value",
+                               "name","value",
+                               "name","value",
+                               "name","value",
+                               "name","value",
+                               "name","value",
+                               "name","value"
+                              });//end call to makeElement
+   
+  */
+  
+  static String makeElement(
+          boolean empty,String elementName,String[] data){
+
+    //Begin constructing the start tag.
+    String element = "&lt;" + elementName + " ";
+    
+    //Deal with elements that have no attributes.
+    if((empty==false) &amp;&amp; (data == null)){
+      //Return a complete start tag.
+      return element + "&gt;";
+    }else if((empty==true) &amp;&amp; (data == null)){
+      //Return a complete empty element.
+      return element + "/&gt;";
+    }//end if
+
+    for(int cnt=0;cnt&lt;data.length;cnt+=2){
+
+      String name = data[cnt];
+      String value = data[cnt+1];
+      element += name + "=" + "\"" + value + "\" ";
+    }//end for loop
+    
+    if(empty){
+      //Terminate the element appropriately for an
+      // empty element. A complete empty element will
+      // be returned.
+      element += "/&gt;";
+    }else{
+      //End the start tag for an element that is not
+      // empty. In this case, only the start tag will
+      // be returned.  The calling program must provide
+      // the content for the element as well as the end
+      // tag for the element.
+      element += "&gt;";
+    }//end else
+      
+  return element;
+  }//end makeElement
+  //----------------------------------------------------//
+  
+  /*
+  The purpose of this method is to create a general node
+   having any name, and any number of attributes with any 
+   attribute names and any String values for the 
+   attributes, or no attributes at all.
+   
+  The first parameter is a reference to the document to
+   which the new node belongs.
+  
+  The second parameter is a reference to the parent node
+   to which this node is to be appended so as to become a
+   child of that node. If this parameter is null, the new
+   node is appended to the document.  Otherwise, it is
+   appended to the specified parent node.
+   
+  The third parameter is a String that specifies the type
+   of node.
+  
+  The fourth parameter to the method must be a reference
+   to an array object of type String.  This array must 
+   contain an even number of elements.  Each pair of 
+   elements constitutes the name and the value of an 
+   attribute, in the order name, value, name, value, etc.
+  
+  An example of the recommended usage of the method
+   follows:
+  Element abc = SvgGraphics.makeNode(
+                     document,
+                     def,//parent could be null
+                     "ghi",//node type
+                     new String[]{"name","value",
+                                  "name","value",
+                                  "name","value",
+                                  "name","value",
+                                  "name","value",
+                                  "name","value",
+                                  "name","value",
+                                  "name","value",
+                                  "name","value"
+                                 });//end call to makeNode
+  */
+  static Element makeNode(Document document,
+                          Element parent,
+                          String nodeType,
+                          String[] data){
+  
+    Element element = 
+                (Element)document.createElement(nodeType);
+    
+    if(parent == null){
+      //For the special case of parent equal to null,
+      // append the new node to the document.
+      document.appendChild(element);
+    }else{
+      //Otherwise, append the new node to the specified
+      // parent.
+      parent.appendChild(element);
+    }//end else
+  
+    //Deal with elements that have no attributes.
+    if(data == null){
+      return element;
+    }//end if
+    
+    for(int cnt=0;cnt&lt;data.length;cnt+=2){
+      String name = data[cnt];
+      String value = data[cnt+1];
+      element.setAttribute(name,value);
+    }//end for loop
+    
+    return element;
+  }//end makeNode
+  //----------------------------------------------------//
+  
+  //This method returns a reference to a path. By
+  // default, the stroke is set to black one pixel wide,
+  // and the fill is set to none.
+  //See the method named makeGridString for a utility
+  // method designed to create data strings for this
+  // method for the special case of drawing grids that
+  // resemble graph paper.
+  static Element makePath(Document document,
+                          Element parent,
+                          String d){
+    Element path  = 
+                  (Element)document.createElement("path");
+    parent.appendChild(path);
+    path.setAttribute("d",d);
+    path.setAttribute("stroke","black");
+    path.setAttribute("stroke-width","1");
+    path.setAttribute("fill","none");
+    return path;
+  }//end makePath
+  //----------------------------------------------------//
+
+  //This is a utility method that is used to construct a
+  // string that describes a grid pattern consisting of 
+  // horizontal and vertical lines at a specified pixel
+  // spacing for a rectangular area of a specified width
+  // and height in pixels. The string is intended to be
+  // used as the data string for a call to the method
+  // named makePath.
+  //Note that this method makes use of the special
+  // horizontal and vertical lineto commands in an attempt
+  // to reduce the download size and the bandwidth
+  // requirements for a drawing containing a large number
+  // of horizontal and vertical lines in the grid pattern.
+  static String makeGridString(
+                        int width,int height,int spacing){
+    //Construct the data string for the vertical lines.
+    String data = "M0,0 ";
+    for(int cnt = 0;cnt &lt; width;cnt += spacing){
+      data += "v" + height + " M" + cnt + ",0 ";
+    }//end for loop
+    //Add the final vertical line.
+    data += "v" + height + " \n";
+    
+    //Now add the horizontal lines to the data string.
+    data += "M0,0 ";
+    for(int cnt = 0;cnt &lt; height;cnt += spacing){
+      data += "h" + width + " M0," + cnt + " ";
+    }//end for loop
+    //Add the final horizontal line.
+    data += "h" + width + "\n ";
+    
+    return data;
+
+  }//end makeGridString
+  //----------------------------------------------------//
+
+  //This method returns a reference to a text element
+  // node.
+  static Element makeText(Document document,
+                          Element parent,
+                          int x,
+                          int y,
+                          String text){
+    Element textNode  = 
+                  (Element)document.createElement("text");
+    parent.appendChild(textNode);
+    
+    textNode.setAttribute("x",""+x);
+    textNode.setAttribute("y",""+y);
+    
+    textNode.appendChild(document.createTextNode(text));
+
+    return textNode;
+  }//end makePath
+  //----------------------------------------------------//
+  
+  //This is a utility method that is used to execute code
+  // that is the same regardless of the graphic image
+  // being produced.
+  static Document getDocument(){
+    Document document = null;
+    try{
+      DocumentBuilderFactory factory = 
+                     DocumentBuilderFactory.newInstance();
+
+      DocumentBuilder builder = 
+                             factory.newDocumentBuilder();
+      document = builder.newDocument();
+    }catch(Exception e){
+      e.printStackTrace(System.err);
+      System.exit(0);
+    }//end catch
+    return document;
+  }//end getDocument
+  //----------------------------------------------------//
+  
+  //This is a utility method that is used to execute code
+  // that is the same regardless of the graphic image
+  // being produced.  This method transforms the DOM into
+  // raw XML code and writes that code into the output.
+  static void transformTheDom(Document document,
+                              String filename){
+    try{
+      //Get a TransformerFactory object.
+      TransformerFactory xformFactory =
+                         TransformerFactory.newInstance();
+           
+      //Get an XSL Transformer object.
+      Transformer transformer = 
+                            xformFactory.newTransformer();
+    
+      //Get a DOMSource object that represents the
+      // Document object
+      DOMSource source = new DOMSource(document);
+
+      //Get an output stream for the output file.
+      PrintWriter outStream = new PrintWriter(filename);
+
+      //Get a StreamResult object that points to the
+      // output file.  Then transform the DOM sending XML
+      // code to the file
+      StreamResult fileResult = 
+                              new StreamResult(outStream);
+      transformer.transform(source,fileResult);
+    }//end try block
+
+    catch(Exception e){
+      e.printStackTrace(System.err);
+    }//end catch
+  }//end transformTheDom
+  //----------------------------------------------------//
+
+}//end class SvgGraphics
+</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>&nbsp;</p>
+
+<p> </p>
+<hr align="center" size="3" width="100%">
+<h2 align="center"><a name="Copyright">Copyright</a></h2>
+<p>Copyright 2007, Richard G. Baldwin.&nbsp; Reproduction in whole or in part in any 
+form or medium without express written permission from Richard Baldwin is 
+prohibited. </p>
+<h2 align="center"><a name="About_the_author">About the author</a></h2>
+<b><a href="mailto:Baldwin@DickBaldwin.com">Richard Baldwin</a></b><i> is a 
+college professor (at Austin Community College in Austin, TX) and private 
+consultant whose primary focus is a combination of Java, C#, and XML. In 
+addition to the many platform and/or language independent benefits of Java and 
+C# applications, he believes that a combination of Java, C#, and XML will become 
+the primary driving force in the delivery of structured information on the Web.</i>    
+<p><i>Richard has participated in numerous consulting projects and he 
+frequently provides onsite training at the high-tech companies located in and 
+around Austin, Texas.&nbsp; He is the author of Baldwin's Programming
+<a href="http://www.dickbaldwin.com">Tutorials</a>, which have gained a 
+worldwide following among experienced and aspiring programmers. He has also 
+published articles in JavaPro magazine.</i> </p>
+<p><i>In addition to his programming expertise, Richard has many years of 
+practical experience in Digital Signal Processing (DSP).&nbsp; His first job after he 
+earned his Bachelor's degree was doing DSP in the Seismic Research Department of 
+Texas Instruments.&nbsp; (TI is still a world leader in DSP.)&nbsp; In the following 
+years, he applied his programming and DSP expertise to other interesting areas 
+including sonar and underwater acoustics.</i> </p>
+<p><i>Richard holds an MSEE degree from Southern Methodist University and has 
+many years of experience in the application of computer technology to real-world 
+problems.</i> </p>
+<p><i><a href="mailto:baldwin@dickbaldwin.com">Baldwin@DickBaldwin.com</a></i>
+</p>
+<p><b>Keywords</b><br>
+java jaxp svg &quot;scalable vector graphics&quot; Bezier elliptical arc</p>
+<p>-end- </p>
+<p>&nbsp;</p>
+<p> <br>
+&nbsp; </p>
+<br>
+<br>
+<br>
+<br>
+</b>
+</body>
+</html>

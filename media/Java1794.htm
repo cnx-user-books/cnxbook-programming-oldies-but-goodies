@@ -1,0 +1,946 @@
+<!doctype html public "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+   <meta name="GENERATOR" content="Microsoft FrontPage 5.0">
+   <title>... in Java by Richard G Baldwin</title>
+</head>
+<body link="#DD0000" vlink="#0000FF" alink="#FF0000" lang="EN-US">
+<h2>
+Introduction to Memory-Mapped IO in Java</h2>
+<i>Baldwin shows you how to  perform memory-mapped IO in Java.</i><p><b>Published:</b>&nbsp; 
+December 3, 2002
+<br><b>By <a href="mailto:Baldwin@DickBaldwin.com">Richard G. Baldwin</a></b>
+<p>Java Programming Notes # 1794<ul >
+<li>
+<a href="#Preface">Preface</a></li>
+
+<li>
+<a href="#Discussion and Sample Programs">Discussion and Sample Code</a></li>
+
+<li>
+<a href="#Run the program">Run the Program</a></li>
+
+<li>
+<a href="#Summary">Summary</a></li>
+
+<li>
+<a href="#Whats Next">What's Next?</a></li>
+
+<li>
+<a href="#Complete Program Listings">Complete Program Listing</a></li>
+</ul>
+
+<hr size=3 width="100%" align=center>
+<center>
+<h2>
+<a NAME="Preface"></a>Preface</h2></center>
+<p>
+<b><font color="#FF0000">New features in SDK Version 1.4.0</font></b> </p>
+<p>The recently released Java<sup>TM</sup> 2 SDK, Standard Edition Version 1.4 contains a 
+large number of new features, including the concept
+of  IO <i>channels.&nbsp; </i>The first lesson in this miniseries, entitled
+<a href="http://softwaredev.earthweb.com/java/article/0,,12082_1473151,00.html">
+FileChannel Objects in Java, Background Information</a>, introduced you to the concept of channels 
+from a read/write IO viewpoint.&nbsp; 
+<p><font color="#FF0000"><b>Mixed primitive types</b></font></p>
+<p>The previous lesson, entitled
+<a href="http://www.developer.com/java/other/article.php/1500611">FileChannel 
+Objects in Java, Records with Mixed Types</a>, showed you 
+how to use the <b>FileChannel</b> class along 
+with the <b>ByteBuffer</b> class to:</p>
+<ul>
+  <li>Create records consisting of sequences of data values of mixed primitive 
+  types</li>
+  <li>Manipulate those records under program control</li>
+  <li>Transfer those records between the computer's memory and a physical disk 
+  file using read/write operations on the channel</li>
+</ul>
+<p><b><font color="#FF0000">Memory-mapped IO</font></b><p>In this lesson, I'm 
+will teach you how to use the <b>FileChannel</b> class along with the <b>
+ByteBuffer</b> class to perform <i>memory-mapped</i> IO for data of type <b>byte</b>.&nbsp; 
+This is an alternative to the <i>read/write</i> approach discussed in previous 
+lessons.<p>
+This lesson will teach you the basics of memory-mapped IO using data of type <b>
+byte</b>.&nbsp;
+In the next lesson, I will teach you how to do memory-mapped IO for data 
+records containing mixed types of data.&nbsp; I will also teach you how to do 
+memory-mapped IO for different data types using different <i>views</i> of the 
+data in the buffer.<p>
+<b><font color="#FF0000">Viewing tip</font></b>
+<p>You may find it useful to open another copy of this lesson in a separate
+browser window.&nbsp; That will make it easier for you to scroll back and
+forth among the different listings and figures while you are reading about
+them.
+<p><b><font color="#FF0000">Supplementary material</font></b>
+<p>I recommend that you also study the other lessons in my extensive collection
+of online Java tutorials.&nbsp; You will find those lessons published at
+<a href="http://softwaredev.earthweb.com/java">Gamelan.com</a>.&nbsp;
+However, as of the date of this writing, Gamelan doesn't maintain a consolidated
+index of my Java tutorial lessons, and sometimes they are difficult to
+locate there.&nbsp; You will find a consolidated index at <font color="#000000">
+<a href="http://www.DickBaldwin.com">www.DickBaldwin.com</a>.</font>
+<p><b><font color="#FF0000">What is a FileChannel?</font></b>
+<p>Sun describes an object of the <b>FileChannel</b> class simply as <i>"A
+channel for reading, writing, mapping, and manipulating a file."</i><center>
+<h2>
+<a NAME="Discussion and Sample Programs"></a><font color="#000000">Discussion
+and Sample Code</font></h2></center>
+
+<p><font color="#FF0000"><b>Mapping files into memory</b></font><p>Previous lessons have explained the use of <b>FileChannel </b>objects 
+for reading and writing files.&nbsp; In this lesson, I will show you how to use <b>FileChannel</b> objects for
+mapping files into memory.&nbsp;
+<p>Once you map a file into memory, changes that you make to the memory map are 
+automatically <a href="http://java.sun.com/j2se/1.4/docs/api/index.html">
+propagated</a> to the file.<p>
+<font color="#FF0000"><b>Will discuss sample program in fragments</b></font><p>
+I will illustrate memory-mapped IO for data of type <b>byte </b>using<b> </b>the sample program named <b>
+Channel04</b>.&nbsp; 
+As usual, I will discuss this program in fragments.&nbsp; You will find a complete listing 
+of the program in Listing 17 near the end of the lesson.<p>
+<font color="#FF0000"><b>Description of the program</b></font><p>This program, 
+which was tested using JDK 1.4.0 under Win2000, illustrates the use of <b>FileChannel</b> objects for 
+memory-mapped IO.<p>The program first creates and populates a disk file with data of type
+<b>byte</b>, closes all connections between the program and the file, and makes 
+all references to the data eligible for garbage collection.<p>Then the program creates a memory map of the existing file, 
+closes the channel used to create the map, and displays the contents of the map.<p>Then the program modifies the map, which automatically modifies the contents of the 
+associated file.&nbsp; <i>(Note that there is no open channel connecting the 
+file to the program at this point.)</i><p>Then 
+the program reads and displays the modified file.<p>The above steps illustrate 
+the basic capability of memory-mapped IO.<p><font color="#FF0000"><b>Create a 
+partial read-only map</b></font><p>To illustrate some additional capabilities of 
+memory-mapped IO, the program then creates a <i>read-only</i> map of 
+a <i>portion</i> of the modified file and displays it.<p><font color="#FF0000">
+<b>The main method</b></font><p>For simplicity, this 
+program consists of a <b>main</b> method and a  static convenience 
+method used to display  the data in a <b>ByteBuffer</b> object.<p>
+The first fragment in Listing 1 shows the beginning of the <b>main</b> method.</p><table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>  public static void main(
+                        String[] args){
+    byte[] array = {65,66,67,68,69,70};
+    
+    ByteBuffer buf = 
+                ByteBuffer.<b>wrap</b>(array);
+
+<b><font face="Courier New,Courier">Listing 1</font></b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>The <i>wrap</i> method</b></font></p>
+<p>In an earlier lesson, you learned that one way to create and populate a <b>
+ByteBuffer</b> object is to invoke the static <b>wrap </b>method of the <b>
+ByteBuffer</b> class to wrap the buffer object around an existing array object 
+of type <b>byte[]</b>.&nbsp; <i>(I will show you a different way to create a <b>
+ByteBuffer</b> object later in this lesson.)</i></p>
+<p>The code in Listing 1 performs such a wrapping operation to create a new <b>
+ByteBuffer</b> object, which is populated with six sequential <b>byte</b> values 
+from 65 through 70 inclusive.&nbsp; This will be the starting point for the 
+exercises that follow.</p>
+<p><font color="#FF0000"><b>Display the data in the buffer</b></font></p>
+<p>The code in Listing 2 invokes the <b>showBufferData</b> method to display the 
+contents of the buffer.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>    showBufferData(buf,"buf-raw data");
+
+<b><font face="Courier New,Courier">Listing 2</font></b></pre>
+</td>
+</tr>
+</table>
+<p>The <b>showBufferData</b> method was explained in an earlier lesson, and 
+won't be discussed further here.&nbsp; You can view the entire method in Listing 
+17 near the end of the lesson.</p>
+<p><font color="#FF0000"><b>The output</b></font></p>
+<p>The output produced by Listing 2 is shown in Figure 1.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Data for buf-raw data
+65 66 67 68 69 70
+
+<b>Figure 1</b></pre>
+</td>
+</tr>
+</table>
+<p>This output simply confirms that the contents of the <b>ByteBuffer</b> object are the same as 
+the contents of the original array object.</p>
+<blockquote>
+<p><i>(You also learned in an earlier lesson that changes made to the array 
+object will be reflected in the buffer and vice versa.&nbsp; In other words, I 
+can't tell you how this process is handled in physical memory, but the effect is 
+as if the array object and the buffer object contain the same data.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Getting a FileChannel object</b></font><p>You can get a <b>FileChannel</b> object that
+is connected to an underlying file by invoking the <b>getChannel</b> method
+on an existing <b>FileInputStream</b>, <b>FileOutputStream</b>, or <b>RandomAccessFile</b>
+object.
+<p>A <b>FileChannel</b> object obtained from a <b>FileInputStream</b> object
+will be open for reading, but not for writing.&nbsp; A <b>FileChannel</b>
+object obtained from a <b>FileOutputStream</b> object will be open for
+writing, but not for reading.
+<p>A <b>FileChannel</b> object obtained from a <b>RandomAccessFile</b>
+object will be open for reading if the <b>RandomAccessFile</b> object was created in the <b>"r"</b>
+mode, and will be open for reading and writing if the object was created
+in the <b>"rw"</b> mode.</p>
+<blockquote>
+<p><i>(Note that creating a <b>RandomAccessFile</b> object in <b>rw</b> mode for 
+a particular file name does not delete an existing file having that name if such 
+a file already exists.)</i></p>
+</blockquote>
+<p><b><font color="#FF0000">Open channel for reading and writing</font></b> </p>
+<p>The code in Listing 3 begins by deleting a file named <b>junk.txt</b> if such 
+a file already exists.</p>
+<p>Then the code in Listing 3 invokes the <b>getChannel</b> method on an 
+anonymous <b>
+RandomAccessFile</b> object's reference  to get a <b>FileChannel</b> 
+object that can read from and write to a new physical file named <b>junk.txt</b>.</p><table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      new File("junk.txt").delete();
+
+      FileChannel rwCh = (
+                  new RandomAccessFile(
+                     "junk.txt","rw")).
+                          <b>getChannel</b>();
+
+<b><font face="Courier New,Courier">Listing 3</font></b></pre>
+</td>
+</tr>
+</table>
+<p>The <b>FileChannel</b> object's reference is stored in the reference variable 
+named <b>rwCh</b>.</p>
+<blockquote>
+<p><i>(At this point, the file is empty, with a size of zero.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Populate the physical disk file</b></font></p>
+<p>The code in Listing 4 writes the contents of the <b>ByteBuffer</b> object to 
+the physical file.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      System.out.println(
+                   "Bytes written = " 
+                   + rwCh.<b>write</b>(buf));
+
+<b><font face="Courier New,Courier">Listing 4</font></b></pre>
+</td>
+</tr>
+</table>
+<p>As you learned in a previous lesson, the <b>write</b> method of the <b>
+FileChannel</b> class returns the number of bytes written to the file.&nbsp; The 
+code in Listing 4 displays this value as shown in Figure 2.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Bytes written = 6
+
+<b>Figure 2</b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>Disconnect from the file</b></font></p>
+<p>At this point, for purposes of illustration, I elected to close the <b>
+FileChannel</b> object so that it can no longer be used to access the file.</p>
+<p>I also elected to 
+make the original <b>ByteBuffer</b> object and the original array object eligible for garbage collection so that their data is no longer accessible.</p>
+<p>Following the execution of the code in Listing 5, the data is available only via the file named
+<b>junk.txt</b>.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      rwCh.close();
+      buf = null;
+      array = null;
+
+<b><font face="Courier New,Courier">Listing 5</font></b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>Get a new FileChannel object</b></font></p>
+<p>The code in Listing 6 gets a new <b>FileChannel</b> object for reading and 
+writing the existing file named <b>junk.txt</b>.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      rwCh = new RandomAccessFile(
+                      "junk.txt","rw").
+                          <b>getChannel</b>();
+
+<b><font face="Courier New,Courier">Listing 6</font></b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>Map the file into memory</b></font></p>
+<p>Now we've gotten to the interesting part.&nbsp; The code in Listing 7 invokes 
+the <b>map </b>method of the <b>FileChannel </b>class to <i>map</i> the entire 
+file named <b>junk.txt</b> into a memory area as a <b>ByteBuffer </b>object.&nbsp; 
+Then the code in Listing 7 closes the <b>FileChannel</b> object.&nbsp; </p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      long fileSize = rwCh.<b>size</b>();
+
+      ByteBuffer mapFile = rwCh.<b>map</b>(
+        FileChannel.MapMode.READ_WRITE,
+                          0, fileSize);
+      <b>rwCh.close</b>();
+
+<b><font face="Courier New,Courier">Listing 7</font></b></pre>
+</td>
+</tr>
+</table>
+<blockquote>
+<p><i>(Despite the fact that the channel has been closed, the data in the file 
+continues to be available via the memory map, as will be demonstrated later.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>A more-detailed discussion</b></font></p>
+<p>The code in Listing 7 is very important, and I don't want to pass over it 
+lightly.</p>
+<p>Listing 7 begins by invoking the <b>size</b> method on the <b>FileChannel</b> 
+object's reference.&nbsp; The <b>size</b> method returns the current size of the 
+channel's file <i>(<b>junk.txt</b>),</i> measured in bytes and returned as type
+<b>long</b>.</p>
+<blockquote>
+<p><i>(At this point, the size of the file is six bytes.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Invoking the <i>map</i> method</b></font></p>
+<p>Then the code in Listing 7 uses this size value to invoke the <b>map</b> 
+method on the <b>FileChannel</b> object's reference.</p>
+<p>The<b> map </b>method deserves some additional discussion.&nbsp;  </p>
+<p><font color="#FF0000"><b>The MappedByteBuffer class</b></font></p>
+<p>To begin with, the<b> map </b>method returns a reference to an object of the <b>MappedByteBuffer</b> 
+class, which I haven't discussed prior to this point in this series of tutorials.&nbsp; Therefore, I will begin by 
+explaining the characteristics of a <b>MappedByteBuffer</b> object.</p>
+<p>A <b>MappedByteBuffer</b> object
+extends <b>ByteBuffer</b>, and is a direct byte buffer whose content is a memory-mapped region of a file.</p>
+<p><font color="#FF0000"><b>Created via the map factory method</b></font></p>
+<p>As you saw in Listing 7, mapped byte buffer objects are created via the<b> map</b> 
+method of the<b> </b><b>FileChannel </b>class.&nbsp;  </p>
+<p>The<b> MappedByteBuffer </b>class 
+extends the <b>ByteBuffer</b> class, providing operations
+that are specific to memory-mapped file regions.&nbsp; Those operations are:</p>
+<ul>
+  <li><b>force</b> - Forces any changes made to this buffer's content to be 
+  written to the storage device containing the mapped file.</li>
+  <li><b>isLoaded</b> - Tells whether or not this buffer's content is resident 
+  in physical memory.</li>
+  <li><b>load</b> - Loads this buffer's content into physical memory.</li>
+</ul>
+<p><font color="#FF0000"><b>Valid until garbage collected</b></font></p>
+<p>A <b>MappedByteBuffer </b>object and the file mapping that it represents remains valid until 
+the buffer itself is garbage-collected. </p>
+<p><font color="#FF0000"><b>Contents can change or become inaccessible</b></font></p>
+<p>The contents of a <b>MappedByteBuffer </b>object<b> </b>can change at any time.&nbsp; 
+This can happen, for example, if the 
+content of the corresponding region of the mapped
+file is changed.</p>
+<blockquote>
+<p><i>(According to sun, whether or not such changes occur, 
+and when they occur, is operating-system dependent
+and therefore unspecified.)</i> </p>
+</blockquote>
+<p>All or part of a mapped byte buffer may become inaccessible at any time.&nbsp; 
+This can happen, for 
+example, if the mapped file is truncated. </p>
+<p>An attempt to
+access an inaccessible region of a mapped byte buffer will not change the 
+buffer's contents and will cause an unspecified exception to
+be thrown either at the time of the access or at some later time. </p>
+<blockquote>
+<p><i>(According to Sun, it is 
+ 
+strongly recommended that appropriate precautions be
+taken to avoid the manipulation of a mapped file by this program, or by a 
+concurrently running program, except to read or write the
+file's content.)</i> </p>
+</blockquote>
+<p><font color="#FF0000"><b>Behavior similar to ByteBuffer object</b></font></p>
+<p>Otherwise, <b>MappedByteBuffer</b> objects behave no differently than ordinary direct byte 
+buffers. </p>
+<p>Therefore, most of what you have previously learned about manipulating <b>ByteBuffer</b> 
+objects, <i>(such as getting different views of a <b>ByteBuffer</b> object),</i> also 
+applies to <b>MappedByteBuffer </b>objects.</p>
+<p><font color="#FF0000"><b>The map method parameters</b></font></p>
+<p>As you saw in Listing 7, the <b>map</b> method of the <b>FileChannel</b> 
+class requires three parameters:</p>
+<ul>
+  <li>mode</li>
+  <li>position</li>
+  <li>size</li>
+</ul>
+<p>Using these parameters, the <b>map</b> method maps a region of the channel's 
+file directly into memory.</p>
+<p><font color="#FF0000"><b>Mapping modes</b></font></p>
+<p>A region of a file may be mapped into memory in one of three modes:</p>
+<ul>
+  <li>read-only</li>
+  <li>read/write</li>
+  <li>private</li>
+</ul>
+<p>If the file is mapped in <i>read-only </i>mode, any attempt to modify the contents 
+of the resulting buffer will cause an exception to be thrown.&nbsp; In this 
+case, the channel must have been opened for reading.</p>
+<p>In <i>read/write</i> mode, changes made to the contents of the buffer will be 
+propagated to the file.&nbsp; <i>(Note, however, that the changes may or may not be 
+visible to other programs that may have mapped the same file.)</i>&nbsp; In this 
+case, the channel must have been opened for both reading and writing.</p>
+<p>In <i>private</i> mode, changes made to the contents of the buffer will not be 
+propagated to the file.&nbsp; Similarly, in this case, the channel must have 
+been opened for both reading and writing.</p>
+<p><font color="#FF0000"><b>The position and size parameters of the map method</b></font></p>
+<p>The position parameter of the <b>map</b>&nbsp;method defines the starting 
+point in the file that is mapped into the buffer.&nbsp; </p>
+<p>The size property defines the number of bytes that will be mapped.</p>
+<blockquote>
+<p><i>(The combination of the position and size parameters can be used to define 
+a region of sequential bytes within the file that will be mapped into memory.&nbsp; 
+This will be illustrated later in the sample program.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Map the entire file into memory</b></font></p>
+<p>The invocation of the <b>map</b> method in Listing 7 causes the entire file 
+named <b>junk.txt</b> to be mapped in read/write mode into the <b>ByteBuffer</b> 
+object referred to by the reference variable named <b>mapFile</b>.</p>
+<blockquote>
+<p><i>(Since I had no plans to invoke any of the three methods defined in the
+<b>MappedByteBuffer</b> class, it was appropriate for me to save the reference 
+as type <b>ByteBuffer </b>instead of as type <b>MappedByteBuffer</b>.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>The position, limit, and capacity properties</b></font></p>
+<p>The <b>MappedByteBuffer</b> object returned by the <b>map</b> method will 
+have a <i>position</i> of zero.&nbsp; Its <i>limit</i> and <i>capacity</i> will be equal to the 
+value of the size parameter passed to the <b>map</b> method.</p>
+<p><font color="#FF0000"><b>Can close the FileChannel object</b></font></p>
+<p>Once a mapping is established, it is not dependent on the <b>FileChannel</b> 
+object that was used to create it.&nbsp; Closing the channel has no effect upon 
+the validity of the mapping.</p>
+<p><font color="#FF0000"><b>Mapping files is expensive</b></font></p>
+<p>According to Sun:</p>
+<blockquote>
+<p><i>&quot;For most operating systems, mapping a file into memory is more expensive 
+than reading or writing a few tens of kilobytes of data via the usual read and 
+write methods. From the standpoint of performance it is generally only worth 
+mapping relatively large files into memory.&quot;</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Display the memory map</b></font></p>
+<p>The code in Listing 8 displays the contents of the memory map.&nbsp; Note 
+that since the memory map is simply a <b>ByteBuffer</b> object, the same method 
+used earlier to display the contents of a <b>ByteBuffer</b> object can be used 
+to display the contents of the memory map.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      showBufferData(
+                    mapFile,"mapFile");
+
+<b><font face="Courier New,Courier">Listing 8</font></b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>The output</b></font></p>
+<p>The output produced by the code in Listing 8 is shown in Figure 3.&nbsp; 
+Happily, the data in the memory map matches the original data indicating that no 
+data corruption or modification has occurred to this point in the program.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Data for mapFile
+65 66 67 68 69 70
+
+<b>Figure 3</b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>Modify values in the memory map</b></font></p>
+<p>The code in Listing 9 purposely modifies the contents of the memory map, 
+which in turn, modifies the contents of the disk file represented by the memory 
+map <i>(changes to the map propagate to the file).</i>&nbsp; </p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      mapFile.position(2);
+      mapFile.put((byte)1);
+      mapFile.put((byte)2);
+
+<b><font face="Courier New,Courier">Listing 9</font></b></pre>
+</td>
+</tr>
+</table>
+<blockquote>
+<p><i>(Note that the channel that was used to create the map was closed before the 
+modifications were made in Listing 9.&nbsp; As mentioned earlier, once the map 
+is established, the validity of the map is not dependent on the channel used to 
+establish the map.)</i></p>
+</blockquote>
+<p>The code in Listing 9 sets the position property of the map to a value of 2 
+and then executes two sequential relative put operations on the map.&nbsp; This 
+causes the values in the third and fourth elements in the map to be changed from 
+the values of 67 and 68 to the values of 1 and 2.</p>
+<p><font color="#FF0000"><b>Display the modified map</b></font></p>
+<p>The code in Listing 10 displays the contents of the modified memory map.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      showBufferData(
+                mapFile,"mod-mapFile");
+
+<b><font face="Courier New,Courier">Listing 10</font></b></pre>
+</td>
+</tr>
+</table>
+<p>This produces the output shown in Figure 4</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Data for mod-mapFile
+65 66 <b>1 2</b> 69 70
+
+<b>Figure 4</b></pre>
+</td>
+</tr>
+</table>
+<p>As you can see, the third and fourth values have been changed relative to 
+their original value <i>(boldface added for emphasis).</i></p>
+<blockquote>
+<p><i>(At the risk of being redundant, I am going to stress that making this change to 
+the values in the memory map causes the values in the associated disk file named
+<b>junk.txt</b> to change accordingly.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Confirm modifications to the file</b></font></p>
+<p>Now it's time to confirm that the modification of the values in the memory 
+map caused the values stored in the file to be changed accordingly.</p>
+<p>The code in Listing 11 gets a <b>FileChannel</b> object that can be used to 
+read the contents of the file named <b>junk.txt</b>.</p>
+<blockquote>
+  <p><i>(Note that the channel was opened in read-only mode.)</i></p>
+</blockquote>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      FileChannel newInCh = 
+                  new RandomAccessFile(
+                       "junk.txt","r").
+                          getChannel();
+
+<b><font face="Courier New,Courier">Listing 11</font></b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>Create a ByteBuffer object through allocation</b></font></p>
+<p>The code in Listing 12 invokes the <b>allocate</b> method of the <b>
+ByteBuffer </b>class to create a new <i>empty</i> <b>
+ByteBuffer</b> object.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      ByteBuffer newBuf = 
+                   ByteBuffer.<b>allocate</b>(
+                        (int)fileSize);
+
+<b><font face="Courier New,Courier">Listing 12</font></b></pre>
+</td>
+</tr>
+</table>
+<blockquote>
+<p><i>(What is an empty <b>ByteBuffer</b> object?&nbsp; Although I can't say for 
+absolute certain, I suspect that each byte in the new <b>ByteBuffer</b> object 
+will have a value of zero.&nbsp; I base this on the fact that the buffer will 
+have a backing array of type <b>byte[]</b>.&nbsp; Normally a new array object of 
+type <b>byte[]</b> will have each of its elements initialized to the default 
+value of zero (unless they are purposely initialized to some other value).&nbsp; 
+Thus, an allocated <b>ByteBuffer</b> object wraps a new array object, which has 
+default initialization of its elements.&nbsp; A reference to the backing array 
+can be obtained by invoking the <b>array</b> method on the <b>ByteBuffer</b> 
+object.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>An alternative approach</b></font></p>
+<p>The <b>allocate</b> method provides an alternative to the <b>wrap</b> method 
+for creating a new <b>ByteBuffer</b> object.&nbsp; In this case, the size of the
+<b>ByteBuffer</b> object was set to match the size of the file, which was 
+determined earlier in Listing 7.</p>
+<p><font color="#FF0000"><b>Populate the ByteBuffer object</b></font></p>
+<p>The code in Listing 13 uses the <b>read</b> method of the <b>FileChannel</b> 
+class to read the file contents into the new <b>ByteBuffer</b> object.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      System.out.println(
+               "Bytes read = " 
+               + newInCh.read(newBuf));
+
+      newInCh.close();
+
+<b><font face="Courier New,Courier">Listing 13</font></b></pre>
+</td>
+</tr>
+</table>
+<p>After reading the data from the file into the <b>ByteBuffer </b>object, the code in Listing 13 closes the <b>
+FileChannel</b> object.</p>
+<p><font color="#FF0000"><b>Display the data read from the file</b></font></p>
+<p>The code in Listing 14 invokes the <b>showBufferData</b> method again, this 
+time to display the data that was read from the disk file into the <b>ByteBuffer</b> 
+object.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      showBufferData(newBuf,"newBuf");
+
+<b><font face="Courier New,Courier">Listing 14</font></b></pre>
+</td>
+</tr>
+</table>
+<p>The output produced by the code in Listings 13 and 14 is shown in Figure 5 <i>
+(boldface added for emphasis).</i></p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Bytes read = 6
+Data for newBuf
+65 66 <b>1 2</b> 69 70
+
+<b>Figure 5</b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>File data was modified</b></font></p>
+<p>As you can see, the third and fourth values in the disk file were modified 
+earlier when changes were made to those two values in the memory map.&nbsp; This 
+confirms that changes made to the memory map propagate to the disk file 
+represented by the map.</p>
+<p><font color="#FF0000"><b>Mapping a region of a file</b></font></p>
+<p>You can map an entire file, or a region within a file into a memory map.&nbsp;
+</p>
+<p>The code in Listing 15 gets a new read-only <b>FileChannel</b> object, and 
+uses it to map a region of the same file named <b>junk.txt</b> into a new 
+read-only <b>ByteBuffer</b> object.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      FileChannel rCh = 
+                  new RandomAccessFile(
+                       "junk.txt","r").
+                          getChannel();
+
+      ByteBuffer roMapFile = rCh.map(
+         FileChannel.MapMode.READ_ONLY,
+                        1, fileSize-2);
+      rCh.close();
+
+<b><font face="Courier New,Courier">Listing 15</font></b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>The definition of the region</b></font></p>
+<p>The selected region begins at a position value of 1 and includes a number of 
+bytes that is two less than the number of bytes in the file.</p>
+<blockquote>
+<p><i>(Thus, the region includes all but the first and last bytes in the file.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Close the channel</b></font></p>
+<p>Having mapped the file into memory, the code in Listing 15 closes the <b>
+FileChannel</b> object used to perform the mapping operation.</p>
+<p><font color="#FF0000"><b>Display partial memory map</b></font></p>
+<p>The code in Listing 16 displays the contents of the partial memory map.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      showBufferData(roMapFile,
+                          "roMapFile");
+
+<b><font face="Courier New,Courier">Listing 16</font></b></pre>
+</td>
+</tr>
+</table>
+<p>The output produced by the code in Listing 16 is shown in Figure 6.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Data for roMapFile
+66 1 2 69
+
+<b>Figure 6</b></pre>
+</td>
+</tr>
+</table>
+<p>As you can see, only four of the six bytes in the file were mapped into the 
+memory map.&nbsp; <i>(The first and last bytes in the file were excluded.)</i></p>
+<p><font color="#FF0000"><b>A read-only map</b></font></p>
+<p>If this were a read/write memory map, it would be possible to modify any of 
+those four values in the map and have the changes propagate to  the file.</p>
+<p>However, this is a read-only map.&nbsp; Therefore, any attempt to modify any 
+of the values in the map will cause a <b>ReadOnlyBufferException</b> to be 
+thrown.</p>
+
+<p><b><font color="#FF0000">That's it for now</font></b>
+<p>By now you should understand a quite a lot about the use of<b> FileChannel</b> 
+objects to create and manipulate memory maps of disk files.<center>
+<h2>
+<a NAME="Run the program"></a>Run the Program</h2></center>
+If you haven't already done so, I encourage you to copy the code from Listing
+17 into your text editor, compile it, and execute it.&nbsp; Experiment
+with it, making changes, and observing the results of your changes.
+<p>Remember, however, that you must be running Java version 1.4.0 or later
+to compile and execute this program.
+<h2 align="center"><a name="Summary">Summary</a></h2>
+<p>In this lesson, I have taught you how to use the <b>FileChannel</b> class along with the <b>
+ByteBuffer</b> class to perform <i>memory-mapped</i> IO for data of type <b>byte</b>.&nbsp; 
+This is an alternative to the <i>read/write</i> approach discussed in previous 
+lessons.<p>
+This lesson teaches the basics of memory-mapped IO using data of type <b>
+byte</b>.<h2 align="center"><a name="Whats Next">What's Next?</a></h2>
+<p>In the next lesson, I will teach you how to do memory-mapped IO for data 
+records containing mixed types of data.&nbsp; I will also teach you how to do 
+memory-mapped IO for different data types using different <i>views</i> of the data in 
+a buffer.<p><b><font color="#FF0000">Future plans</font></b>
+<p>As time goes on, I plan to publish additional lessons that will help
+you learn to use other new IO features including:
+<ul>
+<li>
+File locks</li>
+
+<li>
+Character-set encoders and decoders</li>
+
+<li>
+Pattern matching on files using regular expressions</li>
+
+<li>
+Socket channels for both clients and servers</li>
+
+<li>
+Non-blocking reads</li>
+
+<li>
+Non-blocking servers</li>
+</ul>
+<center>
+<h2>
+<a NAME="Complete Program Listings"></a>Complete Program Listing</h2></center>
+A complete listing of the program discussed in this lesson is shown in
+Listing 17 below.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>/* File Channel04.java
+Copyright 2002, R.G.Baldwin
+
+Illustrates use of FileChannel objects
+for mapped-memory IO.
+
+First creates and populates a disk
+file with data of type byte.
+
+Then creates a memory map of the
+existing file, and modifies the map, 
+which modifies the contents of the 
+file.
+
+Then reads and displays the modified
+file.
+
+Then creates a read-only map of part of
+the modified file and displays it.
+
+Tested using JDK 1.4.0 under Win2000
+
+The output is:
+
+Data for buf-raw data
+65 66 67 68 69 70
+Bytes written = 6
+Data for mapFile
+65 66 67 68 69 70
+Data for mod-mapFile
+65 66 1 2 69 70
+Read/display modified file
+Bytes read = 6
+Data for newBuf
+65 66 1 2 69 70
+Data for roMapFile
+66 1 2 69
+**************************************/
+
+import java.io.*;
+import java.nio.channels.*;
+import java.nio.*;
+
+class Channel04{  
+  public static void main(
+                        String[] args){
+    //Create and populate an array obj
+    byte[] array = {65,66,67,68,69,70};
+    
+    //Wrap array in a buffer to create
+    // a ByteBuffer object.  Then 
+    // display the contents of the
+    // buffer.
+    ByteBuffer buf = 
+                ByteBuffer.wrap(array);
+    showBufferData(buf,"buf-raw data");
+        
+    try{
+      //Delete the file named junk.txt
+      // if it already exists
+      new File("junk.txt").delete();
+      //Get a channel for writing a
+      // random access file in rw
+      // mode.
+      FileChannel rwCh = (
+                  new RandomAccessFile(
+                     "junk.txt","rw")).
+                          getChannel();
+                          
+      //Write buffer data to the file
+      System.out.println(
+                   "Bytes written = " 
+                   + rwCh.write(buf));
+                   
+      //Close the channel so that it
+      // can no longer be used to 
+      // access the file.
+      rwCh.close();
+                   
+      //Make original ByteBuffer object
+      // and original array object
+      // eligible for garbage 
+      // collection so that their data
+      // is no longer accessible.  The
+      // data is now available only
+      // via the file named junk.txt.
+      buf = null;
+      array = null;
+      
+      //Get a new FileChannel object
+      // for reading and writing the 
+      // existing file
+      rwCh = new RandomAccessFile(
+                      "junk.txt","rw").
+                          getChannel();
+
+      //Map entire file to memory and
+      // close the channel
+      long fileSize = rwCh.size();
+      ByteBuffer mapFile = rwCh.map(
+        FileChannel.MapMode.READ_WRITE,
+                          0, fileSize);
+      rwCh.close();
+      
+      //Display contents of memory map
+      showBufferData(
+                    mapFile,"mapFile");
+      //Change contents of the map and
+      // hence the file.  Note that
+      // the channel is closed.
+      mapFile.position(2);
+      mapFile.put((byte)1);
+      mapFile.put((byte)2);
+      
+      //Display new contents of memory
+      // map
+      showBufferData(
+                mapFile,"mod-mapFile");
+
+      System.out.println(
+         "Read/display modified file");
+      //Get new channel for read only
+      FileChannel newInCh = 
+                  new RandomAccessFile(
+                       "junk.txt","r").
+                          getChannel();
+                          
+      //Allocate (don't wrap) a new
+      // ByteBuffer
+      ByteBuffer newBuf = 
+                   ByteBuffer.allocate(
+                        (int)fileSize);
+
+      //Read file data into the new
+      // buffer, close the channel, and
+      // display the data.
+      System.out.println(
+               "Bytes read = " 
+               + newInCh.read(newBuf));
+      newInCh.close();
+      showBufferData(newBuf,"newBuf");
+      
+      //Get new read-only partial
+      // mapping for file and display
+      FileChannel rCh = 
+                  new RandomAccessFile(
+                       "junk.txt","r").
+                          getChannel();
+      ByteBuffer roMapFile = rCh.map(
+         FileChannel.MapMode.READ_ONLY,
+                        1, fileSize-2);
+      rCh.close();
+      showBufferData(roMapFile,
+                          "roMapFile");
+      
+      //Following put throws java.nio.
+      // ReadOnlyBufferException, so
+      // it is disabled.
+      roMapFile.position(2);
+      //roMapFile.put((byte)88);
+      
+    }catch(Exception e){
+      System.out.println(e);}
+  }// end main
+  //---------------------------------//
+  
+  static void showBufferData(
+          ByteBuffer buf, String name){
+    //Displays byte buffer contents
+    
+    //Save position
+    int pos = buf.position();
+    //Set position to zero
+    buf.position(0);
+    System.out.println(
+            "Data for " + name);
+    while(buf.hasRemaining()){
+      System.out.print(
+                      buf.get() + " ");
+    }//end while loop
+    System.out.println();//new line
+    //Restore position and return
+    buf.position(pos);
+  }//end showBufferData
+  //---------------------------------//
+}//end class Channel04 definition
+
+<b><font face="Courier New,Courier">Listing 17</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>
+<hr size=3 width="100%" align=center>
+<p>Copyright 2002, Richard G. Baldwin.&nbsp; Reproduction in whole or in
+part in any form or medium without express written permission from Richard
+Baldwin is prohibited.
+<h4>
+<a NAME="About the author"></a>About the author</h4>
+<b><a href="mailto:Baldwin@DickBaldwin.com">Richard Baldwin</a></b><i>
+is a college professor (at Austin Community College in Austin, TX) and
+private consultant whose primary focus is a combination of Java, C#, and
+XML. In addition to the many platform and/or language independent benefits
+of Java and C# applications, he believes that a combination of Java, C#,
+and XML will become the primary driving force in the delivery of structured
+information on the Web.</i>
+<p><i>Richard has participated in numerous consulting projects, and he
+frequently provides onsite training at the high-tech companies located
+in and around Austin, Texas.&nbsp; He is the author of Baldwin's Programming
+<a href="http://www.DickBaldwin.com">Tutorials</a>,
+which has gained a worldwide following among experienced and aspiring programmers.
+He has also published articles in JavaPro magazine.</i>
+<p><i>Richard holds an MSEE degree from Southern Methodist University and
+has many years of experience in the application of computer technology
+to real-world problems.</i>
+<p><i><a href="mailto:Baldwin@DickBaldwin.com">Baldwin@DickBaldwin.com</a></i>
+<p>-end-
+<br>&nbsp;
+</body>
+</html>

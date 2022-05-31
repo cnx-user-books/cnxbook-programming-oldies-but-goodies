@@ -1,0 +1,846 @@
+<!doctype html public "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+   <meta name="GENERATOR" content="Microsoft FrontPage 5.0">
+   <title>... in Java by Richard G Baldwin</title>
+</head>
+<body link="#DD0000" vlink="#0000FF" alink="#FF0000" lang="EN-US">
+<h2>
+FileChannel Objects in Java, Records with Mixed Types</h2>
+<i>Baldwin shows you how to create records consisting of mixed primitive 
+types, how to manipulate those records under program control, and how to 
+transfer those records between the computer's memory and a physical disk file.</i><p><b>Published:</b>&nbsp; 
+November 19, 2002<br><b>By <a href="mailto:Baldwin@DickBaldwin.com">Richard G. Baldwin</a></b>
+<p>Java Programming Notes # 1792<ul >
+<li>
+<a href="#Preface">Preface</a></li>
+
+<li>
+<a href="#Discussion and Sample Programs">Discussion and Sample Code</a></li>
+
+<li>
+<a href="#Run the program">Run the Program</a></li>
+
+<li>
+<a href="#Summary">Summary</a></li>
+
+<li>
+<a href="#Whats Next">What's Next?</a></li>
+
+<li>
+<a href="#Complete Program Listings">Complete Program Listing</a></li>
+</ul>
+
+<hr size=3 width="100%" align=center>
+<center>
+<h2>
+<a NAME="Preface"></a>Preface</h2></center>
+<p>
+<b><font color="#FF0000">New features in SDK Version 1.4.0</font></b> </p>
+<p>The recently released Java<sup>TM</sup> 2 SDK, Standard Edition Version 1.4 contains a 
+large number of new features, including the concept
+of  IO <i>channels.&nbsp; </i>The first lesson in this miniseries, entitled
+<a href="http://softwaredev.earthweb.com/java/article/0,,12082_1473151,00.html">
+FileChannel Objects in Java, Background Information</a>, introduced you to the concept of channels 
+from a read/write IO viewpoint.&nbsp; 
+<p><font color="#FF0000"><b>Mixed primitive types</b></font></p>
+<p>The previous lesson, entitled
+<a href="http://softwaredev.earthweb.com/java/article/0,,12082_1481941,00.html">
+FileChannel Objects in Java, ByteBuffer Type</a>, showed you how to use view 
+objects to read and write different primitive types into disk files, where all 
+of the data was of the same type.</p>
+<p>In this lesson, I will show you how to use the <b>FileChannel</b> class along 
+with the <b>ByteBuffer</b> class to:</p>
+<ul>
+  <li>Create records consisting of sequences of data values of mixed primitive 
+  types</li>
+  <li>Manipulate those records under program control</li>
+  <li>Transfer those records between the computer's memory and a physical disk 
+  file</li>
+</ul>
+<p><b><font color="#FF0000">Memory-mapped IO</font></b><p>Future lessons will teach you how to do <i>memory-mapped</i> IO using channels.<p>
+<b><font color="#FF0000">Viewing tip</font></b>
+<p>You may find it useful to open another copy of this lesson in a separate
+browser window.&nbsp; That will make it easier for you to scroll back and
+forth among the different listings and figures while you are reading about
+them.
+<p><b><font color="#FF0000">Supplementary material</font></b>
+<p>I recommend that you also study the other lessons in my extensive collection
+of online Java tutorials.&nbsp; You will find those lessons published at
+<a href="http://softwaredev.earthweb.com/java">Gamelan.com</a>.&nbsp;
+However, as of the date of this writing, Gamelan doesn't maintain a consolidated
+index of my Java tutorial lessons, and sometimes they are difficult to
+locate there.&nbsp; You will find a consolidated index at <font color="#000000">
+<a href="http://www.DickBaldwin.com">www.DickBaldwin.com</a>.</font>
+<p><b><font color="#FF0000">What is a FileChannel?</font></b>
+<p>Sun describes an object of the <b>FileChannel</b> class simply as <i>"A
+channel for reading, writing, mapping, and manipulating a file."</i><center>
+<h2>
+<a NAME="Discussion and Sample Programs"></a><font color="#000000">Discussion
+and Sample Code</font></h2></center>
+<p>
+<font color="#FF0000"><b>Will discuss sample program in fragments</b></font><p>
+I will illustrate the <b>FileChannel</b> class using<b> </b>the sample program named <b>
+Channel03</b>.&nbsp; 
+As is my normal approach, I will discuss this program in fragments.&nbsp; You will find a complete listing 
+of the program in Listing 12 near the end of the lesson.<p>
+<font color="#FF0000"><b>Reading and writing records</b></font><p>This program, which 
+was tested using Java SDK version 1.4.0 under Win2000, illustrates the use of <b>
+FileChannel</b> objects to write, read, and manipulate records containing data of 
+mixed 
+primitive types.<p>The program writes and then reads 
+several data records where each record contains a <b>char</b>, a <b>byte</b>, and a
+<b>float</b>.</p>
+<p><font color="#FF0000"><b>Beginning is similar to previous programs</b></font><p>To keep things simple, the program consists of a <b>main</b> 
+method and several static convenience methods.&nbsp; The beginning of the <b>
+main</b> method is shown in Listing 1.<p>This program begins pretty much the 
+same as the program in the previous lesson.</p><table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>  public static void main(
+                        String[] args){
+ 
+    //Create a ByteBuffer with a 
+    // capacity of 56 bytes, and all
+    // elements initialized to zero.
+    ByteBuffer bBuf = 
+        ByteBuffer.wrap(new byte[56]);
+
+    //Declare varables for use later
+    FileOutputStream oStr;
+    FileInputStream iStr;
+    FileChannel fileChan;
+
+    try{
+      // Set ByteBuffer limit to 
+      // capacity
+      bBuf.limit(bBuf.capacity());
+
+<b><font face="Courier New,Courier">Listing 1</font></b></pre>
+</td>
+</tr>
+</table>
+<p>Because of the similarity of the code in Listing 1 to the code in the 
+previous lesson, I won't discuss this fragment on a step-by-step basis.&nbsp; 
+Rather, I will  let the comments in the code speak for themselves, and refer you 
+to the previous lesson if you have questions.</p>
+<p>The flow of this program departs from the flow of the program in the previous 
+lesson in Listing 2, so that is where I will begin my detailed discussion</p>
+<p><font color="#FF0000"><b>Create and store a record</b></font></p>
+<p>The code in Listing 2 creates a record consisting of three primitive values 
+and stores the record in the <b>ByteBuffer</b> object.&nbsp; The types of the 
+three values are <b>char</b>, <b>byte</b>, and <b>float</b> respectively.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      char cData = 'A';
+      byte bData = 14;
+      float fData = (float)1.0/3;
+      <b>putRecord</b>(
+               bBuf,cData,bData,fData);
+
+<b><font face="Courier New,Courier">Listing 2</font></b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>How does it work?</b></font></p>
+<p>After declaring and populating three variables of types <b>char</b>, <b>byte</b>, and 
+<b>float</b>, the code in Listing 2 invokes the method named <b>putRecord</b> to create 
+the record and store it in the <b>ByteBuffer</b> object.</p>
+<p><font color="#FF0000"><b>The putRecord method</b></font></p>
+<p>The method named <b>putRecord</b> is probably the most significant thing in 
+this lesson, so I will explain its behavior at this point in the discussion.&nbsp; 
+Following that explanation, I will return to the flow of control in the <b>main</b> 
+method.</p>
+<p>The entire method named <b>putRecord</b> is shown in Listing 3.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>  static void <b>putRecord</b>(
+                       ByteBuffer bBuf,
+                       char cData,
+                       byte bData,
+                       float fData){
+    bBuf.<b>putChar</b>(cData);
+    bBuf.<b>put</b>(bData);
+    bBuf.<b>putFloat</b>(fData);
+  }//end putRecord
+
+<b><font face="Courier New,Courier">Listing 3</font></b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>Incoming parameters of putRecord method</b></font></p>
+<p>The method named <b>putRecord</b> receives four incoming parameters.&nbsp; 
+The first parameter is a reference to a <b>ByteBuffer</b> object, which is the 
+object into which the record is to be stored.</p>
+<p>The following three parameters are the three primitive values that are to 
+make up the record.</p>
+<p><font color="#FF0000"><b>The <i>put</i> methods of the ByteBuffer class</b></font></p>
+<p>The record is created and stored in the buffer by successively invoking the 
+following three methods on the <b>ByteBuffer</b> object, passing one of the 
+three primitive values to each of the three methods.</p>
+<ul>
+  <li>putChar(char value)</li>
+  <li>put(byte value)</li>
+  <li>putFloat(float value)</li>
+</ul>
+<p><font color="#FF0000"><b>There are many different <i>put</i> methods</b></font></p>
+<p>As of version 1.4.0, there are about eighteen different methods in the <b>
+ByteBuffer</b> class that begin with the word <b>put</b>.&nbsp; As you might 
+guess, these methods are used to store data in a <b>ByteBuffer</b> object.</p>
+<p><font color="#FF0000"><b>The relative <i>put</i> methods</b></font></p>
+<p>There are two overloaded versions of the following method name:</p>
+<ul>
+  <li>putChar(char value)</li>
+  <li>putChar(int index, char value)</li>
+</ul>
+<p>The first of these is the method used in Listing 3 above, which takes a 
+single parameter.&nbsp; This version 
+can be described as follows:</p>
+<blockquote>
+<p><i>Relative <b>put</b> method for writing a <b>char</b> value.&nbsp; Writes 
+two bytes containing the given <b>char</b> value, in the current byte order, 
+into this buffer at the current position, and then increments the position by 
+two. The incoming parameter is the <b>char</b> value to be written.</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>The absolute <i>put</i> methods</b></font></p>
+<p>Although I didn't use it in this program, you may also be interested in  a 
+description of the other overloaded version of this method.&nbsp; This version 
+takes two parameters, where one parameter is a <b>char</b> value and the other 
+parameter is an index.</p>
+<blockquote>
+<p><i>Absolute <b>put</b> method for writing a <b>char</b> value.&nbsp; Writes 
+two bytes containing the given <b>char</b> value, in the current byte order, 
+into this buffer at the given index.&nbsp; The first parameter is the index at 
+which the bytes will be written.&nbsp; The second parameter is the <b>char</b> 
+value to be written.</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>The <i>put</i> methods for different primitive types</b></font></p>
+<p>Two overloaded versions, <i>(relative and absolute),</i> of the following seven method names are 
+provided by the <b>ByteBuffer</b> class <i>(additional overloaded versions of 
+the method named <b>put</b> are also provided for use with type <b>byte</b>):</i></p>
+<ul>
+  <li>put</li>
+  <li>putChar</li>
+  <li>putDouble</li>
+  <li>putFloat</li>
+  <li>putInt</li>
+  <li>putLong</li>
+  <li>putShort </li>
+</ul>
+<p><font color="#FF0000"><b>All primitive types other than boolean ...</b></font></p>
+<p>Thus, the <b>ByteBuffer</b> class makes it easy for you to store data of all 
+primitive types <i>(other than <b>boolean</b>)</i> in a <b>ByteBuffer</b> 
+object.&nbsp;  </p>
+<p>If you use the relative version of the <b>put...</b> method, the 
+value of the position property will be properly incremented for the type of data 
+being stored during each put operation.</p>
+<blockquote>
+<p><i>(If you mix data types in the buffer, you must be careful to make certain 
+that you retrieve them in the same order that you store them.&nbsp; Otherwise, 
+you will get the bytes scrambled among the different primitive values.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>The putRecord method stores three primitive types</b></font></p>
+<p>Each time the method named <b>putRecord </b>in Listing 3 is invoked, it 
+stores three primitive values <i>(in the order <b>char</b>, <b>byte</b>, and <b>
+float</b>)</i> into the <b>ByteBuffer</b> object.</p>
+<p><font color="#FF0000"><b>How many bytes are required for a record?</b></font></p>
+<p>The <b>char</b> type 
+requires two bytes.&nbsp; The <b>byte</b> type requires one byte, and the <b>
+float</b> type requires four bytes.&nbsp; Thus, each record, consisting of the 
+three values, requires seven bytes for storage.&nbsp; </p>
+<p>Therefore, each time the <b>putRecord</b> method in Listing 3 is invoked, the value of the 
+location property of the <b>ByteBuffer</b> object is advanced by seven bytes.&nbsp; </p>
+<p>Assuming that the location property has a value of zero at the beginning, 
+each group of seven bytes contains a record as defined in this program.</p>
+<p>Of course, you could define your records to contain any combination of 
+primitive types <i>(other than <b>boolean</b></i>) in any order, so your records 
+may have a different length.</p>
+<p><font color="#FF0000"><b>Now back to the flow in main ...</b></font></p>
+<p>Now that you understand the behavior of the <b>putRecord </b>method, 
+let's return to the flow of control in the <b>main</b> method.</p>
+<p><font color="#FF0000"><b>Create and store another record</b></font></p>
+<p>The code in Listing 4 simply creates another record and adds it to the <b>
+ByteBuffer</b> object.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      cData = 'B';
+      bData = 28;
+      fData = (float)2.0/3;
+      <b>putRecord</b>(
+               bBuf,cData,bData,fData);
+
+<b><font face="Courier New,Courier">Listing 4</font></b></pre>
+</td>
+</tr>
+</table>
+<p>When the <b>putRecord</b> method returns from this second invocation, two 
+records, consisting of fourteen data bytes will have been stored in the <b>
+ByteBuffer</b> object.</p>
+<p><font color="#FF0000"><b>Prepare properties for a disk write operation</b></font></p>
+<p>In preparation for writing these two records to a disk file, the code in 
+Listing 5 sets the <i>limit</i> property of the <b>ByteBuffer</b> object to the 
+current value of the <i>position</i> property, and then sets the value of the <i>
+position</i> property to zero.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      bBuf.limit(bBuf.position());
+      bBuf.position(0);
+
+<b><font face="Courier New,Courier">Listing 5</font></b></pre>
+</td>
+</tr>
+</table>
+<p>This has the effect of causing the data written to the disk file to start at 
+the beginning of the<b> ByteBuffer</b> object<b> </b>and to be limited to the 
+number of bytes stored in the <b>ByteBuffer</b> object.</p>
+<blockquote>
+<p><i>(This is as opposed to writing the entire ByteBuffer object to the disk 
+file based on its capacity.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Display the records</b></font></p>
+<p>The code in Listing 6 invokes the <b>showRecords</b> method to display the 
+records stored in the <b>ByteBuffer</b> object.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      <b>showRecords</b>(bBuf);
+
+<b><font face="Courier New,Courier">Listing 6</font></b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>The showRecords method</b></font></p>
+<p>At this point, I will depart from the <b>main</b> method and explain the 
+behavior of the <b>showRecords</b> method, as shown in Listing 7.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>  static void <b>showRecords</b>(
+                      ByteBuffer bBuf){
+    
+    //Save position
+    int pos = bBuf.position();
+    //Set position to zero
+    bBuf.position(0);
+    System.out.println(
+                   "Records");
+
+<b>    while(bBuf.hasRemaining()){
+      System.out.println(
+                bBuf.getChar() + " " + 
+                bBuf.get() + " " + 
+                bBuf.getFloat());
+    }//end while loop
+</b>
+    System.out.println();//new line
+    //Restore position and return
+    bBuf.position(pos);
+  }//end showRecords
+
+<b><font face="Courier New,Courier">Listing 7</font></b></pre>
+</td>
+</tr>
+</table>
+<p>If you understood the explanation of the relative <b>put</b> methods earlier, 
+the code in Listing 7 should be easy to understand.</p>
+<p><font color="#FF0000"><b>The iterative loop</b></font></p>
+<p>The code in Listing 7 that is new to this lesson is the boldface iterative 
+loop in the center of the listing.&nbsp; The code before and after the iterative 
+loop is the same as code that I have explained in previous lessons.</p>
+<p><font color="#FF0000"><b>The <i>get</i> methods of the ByteBuffer class</b></font></p>
+<p>As is the case with the <b>put</b> methods, the <b>ByteBuffer </b>class 
+provides the following methods for retrieving primitive data, by type, from a <b>ByteBuffer</b> 
+object:</p>
+<ul>
+  <li>get</li>
+  <li>getChar</li>
+  <li>getDouble</li>
+  <li>getFloat</li>
+  <li>getInt</li>
+  <li>getLong</li>
+  <li>getShort </li>
+</ul>
+<p><font color="#FF0000"><b>Relative and absolute versions of the <i>get</i> 
+methods</b></font></p>
+<p>As with the <b>put </b>methods, there is a <i>relative</i> version and an <i>
+absolute</i> version of each of these methods.&nbsp; For example, the relative 
+version of the <b>getChar()</b> method can be described as follows:</p>
+<blockquote>
+<p><i>Relative <b>get</b> method for reading a <b>char</b> value.&nbsp; Reads 
+the next two bytes at this buffer's current position, composing them into a <b>
+char</b> value according to the current byte order, and then increments the 
+position by two.&nbsp; Returns the <b>char</b> value at the buffer's current 
+position.</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Retrieving primitive data from a ByteBuffer object</b></font></p>
+<p>Thus, the <b>ByteBuffer</b> class makes it easy for you to retrieve data of 
+all primitive types <i>(other than <b>boolean</b>)</i> from a <b>ByteBuffer</b> 
+object.&nbsp;  </p>
+<p>If you use the relative version of the appropriate <b>get...</b> 
+method, the value of the position property will be properly incremented for the 
+type of data being retrieved during each get operation.</p>
+<blockquote>
+<p><i>(If you mix data types in the buffer, you must make certain that you 
+retrieve the primitive values in the same order that you store them.&nbsp; 
+Otherwise, you will get the bytes scrambled among the different primitive 
+values.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Output data</b></font></p>
+<p>Now that you understand the behavior of the <b>showRecords</b> method, I will 
+return to the flow of control in the <b>main</b> method.&nbsp; First however, I 
+need to tell you that the output produced by the invocation of the <b>
+showRecords </b>method at this point in the program is shown in Figure 1.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Records
+A 14 0.33333334
+B 28 0.6666667
+
+<b>Figure 1</b></pre>
+</td>
+</tr>
+</table>
+<p>Figure 1 displays one record on each line of output, where each record 
+consists of a <b>char</b>, a <b>byte</b>, and a <b>float</b>.&nbsp; <i>
+(Hopefully, this is what you expected each record to look like.)</i></p>
+<p><font color="#FF0000"><b>Get a FileChannel object for output</b></font></p>
+<p>Returning to the flow of control in the <b>main</b> method, Listing 8 uses 
+code similar to code that I have discussed in previous lessons to get a <b>
+FileChannel</b> object for output to a disk file named <b>junk.txt</b>.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      oStr = new FileOutputStream(
+                           "junk.txt");
+      fileChan = oStr.<b>getChannel</b>();
+
+<b><font face="Courier New,Courier">Listing 8</font></b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>Write the file and display the file size</b></font></p>
+<p>Similarly, Listing 9 uses code that I have explained in previous lessons to:</p>
+<ul>
+  <li>Write the data from the <b>ByteBuffer</b> to the disk file</li>
+  <li>Close the output stream and the <b>FileChannel</b> object</li>
+  <li>Display the number of bytes written to the file</li>
+  <li>Display the size of the disk file</li>
+</ul>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      System.out.println(
+               "Bytes written = " 
+               + fileChan.write(bBuf));
+      //Close stream and channel and
+      // display file size
+      System.out.println(
+                      "File length = " 
+                    + <b>fileChan.size()</b>);
+      oStr.close();
+      fileChan.close();
+
+<b><font face="Courier New,Courier">Listing 9</font></b></pre>
+</td>
+</tr>
+</table>
+<blockquote>
+<p><i>(In the programs in previous lessons, I used a <b>File</b> object to get 
+an independent report on the size of the file.&nbsp; In this program, I used the
+<b>size() </b>method of the <b>FileChannel</b> class to get the size of the 
+file.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>The file size output</b></font></p>
+<p>The code in Listing 9 produces the output shown in Figure 2.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Bytes written = 14
+File length = 14
+
+<b>Figure 2</b></pre>
+</td>
+</tr>
+</table>
+<p>Figure 2 shows the number of bytes that we would expect to be written based 
+on our previous analysis of the number of bytes required to store each of the 
+two records. </p>
+<p><font color="#FF0000"><b>Clear the buffer and display its contents</b></font></p>
+<p>The code in Listing 10 sets the value of each byte in the <b>ByteBuffer</b> 
+object to zero, and then displays the <b>ByteBuffer</b> object in terms of 
+records.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      clearByteBufferData(bBuf,"bBuf");
+
+      showRecords(bBuf);
+
+<b><font face="Courier New,Courier">Listing 10</font></b></pre>
+</td>
+</tr>
+</table>
+<p>The code in Listing 10 produces the output shown in Figure 3.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Clear bBuf
+Records
+  0 0.0
+  0 0.0
+
+<b>Figure 3</b></pre>
+</td>
+</tr>
+</table>
+<blockquote>
+<p><i>(There is a space at the beginning of each record because a <b>char</b> value of zero doesn't represent a printable character.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Read the file and display the data</b></font></p>
+<p>The code in Listing 11:</p>
+<ul>
+  <li>Gets a<b> FileChannel</b> object for input for the disk file named<b> 
+  junk.txt </b></li>
+  <li>Reads the data from the disk file into the <b>ByteBuffer</b> object</li>
+  <li>Closes the input stream and the <b>FileChannel</b> object</li>
+  <li>Displays the number of bytes read, along with the size of the disk file</li>
+  <li>Displays the records read into the <b>ByteBuffer</b> object</li>
+</ul>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      //Get FileChannel for input
+      iStr = new FileInputStream(
+                           "junk.txt");
+      fileChan = iStr.getChannel();
+
+      //Read data from disk file into
+      // ByteBuffer.  Then display 
+      // records in the ByteBuffer
+      System.out.println(
+                "Bytes read = " 
+                + fileChan.read(bBuf));
+      //Close stream and channel and
+      // display file size
+      System.out.println(
+                      "File length = " 
+                    + fileChan.size());
+      iStr.close();
+      fileChan.close();
+      
+      //Display records
+      <b>showRecords</b>(bBuf);
+
+<b><font face="Courier New,Courier">Listing 11</font></b></pre>
+</td>
+</tr>
+</table>
+<p>The output produced by the code in Listing 11 is shown in Figure 4.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Bytes read = 14
+File length = 14
+Records
+A 14 0.33333334
+B 28 0.6666667
+
+<b>Figure 4</b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>Recap</b></font></p>
+<p>To recap, this program:</p>
+<ul>
+  <li>Creates a <b>ByteBuffer</b> object</li>
+  <li>Creates two data records each consisting of a <b>char</b> value, a <b>byte</b> 
+  value, and a <b>float</b> value and stores the two records in the <b>
+  ByteBuffer</b> object</li>
+  <li>Uses a <b>FileChannel </b>object to write the records in the <b>ByteBuffer</b> 
+  object to a disk file</li>
+  <li>Clears the <b>ByteBuffer</b> object</li>
+  <li>Uses a <b>FileChannel </b>object to read the records from the disk file 
+  back into the <b>ByteBuffer</b> object</li>
+  <li>Displays the two records in the <b>ByteBuffer</b> object</li>
+</ul>
+<p>Happily, the output shown in Figure 4 matches the original contents of the 
+two records, confirming that there was no data corruption during the round trip.</p>
+
+<p><b><font color="#FF0000">That's it for now</font></b>
+<p>By now you should understand a quite a lot about the use of the<b> 
+FileChannel </b>class and the <b>ByteBuffer</b> class to create records 
+containing mixed primitive types, to store those records in a disk file, and to 
+manipulate the records after reading them from the disk file.<center>
+<h2>
+<a NAME="Run the program"></a>Run the Program</h2></center>
+If you haven't already done so, I encourage you to copy the code from Listing
+12 into your text editor, compile it, and execute it.&nbsp; Experiment
+with it, making changes, and observing the results of your changes.
+<p>Remember, however, that you must be running Java version 1.4.0 or later
+to compile and execute this program.
+<h2 align="center"><a name="Summary">Summary</a></h2>
+<p>In this lesson, I have taught you how to use the <b>FileChannel</b> class 
+along with the <b>ByteBuffer</b> class to:</p>
+<ul>
+  <li>Create records consisting of sequences of data values of mixed primitive 
+  types</li>
+  <li>Manipulate those records under program control</li>
+  <li>Transfer those records between the computer's memory and a physical file</li>
+</ul>
+<h2 align="center"><a name="Whats Next">What's Next</a>?</h2>
+<p>In the next lesson, I will teach you how to use the <b>FileChannel</b> class 
+to perform memory-mapped IO.</p>
+<p><b><font color="#FF0000">Future plans</font></b>
+<p>As time goes on, I plan to publish additional lessons that will help
+you learn to use other new IO features including:
+<ul>
+<li>
+File locks</li>
+
+<li>
+Character-set encoders and decoders</li>
+
+<li>
+Pattern matching on files using regular expressions</li>
+
+<li>
+Socket channels for both clients and servers</li>
+
+<li>
+Non-blocking reads</li>
+
+<li>
+Non-blocking servers</li>
+</ul>
+<center>
+<h2>
+<a NAME="Complete Program Listings"></a>Complete Program Listing</h2></center>
+A complete listing of the program discussed in this lesson is shown in
+Listing 12 below.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>/* File Channel03.java
+Copyright 2002, R.G.Baldwin
+Revised 9/23/02
+
+Illustrates use of FileChannel objects
+to write and read data of different 
+types from a disk file.
+
+Writes and reads data where the
+ByteBuffer contains records of mixed
+types.  Each record contains a char,
+a byte, and a float.
+
+Tested using JDK 1.4.0 under Win2000
+
+The output is:
+
+Records
+A 14 0.33333334
+B 28 0.6666667
+
+Bytes written = 14
+File length = 14
+Clear bBuf
+Records
+  0 0.0
+  0 0.0
+
+Bytes read = 14
+File length = 14
+Records
+A 14 0.33333334
+B 28 0.6666667
+**************************************/
+
+import java.io.*;
+import java.nio.channels.*;
+import java.nio.*;
+
+class Channel03{
+  public static void main(
+                        String[] args){
+ 
+    //Create a ByteBuffer with a 
+    // capacity of 56 bytes, and all
+    // elements initialized to zero.
+    ByteBuffer bBuf = 
+        ByteBuffer.wrap(new byte[56]);
+
+    //Declare varables for use later
+    FileOutputStream oStr;
+    FileInputStream iStr;
+    FileChannel fileChan;
+
+    try{
+      // Set ByteBuffer limit to 
+      // capacity
+      bBuf.limit(bBuf.capacity());
+              
+      //Store two records of mixed data
+      // types in the ByteBuffer
+      char cData = 'A';
+      byte bData = 14;
+      float fData = (float)1.0/3;
+      putRecord(
+               bBuf,cData,bData,fData);
+      cData = 'B';
+      bData = 28;
+      fData = (float)2.0/3;
+      putRecord(
+               bBuf,cData,bData,fData);
+      
+      //Set limit to position and then
+      // set position to 0
+      bBuf.limit(bBuf.position());
+      bBuf.position(0);
+      
+      //Display records in ByteBuffer
+      showRecords(bBuf);
+    
+      //Get FileChannel for output
+      oStr = new FileOutputStream(
+                           "junk.txt");
+      fileChan = oStr.getChannel();
+
+      //Write output data from the
+      // ByteBuffer to the disk file.
+      System.out.println(
+               "Bytes written = " 
+               + fileChan.write(bBuf));
+      //Close stream and channel and
+      // display file size
+      System.out.println(
+                      "File length = " 
+                    + fileChan.size());
+      oStr.close();
+      fileChan.close();
+
+      //Clear the ByteBuffer
+      clearByteBufferData(bBuf,"bBuf");
+
+      //Display the ByteBuffer to 
+      // confirm that it has been
+      // cleared.
+      showRecords(bBuf);
+
+      //Get FileChannel for input
+      iStr = new FileInputStream(
+                           "junk.txt");
+      fileChan = iStr.getChannel();
+
+      //Read data from disk file into
+      // ByteBuffer.  Then display 
+      // records in the ByteBuffer
+      System.out.println(
+                "Bytes read = " 
+                + fileChan.read(bBuf));
+      //Close stream and channel and
+      // display file size
+      System.out.println(
+                      "File length = " 
+                    + fileChan.size());
+      iStr.close();
+      fileChan.close();
+      
+      //Display records
+      showRecords(bBuf);
+
+    }catch(Exception e){
+      System.out.println(e);}
+  }// end main
+
+  //---------------------------------//
+  
+  static void clearByteBufferData(
+          ByteBuffer buf, String name){
+    //Stores 0 in each element of a
+    // byte buffer.
+    
+    //Set position to zero
+    buf.position(0);
+    System.out.println(
+                      "Clear " + name);
+    while(buf.hasRemaining()){
+      buf.put((byte)0);
+    }//end while loop
+    //Set position to zero and return
+    buf.position(0);
+  }//end clearByteBufferData
+  //---------------------------------//
+  
+  static void putRecord(
+                       ByteBuffer bBuf,
+                       char cData,
+                       byte bData,
+                       float fData){
+    bBuf.putChar(cData);
+    bBuf.put(bData);
+    bBuf.putFloat(fData);
+  }//end putRecord
+  //---------------------------------//
+  static void showRecords(
+                      ByteBuffer bBuf){
+    
+    //Save position
+    int pos = bBuf.position();
+    //Set position to zero
+    bBuf.position(0);
+    System.out.println(
+                   "Records");
+    while(bBuf.hasRemaining()){
+      System.out.println(
+                bBuf.getChar() + " " + 
+                bBuf.get() + " " + 
+                bBuf.getFloat());
+    }//end while loop
+    System.out.println();//new line
+    //Restore position and return
+    bBuf.position(pos);
+  }//end showDoubleBufferData
+
+  //---------------------------------//
+}//end class Channel03 definition
+
+<b><font face="Courier New,Courier">Listing 12</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>
+<hr size=3 width="100%" align=center>
+<p>Copyright 2002, Richard G. Baldwin.&nbsp; Reproduction in whole or in
+part in any form or medium without express written permission from Richard
+Baldwin is prohibited.
+<h4>
+<a NAME="About the author"></a>About the author</h4>
+<b><a href="mailto:Baldwin@DickBaldwin.com">Richard Baldwin</a></b><i>
+is a college professor (at Austin Community College in Austin, TX) and
+private consultant whose primary focus is a combination of Java, C#, and
+XML. In addition to the many platform and/or language independent benefits
+of Java and C# applications, he believes that a combination of Java, C#,
+and XML will become the primary driving force in the delivery of structured
+information on the Web.</i>
+<p><i>Richard has participated in numerous consulting projects and he
+frequently provides onsite training at the high-tech companies located
+in and around Austin, Texas.&nbsp; He is the author of Baldwin's Programming
+<a href="http://www.DickBaldwin.com">Tutorials</a>,
+which has gained a worldwide following among experienced and aspiring programmers.
+He has also published articles in JavaPro magazine.</i>
+<p><i>Richard holds an MSEE degree from Southern Methodist University and
+has many years of experience in the application of computer technology
+to real-world problems.</i>
+<p><i><a href="mailto:Baldwin@DickBaldwin.com">Baldwin@DickBaldwin.com</a></i>
+<p>-end-
+<br>&nbsp;
+</body>
+</html>

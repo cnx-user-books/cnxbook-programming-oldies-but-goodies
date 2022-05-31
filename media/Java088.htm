@@ -1,0 +1,402 @@
+<html><head>
+   <meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
+   <meta name="generator" content="mozilla/4.04 [en] (win95; i) [netscape]">
+   <meta name="author" content="richard g. baldwin">
+   <title>... in Java by Richard G Baldwin</title></head><body><!--start-->
+
+<center><h3><b><i>Richard G Baldwin (512) 223-4758, <a href="mailto:baldwin@austin.cc.tx.us">baldwin@austin.cc.tx.us</a>,
+<a href="http://www2.austin.cc.tx.us/baldwin/">http://www2.austin.cc.tx.us/baldwin/</a></i></b></h3></center>
+
+<center><h2><b><!--title-->Event Handling in JDK 1.1, Building A Custom Focus-Traversal Method<!--endtitle--></b></h2></center>
+Java Programming, Lecture Notes # 88, Revised 02/21/98.
+<ul><li><a href="#preface">Preface</a></li>
+
+<li><a href="#introduction">Introduction</a></li>
+
+<li><a href="#overview">Overview</a></li>
+
+<li><a href="#the sample program">The Sample Program</a></li>
+
+<ul><li><a href="#discussion">Discussion</a></li>
+
+<ul><li><a href="#focus event processing">Focus Event Processing</a></li>
+
+<li><a href="#keyboard event processing">Keyboard Event Processing</a></li>
+
+<li><a href="#window event processing">Window Event Processing</a></li></ul>
+
+<li><a href="#program listing">Program Listing</a></li></ul>
+
+<li><a href="#review">Review</a></li></ul>
+
+<hr width="100%"><center><h2><a name="preface"></a><font color="#ff0000">Preface</font></h2></center>
+Students in Prof. Baldwin's <b><u>Intermediate Java Programming</u></b>
+classes at ACC are responsible for knowing and understanding all of the
+material in this lesson.
+
+<p>The material in this lesson is very important. However, there is simply
+too much material to be covered in detail during lecture periods. Therefore,
+students in Prof. Baldwin's <b>Intermediate Java Programming</b> classes
+at ACC will be responsible for studying this material on their own, and
+bringing any questions regarding the material to class for discussion.
+<center><h2><a name="introduction"></a><b><font color="#ff0000">Introduction</font></b></h2></center>
+This lesson is originally being written in February of 1997 using JDK 1.1,
+Beta 3.
+
+<p>Earlier lessons have discussed the <b>requestFocus(), focusGained()</b>
+and <b>focusLost()</b> events in the <i>Delegation Event Model</i> of JDK
+1.1.
+
+<p>This lesson will implement a practical application of event handling
+using these methods.
+<center><h2><a name="overview"></a><font color="#ff0000">Overview</font></h2></center>
+Typical Windows program that provide a Graphical User Interface allow the
+user to <u>move the focus</u> through a set of visual components <u>using
+the tab key</u>. Typically, the <u>shift-tab key</u> will move the focus
+through the same set of components in <u>reverse order</u>. We will refer
+to this process as <i>focus traversal</i>.
+
+<p>JDK 1.1 supports focus traversal with <u>no special effort</u> on the
+part of the programmer. The order in which the focus moves through the
+components is apparently determined by the <u>order in which the components
+are instantiated</u> and apparently <u>cannot be modified</u>. (Other GUI
+development environments are often more flexible in this regard.)
+
+<p>Also the standard focus-traversal scheme automatically <u>excludes some
+types of components</u> from gaining the focus (a label for example). If
+there is a way to force the system to shift the focus to these components,
+I haven't discovered it yet. However, skipping certain types of components,
+such as labels, is f<u>airly standard procedure</u> within the industry.
+
+<p>The chances are good that in most cases, you <u>will be satisfied</u>
+with the standard focus-traversal method. However, the thesis behind this
+lesson is that you <u>might not be satisfied</u> with the standard focus-traversal
+scheme, and might want to <u>implement your own</u> focus-traversal scheme
+using a different key.
+
+<p>Even if you never want to do this, it provides a good illustration of
+the use of certain aspects of the Delegation Event Model in JDK 1.1.
+
+<p>This lesson will use the material learned in earlier lessons to implement
+a custom focus-traversal capability where the <b>F12</b> and the <b>Shift-F12</b>
+key can be used to <u>move the focus</u> through a series of visual components.
+
+<p>In this lesson, we will also cause those components which are <u>normally
+skipped</u> by the standard focus-traversal method to <u>gain the focus</u>.
+
+<p>Also, the <u>order</u> in which the focus moves through the components
+will be <u>independent</u> of the order in which the components are instantiated
+and will be based solely on logical <u>decisions made at runtime</u>.
+
+<p>The program will be structured such that a modest additional programming
+effort would make it possible to <u>modify the order</u> that the focus
+moves through the components at runtime.
+
+<p>In an earlier lesson, we demonstrated that whenever a component has
+the focus (including components such as Labels and Frames) those components
+will respond to keyboard input. In order to keep this program simple, we
+have eliminated that capability from the program.
+
+<p>Also in an earlier lesson, we demonstrated how to use mouse clicks to
+cause the focus to be shifted to the component that receives the click.
+Again, for simplicity, we have removed that capability from the program.
+
+<p>Obviously these capabilities which have been eliminated could be restored
+with a modest programming effort.
+<center><h2><a name="the sample program"></a><font color="#ff0000">The Sample Program</font></h2></center>
+This section will present a discussion of the program followed by the program
+listing.
+<center><h3><a name="discussion"></a><font color="#ff0000">Discussion</font></h3></center>
+This program is fairly <u>long</u>, but it is also fairly <u>repetitive</u>
+which attests to the simplicity and consistency of the Delegation Event
+Model in JDK 1.1.
+
+<p>A <b>Button </b>object, a <b>TextField </b>object, and a <b>Label </b>object
+are placed in a <b>Frame </b>object.
+
+<p>Normally you cannot see the outline of a Label object, so its <u>background
+color is made <font color="#ffff00">yellow</font></u><font color="#ffff00"></font>so that it will show up in the <font color="#ffffff">white </font>expanse
+of the <b>Frame </b>object.
+<center><h4><a name="focus event processing"></a><font color="#ff0000">Focus Event
+Processing</font></h4></center>
+A <b>FocusListener </b>object is <u>instantiated and registered</u> to
+listen for <b>focusGained()</b> and <b>focusLost()</b> events on the <b>Frame
+</b>and the <b>Label</b>. When these events occur, the <b>FocusListener</b>
+object makes a <u>color change</u> on the <b>Frame </b>or the <b>Label
+</b>to provide a visual indication of focus gained or lost.
+
+<p>When the <b>Label </b>has the focus, its text is <font color="#ff0000">red</font>.
+Otherwise, its text is black.
+
+<p>When the <b>Frame </b>has the focus, its background color is <font color="#0000ff">blue</font>.
+Otherwise, it is <font color="#ffffff">white</font>.
+
+<p>Note that the <b>Button </b>and the <b>TextField </b>components automatically
+provide a visual indication of focus, and they automatically receive the
+focus when clicked on <u>without intervention by the programmer</u>.
+<center><h4><a name="keyboard event processing"></a><font color="#ff0000">Keyboard
+Event Processing</font></h4></center>
+A <b>KeyListener </b>object is instantiated and registered to listen for
+<b>keyPressed()</b> events on the <b>Frame</b>, <b>Label</b>, <b>Button</b>,
+and <b>TextField </b>objects.
+
+<p>Whenever a key is pressed, the <u>object currently holding the focus</u>
+generates a <b>keyPressed()</b> event, even if it is a type of object that
+we don't normally expect to respond to the keyboard (such as the <b>Label</b>).
+
+<p>If the <b>F12</b> or <b>Shift-F12</b> key is pressed, the <b>KeyListener
+</b>object implements a program-defined scheme to move the focus to the
+<i>next</i> or <i>previous </i>component in the sequence.
+
+<p>Unlike the standard focus-traversal method based on the Tab key, the
+determination of <i>next</i> and <i>previous</i> is independent of the
+order in which the components were instantiated.
+
+<p>Also unlike the standard focus-traversal method based on the Tab key,
+the <b>Label</b> and <b>Frame</b> components are included in the sequence.
+<center><h4><a name="window event processing"></a><font color="#ff0000">Window Event
+Processing</font></h4></center>
+Finally, a <b>WindowListener </b>object is instantiated and registered
+to terminate the program when the user closes the <b>Frame </b>object.
+We have used this type of event processing in previous lessons so there
+is nothing new here.
+<center><h3><a name="program listing"></a><font color="#ff0000">Program Listing</font></h3></center>
+A listing of the program with additional comments follows:
+<br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td><pre>/*File Event16.java Copyright 1997, R.G.Baldwin
+This program is designed to be compiled and run under JDK 1.1
+
+This program implements a <b>custom scheme</b> for moving the focus
+among a set of visual components using the F12 key and the&nbsp;
+Shift-F12 key as an alternate to the Tab and Shift-Tab key.
+
+The Tab and Shift-Tab key also work in the standard manner.
+Tab and Shift-Tab are automatically implemented by the system,&nbsp;
+and skip the Label object and the Frame object when moving&nbsp;
+the focus.
+
+This custom scheme based on the <b>F12 </b>key does not skip the&nbsp;
+Label object or the Frame object.
+
+For simplicity, this program does not support response to
+the keyboard while the component has the focus.&nbsp; Such response
+has been illustrated in earlier lessons and could be added&nbsp;
+with very little additional code.
+
+A Button object, a TextField object, and a Label object are placed&nbsp;
+in a Frame object.
+
+A FocusListener object is instantiated and registered to listen for
+focusGained() and focusLost() events on the Frame and the
+Label.&nbsp; When these events occur, the listener object makes a color
+change on the Frame or Label to provide a visual indication of focus
+gained or lost.&nbsp;&nbsp;
+
+When the Label has the focus, its text is red.&nbsp; Otherwise, its text&nbsp;
+is black.&nbsp; When the Frame has the focus, its background color is blue.
+Otherwise, it is white.
+
+Note that the Button and the TextField components automatically provide&nbsp;
+a visual indication of focus without intervention by the programmer.
+
+Also for simplicity, the ability to shift the focus to the Label and
+the Frame using the mouse was not included in this program.&nbsp; This
+capability has been illustrated in an earlier lesson and could be added
+with very little additional code required.
+
+Note that the Button and the TextField automatically receive the
+focus when clicked without intervention by the programmer.
+
+A KeyListener object is instantiated and registered to listen for
+keyPressed() events on the Frame, Label, Button, and TextField&nbsp;
+objects.&nbsp; This object is used to listen for the F12 or Shift-F12
+key and to implement the program-specified change in focus when
+such a keypress occurs.
+
+Finally, a WindowListener object is instantiated and registered to&nbsp;
+terminate the program when the user closes the Frame object.
+
+This program retrieves and saves the component names that are&nbsp;
+automatically assigned to the visual components (under the assumption&nbsp;
+that the system will assign unique names) and uses those names to&nbsp;
+determine which component generated an event when such determination&nbsp;
+is necessary.
+
+No attempt was made to synchronize this focus traversal method with
+other capabilities to shift the focus.
+
+These results were produced using JDK 1.1, Beta 3 running under&nbsp;
+Windows 95.
+*/
+//==========================================================================
+
+import java.awt.*;
+import java.awt.event.*;
+
+public class Event16 {
+&nbsp; public static void main(String[] args){
+&nbsp;&nbsp;&nbsp; GUI gui = new GUI();//instantiate a Graphical User Interface object
+&nbsp; }//end main
+}//end class Event16
+//===========================================================================
+
+//The following class is used to instantiate a graphical user interface object.
+class GUI {
+&nbsp; String myTextFieldName; //save automatic component name here
+&nbsp; String myButtonName;
+&nbsp; String myFrameName;
+&nbsp; String myLabelName;
+&nbsp; Frame myFrame;//ref variable passed as parameter
+&nbsp; Label myLabel;
+&nbsp; TextField myTextField;
+&nbsp; Button myButton;
+&nbsp; int focusIndex;
+
+&nbsp; public GUI(){//constructor
+&nbsp;&nbsp;&nbsp; //Create several visual components
+&nbsp;&nbsp;&nbsp; myFrame = new Frame();
+&nbsp;&nbsp;&nbsp; myFrame.setSize(250,300);
+&nbsp;&nbsp;&nbsp; myFrame.setTitle("Copyright 1997, R.G.Baldwin");
+&nbsp;&nbsp;&nbsp; myFrameName = myFrame.getName();
+
+&nbsp;&nbsp;&nbsp; myButton = new Button("Button Object");
+&nbsp;&nbsp;&nbsp; myButtonName = myButton.getName();
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; myTextField = new TextField("TextField Object");
+&nbsp;&nbsp;&nbsp; myTextFieldName = myTextField.getName();//save the name of the component
+
+&nbsp;&nbsp;&nbsp; myLabel = new Label("LabelObject");
+&nbsp;&nbsp;&nbsp; myLabelName = myLabel.getName();
+&nbsp;&nbsp;&nbsp; myLabel.setBackground(Color.yellow);//make it yellow so it will show up
+&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Add the other objects to the frame using default border layout manager
+&nbsp;&nbsp;&nbsp; myFrame.add("North",myButton);
+&nbsp;&nbsp;&nbsp; myFrame.add("South",myTextField);
+&nbsp;&nbsp;&nbsp; myFrame.add("West",myLabel);
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; myFrame.setVisible(true);//make the frame visible
+&nbsp;&nbsp;&nbsp; myTextField.requestFocus();//<b>initialize </b>the focus to the TextField
+&nbsp;&nbsp;&nbsp; focusIndex = 0;//set focusIndex to match
+
+&nbsp;&nbsp;&nbsp; //<b>Instantiate and register a FocusListener </b>object which will process
+&nbsp;&nbsp;&nbsp; // focus events on two different visual components.&nbsp; In this case,
+&nbsp;&nbsp;&nbsp; // the listener object makes a <b>color change</b> on the visual component
+&nbsp;&nbsp;&nbsp; // to indicate focus gained or focus lost.
+&nbsp;&nbsp;&nbsp; myFocusListener focusHandler = new myFocusListener(this);
+&nbsp;&nbsp;&nbsp; myFrame.addFocusListener(focusHandler);&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; myLabel.addFocusListener(focusHandler);
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //<b>Instantiate and register a KeyListener</b> object which will process key
+&nbsp;&nbsp;&nbsp; // events on four different visual components.&nbsp; This object causes the
+&nbsp;&nbsp;&nbsp; // focus to move in a program-defined manner when the user presses the
+&nbsp;&nbsp;&nbsp; // <b>F12 </b>key and to move in the reverse direction when the user presses
+&nbsp;&nbsp;&nbsp; // the <b>Shift-F12</b> key.
+&nbsp;&nbsp;&nbsp; myKeyListener keyHandler = new myKeyListener(this);
+&nbsp;&nbsp;&nbsp; myFrame.addKeyListener(keyHandler);
+&nbsp;&nbsp;&nbsp; myTextField.addKeyListener(keyHandler);
+&nbsp;&nbsp;&nbsp; myButton.addKeyListener(keyHandler);
+&nbsp;&nbsp;&nbsp; myLabel.addKeyListener(keyHandler);&nbsp;&nbsp;&nbsp;&nbsp;
+
+&nbsp;&nbsp;&nbsp; //Instantiate and register a WindowListener object which will terminate&nbsp;
+&nbsp;&nbsp;&nbsp; // the program when the user closes the Frame object
+&nbsp;&nbsp;&nbsp; WProc1 winProcCmd1 = new WProc1();
+&nbsp;&nbsp;&nbsp; myFrame.addWindowListener(winProcCmd1);
+&nbsp; }//end constructor
+}//end class GUI definition
+//=======================================================================
+
+//This is a low-level event listener class.
+// This FocusListener class makes a <b>color change</b> on the component to&nbsp;
+// provide a visual indication of the gain or loss of focus.
+
+class myFocusListener implements FocusListener{
+&nbsp; GUI thisObject;
+&nbsp;&nbsp;
+&nbsp; myFocusListener(GUI thisObjectIn){//constructor
+&nbsp;&nbsp;&nbsp; thisObject = thisObjectIn;
+&nbsp; }// end constructor
+&nbsp;&nbsp;
+&nbsp; public void focusGained(FocusEvent e){
+&nbsp;&nbsp;&nbsp; if( e.toString().indexOf("on " + thisObject.myFrameName) != -1 ){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; thisObject.myFrame.setBackground(Color.blue);
+&nbsp;&nbsp;&nbsp; }//end if
+&nbsp;&nbsp;&nbsp; if( e.toString().indexOf("on " + thisObject.myLabelName) != -1 ){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; thisObject.myLabel.setForeground(Color.red);
+&nbsp;&nbsp;&nbsp; }//end if
+&nbsp;&nbsp;&nbsp; thisObject.myFrame.repaint();
+&nbsp; }//end focusGained()
+
+&nbsp; public void focusLost(FocusEvent e){
+&nbsp;&nbsp;&nbsp; if( e.toString().indexOf("on " + thisObject.myFrameName) != -1 ){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; thisObject.myFrame.setBackground(Color.white);&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; }//end if&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; if( e.toString().indexOf("on " + thisObject.myLabelName) != -1 ){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; thisObject.myLabel.setForeground(Color.black);&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; }//end if&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; thisObject.myFrame.repaint();
+&nbsp; }//end focusLost()
+}//end class myFocusListener
+//=======================================================================
+
+//This is a Low-Level event listener.
+// This listener class implements a custom scheme for moving focus&nbsp;
+// among visual components when the user presses the <b>F12 </b>key or the&nbsp;
+// <b>Shift-F12</b> key.&nbsp; The F12 key moves the focus counter-clockwise on&nbsp;
+// the screen and includes the Label object and the Frame object in&nbsp;
+// the path.&nbsp; Shift-F12 moves the focus in the reverse direction.
+
+// The standard Tab and Shift-Tab keys work also but don't include&nbsp;
+// the Label object or the Frame object in the list of objects which&nbsp;
+// receive focus.
+
+class myKeyListener extends KeyAdapter{
+&nbsp; GUI thisObject;
+&nbsp;&nbsp;
+&nbsp; myKeyListener(GUI thisObjectIn){//constructor
+&nbsp;&nbsp;&nbsp; thisObject = thisObjectIn;
+&nbsp; }//end constructor
+
+&nbsp; public void keyPressed(KeyEvent e){
+&nbsp;&nbsp;&nbsp; int keyCode = e.getKeyCode();
+&nbsp;&nbsp;&nbsp; if( (keyCode == KeyEvent.VK_F12) //if <b>F12 and NOT Shift
+</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &amp;&amp; (e.getModifiers() != InputEvent.SHIFT_MASK) ){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Move the focus counter-clockwise on the screen for F12 key
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(++thisObject.focusIndex > 3) thisObject.focusIndex = 0;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; switch(thisObject.focusIndex){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; case 0: thisObject.myTextField.requestFocus(); break;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; case 1: thisObject.myLabel.requestFocus();break;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; case 2: thisObject.myButton.requestFocus();break;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; case 3: thisObject.myFrame.requestFocus();break;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end switch statement
+&nbsp;&nbsp;&nbsp; }//end if statement
+
+&nbsp;&nbsp;&nbsp; if( (keyCode == KeyEvent.VK_F12) //if <b>F12 AND Shift
+</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &amp;&amp; (e.getModifiers() == InputEvent.SHIFT_MASK) ){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Move the focus clockwise on the screen for Shift-F12 key
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(--thisObject.focusIndex &lt; 0) thisObject.focusIndex = 3;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; switch(thisObject.focusIndex){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; case 0: thisObject.myTextField.requestFocus(); break;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; case 1: thisObject.myLabel.requestFocus();break;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; case 2: thisObject.myButton.requestFocus();break;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; case 3: thisObject.myFrame.requestFocus();break;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end switch statement
+&nbsp;&nbsp;&nbsp; }//end if statement
+&nbsp; }//end keyPressed()
+}//end class myKeyListener
+//=======================================================================
+
+//The following listener is used to <b>terminate </b>the&nbsp;
+// program when the user closes the Frame object.
+class WProc1 extends WindowAdapter{
+&nbsp; public void windowClosing(WindowEvent e){
+&nbsp;&nbsp;&nbsp; System.exit(0);
+&nbsp; }//end windowClosing()
+}//end class WProc1</pre></td></tr></table>
+This sample program implements a number of useful techniques involving
+the Delegation Event Model. You would be well-advised to make certain that
+you understand it.
+<center><h2><a name="review"></a><font color="#ff0000">Review</font></h2></center>
+This entire lesson is a review of material covered in previous lessons.
+Therefore, no additional review material is provided in this section.
+
+<p>-end-<!--end--></body></html>

@@ -1,0 +1,1221 @@
+<!DOCTYPE doctype PUBLIC "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+                
+  <meta http-equiv="Content-Type"
+ content="text/html; charset=iso-8859-1">
+                
+  <meta name="GENERATOR" content="Microsoft FrontPage 6.0">
+  <title>... JAVA and DSP by Richard G Baldwin</title>
+</head>
+<body link="#0000ff" vlink="#666666" alink="#ff0000" lang="EN-US">
+ 
+<h2>Window Focus and State in Java, Part 1 of 2</h2>
+    <i>Learn how to cause a Window to gain the 
+focus and respond to the keyboard even if that 
+Window contains no focusable components.&nbsp; Also learn how to cause a program 
+to use 
+extended Window state to determine that the user has maximized a Window.</i><p><b>Published:</b>&nbsp; 
+May 3, 2005 <br>
+   <b>By <a href="#About_the_author">Richard G. Baldwin</a></b> </p>
+     
+<p>Java Programming, Notes # 1857</p>
+     
+<ul>
+  <li><a href="#Preface">Preface</a></li>
+	<li><a href="#Background_Information">Background Information</a></li>
+  <li><a href="#Preview">Preview</a></li>
+  <li><a href="#Discussion_and_Sample_Code">Description of the Program</a><li><a href="#Run_the_Programs">Run the Program</a></li>
+  <li><a href="#Summary">Summary</a></li>
+	<li><a href="#Whats Next">What's Next</a></li>
+  <li><a href="#Complete_Program_Listings">Complete Program Listing</a> </li>
+</ul>
+        
+<hr size="3" width="100%" align="center">    
+<center>    
+<h2> <a name="Preface">Preface</a></h2>
+   </center>
+<p><font color="#FF0000"><b>The focus subsystem</b></font></p>
+<p>This lesson is part of a series of lessons designed to 
+teach you how to use the focus subsystem.&nbsp; This is also the first part of a 
+two-part lesson to teach you how to use the <b>Window</b> <i>focus</i> and <i>state</i> features.</p>
+<p>The first lesson in the series was entitled 
+<a href="http://www.developer.com/java/other/article.php/2198221">Focus 
+Traversal Policies in Java Version 1.4</a>.&nbsp; The previous lesson was 
+entitled <a href="http://www.developer.com/java/other/article.php/3463681">
+Capturing Keyboard Strokes in Java</a>.</p>
+<p><font color="#ff0000"><b>Previous topics</b></font></p>
+<p>Previous lessons in this series have taught you how to use several features of the new focus subsystem, 
+including the following:</p>
+<ul>
+	<li>Defining new focus traversal keys.</li>
+	<li>How to control focusability at runtime.</li>
+	<li>The ability to query for the currently focused Component.</li>
+	<li>The default Focus Traversal Policy.</li>
+	<li>How to establish a focus traversal policy and modify it at runtime.</li>
+	<li>How to control the focus programmatically.</li>
+	<li>Opposite components.</li>
+	<li>The KeyEventDispatcher.</li>
+	<li>The KeyEventPostProcessor.</li>
+</ul>
+<p><font color="#FF0000"><b>Topics covered in this lesson</b></font></p>
+<p>This lesson, which is Part 1 of a two-part lesson, will explain <b>Window</b> 
+focus and extended <b>Window</b> state.</p>
+<blockquote>
+	<p><i>(Although extended Window state is not a focus topic, it was very 
+convenient to explain and illustrate the topic in this lesson, so I decided to 
+include it here.)</i></p>
+</blockquote>
+<p>Part 2 of this two-part lesson will present and explain a program that 
+demonstrates various aspects of <b>Window</b> focus and extended <b>Window</b> 
+state.</p>
+<p><font color="#FF0000"><b>What do we mean by focus?</b></font></p>
+<p>Among all of the applications showing on the desktop at any point in time, 
+only one will respond to the keyboard.</p>
+<p>If that application is a Java application, only one component 
+within that application's graphical user interface <i>(GUI)</i> will respond to 
+the keyboard.&nbsp; That is the component that has the <i>focus</i> at that 
+point in time.</p>
+<p>It is also possible for a Java <b>Window</b>, <i>(and its 
+subclasses <b>Frame</b>, <b>JFrame</b>, <b>Dialog</b>, and <b>JDialog</b>)</i> 
+to gain the focus and to respond to the 
+keyboard even if the <b>Window </b>contains no focusable components.</p>
+<p>A Java component or <b>Window </b>that has the focus also has the ability to fire <b>KeyEvents</b> when it responds to the keyboard.&nbsp; 
+The fact that a component or <b>Window </b>can fire <b>KeyEvents</b> confirms that it has the 
+focus.</p>
+  <p><b><font color="#ff0000">Viewing tip</font></b> </p>
+ 
+<p>You may find it useful to open another copy of this lesson in a separate
+ browser window.&nbsp; That will make it easier for you to scroll back and
+ forth among the different figures and listings while you are reading about
+ them. </p>
+ 
+<p><b><font color="#ff0000">Supplementary material</font></b> </p>
+ 
+<p>I recommend that you also study the other lessons in my extensive collection
+ of online Java tutorials.&nbsp; You will find those lessons published at
+<a href="http://softwaredev.earthweb.com/java">Gamelan.com</a>.&nbsp; However, 
+as of the date of this writing, Gamelan doesn't maintain a consolidated index 
+of my Java tutorial lessons, and sometimes they are difficult to locate there.&nbsp; 
+You will find a consolidated index at <a
+ href="http://www.dickbaldwin.com">www.DickBaldwin.com</a><font
+ color="#000000">.</font></p>
+<h2 align="center"><a name="Background_Information">Background Information</a></h2>
+<p><font color="#FF0000"><b>Window focus</b></font></p>
+<p>An object of the class <b>Window</b>, or its subclasses 
+<b>Frame</b>, <b>JFrame</b>, <b>Dialog</b>, and <b>JDialog</b> can gain the focus and respond to the 
+keyboard.&nbsp; This is true even if the object doesn't contain any focusable 
+components.</p>
+<p><font color="#FF0000"><b>Extended Window state</b></font></p>
+<p>Prior to V1.4, the state information maintained by a <b>Window</b> was limited 
+to: </p>
+<ul>
+	<li>NORMAL </li>
+	<li>ICONIFIED</li>
+</ul>
+<p>Subsequent to the release of V1.4, a <b>Window</b> can maintain state information 
+that includes: </p>
+<ul>
+	<li>MAXIMIZED_HORIZ </li>
+	<li>MAXIMIZED_VERT </li>
+	<li>MAXIMIZED_BOTH</li>
+	</li>
+</ul>
+<p>An object of the class <b>Window</b> and its 
+subclasses <b>Frame</b> and <b>JFrame</b> have the ability to fire events when its state changes.&nbsp; 
+A program can respond to those events and determine both the old state and the 
+new state.&nbsp; The program can also determine the current state at any point 
+in time by invoking the <b>getExtendedState</b> method on the <b>Window</b>.</p>
+<blockquote>
+	<p><i>(I discovered this new feature while doing research into the <b>Window</b> 
+	focus topic.&nbsp; Even though it has little to do with the focus subsystem, 
+	it is relatively easy to illustrate and explain along with <b>Window</b> focus.&nbsp; Therefore, I decided to 
+	include it in this lesson.)</i></p>
+</blockquote>
+<p><b><font color="#FF0000">Uses of Window focus</font></b></p>
+<p>A couple of uses for the <b>Window</b> focus capability come immediately to 
+mind.&nbsp; For example, one might like to display an animated creature in the 
+client area of a <b>Window, Frame</b> or <b>JFrame</b>, and to control its 
+movement and behavior using the arrow keys <i>(or any other keys for that 
+matter).</i>&nbsp; </p>
+<p>Because the <b>Window</b> can gain the focus, it can also respond to the 
+keyboard and fire <b>KeyEvents</b>.&nbsp; Code could be written into the <b>KeyEvent</b> handlers to control the behavior of the animated creature.</p>
+<p>Another possibility might be to display an image, <i>(such 
+as a street map)</i> in the client area of the <b>Window</b> and to use the 
+arrow keys and other keys to scroll the image or to zoom in and out on the image.&nbsp; Once 
+again, code could be written into <b>KeyEvent</b> handlers to provide the 
+desired behavior.</p>
+<p><font color="#FF0000"><b>Uses of Window state</b></font></p>
+<p>A <b>Window</b>, a <b>Frame</b>, or a <b>JFrame</b> can fire events when the 
+state of the <b>Window</b> changes.</p>
+<blockquote>
+	<p><i>(Throughout this lesson, I will often refer to a <b>Frame</b>, a <b>JFrame</b>, a 
+	<b>Dialog</b>, or a <b>JDialog</b> as a <b>Window</b>, because
+	<b>Window</b> is the superclass of these other classes.)</i>&nbsp; </p>
+</blockquote>
+<p>A <b>Window</b> 
+is in one of the following five states at any point in time:</p>
+<ul>
+	<li>NORMAL</li>
+	<li>ICONIFIED</li>
+	<li>MAXIMIZED_HORIZ</li>
+	<li>MAXIMIZED_VERT</li>
+	<li>MAXIMIZED_BOTH</li>
+</ul>
+<blockquote>
+	<p><i>(This feature doesn't apply to <b>Dialog</b> and <b>JDialog</b> 
+	objects because they don't provide user controls that allow the user to 
+	iconify or to maximize them.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Maximization</b></font></p>
+<p>Prior to the release of V1.4, the standard <b>windowIconified</b> and <b>windowDeiconified</b> event types could be used by the program to learn that the 
+user had either iconified or deiconified a <b>Frame</b> or a <b>JFrame</b> 
+object.</p>
+<p>Prior to the release of the extended state feature in V1.4, I was not aware of any mechanism that made it possible for 
+a program to determine that the user had maximized a <b>Frame</b> or a <b>JFrame</b>.&nbsp; 
+</p>
+<p>Subsequent to the release of V1.4, that determination is not only possible, it is also easy.&nbsp; 
+</p>
+<p>According to Sun,</p>
+<blockquote>
+	<p><i>&quot;In older versions of the JDK a frame state could only be NORMAL or 
+	ICONIFIED.&nbsp; Since JDK 1.4 the set of supported frame states is expanded 
+	and frame state is represented as a bitwise mask.&quot;</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Event notification and state maintenance</b></font></p>
+<p>A program can now request to be notified each time the state of a <b>Window</b> 
+changes, and can easily determine both the old state and the new state when the 
+change occurs.</p>
+<p>In addition, the current state is maintained automatically and is available at any time simply by 
+invoking the <b>getExtendedState</b> method on the Window.</p>
+<blockquote>
+	<p><i>(In older versions, the appropriate query method was <b>getState</b>.&nbsp; 
+	The Sun documentation for V1.4.2 declares the<b> getState </b>method to be
+	<b>obsolete</b>. - Note that I didn't say <b>deprecated</b>. - The <b>getState</b> method has been replaced by the 
+	<b>getExtendedState</b> method 
+	in V1.4.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Required modifications to the API</b></font></p>
+<p>A fairly large number of modifications were required to add these two 
+features to the API.&nbsp; Here is a partial list:</p>
+<ul>
+	<li>Definition of a new <b>WindowFocusListener</b> interface.&nbsp; This 
+	interface declares two new methods named <b>windowGainedFocus</b> and <b>windowLostFocus</b>.&nbsp; Each method receives an incoming parameter of 
+	type <b>WindowEvent</b>.</li>
+	<li>Definition of a new <b>WindowStateListener</b> interface.&nbsp; This 
+	interface declares a single new method named <b>windowStateChanged</b>, 
+	which also receives an incoming parameter of type <b>WindowEvent</b>.</li>
+	<li>Update the <b>WindowAdapter</b> class to cause it to implement the two 
+	new interfaces listed above.&nbsp; It was also necessary to update the class 
+	to define default versions of the three new methods declared in those 
+	interfaces.</li>
+	<li>Update the <b>WindowEvent</b> class to add three new constants named <b>WINDOW_GAINED_FOCUS</b>, 
+	<b>WINDOW_LOST_FOCUS</b>, and <b>WINDOW_STATE_CHANGED</b>.&nbsp; New overloaded constructors were 
+	also defined that allow for the construction of an object with a specified 
+	<b>oldState</b> and a specified <b>newState</b>.&nbsp; New methods named <b>getOldState</b> and 
+	<b>getNewState</b> were also defined.</li>
+	<li>The <b>Window</b> class was upgraded to add two new methods named <b>processWindowFocusEvent</b> and 
+	<b>processWindowStateEvent</b>.&nbsp; These 
+	two methods are required to support low-level <i>focus</i> and <i>state</i> 
+	event handling on the <b>Window </b>in conjunction with the <b>enableEvents 
+	</b>method.&nbsp; Four new 
+	registration methods named <b>addWindowFocusListener</b>, <b>removeWindowFocusListener</b>, 
+	<b>addWindowStateListener</b>, and <b>removeWindowStateListener</b> were added to the 
+	<b>Window</b> class to 
+	support high-level event registration and handling of the new <i>focus</i> 
+	and <i>state</i> event types.&nbsp; Finally, several new utility methods 
+	such as <b>getWindowFocusListeners</b>, <b>getWindowStateListeners</b>, <b>isFocusableWindow</b>, 
+	<b>getFocusableWindowState</b>, <b>setFocusableWindowState</b>, and<b> isFocused 
+	</b>were added to the <b>Window</b> class to support the new event types.</li>
+</ul>
+<p><font color="#FF0000"><b><a name="Order_of_event_delivery">Order of event delivery</a></b></font></p>
+<p>Sun tells us that when focus moves to a component in a <b>Window</b> that is 
+not currently the active <b>Window</b>, the events relative to the newly active 
+<b>Window
+</b>will be delivered in the following order:</p>
+<ul>
+	<li>WINDOW_ACTIVATED</li>
+	<li>WINDOW_GAINED_FOCUS</li>
+	<li>FOCUS_GAINED on the component gaining the focus</li>
+</ul>
+<blockquote>
+	<p><i>(For the case where the newly active <b>Window</b> doesn't contain any 
+	focusable components, only the first two events occur.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Moving the focus to another Window</b></font></p>
+<p>Similarly, when the focus moves from that component to a component in another
+<b>Window</b>, the order of event delivery will be:</p>
+<ul>
+	<li>FOCUS_LOST on the component losing the focus</li>
+	<li>WINDOW_LOST_FOCUS on the currently active <b>Window</b> </li>
+	<li>WINDOW_DEACTIVATED on the currently active <b>Window</b> </li>
+	<li>WINDOW_ACTIVATED on the new active window</li>
+	<li>WINDOW_GAINED_FOCUS on the new active window</li>
+	<li>FOCUS_GAINED on the component that is gaining the focus</li>
+</ul>
+<p><font color="#FF0000"><b>Specific order must be maintained</b></font></p>
+<p>Sun also tells us,</p>
+<blockquote>
+	<p><i>&quot;... each event will be fully handled before the next event is 
+	dispatched. This restriction will be enforced even if the Components are in 
+	different contexts and are handled on different event dispatching threads.</i></p>
+	<p><i>... each event type will be dispatched in 1-to-1 correspondence with 
+	its opposite event type. For example, if a Component receives a <b>FOCUS_GAINED</b> event, under no circumstances can it ever receive another
+	<b>FOCUS_GAINED</b> event without an intervening <b>FOCUS_LOST</b> event.&quot;</i></p>
+</blockquote>
+<h2 align="center"><a name="Preview">Preview</a></h2>
+<p>In Part 1 of this lesson, I will explain how a <b>Window</b> 
+can gain the focus, and can respond to the keyboard while it has the focus, even 
+if that <b>Window</b> contains no focusable components.</p>
+<p>I will describe both low-level and high-level event handlers to 
+respond to <b>Window</b> focus events.</p>
+<p>I will explain how to make use of the extended <b>Window</b> state and will explain how a program can respond to <b>Window </b>state events to 
+learn that the user has maximized a <b>Window</b>.</p>
+<p>I will provide a program for your review that illustrates the above concepts.</p>
+<p>I will explain that program in Part 2 of this lesson.</p>
+<h2 align="center"><a name="Discussion_and_Sample_Code">Description of the 
+Program</a></h2>
+<p>The two parts of this lesson present and explain a sample program named <b>FocusWindow02</b>, 
+which illustrates the ability of a <b>Window</b> </p>
+<ul>
+	<li>To gain and lose the focus</li>
+	<li>To fire events when the focus is gained or lost</li>
+</ul>
+<p>The program also illustrates the capability of a <b>Window</b> object to fire 
+events when the state of the <b>JFrame</b> changes among five different possible 
+states. Significant among these possible states are three states having to with 
+maximization of the <b>Window</b>.</p>
+<p>A list of the five possible states was provided earlier in this lesson.</p>
+<p><font color="#FF0000"><b>The program GUI</b></font></p>
+<p>The program causes two <b>JFrame</b> objects to appear on the screen as 
+shown in Figures 1 and 2.</p>
+<div align="center">
+	<table border="1" cols="1" bgcolor="#99FFCC">
+		<tbody>
+			<tr>
+				<td>
+				<pre><img border="0" src="java1857a.gif" width="401" height="101">
+
+<b>Figure 1 Half of program GUI.</b>
+</pre></td>
+			</tr>
+		</tbody>
+	</table></div>
+<p><font color="#FF0000"><b>Only one can be active</b></font></p>
+<p>Both <b>JFrame</b> objects appear on the screen at the same time, but only 
+one can be active <i>(indicated by the bright blue banner)</i> at any given 
+time.</p>
+<blockquote>
+	<p><i>(The fact that they both appear to be active in these images is an artifact of the 
+way that I went about capturing the images.)</i></p>
+</blockquote>
+<div align="center">
+	<table border="1" cols="1" bgcolor="#99FFCC">
+		<tbody>
+			<tr>
+				<td>
+				<pre><img border="0" src="java1857b.gif" width="401" height="101">
+
+<b>Figure 2 The other half of program GUI.</b>
+</pre></td>
+			</tr>
+		</tbody>
+	</table></div>
+<p><font color="#FF0000"><b>Physical location</b></font></p>
+<p>The program places the two <b>JFrame</b> objects on the screen, one above the 
+other. The <b>JFrame</b> object on the top <i>(shown in Figure 1)</i> contains two 
+<b>JButton</b> objects, both of which are focusable.</p>
+<p>The <b>JFrame</b> object on the bottom <i>(shown in Figure 2)</i> contains a 
+single <b>Canvas</b> object, which is not focusable. Therefore, the <b>JFrame</b> 
+object on the bottom contains no focusable components.</p>
+<p><font color="#FF0000"><b>Coordinates of an invisible point</b></font></p>
+<p>The <b>JFrame</b> object in Figure 2 illustrates the use of focus on a <b>Window</b> that contains no focusable components.</p>
+<p>The coordinates of an 
+invisible point are displayed on the <b>Canvas</b> near the location of the 
+invisible point.</p>
+<blockquote>
+	<p><i>(The location of the invisible point is immediately to the left and 
+	slightly below the left-most character in the coordinates.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Behavior of the JFrame object</b></font></p>
+<p>When this <b>JFrame </b>object has the focus, pressing the 
+arrow keys causes an increase or a decrease in the coordinate values for the invisible point.</p>
+<blockquote>
+	<p><i>(Each press on an arrow key increases or decreases the value of one 
+	coordinate by five pixels.)</i></p>
+</blockquote>
+<p>Thus, pressing the arrow keys modifies and moves the displayed coordinate values.</p>
+<p><font color="#FF0000"><b>Demonstrates that the JFrame has the focus</b></font></p>
+<p>This is 
+accomplished by servicing <b>KeyEvents</b> on the object, thus demonstrating 
+that the <b>JFrame</b> object actually has the focus, even though it contains no 
+focusable components.</p>
+<p><font color="#FF0000"><b>Behavior of the other JFrame object</b></font></p>
+<p>The <b>JFrame</b> object in Figure 1 contains two <b>JButton</b> objects labeled 
+respectively:</p>
+<ul>
+	<li>Regain focus</li>
+	<li>Send focus to B</li>
+</ul>
+<p>Clicking the button labeled <i>Regain focus:</i></p>
+<ul>
+	<li>Causes the <b>JFrame</b> object in Figure 2 to lose the focus <i>(if it 
+	has the focus)</i></li>
+	<li>Causes the <b>JFrame</b> object in Figure 1 to gain the focus <i>(if it 
+	doesn't already have the focus)</i></li>
+	<li>Causes the <b>JButton</b> object labeled <i>Regain focus</i> to gain 
+	the focus&nbsp; <i>(if it doesn't already have the focus)</i></li>
+</ul>
+<blockquote>
+	<p><i>(Note that I skipped the part about the frames being deactivated and 
+	activated in the above description.)</i></p>
+</blockquote>
+<p>Clicking the button labeled <i>Send focus to B</i> causes the
+<b>JFrame</b> object and the button in Figure 1 to momentarily gain the focus.&nbsp; 
+However, the program transfers 
+the focus to the <b>JFrame</b> object in Figure 2 immediately thereafter with a 
+very short time delay.&nbsp; This causes the sequence of events described under
+<a href="#Order_of_event_delivery">Order of event delivery</a> to occur.</p>
+<p><font color="#FF0000"><b>Gaining focus in Figure 2</b></font></p>
+<p>The <b>JFrame</b> object in Figure 2 will gain the focus if the user clicks 
+the button labeled <i>Send focus to B</i> in Figure 1.</p>
+<p>The <b>JFrame</b> object in Figure 2 will also gain the focus if it is 
+clicked with the mouse.</p>
+<blockquote>
+	<p><i>(There are also other ways that the <b>JFrame</b> object in Figure 2 
+	can gain the focus, such as being restored from an iconified state.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Screen output</b></font></p>
+<p>As each <b>JFrame</b> object gains and loses focus, and becomes iconified or 
+maximized, information about the 
+gain and loss of focus and the status of the <b>Window </b>is displayed on the screen.</p>
+<p>This is accomplished using both high-level event handling and low-level event 
+handling.&nbsp; The event handlers report on events of the following three 
+types:</p>
+<ul>
+	<li>WINDOW_STATE_CHANGED</li>
+	<li>WINDOW_GAINED_FOCUS</li>
+	<li>WINDOW_LOST_FOCUS</li>
+</ul>
+<p><font color="#FF0000"><b>High-level event handling</b></font></p>
+<p>The high-level approach to event handling involves registering objects of the 
+interface types <b>WindowFocusListener</b> and <b>WindowStateListener</b> on the
+<b>JFrame</b> object.</p>
+<p><font color="#FF0000"><b>Low-level event handling</b></font></p>
+<p>The low-level approach makes use of the following methods:</p>
+<ul>
+	<li>enableEvents(AWTEvent.WINDOW_EVENT_MASK)</li>
+	<li>processWindowEvent(WindowEvent e)</li>
+	<li>processWindowFocusEvent(WindowEvent e)</li>
+	<li>processWindowStateEvent(WindowEvent e)</li>
+</ul>
+<p><font color="#FF0000"><b>Other WindowEvent types from earlier versions</b></font></p>
+<p>The program also uses low-level event handling to display information about 
+other <b>WindowEvent</b> types such as the following:</p>
+<ul>
+	<li>WINDOW_ACTIVATED</li>
+	<li>WINDOW_CLOSED</li>
+	<li>WINDOW_CLOSING</li>
+	<li>WINDOW_DEACTIVATED</li>
+	<li>WINDOW_DEICONIFIED</li>
+	<li>WINDOW_ICONIFIED</li>
+	<li>WINDOW_OPENED</li>
+</ul>
+<blockquote>
+	<p><i>(This list includes event types that have been a standard part of the 
+	API since before the release of SDK 
+	V1.4.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Sample screen output</b></font></p>
+<p>The screen output at startup is shown in Figure 3.</p>
+<div align="center">
+	<table border="1" cols="1" bgcolor="#99FFCC" width="400">
+		<tbody>
+			<tr>
+				<td>
+				<pre><b>Low:processWindowEvent B
+205 WINDOW_ACTIVATED
+
+Low:processWindowFocusEvent B
+207 WINDOW_GAINED_FOCUS
+High:windowGainedFocus B
+
+Low:processWindowEvent B
+200 WINDOW_OPENED</b>
+
+Low:processWindowFocusEvent B
+208 WINDOW_LOST_FOCUS
+High:windowLostFocus B
+
+Low:processWindowEvent B
+206 WINDOW_DEACTIVATED
+
+<b>Low:processWindowEvent A
+205 WINDOW_ACTIVATED
+
+Low:processWindowFocusEvent A
+207 WINDOW_GAINED_FOCUS
+High:windowGainedFocus A
+High:focusGained on Regain focus button
+
+Low:processWindowEvent A
+200 WINDOW_OPENED</b>
+
+<b>Figure 3</b></pre></td>
+			</tr>
+		</tbody>
+	</table></div>
+<p><font color="#FF0000"><b>Low-level event handling output</b></font></p>
+<p>The lines of text that begin with the word <i>Low,</i> and the lines that 
+begin with a number such as 205 were produced by low-level event handlers.</p>
+<p><font color="#FF0000"><b>High-level event handling output</b></font></p>
+<p>The lines that begin with the word <i>High</i> were produced by high-level 
+event handlers.</p>
+<p><font color="#FF0000"><b>Combined low and high-level event handling</b></font></p>
+<p>All of the <b>Window</b> focus events were handled both ways.</p>
+<blockquote>
+	<p><i>(All of the <b>Window</b> state events were also handled both ways, 
+	but that is not shown in Figure 3.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Miscellaneous notes</b></font></p>
+<p>The low-level event handling always occurs 
+before the high-level event handling for the same event in this program.</p>
+<blockquote>
+	<p><i>(This is something that you have control over, as I will explain in 
+	Part 2 of this lesson.)</i></p>
+</blockquote>
+<p>Only low-level event handling was used for the event 
+types other than <b>Window</b> focus events and <b>Window</b> state events, <i>(such as 
+the WINDOW_DEACTIVATED event type).</i>&nbsp; These event types have been available 
+for many years, so I saw no need to handle them both ways.</p>
+<p><font color="#FF0000"><b>What about a WINDOW_MAXIMIZED event type?</b></font></p>
+<p>As of this writing, there are ten <b>WindowEvent</b> types:</p>
+<ul>
+	<li>WINDOW_STATE_CHANGED</li>
+	<li>WINDOW_GAINED_FOCUS</li>
+	<li>WINDOW_LOST_FOCUS</li>
+	<li>WINDOW_ACTIVATED</li>
+	<li>WINDOW_CLOSED</li>
+	<li>WINDOW_CLOSING</li>
+	<li>WINDOW_DEACTIVATED</li>
+	<li>WINDOW_DEICONIFIED</li>
+	<li>WINDOW_ICONIFIED</li>
+	<li>WINDOW_OPENED</li>
+</ul>
+<p>A standard <b>WindowEvent</b>, <i>(that is directly descriptive of the event)</i> 
+is fired when a <b>Window</b> is iconified <i>(WINDOW_ICONIFIED)</i> and also 
+when a <b>Window</b> is deiconified <i>(WINDOW_DEICONIFIED).</i></p>
+<p>However, there is no <b>WindowEvent</b> type <i>(that is directly descriptive 
+of the event such as WINDOW_MAXIMIZED)</i> that is fired when a <b>Window</b> is 
+maximized.</p>
+<p><font color="#FF0000"><b>A WINDOW_STATE_CHANGED event type</b></font></p>
+<p>However, a WINDOW_STATE_CHANGED event is fired when a <b>JFrame</b> is maximized
+<i>(or iconified).</i></p>
+<p>Beginning with V1.4, extended state information regarding the state of the <b>Window</b> is 
+encapsulated in the <b>WindowEvent</b> object when the event is fired.&nbsp; 
+This information can be extracted by invoking the 
+following methods on the <b>WindowEvent</b> object:</p>
+<ul>
+	<li>getOldState</li>
+	<li>getNewState</li>
+</ul>
+<blockquote>
+	<p><i>(The state of the <b>Window</b> can also be obtained by invoking the
+	<b>getExtendedState</b> method on the <b>Window</b> object.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Was the Window maximized?</b></font></p>
+<p>The fact that the <b>JFrame</b> has been maximized can be extracted from the 
+state of the <b>Window</b>.&nbsp; The program is no longer deprived of that 
+information.</p>
+<p><font color="#FF0000"><b>Allowable states for a Window</b></font></p>
+<p>As of the date of this writing, the following five states are defined for a <b>Window</b>:</p>
+<ul>
+	<li>NORMAL</li>
+	<li>ICONIFIED</li>
+	<li>MAXIMIZED_HORIZ</li>
+	<li>MAXIMIZED_VERT</li>
+	<li>MAXIMIZED_BOTH</li>
+</ul>
+<blockquote>
+	<p><i>(Prior to the release of V1.4, only the first two states were defined 
+	for a <b>Window</b>.)</i></p>
+</blockquote>
+<p>This state information is defined as values of type <b>int</b>, corresponding 
+to descriptive constants matching the above list. These constants are defined in 
+the <b>Frame</b> class, so they are accessible both for a <b>Frame</b> and its 
+subclass <b>JFrame</b>.</p>
+<p><font color="#FF0000"><b>What are the values of the constants?</b></font></p>
+<p>The actual value associated with each constant in the above list <i>(and many 
+other constants as well)</i> can be determined by looking the constant up in the 
+API documentation and selecting the hyperlink named <b>Constant Field Values</b>.</p>
+<blockquote>
+	<p><i>(Ideally, you don't normally need to know the values of the constants, 
+	but that information can sometimes be useful, if only out of curiosity.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Possible modifications to the program</b></font></p>
+<p>Although this program uses <b>Swing</b> components and draws the coordinate 
+values on a <b>Canvas</b> object, it is a trivial matter to modify the program 
+to cause it to use only AWT components, and to eliminate the <b>Canvas</b> 
+object. In that case, the coordinate values are drawn directly on the <b>Frame</b>. 
+Since the <b>Frame</b> doesn't contain any components at all in that situation, it is 
+guaranteed that it doesn't contain any focusable components.</p>
+<p>It is also easy to convert the program to one that uses <b>JDialog</b> 
+objects in place of <b>JFrame</b> objects. Of course, <b>JDialog</b> objects 
+can't be minimized or maximized, so that portion of the program having to do 
+with the Window State has no meaning with respect to <b>JDialog</b> objects.</p>
+<p><font color="#FF0000"><b>The program code</b></font></p>
+<p>The entire program is provided in Listing 1 near the end of the lesson.</p>
+<p>I will break the program down into fragments and discuss it in detail in 
+Part 2 of this two-part lesson.</p>
+<h2 align="center"><a name="Run_the_Programs">Run the Program</a></h2>
+<p>Although I haven't explained the code in Part 1 of this two-part lesson, I encourage you to copy, compile, and run the program provided in 
+Listing 1 near the end of the lesson.</p>
+<p>If you feel comfortable in doing so at this point, experiment with it, making changes and observing the results of your changes.</p>
+<blockquote>
+	<p><i>(If you don't feel comfortable experimenting with the code yet, I will 
+	explain the code in detail in Part 2 of this lesson.)</i></p>
+</blockquote>
+<p>One very useful modification to the program for experimental purposes is to 
+add the following statement in the various event-handler methods:</p>
+<p><b>System.out.println(new Date());</b></p>
+<p>This statement causes the time to be displayed along with the other 
+information related to an event.&nbsp; This makes it easier to interpret the 
+various lines of output on the screen by making it possible to determine which 
+groups of lines were produced in rapid succession.</p>
+<p>Also consider modifying the program to use <b>Frame</b>, <b>Dialog</b>, and 
+<b>JDialog</b> objects instead of <b>JFrame</b> objects.&nbsp; Consider 
+eliminating the requirement for a <b>Canvas</b> object, causing your <b>Window</b> 
+to contain no components at all, focusable or otherwise.</p>
+<h2 align="center"><a name="Summary">Summary</a></h2>
+<p>I explained a <b>Window</b> can gain the 
+focus, and can respond to the keyboard while it has the focus, even if that <b>Window</b> contains no focusable components.&nbsp; 
+</p>
+<p>I described both low-level and high-level event handlers to 
+respond to <b>Window</b> focus events.</p>
+<p>I explained how to make use of the extended <b>Window</b> state, and 
+explained how the program can respond to <b>Window </b>state events to learn 
+that the user has maximized a <b>Window</b>.</p>
+<h2 align="center"><a name="Whats Next">What's Next?</a></h2>
+<p>I provided a program that illustrates the above concepts in Listing 1 near 
+the end of this lesson.&nbsp; I will explain that program in Part 2 of this 
+lesson.</p>
+<h2 align="center"><a name="Complete_Program_Listings">Complete Program Listing</a></h2>
+<p>A complete listing of the program discussed in this lesson is provided below.</p>
+<p></p>
+<table border="1" cols="1" width="400" bgcolor="#FFFF00">
+	<tbody>
+		<tr>
+			<td>
+			<pre>/*File FocusWindow02.java
+Copyright 2004 R.G.Baldwin
+Rev 07/30/04
+This program illustrates the ability of a Window
+to gain and lose the focus, and to fire events
+when the focus is gained or lost.  This
+capability is new to SDK V1.4.
+
+The program also illustrates the ability of a
+JFrame to fire events when the state of the
+JFrame changes.  This capability is also new to
+SDK V1.4.  A list of the possible states is
+provided later in this discussion.
+
+The program places two JFrame objects on the
+screen, one above the other.  The JFrame object
+on the top contains two JButton objects, both
+of which are focusable.
+
+The JFrame object on the bottom contains a single
+Canvas object, which is not focusable.  Therefore
+the JFrame object on the bottom contains no
+focusable components.
+
+The JFrame object on the bottom illustrates the
+use of focus on a Window that contains no
+focusable components.  The coordinates of an
+invisible point are displayed on the Canvas near
+the location of the invisible point.  When this
+object has the focus, pressing the arrow keys
+will change the coordinates of the invisible
+point, thus modifying and moving the displayed
+coordinate values.  This is accomplished by
+servicing KeyEvents on the object, thus
+demonstrating that the JFrame object actually
+has the focus.
+
+The JFrame object on the top contains two
+JButton objects labeled respectively:
+
+Regain focus
+Send focus to B
+
+Clicking the first of these two buttons will
+cause the JFrame object on the top to gain the
+focus, will cause the JFrame object on the bottom
+to lose the focus, and will also cause the
+JButton object to gain the focus.
+
+Clicking the button labeled "Send focus to B"
+will momentarily cause the JFrame object and the
+button to gain the focus, but will immediately
+transfer the focus to the JFrame object on the
+bottom.
+
+The JFrame objet on the bottom will also gain the
+focus if it is clicked with the mouse.
+
+As each JFrame object gains and loses focus,
+information about the gain and loss of focus is
+displayed on the screen, using both high-level
+event handling and low-level event handling.
+
+The high-level approach makes use of an object
+of type FocusListener.
+
+The low-level approach makes use of the following
+methods:
+
+enableEvents(AWTEvent.WINDOW_EVENT_MASK)
+processWindowEvent(WindowEvent e)
+processWindowFocusEvent(WindowEvent e)
+processWindowStateEvent(WindowEvent e)
+
+The program also uses low-level event handling to
+display information about other WindowEvent types
+such as the following.  Note that this list
+includes focus and state events, which are new
+to SDK V1.4.
+
+WINDOW_ACTIVATED
+WINDOW_CLOSED
+WINDOW_CLOSING
+WINDOW_DEACTIVATED
+WINDOW_DEICONIFIED
+WINDOW_ICONIFIED
+WINDOW_OPENED
+WINDOW_STATE_CHANGED
+WINDOW_GAINED_FOCUS
+WINDOW_LOST_FOCUS
+
+Note that there is no WindowEvent type that is
+fired when a JFrame is maximized.  However, a
+windowStateChanged event is fired when a JFrame
+is maximized.  Information about the state of
+the window is encapsulated in the WindowEvent
+object and can be extracted using the following
+methods:
+
+getOldState
+getNewState
+
+The fact that the JFrame has been maximized can
+be extracted from the state of the window.  The
+following states are defined:
+
+NORMAL
+ICONIFIED
+MAXIMIZED_HORIZ
+MAXIMIZED_VERT
+MAXIMIZED_BOTH
+
+This state information is defined as values of
+type int, corresponding to the descriptive
+constants in the above list.  These constants are
+defined in the Frame class.
+
+The actual value associated with each constant in
+the above list (and many other constants as well)
+can be determined by looking the constant up in
+the API documentation and selecting the hyperlink
+named Constant Field Values.
+
+Although this program uses Swing components and
+draws the coordinate values on a Canvas object,
+it is a trivial matter to modify the program
+to use only AWT components, and to eliminate the
+Canvas object.  In that case, the coordinate
+values are drawn directly on the Frame.  Since
+the Frame doesn't contain any components at all,
+it is absolutely guaranteed that it doesn't
+contain any focusable components.
+
+It is also easy to convert the program to one
+that uses JDialog objects in place of JFrame
+objects.  Of course, JDialog objects can't be
+minimized or maximized, so that portion of the
+program having to do with the Window State has
+no meaning with respect to JDialog objects.
+
+Tested using JDK 1.4 under WinXP
+************************************************/
+
+import java.awt.*;
+import java.awt.event.*;
+import javax.swing.*;
+
+public class FocusWindow02 extends JFrame{
+
+  public static void main(String[] args){
+    //Instantiate an object of this class, which
+    // will, in turn, instantiate an object of
+    // the class named GraphicsGUI.
+    FocusWindow02 winA = new FocusWindow02();
+  }//end main
+//---------------------------------------------//
+  public FocusWindow02(){//constructor
+
+    //Instantiate a GraphicsGUI object, The
+    // GraphicsGUI object will be identified as B
+    // in the screen display.
+    final GraphicsGUI winB = new GraphicsGUI();
+
+    //Now construct the object of this class,
+    // prepare it to handle events, and make it
+    // visible.  This object will be identified
+    // as A in the screen display.
+    // Begin by setting some properties.
+    setTitle("A Copyright 2004, R.G.Baldwin");
+    getContentPane().setLayout(new FlowLayout());
+    setSize(400,100);
+    setDefaultCloseOperation(
+                           JFrame.EXIT_ON_CLOSE);
+
+    //Instantiate two buttons, prepare them to
+    // handle FocusEvents, and add them to the
+    // JFrame.
+    JButton regainButton = new JButton(
+                                 "Regain focus");
+    regainButton.addFocusListener(
+                               new FocusLstnr());
+    getContentPane().add(regainButton);
+
+    JButton sendButton = new JButton(
+                              "Send focus to B");
+    sendButton.addFocusListener(
+                               new FocusLstnr());
+    getContentPane().add(sendButton);
+
+    //Prepare one of the buttons to handle
+    // ActionEvents using an anonymous inner
+    // class.
+    sendButton.addActionListener(
+      new ActionListener(){
+        public void actionPerformed(
+                                  ActionEvent e){
+          winB.requestFocus();
+        }//end actionPerformed
+      }//end new ActionListener
+    );//end addActionListener
+
+    //Prepare the JFrame to handle events using
+    // the low-level process methods.
+    enableEvents(AWTEvent.WINDOW_EVENT_MASK);
+
+    //Prepare the JFrame to handle events using
+    // the high-level listener methods.
+    addWindowFocusListener(new WindowLstnr());
+    addWindowStateListener(new WindowLstnr());
+
+    //Make this JFrame visible.  This will steal
+    // the focus from the other JFrame.
+    setVisible(true);
+
+  }//end constructor
+  //-------------------------------------------//
+
+  //The next three methods are low-level event
+  // handler methods that are new to V1.4.  These
+  // methods are identical to methods having the
+  // same names defined for the class named
+  // GraphicsGUI, except that the screen output
+  // identifies the object as A rather than B.
+
+  //Sample screen output for this method:
+  // Low:processWindowEvent A
+  // 205 WINDOW_ACTIVATED
+  protected void processWindowEvent(
+                                  WindowEvent e){
+    System.out.println();
+    System.out.println(
+                     "Low:processWindowEvent A");
+    System.out.print(e.getID() + " ");
+    System.out.println(getEventType(e.getID()));
+    super.processWindowEvent(e);
+  }//end processWindowEvent
+  //-------------------------------------------//
+
+  //Sample screen output for this method:
+  // Low:processWindowFocusEvent A
+  // 207 WINDOW_GAINED_FOCUS
+  protected void processWindowFocusEvent(
+                                  WindowEvent e){
+    System.out.println();
+    System.out.println(
+                "Low:processWindowFocusEvent A");
+    System.out.print(e.getID() + " ");
+    System.out.println(getEventType(e.getID()));
+    super.processWindowFocusEvent(e);
+  }//end processWindowFocusEvent
+  //-------------------------------------------//
+
+  //Sample screen output for this method:
+  // Low:processWindowStateEvent A
+  // 209 WINDOW_STATE_CHANGED
+  protected void processWindowStateEvent(
+                                  WindowEvent e){
+    System.out.println();
+    System.out.println(
+                "Low:processWindowStateEvent A");
+    System.out.print(e.getID() + " ");
+    System.out.println(getEventType(e.getID()));
+    super.processWindowStateEvent(e);
+  }//end processWindowStateEvent
+  //-------------------------------------------//
+
+  //Method to convert event ID values to text
+  // descriptions.
+  String getEventType(int ID){
+    if(ID == WindowEvent.WINDOW_ACTIVATED){
+      return "WINDOW_ACTIVATED";
+    }else if(ID == WindowEvent.WINDOW_CLOSED){
+      return "WINDOW_CLOSED";
+    }else if(ID == WindowEvent.WINDOW_CLOSING){
+      return "WINDOW_CLOSING";
+    }else if(ID ==
+                 WindowEvent.WINDOW_DEACTIVATED){
+      return "WINDOW_DEACTIVATED";
+    }else if(ID ==
+                 WindowEvent.WINDOW_DEICONIFIED){
+      return "WINDOW_DEICONIFIED";
+    }else if(ID == WindowEvent.WINDOW_ICONIFIED){
+      return "WINDOW_ICONIFIED";
+    }else if(ID == WindowEvent.WINDOW_OPENED){
+      return "WINDOW_OPENED";
+    }else if(ID ==
+               WindowEvent.WINDOW_STATE_CHANGED){
+      return "WINDOW_STATE_CHANGED";
+    }else if(ID ==
+                WindowEvent.WINDOW_GAINED_FOCUS){
+      return "WINDOW_GAINED_FOCUS";
+    }else if(ID ==
+                  WindowEvent.WINDOW_LOST_FOCUS){
+      return "WINDOW_LOST_FOCUS";
+    }else{
+      return "Unknown event type";
+    }//end else
+  }//end getEventType
+
+}//end class FocusWindow02
+//=============================================//
+
+//Objects of this class are registered on the two
+// JButton objects to report high-level
+// focusGained and focusLost events.
+//Sample outputs from these methods:
+// High:focusGained on Regain focus button
+// High:focusLost on Regain focus button
+// High:focusGained on Send focus to B button
+// High:focusLost on Send focus to B button
+class FocusLstnr implements FocusListener{
+
+  public void focusGained(FocusEvent e){
+    System.out.println("High:focusGained on "
+             + ((JButton)e.getSource()).getText()
+             + " button");
+  }//wns focusGained
+  //-------------------------------------------//
+
+  public void focusLost(FocusEvent e){
+    System.out.println("High:focusLost on "
+             + ((JButton)e.getSource()).getText()
+             + " button");
+  }//end focusLost
+}//end class FocusLstnr
+
+//=============================================//
+
+//Objects of this class are registered on the two
+// JFrame objects to report high-level focus and
+// state events on the objects.
+
+//Sample outputs from the methods are:
+// High:windowGainedFocus A
+// High:windowLostFocus A
+// High:windowGainedFocus B
+// High:windowLostFocus B
+// High:windowStateChanged NORMAL to ICONIFIED B
+// High:windowStateChanged NORMAL to ICONIFIED A
+// High:windowStateChanged ICONIFIED to NORMAL A
+// High:windowStateChanged ICONIFIED to NORMAL B
+
+class WindowLstnr implements
+         WindowFocusListener,WindowStateListener{
+  public void windowGainedFocus(WindowEvent e){
+    System.out.print("High:windowGainedFocus ");
+    System.out.println(((JFrame)e.getSource()).
+                      getTitle().substring(0,1));
+  }//end windowGainedFocus
+
+  public void windowLostFocus(WindowEvent e){
+    System.out.print("High:windowLostFocus ");
+    System.out.println(((JFrame)e.getSource()).
+                      getTitle().substring(0,1));
+  }//windowLostFocus
+
+  public void windowStateChanged(WindowEvent e){
+    System.out.println("High:windowStateChanged "
+             + getState(e.getOldState())
+             + " to " + getState(e.getNewState())
+             + " "
+             + ((JFrame)e.getSource()).
+                      getTitle().substring(0,1));
+  }//windowStateChanged
+
+  //This method converts state values to text
+  // descriptions.  See constant values in Frame
+  // class for the correlations between state
+  // values and descriptive constants.
+  String getState(int state){
+    if(state == Frame.NORMAL){
+      return "NORMAL";
+    }else if(state == Frame.ICONIFIED){
+      return "ICONIFIED";
+    }else if(state == Frame.MAXIMIZED_HORIZ){
+      return "MAXIMIZED_HORIZ";
+    }else if(state == Frame.MAXIMIZED_VERT){
+      return "MAXIMIZED_VERT";
+    }else if(state == Frame.MAXIMIZED_BOTH){
+      return "MAXIMIZED_BOTH";
+    }else{
+      return "Unknown state";
+    }//end else
+  }//end getState
+}//end class WindowLstnr
+//=============================================//
+
+//An object of this class is instantiated to
+// illustrate the use of focus on a Window that
+// contains no focusable components.  The
+// coordinates of an invisible point are
+// displayed on a Canvas in the JFrame near the
+// location of the invisible point.  When this
+// object has the focus, pressing the arrow keys
+// will change the coordinates of the invisible
+// point, thus modifying and moving the displayed
+// coordinate values.
+
+class GraphicsGUI extends JFrame{
+
+  //These are the coordinates of the invisible
+  // point.
+  int xCoor = 200;
+  int yCoor = 40;
+
+  public GraphicsGUI(){//constructor
+    setBounds(0,100,400,100);
+    setTitle("B Copyright 2004 R.G.Baldwin");
+    Display display = new Display();
+    getContentPane().add(display);
+
+    setDefaultCloseOperation(
+                           JFrame.EXIT_ON_CLOSE);
+
+    //Prepare this object to handle low-level
+    // WindowEvents using the process methods.
+    enableEvents(AWTEvent.WINDOW_EVENT_MASK);
+
+    //Prepare this object to handle high-level
+    // KeyEvents using a listener.
+    this.addKeyListener(new KeyListnr(display));
+
+    //Prepare this object to handle high-level
+    // focus and state events using a listener.
+    addWindowFocusListener(new WindowLstnr());
+    addWindowStateListener(new WindowLstnr());
+
+    setVisible(true);
+  }//end constructor
+  //-------------------------------------------//
+
+  //The next three methods are low-level event
+  // handler methods that are new to V1.4.  These
+  // methods are identical to methods having the
+  // same names defined for the class named
+  // FocusWindow02, except that the screen output
+  // identifies the object as B rather than A.
+
+  //Sample screen output for this method:
+  // Low:processWindowEvent B
+  // 205 WINDOW_ACTIVATED
+  protected void processWindowEvent(
+                                  WindowEvent e){
+    System.out.println();
+    System.out.println(
+                     "Low:processWindowEvent B");
+    System.out.print(e.getID() + " ");
+    System.out.println(getEventType(e.getID()));
+    super.processWindowEvent(e);
+  }//end processWindowEvent
+  //-------------------------------------------//
+
+  //Sample screen output for this method:
+  // Low:processWindowFocusEvent B
+  // 207 WINDOW_GAINED_FOCUS
+  protected void processWindowFocusEvent(
+                                  WindowEvent e){
+    System.out.println();
+    System.out.println(
+                "Low:processWindowFocusEvent B");
+    System.out.print(e.getID() + " ");
+    System.out.println(getEventType(e.getID()));
+    super.processWindowFocusEvent(e);
+  }//end processWindowFocusEvent
+  //-------------------------------------------//
+
+  //Sample screen output for this method:
+  // Low:processWindowStateEvent B
+  // 209 WINDOW_STATE_CHANGED
+  protected void processWindowStateEvent(
+                                  WindowEvent e){
+    System.out.println();
+    System.out.println(
+                "Low:processWindowStateEvent B");
+    System.out.print(e.getID() + " ");
+    System.out.println(getEventType(e.getID()));
+    super.processWindowStateEvent(e);
+  }//end processWindowStateEvent
+  //-------------------------------------------//
+
+  //Method to convert event ID values to text
+  // descriptions.
+  String getEventType(int ID){
+    if(ID == WindowEvent.WINDOW_ACTIVATED){
+      return "WINDOW_ACTIVATED";
+    }else if(ID == WindowEvent.WINDOW_CLOSED){
+      return "WINDOW_CLOSED";
+    }else if(ID == WindowEvent.WINDOW_CLOSING){
+      return "WINDOW_CLOSING";
+    }else if(ID ==
+                 WindowEvent.WINDOW_DEACTIVATED){
+      return "WINDOW_DEACTIVATED";
+    }else if(ID ==
+                 WindowEvent.WINDOW_DEICONIFIED){
+      return "WINDOW_DEICONIFIED";
+    }else if(ID == WindowEvent.WINDOW_ICONIFIED){
+      return "WINDOW_ICONIFIED";
+    }else if(ID == WindowEvent.WINDOW_OPENED){
+      return "WINDOW_OPENED";
+    }else if(ID ==
+               WindowEvent.WINDOW_STATE_CHANGED){
+      return "WINDOW_STATE_CHANGED";
+    }else if(ID ==
+                WindowEvent.WINDOW_GAINED_FOCUS){
+      return "WINDOW_GAINED_FOCUS";
+    }else if(ID ==
+                  WindowEvent.WINDOW_LOST_FOCUS){
+      return "WINDOW_LOST_FOCUS";
+    }else{
+      return "Unknown event type";
+    }//end else
+  }//end getEventType
+//=============================================//
+
+//Begin inner class definitions
+
+class Display extends Canvas{
+
+  Display(){//constructor
+    //Set the focusable property to false to
+    // guarantee that the JFrame contains no
+    // focusable components.
+    setFocusable(false);
+  }//end constructor
+
+  //Override the paint method to display the
+  // coordinates on the screen near the location
+  // specified by the coordinates.
+  public void paint(Graphics g){
+    super.paint(g);
+    g.drawString(
+        "" + xCoor + ", " + yCoor, xCoor, yCoor);
+  }//end paint()
+}//end class Display
+//=============================================//
+
+//This listener class monitors for key events,
+// increments and displays the stored coordinates
+// when the arrow keys are pressed.
+class KeyListnr extends KeyAdapter{
+  Display display;
+
+  KeyListnr(Display display){//constructor
+    this.display = display;//save ref to display
+  }//end constructor
+  //-------------------------------------------//
+
+  //Override the keyPressed method to increment
+  // or decrement the coordinates by five pixels
+  // when an arrow key is pressed.  Then repaint
+  // the canvas to cause the coordinate values to
+  // be displayed. Remember y-coordinates are
+  // displayed upside down.
+  public void keyPressed(KeyEvent e){
+    int code = e.getKeyCode();
+
+    if(code == e.VK_UP){
+      yCoor -= 5;
+    }else if(code == e.VK_LEFT){
+      xCoor -= 5;
+    }else if(code == e.VK_RIGHT){
+      xCoor += 5;
+    }else if(code == e.VK_DOWN){
+      yCoor += 5;
+    }//end else if
+
+    display.repaint();//Display coordinates
+  }//end keyPressed()
+}//end class KeyListnr
+//=============================================//
+}//end GraphicsGUI class
+//=============================================//
+
+<b>Listing 1</b>
+</pre></td>
+		</tr>
+	</tbody>
+</table>
+<p></p>
+<p><br></p>
+<hr size="3" width="100%" align="center">
+<p>Copyright 2005, Richard G. Baldwin.&nbsp; Reproduction in whole or in
+part in any form or medium without express written permission from Richard
+Baldwin is prohibited. </p>
+<h4><a name="About_the_author">About the author</a></h4>
+<p><b><a href="mailto:baldwin@dickbaldwin.com">Richard Baldwin</a></b><i>
+  is a college professor (at Austin Community College in Austin, TX) and
+private  consultant whose primary focus is a combination of Java, C#, and
+XML. In addition to the many platform and/or language independent benefits
+of Java and C# applications, he believes that a combination of Java, C#,
+and XML will become the primary driving force in the delivery of structured
+information on the Web.</i> </p>
+<p><i>Richard has participated in numerous consulting projects, and he frequently 
+ provides onsite training at the high-tech companies located in and around 
+ Austin, Texas.&nbsp; He is the author of Baldwin's Programming 
+<a
+ href="http://www.dickbaldwin.com">Tutorials</a>,
+  which has gained a worldwide following among experienced and aspiring programmers.
+  He has also published articles in JavaPro magazine.</i> </p>
+<p><i>In addition to his programming expertise, Richard has many years of 
+ practical experience in Digital Signal Processing (DSP).&nbsp; His first
+ job after he earned his Bachelor's degree was doing DSP in the Seismic Research 
+ Department of Texas Instruments.&nbsp; (TI is still a world leader in DSP.)&nbsp; 
+ In the following years, he applied his programming and DSP expertise to other
+ interesting areas including sonar and underwater acoustics.</i> </p>
+<p><i>Richard holds an MSEE degree from Southern Methodist University and
+  has many years of experience in the application of computer technology
+to  real-world problems.</i> </p>
+<p><i><a href="mailto:baldwin@dickbaldwin.com">Baldwin@DickBaldwin.com</a></i>
+</p>
+<p>-end- </p>
+   </body>
+</html>

@@ -1,0 +1,545 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type"
+content="text/html; charset=iso-8859-1">
+<meta name="author" content="richard g. baldwin">
+<meta name="GENERATOR" content="Microsoft FrontPage Express 2.0">
+<title>... in Java by Richard G Baldwin</title>
+</head>
+
+<body bgcolor="#FFFFFF">
+<!--start-->
+<h3 align="center"><b><i>Richard G Baldwin (512) 223-4758, </i></b><a
+href="mailto:baldwin@austin.cc.tx.us"><b><i>baldwin@austin.cc.tx.us</i></b></a><b><i>,
+</i></b><a href="http://www2.austin.cc.tx.us/baldwin/"><b><i>http://www2.austin.cc.tx.us/baldwin/</i></b></a></h3>
+
+<h2 align="center"><b><!--title-->JDK 1.1, Object Serialization,
+Saving/Restoring a GUI Context with Inner Classes<!--endtitle--></b></h2>
+
+<p>Java Programming, Lecture Notes # 252, Revised 12/17/98. </p>
+
+<ul>
+    <li><a href="#introduction">Introduction</a></li>
+    <li><a href="#sample program">Sample Program</a></li>
+    <li><ul>
+            <li><a href="#discussion, overview">Discussion,
+                Overview</a></li>
+            <li><a href="#Interesting Code Fragments">Interesting
+                Code Fragments</a></li>
+            <li><a href="#program listing">Program Listing</a></li>
+        </ul>
+    </li>
+</ul>
+
+<hr>
+
+<h2 align="center"><a name="introduction"></a><font
+color="#FF0000"><b>Introduction</b></font></h2>
+
+<p>Students in Prof. Baldwin's <b>Advanced Java Programming</b>
+classes at ACC are responsible for knowing and understanding all
+of the material in this lesson. </p>
+
+<p>This lesson was originally written on February 28, 1997 using
+the software and documentation in JDK 1.1. It was upgraded to JDK
+1.2 on December 16, 1998.</p>
+
+<p>One of the features of JDK 1.1 is the ability to create <i>persistent</i>
+objects using object serialization. </p>
+
+<p>Another feature is the Delegation Event Model which, among
+other things, uses a <i>source/listener</i> model for handling
+events. </p>
+
+<p>A third feature is the ability to create <i>inner classes</i>
+and also to use an abbreviated syntax for the <i>definition of
+anonymous classes</i> and the <i>instantiation of anonymous
+objects</i> from those classes. </p>
+
+<p>The definition of anonymous classes and the instantiation of
+anonymous objects of those classes forms a good match for the
+need to <u>define Listener classes</u> and <u>instantiate
+Listener objects</u> in the Delegation Event Model. </p>
+
+<p>The purpose of this lesson is to illustrate the use of the
+Delegation Event Model along with the use of inner classes and
+object serialization to <u>achieve persistence of a GUI context</u>.</p>
+
+<h2 align="center"><a name="sample program"></a><font
+color="#FF0000">Sample Program</font></h2>
+
+<p align="left">This program uses object serialization to create
+a <u>persistent GUI object</u> which includes the use of inner
+classes and the abbreviated syntax for defining new Listener
+classes and instantiating objects of those classes. The GUI
+context makes use of the Source/Listener model for event handling
+that became available with JDK 1.1. </p>
+
+<h3 align="center"><a name="discussion, overview"></a><font
+color="#FF0000">Discussion, Overview</font></h3>
+
+<p><font color="#000000">This application combines</font></p>
+
+<ul>
+    <li><font color="#000000">object serialization,</font></li>
+    <li><font color="#000000">inner classes, and</font></li>
+    <li><font color="#000000">the Delegation Event Model</font></li>
+</ul>
+
+<p><font color="#000000">to create, save, and later restore an
+operational GUI object.</font> </p>
+
+<p><font color="#000000">The application creates a serializable <b>GUI
+</b>object having <u>two buttons and a close box</u>. It uses
+object serialization to <u>write</u> the object to an output
+file. It closes the file and flushes the output buffer. Then it <u>disposes</u>
+of the original object.</font> </p>
+
+<p><font color="#000000">Then it <u>reopens</u> the file, uses
+object serialization to <u>read</u> the object from the file and
+reconstruct it. It <u>assigns</u> the reconstructed object to a
+new reference variable.</font> The reconstructed object contains
+a method named <strong>activate()</strong>, which, when invoked,
+causes it to become active.</p>
+
+<p><font color="#000000">The instance method named <strong>activate</strong><b>()</b>
+is invoked on the reconstructed object to <u>instantiate listener
+objects</u> and <u>register</u> them to listen for <b>actionPerformed()</b>
+events on the two buttons and to listen for <b>windowClosing()</b>
+events on the <b>Frame</b>.</font> </p>
+
+<p><font color="#000000">This activation causes the object which
+was read from the disk file to <u>become operational</u> as a
+user interface.</font> </p>
+
+<p align="left"><font color="#000000">The code used to handle the
+events is based on the source/listener concept of the Delegation
+Event Model. The code also makes heavy use of inner classes and
+the abbreviated instantiation syntax.</font></p>
+
+<h3 align="center"><a name="Interesting Code Fragments"><font
+color="#FF0000">Interesting Code Fragments</font></a></h3>
+
+<p><font color="#000000">The first fragment shows the import
+directives and the definition of the controlling class for the
+program. The <strong>main()</strong> method in the controlling
+class does nothing more than to kick off the process.</font></p>
+
+<table border="1" bgcolor="#FFFF00">
+    <tr>
+        <td><pre>import java.io.*;
+import java.util.*;
+import java.awt.*;
+import java.awt.event.*;
+//=======================================================//
+class ObjSer02{
+  static public void main(String[] args){
+    MyProcess myProcess = new MyProcess();  
+  }//end main()
+}//end class ObjSer02</pre>
+        </td>
+    </tr>
+</table>
+
+<p><font color="#000000">The next fragment begins the discussion
+of the class named <strong>MyProcess </strong>that controls the
+overall process of creating the GUI, writing it to the disk,
+reading it back from the disk, and activating it.</font></p>
+
+<p><font color="#000000">The constructor for this class
+instantiates a new object of type <strong>GUI</strong> and writes
+it to the disk in the manner described in an earlier introductory
+lesson on object serialization. Then it disposes of the <strong>GUI
+</strong>object completely, flushes the output stream, and closes
+the output stream.</font></p>
+
+<table border="1" bgcolor="#FFFF00">
+    <tr>
+        <td><pre>class MyProcess{
+  MyProcess(){//constructor
+    try{
+      FileOutputStream fout = new FileOutputStream(&quot;tmp&quot;);
+      ObjectOutputStream  outStream  =  
+                              new ObjectOutputStream(fout);
+
+<strong>      GUI myOldObject = new GUI();</strong>      
+      //write a custom GUI object to disk
+      outStream.<strong>writeObject</strong>(myOldObject); 
+      myOldObject.dispose();
+      outStream.flush();
+      outStream.close();</pre>
+        </td>
+    </tr>
+</table>
+
+<p><font color="#000000">The next fragment reads the <strong>GUI </strong>object
+from the disk in the manner described in an earlier lesson on
+object serialization. The <strong>readObject()</strong> method
+reconstructs the <strong>GUI</strong> object from the stream of
+bytes obtained from the disk. A reference to the reconstructed
+object is assigned to a new reference variable named <strong>myNewObject</strong>.</font></p>
+
+<p><font color="#000000">Then the <strong>activate()</strong>
+method of the reconstructed object is invoked which causes it to
+become active. We will see later that this method instantiates
+listener objects and registers them on various components on the <strong>GUI</strong>
+object. It also sets the size of the <strong>GUI</strong> object
+and makes it visible.</font></p>
+
+<p><font color="#000000">This is followed by typical exception
+handling catch blocks, ending the definition of the constructor
+and the definition of the <strong>MyProcess</strong> class.</font></p>
+
+<table border="1" bgcolor="#FFFF00">
+    <tr>
+        <td><pre>
+      FileInputStream fin = new FileInputStream(&quot;tmp&quot;);
+      ObjectInputStream inStream = 
+                                new ObjectInputStream(fin);
+      try{
+        //read the custom GUI object from the file
+      <strong>  GUI myNewObject = (GUI)inStream.readObject()</strong>;
+        
+        //Invoke one of the objects methods to instantiate 
+        // and register listener objects on the components
+        // in the custom GUI.  This will make it active.
+        myNewObject.<strong>activate()</strong>;
+        
+      }catch(ClassNotFoundException e){
+        System.out.println(e);
+      }//end catch block
+      inStream.close();  
+    }catch(IOException e){System.out.println(e);}
+  }//end constructor
+}//end class MyProcess</pre>
+        </td>
+    </tr>
+</table>
+
+<p><font color="#000000">The next fragment begins the definition
+of the class from which the <strong>GUI</strong> object is
+instantiated.</font></p>
+
+<p><font color="#000000">There is nothing really special about
+the constructor for this class. You have seen code like this many
+times in the past. Note however that the constructor does not
+register listener objects on the components on the <strong>GUI</strong>.
+That task is reserved for the method named <strong>activate()</strong>
+that we will discuss later.</font></p>
+
+<p><font color="#000000">However, the constructor does make the <strong>GUI</strong>
+visible so that you will see it on your screen before it is
+serialized to disk and disposed. You will see it reappear on the
+screen when it is read from the disk, reconstructed, and
+activated by the code in the <strong>MyProcess</strong> class
+descussed above.</font></p>
+
+<table border="1" bgcolor="#FFFF00">
+    <tr>
+        <td><pre>class <strong>GUI</strong> extends Frame implements Serializable{
+  Button singButton;
+  Button whistleButton;
+  public GUI(){//constructor
+    setLayout(new FlowLayout());
+    setTitle(&quot;Copyright 1997, R.G.Baldwin&quot;);
+    setBackground(Color.green);
+    add(singButton = new Button(&quot;Sing&quot;));
+    add(whistleButton = new Button(&quot;Whistle&quot;));
+    this.setSize(300,75); 
+    this.setVisible(true);//display temporarily
+  }//end constructor</pre>
+        </td>
+    </tr>
+</table>
+
+<p><font color="#000000">The next fragment is the entire <strong>activate()</strong>
+method. This is the method by which the object knows how to make
+itself active after it is read from the disk and reconstructed. </font></p>
+
+<p><font color="#000000">Recall that this method is invoked on
+the reconstructed object by the constructor of the <strong>MyProcess</strong>
+class.</font></p>
+
+<p><font color="#000000">There is nothing special about this
+code. It is typical of code used to anonymously instantiate
+anonymous listener objects and register those listener objects on
+components.</font></p>
+
+<p><font color="#000000">Two action listeners and one window
+listener are instantiated and registered by this method when it
+is invoked. The event handlers in these objects control the
+behavior of the <strong>GUI</strong> object after it has been
+reconstructed.</font></p>
+
+<table border="1" bgcolor="#FFFF00">
+    <tr>
+        <td><pre>  void <strong>activate</strong>(){
+    this.singButton.addActionListener(
+             new ActionListener(){
+               public void actionPerformed(ActionEvent e){
+                 System.out.println(
+                                &quot;I am singing, Tra la la&quot;);
+               }//end actionPerformed()
+             }//end ActionListener
+           );//end addActionListener()
+
+    this.whistleButton.addActionListener(
+             new ActionListener(){
+               public void actionPerformed(ActionEvent e){
+                 System.out.println(
+                      &quot;I am whistling, Tweet Tweet Tweet&quot;);
+               }//end actionPerformed()
+             }//end ActionListener
+           );//end addActionListener()
+
+    this.addWindowListener(
+             new WindowAdapter(){
+               public void windowClosing(WindowEvent e){
+                 System.exit(0);//terminate the program
+               }//end windowClosing()
+             }//end WindowAdapter
+           );//end addWindowListener
+    this.setSize(300,75); 
+    this.setVisible(true);
+    this.repaint();
+  }//end activate()
+}//end class GUI</pre>
+        </td>
+    </tr>
+</table>
+
+<p><font color="#000000">When the user clicks on the button
+labeled <i>Sing</i>, the event handler registered to listen for <b>Action
+</b>events on that button <u>displays</u> the following text on
+the screen.</font> </p>
+
+<p><font color="#000000"><b>&quot;I am singing, Tra la la&quot;</b></font>
+</p>
+
+<p><font color="#000000">When the user clicks on the button
+labeled <i>Whistle</i>, the event handler registered to listen
+for <b>Action </b>events on that button <u>displays</u> the
+following text on the screen.</font> </p>
+
+<p><font color="#000000"><b>&quot;I am whistling, Tweet, Tweet,
+Tweet&quot;</b></font> </p>
+
+<p><font color="#000000">When the user clicks the
+&quot;close&quot; box on the <b>Frame</b>, the event handler
+registered to listen for <b>windowClosing()</b> events on the <b>Frame
+</b><u>terminates the program</u>.</font> </p>
+
+<p align="left"><font color="#000000">This program was tested
+using JDK 1.1 under Win95. It was also tested using JDK 1.2 under
+Win95.</font></p>
+
+<h3 align="center"><a name="program listing"></a><font
+color="#FF0000">Program Listing</font></h3>
+
+<p>A listing of the program with additional comments follows: </p>
+
+<table border="1" bgcolor="#FFFF00">
+    <tr>
+        <td><pre>/*File ObjSer02.java, Copyright 1997, R.G.Baldwin
+Rev 12/16/98
+Designed to be compiled and run under JDK 1.1 or a later
+version.
+
+
+This application combines 
+
+object serialization, 
+inner classes, and 
+the Delegation Event Model 
+
+to create, save in a file, and later restore an 
+operational GUI context.
+
+This application creates a serializable GUI object having 
+two buttons and a close box.  It uses object serialization
+to write the object to an output file. It closes the file 
+and flushes.  Then it disposes of the original object.
+
+Then it reopens the file, uses object serialization to 
+read the object from the file and assigns it to a new 
+reference variable.  
+
+An instance method named activate() is invoked on the 
+new object to instantiate listener objects and register 
+them to listen for actionPerformed() events on the two 
+buttons and to listen for windowClosing() events on the 
+Frame. The method also sets the size of the Frame 
+containing the GUI, makes it visible, and requests a
+repaint.  This causes the object which was read from the 
+disk file to become operational as a user interface.
+
+The code used to handle the events is based on the 
+source/listener concept of the Delegation Event Model.  
+The code also makes heavy use of Inner Classes and the 
+abbreviated instantiation syntax.
+
+An instance method named activate() is defined in the 
+GUI class.  This method is used to anonymously define the 
+classes for and instantiate three anonymous listener 
+objects.  The first two implement the ActionListener 
+interface while the third extends the WindowListener 
+adapter.
+
+The first two override the actionPerformed() method of the
+ActionListener interface while the third overrides the 
+windowClosing() method of the WindowListener interface.
+
+The class named GUI extends Frame.  Two Button objects 
+labeled Sing and Whistle are instantiated in the GUI 
+constructor. They are referenced by variables named 
+singButton and whistleButton respectively.  Both buttons
+are added to the Frame object.
+
+The first two anonymous listener objects mentioned above 
+are registered to listen for actionPerformed() events on 
+the two buttons.  The third anonymous listener object is 
+registered to listen for windowClosing() events on the 
+Frame object.
+
+When the program starts, a Frame object containing the two
+buttons appears on the screen momentarily, is written into
+the file using object serialization, is disposed of and 
+disappears.
+
+The file is closed and reopened and the object is read 
+from the file, appears on the screen, and is activated.
+
+When the user clicks on the button labeled Sing, the event
+handler registered to listen for Action events on that 
+button displays the following text on the screen.
+
+&quot;I am singing, Tra la la&quot; 
+
+When the user clicks on the button labeled Whistle, the 
+event handler registered to listen for Action events on 
+that button displays the following text on the screen.
+
+&quot;I am whistling, Tweet, Tweet, Tweet&quot;
+
+When the user clicks the &quot;close&quot; box on the Frame, the 
+event handler registered to listen for windowClosing() 
+events on the Frame terminates the program.
+
+As mentioned above, this version of the program uses 
+abbreviated notation in defining and instantiating the 
+listener objects.  The abbreviated notation is fairly 
+cryptic.
+
+This program was tested using JDK 1.1 under Win95. It was
+also tested using JDK 1.2 under Win95.
+**********************************************************/
+import java.io.*;
+import java.util.*;
+import java.awt.*;
+import java.awt.event.*;
+//=======================================================//
+class ObjSer02{
+  static public void main(String[] args){
+  MyProcess myProcess = new MyProcess();  
+  }//end main()
+}//end class ObjSer02
+//=======================================================//
+class MyProcess{
+  MyProcess(){//constructor
+    try{
+      FileOutputStream fout = new FileOutputStream(&quot;tmp&quot;);
+      ObjectOutputStream  outStream  =  
+                              new ObjectOutputStream(fout);
+
+      GUI myOldObject = new GUI();      
+      //write a custom GUI object to disk
+      outStream.writeObject(myOldObject); 
+      myOldObject.dispose();
+      outStream.flush();
+      outStream.close();
+
+      FileInputStream fin = new FileInputStream(&quot;tmp&quot;);
+      ObjectInputStream inStream = 
+                                new ObjectInputStream(fin);
+      try{
+        //read the custom GUI object from the file
+        GUI myNewObject = (GUI)inStream.readObject();
+        
+        //Invoke one of the objects methods to instantiate 
+        // and register listener objects on the components
+        // in the custom GUI.  This will make it active.
+        myNewObject.activate();
+        
+      }catch(ClassNotFoundException e){
+        System.out.println(e);
+      }//end catch block
+      inStream.close();  
+    }catch(IOException e){System.out.println(e);}
+  }//end constructor
+}//end class MyProcess
+//=======================================================//
+
+class GUI extends Frame implements Serializable{
+  Button singButton;
+  Button whistleButton;
+  public GUI(){//constructor
+    setLayout(new FlowLayout());
+    setTitle(&quot;Copyright 1997, R.G.Baldwin&quot;);
+    setBackground(Color.green);
+    add(singButton = new Button(&quot;Sing&quot;));
+    add(whistleButton = new Button(&quot;Whistle&quot;));
+    this.setSize(300,75); 
+    this.setVisible(true);//display temporarily
+  }//end constructor
+  //-----------------------------------------------------//
+    
+  void activate(){
+    //The code which follows instantiates three anonymous 
+    // objects of types ActionListener and WindowAdapter, 
+    // and registers them for handling events on the two 
+    // corresponding Button objects and the Frame object.
+    // This code uses the abbreviated syntax for 
+    // anonymous classes and objects.  This method is used
+    // to activate the GUI after it is read from the disk
+    // file.
+    this.singButton.addActionListener(
+             new ActionListener(){
+               public void actionPerformed(ActionEvent e){
+                 System.out.println(
+                                &quot;I am singing, Tra la la&quot;);
+               }//end actionPerformed()
+             }//end ActionListener
+           );//end addActionListener()
+
+    this.whistleButton.addActionListener(
+             new ActionListener(){
+               public void actionPerformed(ActionEvent e){
+                 System.out.println(
+                      &quot;I am whistling, Tweet Tweet Tweet&quot;);
+               }//end actionPerformed()
+             }//end ActionListener
+           );//end addActionListener()
+
+    this.addWindowListener(
+             new WindowAdapter(){
+               public void windowClosing(WindowEvent e){
+                 System.exit(0);//terminate the program
+               }//end windowClosing()
+             }//end WindowAdapter
+           );//end addWindowListener
+    this.setSize(300,75); 
+    this.setVisible(true);
+    this.repaint();
+  }//end activate()
+}//end class GUI
+//=======================================================//</pre>
+        </td>
+    </tr>
+</table>
+
+<p>-end-</p>
+
+<p><!--end--></p>
+</body>
+</html>

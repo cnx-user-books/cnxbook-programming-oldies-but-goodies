@@ -1,0 +1,961 @@
+<html><head>
+   <meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
+   <meta name="generator" content="mozilla/4.04 [en] (win95; i) [netscape]">
+   <meta name="author" content="richard g. baldwin">
+   <title>... in Java by Richard G Baldwin</title></head><body><!--start-->
+
+<center><h3><b><i>Richard G Baldwin (512) 223-4758, <a href="mailto:baldwin@austin.cc.tx.us">baldwin@austin.cc.tx.us</a>,
+<a href="http://www2.austin.cc.tx.us/baldwin/">http://www2.austin.cc.tx.us/baldwin/</a></i></b></h3></center>
+
+<center><h2><b><!--title-->Event Handling in JDK 1.1, Low-level and Semantic Events<!--endtitle--></b></h2></center>
+Java Programming, Lecture Notes # 84, Revised 03/09/98.
+<ul><li><a href="#preface">Preface</a></li>
+
+<li><a href="#introduction">Introduction</a></li>
+
+<li><a href="#overview">Overview</a></li>
+
+<li><a href="#sample program for low-level events">Sample Program for Low-Level
+Events</a></li>
+
+<li><a href="#sample program for low-level and semantic events">Sample Program
+for Low-Level and Semantic Events</a></li>
+
+<ul><li><a href="#focus events">Focus Events</a></li>
+
+<li><a href="#action events">Action Events</a></li>
+
+<li><a href="#actionlistener object">ActionListener Object</a></li>
+
+<li><a href="#focuslistener object">FocusListener Object</a></li>
+
+<li><a href="#mouselistener object">MouseListener Object</a></li>
+
+<li><a href="#windowlistener object">WindowListener Object</a></li>
+
+<li><a href="#more general comments about the program">More General Comments
+about the Program</a></li>
+
+<li><a href="#finally, the program">Finally, the Program</a></li></ul>
+
+<li><a href="#review">Review</a></li></ul>
+
+<hr width="100%"><center><h2><a name="preface"></a><font color="#ff0000">Preface</font></h2></center>
+Students in Prof. Baldwin's <b><u>Intermediate Java Programming</u></b>
+classes at ACC are responsible for knowing and understanding all of the
+material in this lesson.
+<center><h2><a name="introduction"></a><b><font color="#ff0000">Introduction</font></b></h2></center>
+An earlier lesson briefly discussed the differences between <i>low-level</i>
+events and <i>semantic</i> events as described in the JDK 1.1 documentation.
+
+<p>This lesson takes another look at that topic through the use of programs
+which apply both <i>low-level</i> event handling and <i>semantic </i>event
+handling to the <u>same set</u> of visual components. This makes it possible
+to compare the two types of events in a more meaningful way.
+<center><h2><a name="overview"></a><font color="#ff0000">Overview</font></h2></center>
+Although the suite of <i>semantic </i>events is generally used for different
+purposes than the suite of <i>low-level</i> events, from a practical programming
+viewpoint, there is very little difference.
+
+<p>The primary difference appears to reside in the <u>nature of the event
+object</u> that is passed to the event handler when an event occurs.
+
+<p>Using the information in the event object, <i>low-level</i> events can
+gain <u>access</u> to the <u>specific Component object</u> that generated
+the event.
+
+<p>Given a <i>low-level</i> event object, the <b>getComponent()</b> method
+of the <b>java.awt.event.ComponentEvent</b> class will <u>return a reference</u>
+to the actual object that generated the event.
+
+<p>Once that reference is available, there are literally <u>dozens of methods</u>
+of the <b>Component</b> class that can be invoked on the object, such as
+<b>getLocation(), getLocationOnScreen(), getMaximumSize(), getMinimumSize(),
+getName(),</b> etc.
+
+<p>A sample program in a <u>previous lesson</u> invoked the <b>getName()</b>
+method on such an object to determine which object among several objects
+generated a low-level mouse event.
+
+<p>A sample program that we will see later in this lesson invokes some
+of the other available methods on such a component object.
+
+<p>All <i>low-level</i> event classes are subclasses of the <b>java.awt.event.ComponentEvent
+</b>class, so the event handlers for <u>all <i>low-level</i> events have
+access</u> to the object that generated the event.
+
+<p>Semantic events, on the other hand, <u>do not subclass</u> the <b>ComponentEvent</b>
+class. Rather, they <u>subclass the superclass</u> of <b>ComponentEvent</b>
+making them <u>siblings</u> of <b>ComponentEvent</b>.
+
+<p>Because they do not subclass <b>ComponentEvent</b>, the event objects
+passed into semantic event handlers <u>do not provide a way to obtain a
+reference</u> to the object that generated the event, and therefore <u>cannot
+invoke the methods</u> of the <b>Component </b>class on that object.
+
+<p>Whether this is <u>important or not</u> depends on your needs.
+
+<p>For example, if you needed to <u>determine the location</u> of the object
+that generated an event, you could determine that location by processing
+a <i>low-level</i> event but you (probably) could not determine that location
+by processing a <i>semantic </i>event (never say never unless you want
+some programming genius to prove you wrong).
+
+<p>Regardless of the ability to access the object that generated the event,
+the <u>name</u> of that object is <u>readily available</u> to the event
+handlers of <u>both</u> <i>low-level</i> and <i>semantic</i> events.
+
+<p>In both cases, the name of the object is <u>encapsulated in the event
+object</u> passed as a parameter and can be extracted or tested using methods
+of the <b>String </b>class. Often knowing the name of the object is sufficient
+to accomplish the desired result.
+<center><h2><a name="sample program for low-level events"></a><font color="#ff0000">Sample
+Program for Low-Level Events</font></h2></center>
+The following program illustrates some of the capability of low-level events.
+
+<p>A <b>Button </b>object and a <b>TextField </b>object are placed at the
+top and bottom of a <b>Frame </b>object.
+
+<p>A <b>MouseListener </b>object is instantiated and <i>registered </i>to
+monitor for low-level <b>mousePressed()</b> events on all three objects.
+
+<p>Whenever a <b>mousePressed()</b> event occurs, the Listener object obtains
+and displays several pieces of information about the object that generated
+the event.
+
+<p>Although this demonstration program <u>only obtains and displays</u>
+information as a result of <b>mousePressed()</b> events, <u>all of the
+methods</u> of the Component class are available for use at that point.
+Thus the code in the event handler method <u>could also modify</u> some
+of the attributes of the object that generated the event.
+
+<p>Finally, a <b>WindowListener </b>object is instantiated and registered
+to terminate the program when the user closes the <b>Frame </b>object.
+
+<p>Additional information about the program is contained in the comments.
+<br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td><pre>/*File Event13.java Copyright 1997, R.G.Baldwin
+Revised 03/09/98 to make it fit the page better.
+
+This program is designed to be compiled and run&nbsp;
+under JDK 1.1
+
+The program demonstrates the object-manipulation capability
+of low-level events.
+
+A Button object and a TextField object are placed in a&nbsp;
+Frame object.
+
+A MouseListener object is instantiated and registered to&nbsp;
+monitor for low-level mousePressed() events on all three&nbsp;
+objects.&nbsp; Whenever a mousePressed() event occurs, the&nbsp;
+Listener object obtains and displays several pieces of&nbsp;
+information about the object that generated the event.&nbsp;
+Although this demonstration program only obtains and&nbsp;
+displays information as a result of mousePressed() events,
+all of the methods of the Component class are available for
+use at that point.&nbsp; Thus the code in the event handler&nbsp;
+method could also modify some of the attributes of the&nbsp;
+object that generated the event.
+
+Finally, a WindowListener object is instantiated and&nbsp;
+registered to terminate the program when the user closes&nbsp;
+the Frame object.
+
+Starting the program and then clicking successively on the&nbsp;
+Button, the TextField, and the interior of the Frame&nbsp;
+produces the following output.
+
+Name = Button1
+Parent's name = Frame
+Location = java.awt.Point[x=4,y=23]
+Minimum Size = java.awt.Dimension[width=54,height=21]
+Size = java.awt.Dimension[width=192,height=21]
+
+Name = TextField1
+Parent's name = Frame
+Location = java.awt.Point[x=4,y=275]
+Minimum Size = java.awt.Dimension[width=104,height=21]
+Size = java.awt.Dimension[width=192,height=21]
+
+Name = Frame
+No parent name available at this level
+Location = java.awt.Point[x=0,y=0]
+Minimum Size = java.awt.Dimension[width=112,height=69]
+Size = java.awt.Dimension[width=200,height=300]
+
+
+These results were produced using JDK 1.1.3, under Win95.
+**********************************************************/
+
+import java.awt.*;
+import java.awt.event.*;
+
+public class Event13 {
+&nbsp; public static void main(String[] args){
+&nbsp;&nbsp;&nbsp; //instantiate a Graphical User Interface object
+&nbsp;&nbsp;&nbsp; GUI gui = new GUI();
+&nbsp; }//end main
+}//end class Event13
+//=======================================================//
+
+class GUI {
+&nbsp; public GUI(){//constructor
+&nbsp;&nbsp;&nbsp; //Create a visual TextField object&nbsp;
+&nbsp;&nbsp;&nbsp; TextField myTextField = new TextField("Initial String");
+&nbsp;&nbsp;&nbsp; myTextField.setName("TextField1");
+
+&nbsp;&nbsp;&nbsp; //Create a visual Button object
+&nbsp;&nbsp;&nbsp; Button myButton = new Button("Click me");
+&nbsp;&nbsp;&nbsp; myButton.setName("Button1");
+&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Create a visual Frame object
+&nbsp;&nbsp;&nbsp; Frame myFrame = new Frame();
+&nbsp;&nbsp;&nbsp; myFrame.setSize(200,300);
+&nbsp;&nbsp;&nbsp; myFrame.setTitle("Copyright 1997, R.G.Baldwin");
+&nbsp;&nbsp;&nbsp; myFrame.setName("Frame");
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Add the Button and the TextField to the Frame object
+&nbsp;&nbsp;&nbsp; myFrame.add("North",myButton);
+&nbsp;&nbsp;&nbsp; myFrame.add("South",myTextField);
+&nbsp;&nbsp;&nbsp; myFrame.setVisible(true);
+&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Instantiate and register a MouseListener object which
+&nbsp;&nbsp;&nbsp; // will process mouse events on the Frame object, the&nbsp;
+&nbsp;&nbsp;&nbsp; // Button object, and the TextField object.
+&nbsp;&nbsp;&nbsp; MouseProc mouseProcCmd = new MouseProc();
+&nbsp;&nbsp;&nbsp; myFrame.addMouseListener(mouseProcCmd);
+&nbsp;&nbsp;&nbsp; myTextField.addMouseListener(mouseProcCmd);
+&nbsp;&nbsp;&nbsp; myButton.addMouseListener(mouseProcCmd);
+
+&nbsp;&nbsp;&nbsp; //Instantiate and register a Listener object which will
+&nbsp;&nbsp;&nbsp; // terminate the program when the user closes the&nbsp;
+&nbsp;&nbsp;&nbsp; // Frame object
+&nbsp;&nbsp;&nbsp; WProc1 winProcCmd1 = new WProc1();
+&nbsp;&nbsp;&nbsp; myFrame.addWindowListener(winProcCmd1);
+&nbsp; }//end constructor
+}//end class GUI definition
+//=======================================================//
+
+//Low-level event monitor.
+// This listener class monitors for low-level&nbsp;
+// mousePressed() events. Whenever a mousePressed() event
+// occurs, the event handler obtains and displays several
+// pieces of information about the object that generated
+// the event.&nbsp;
+
+class MouseProc extends MouseAdapter{
+&nbsp; public void mousePressed(MouseEvent e){
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Name = " + e.getComponent().getName());
+&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Parent's name = " +&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; e.getComponent().getParent().getName());
+&nbsp;&nbsp;&nbsp; }catch(NullPointerException exception){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "No parent name available at this level");
+&nbsp;&nbsp;&nbsp; }//end try/catch&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; System.out.println("Location = " +&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; e.getComponent().getLocation().toString());
+&nbsp;&nbsp;&nbsp; System.out.println("Minimum Size = " +&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; e.getComponent().getMinimumSize().toString());
+&nbsp;&nbsp;&nbsp; System.out.println("Size = " +&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; e.getComponent().getSize().toString());
+&nbsp;&nbsp;&nbsp; System.out.println();//blank line&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp; }//end mousePressed()
+}//end class MouseProc
+//=======================================================//
+
+//The following listener class is used to terminate the&nbsp;
+// program when the user closes the Frame object.
+class WProc1 extends WindowAdapter{
+&nbsp; public void windowClosing(WindowEvent e){
+&nbsp;&nbsp;&nbsp; System.exit(0);
+&nbsp; }//end windowClosing()
+}//end class WProc1
+//=======================================================//</pre></td></tr></table>
+
+<center><h2><a name="sample program for low-level and semantic events"></a><font color="#ff0000">Sample
+Program for Low-Level and Semantic Events</font></h2></center>
+The next sample program provides both low-level and semantic event handling
+for the same three components as in the previous sample program.
+
+<p>As before, a <b>Button </b>object and a <b>TextField </b>object are
+placed at the top and bottom respectively of a <b>Frame </b>object.
+
+<p><i>Semantic </i>event handling is provided for <b>Action </b>events.
+<i>Low-level</i> event handling is provided on the same components for
+<b>mousePressed()</b> events and <b>Focus</b> events. (Note that prior
+to 3/2/97, this section erroneously referred to <b>Focus</b> events as
+<i>Semantic</i> events.)
+<center><h3><a name="focus events"></a><font color="#ff0000">Focus Events</font></h3></center>
+In Java, a component has the <i>focus</i> when it can accept keyboard input.
+There are a variety of ways by which the focus can move from one component
+to another. Whenever it moves, one component generates a <b>focusLost()</b>
+event and the other component generates a <b>focusGained()</b> event.
+
+<p>There are also some issues involving <i>temporary</i> and <i>permanent</i>
+changes in focus which aren't discussed here, but can be found in the JDK
+1.1 documentation.
+
+<p>On the basis of the above description, you should see that there are
+<u>many different types</u> of components that can generate a focus event.
+Any component that can gain the focus can generate such an event.
+
+<p>There are some components such as <b>Button </b>objects and <b>TextField
+</b>objects that automatically gain the focus when they are clicked on
+by the mouse. There are other components such as <b>Label </b>objects that
+do not automatically gain the focus when they are clicked on by the mouse.
+However, even these components can gain the focus by <i>requesting </i>it.
+We will investigate this in more detail in a subsequent lesson.
+<center><h3><a name="action events"></a><font color="#ff0000">Action Events</font></h3></center>
+An action event can also be generated by <u>many different types</u> of
+components. For example, clicking a button or pressing the <i>Enter</i>
+key while a TextField object has the focus will generate an action event.
+The terminology derives from the notion that those user actions which generate
+<i>action</i> events are messages to the program to take the specific action
+indicated by the nature of the component.
+
+<p>For example, if a button is labeled <i>Exit</i> and it is clicked by
+the user, that means that the user is expecting an action that can be interpreted
+as <i>Exit </i>in that context.
+<center><h3><a name="actionlistener object"></a><font color="#ff0000">ActionListener
+Object</font></h3></center>
+In this program an <b>ActionListener</b> object is instantiated and registered
+to monitor for <b>semantic</b> <b>actionPerformed()</b> events on the <b>Button
+</b>and the <b>TextField</b>.
+
+<p>When an <b>actionPerformed()</b> event is generated, certain information
+regarding the event is encapsulated into an object that is passed to the
+<b>actionPerformed()</b> method of the Listener object. This information
+includes what the JDK 1.1 documentation refers to as a <i>command name</i>.
+This information can be accessed by the code in the method by invoking
+the <b>getActionCommand()</b> method on the object. In this program, the
+<i>command name</i> is accessed and displayed on the screen.
+
+<p>As it turns out, the "command name" associated with a <b>Button </b>is
+simply the <i>text</i>, <i>caption</i>, or <i>label </i>on the button (whatever
+you choose to call it). The "command name" associated with a<b> TextField</b>
+is the current text content of the TextField object.
+
+<p>This information would have different uses for different components
+in different situations. For example, it might be used to <u>distinguish
+among several buttons</u> if the captions on the buttons were not allowed
+to change during the execution of the program. It might be used to <u>extract
+user input</u> from a <b>TextField </b>object.
+
+<p>The object of type <b>ActionEvent</b> passed to the <b>actionPerformed()</b>
+method also includes the name of the component which can be used in a conditional
+test to identify the component that generated the event. One way to do
+this is through use of the the <b>indexOf()</b> method of the <b>String
+</b>class to determine if a given component name is included in a specific
+object.
+
+<p>In this program, each time the <b>actionPerformed()</b> method is invoked,
+code in the body of the method uses the <b>indexOf()</b> method to identify
+the component that generated the event and displays a message identifying
+that component.
+<center><h3><a name="focuslistener object"></a><font color="#ff0000">FocusListener
+Object</font></h3></center>
+A <b>FocusListener </b>object is instantiated and registered to monitor
+for <i>low-level </i><b>focusGained()</b> and <b>focusLost()</b> events
+on the <b>Button </b>and the <b>TextField</b>. (Note that prior to 3/2/97,
+this section erroneously referred to the two focus events as <i>semantic</i>
+events.)
+
+<p>Whenever a <b>focusGained()</b> event occurs, a message is displayed
+identifying the object which gained the focus.
+
+<p>Likewise, whenever a <b>focusLost()</b> event occurs, a message is displayed
+identifying the object that lost the focus.
+
+<p>The object that gained or lost the focus is identified by performing
+conditional tests on the <b>FocusEvent </b>object passed in as a parameter
+in the same manner that the <b>ActionEvent</b> object is used for action
+events.
+<center><h3><a name="mouselistener object"></a><font color="#ff0000">MouseListener
+Object</font></h3></center>
+A <b>MouseListener </b>object is instantiated and registered to monitor
+for <i>low-level</i> <b>mousePressed()</b> events on all three objects.
+(Note that there are numerous other <i>low-level</i> mouse events that
+could be monitored but they were omitted in for the sake of simplicity.)
+
+<p>The <b>MouseListener</b> object differentiates among the three objects
+(<b>Frame</b>, <b>Button</b>, and <b>TextField</b>) on the basis of the
+<u>component name</u> assigned to each object when it is instantiated.
+
+<p>At this point, it would probably be worthwhile to point out that JDK
+1.1 Beta 3 <u>does not require</u> the programmer to assign <u>unique</u>
+names to components when they are instantiated. Assigned component names
+can be duplicated among components. (I wonder if this is a bug? Other products
+such as Visual Basic and Delphi prohibit the programmer from assigning
+duplicate names to components.)
+
+<p>If the programmer does not assign names to the components when they
+are instantiated, they are automatically assigned by the system, and are
+probably unique. The names which are automatically assigned have the format
+<i>frame0, frame1, frame2</i>, etc., with the main body of the name identifying
+the type of component, and the digit at the end being assigned in the order
+in which the components are instantiated. A clever programmer should be
+able to find a way to obtain and make use of those names as an alternative
+to assigning her own names.
+
+<p>The approach used to obtain the component name in this program uses
+the <b>indexOf()</b> method of the <b>String </b>class on the <b>MouseEvent
+</b>object. (This is a slightly less complex approach than the approach
+used to obtain the component name for a <b>mousePressed()</b> event in
+an earlier lesson which went all the way back to the component object and
+invoked the <b>getName()</b> method.)
+
+<p>When a <b>mousePressed()</b> event occurs on <u>any of the three</u>
+visual objects, the <b>MouseListener </b>object displays a message identifying
+the object that generated the event.
+<center><h3><a name="windowlistener object"></a><font color="#ff0000">WindowListener
+Object</font></h3></center>
+Finally, a <b>WindowListener </b>object is instantiated and registered
+to terminate the program when the user closes the <b>Frame </b>object.
+<center><h3><a name="more general comments about the program"></a><font color="#ff0000">More
+General Comments about the Program</font></h3></center>
+The <u>screen output</u> for a number of different user actions is shown
+in the comments at the beginning of the program. This material illustrates
+how the <i>action, focus, </i>and<i> mousePressed</i> events behave during
+normal user interaction with the program.
+
+<p>In order to maintain simplicity, the response to events in this program
+is limited to simply displaying information. Obviously, once control is
+within an event handler, <u>significant behavior</u> in response to an
+event can be programmed.
+
+<p>This program also illustrates the fact that a <u>single user action</u>
+can cause <u>many different types of events</u> to be generated.
+
+<p>One thing to notice in particular is that since this program was <u>not
+designed to manipulate the objects</u> that generated the <i>low-level</i>
+events, there is <u>very little difference</u> in the handling of <i>low-level</i>
+events and <i>semantic</i> events. However, the handling would have been
+significantly different if the capability to manipulate the objects that
+generated the events had been exercised (as in the previous program).
+<center><h3><a name="finally, the program"></a><font color="#ff0000">Finally, the Program</font></h3></center>
+The program is fairly long, but it is also fairly repetitive.
+<br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td><pre>/*File Event12.java Copyright 1997, R.G.Baldwin
+Revised 03/09/98 to fit the page better.
+
+This program is designed to be compiled and run&nbsp;
+under JDK 1.1
+
+The program supports experimentation with low-level events
+and semantic events.
+
+A Button object and a TextField object are placed in a&nbsp;
+Frame object.
+
+An ActionListener object is instantiated and registered to
+monitor for semantic actionPerformed() events on the Button
+and the TextField.&nbsp;&nbsp;
+
+An actionPerformed() event can be generated on a TextField
+by pressing the Enter key while the TextField object has&nbsp;
+the focus.&nbsp;&nbsp;
+
+An actionPerformed() event can be generated by a Button by
+clicking on it with the mouse.
+
+An action event cannot be generated by a Frame object.
+
+Whenever an actionPerformed() event occurs, the Listener
+object invokes the getActionCommand() method on the object
+to obtain the "command name".
+
+The getActionCommand() method returns the "command name"&nbsp;
+associated with the action as a String.&nbsp; The string is&nbsp;
+displayed.&nbsp; As it turns out, the "command name" associated
+with a Button is simply the text, caption, or label on the
+button.&nbsp; The "command name" associated with a TextField is
+the current text content of the TextField object.
+
+The ActionEvent object passed to the actionPerformed()&nbsp;
+method includes the name of the component which can be&nbsp;
+used in a conditional test based on the indexOf() method&nbsp;
+of the String class to identify the component that&nbsp;
+generated the event.
+
+Each time the actionPerformed() method is invoked, code in
+the body of the method uses the indexOf() method to&nbsp;
+identify the component that generated the event and&nbsp;
+displays a message identifying that component.
+
+A FocusListener object is instantiated and registered to&nbsp;
+monitor for low-level focusGained() and focusLost() events
+on the Button and the TextField.
+
+Whenever a focusGained() event occurs, a message is&nbsp;
+displayed identifying the object which gained the focus.&nbsp;&nbsp;
+Likewise, whenever a focusLost() event occurs, a message is
+displayed identifying the object which lost the focus.&nbsp; The
+object that gained or lost focus is identified by&nbsp;
+performing conditional tests on the FocusEvent object&nbsp;
+passed in as a parameter.
+
+A MouseListener object is instantiated and registered to&nbsp;
+monitor for low-level mousePressed() events on all three&nbsp;
+objects.&nbsp; The Listener object differentiates among the&nbsp;
+three on the basis of the component name assigned to each&nbsp;
+object.&nbsp; The approach used to obtain the component name in
+this program uses the indexOf() method of the String class
+on the MouseEvent object.&nbsp; This is a somewhat less complex
+approach than the approach used to obtain the component&nbsp;
+name for a mousePressed() event in an earlier lesson.&nbsp; When
+a mousePressed() event occurs on any of the three visual&nbsp;
+objects, the Listener object displays a message identifying
+the object that generated the event.
+
+Finally, a WindowListener object is instantiated and&nbsp;
+registered to terminate the program when the user closes&nbsp;
+the Frame object.
+
+Typical outputs from the program follow:
+
+
+Clicking the mouse inside the frame but outside of both the
+TextField and the Button produces the following output:
+
+Got mousePressed event from Frame object
+
+
+Clicking the mouse on the TextField when the Button has the
+focus produces the following output:
+
+Got mousePressed event from TextField1 object
+Got focusLost event from Button1 object
+Got focusGained event from TextField1 object
+
+
+Pressing the Enter key when the TextField has the focus&nbsp;
+produces the following output:
+
+e.getActionCommand() = Initial String
+Got actionPerformed event from TextField1 object
+
+
+Clicking the mouse on the Button when the TextField has the
+focus produces the following output:
+
+Got mousePressed event from Button1 object
+Got focusLost event from TextField1 object
+Got focusGained event from Button1 object
+e.getActionCommand() = Click me
+Got actionPerformed event from Button1 object
+
+
+These results were produced using JDK 1.1.3 under Win95.
+**********************************************************/
+
+import java.awt.*;
+import java.awt.event.*;
+
+public class Event12 {
+&nbsp; public static void main(String[] args){
+&nbsp;&nbsp;&nbsp; //instantiate a Graphical User Interface object
+&nbsp;&nbsp;&nbsp; GUI gui = new GUI();
+&nbsp; }//end main
+}//end class Event12
+//=======================================================//
+
+//The following class is used to instantiate a graphical&nbsp;
+// user interface object.
+class GUI {
+&nbsp; public GUI(){//constructor
+&nbsp;&nbsp;&nbsp; //Create a visual TextField object&nbsp;
+&nbsp;&nbsp;&nbsp; TextField myTextField =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new TextField("Initial String");
+&nbsp;&nbsp;&nbsp; myTextField.setName("TextField1");
+
+&nbsp;&nbsp;&nbsp; //Create a visual Button object
+&nbsp;&nbsp;&nbsp; Button myButton = new Button("Click me");
+&nbsp;&nbsp;&nbsp; myButton.setName("Button1");
+&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Create a visual Frame object and name it Frame
+&nbsp;&nbsp;&nbsp; Frame myFrame = new Frame();
+&nbsp;&nbsp;&nbsp; myFrame.setSize(200,300);
+&nbsp;&nbsp;&nbsp; myFrame.setTitle("Copyright 1997, R.G.Baldwin");
+&nbsp;&nbsp;&nbsp; myFrame.setName("Frame");
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Add the Button and the TextField to the Frame object
+&nbsp;&nbsp;&nbsp; myFrame.add("North",myButton);
+&nbsp;&nbsp;&nbsp; myFrame.add("South",myTextField);
+&nbsp;&nbsp;&nbsp; myFrame.setVisible(true);
+
+&nbsp;&nbsp;&nbsp; //Instantiate and register an ActionListener object
+&nbsp;&nbsp;&nbsp; // which will monitor for action events on the
+&nbsp;&nbsp;&nbsp; // TextField and the Button.&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; ActionProc actionProcCmd = new ActionProc();
+&nbsp;&nbsp;&nbsp; myTextField.addActionListener(actionProcCmd);
+&nbsp;&nbsp;&nbsp; myButton.addActionListener(actionProcCmd);
+
+&nbsp;&nbsp;&nbsp; //Instantiate and register a FocusListener object which
+&nbsp;&nbsp;&nbsp; // will monitor for focus events on the TextField and
+&nbsp;&nbsp;&nbsp; // the Button.
+&nbsp;&nbsp;&nbsp; FocusProc focusProcCmd = new FocusProc();
+&nbsp;&nbsp;&nbsp; myTextField.addFocusListener(focusProcCmd);
+&nbsp;&nbsp;&nbsp; myButton.addFocusListener(focusProcCmd);&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Instantiate and register a MouseListener object which
+&nbsp;&nbsp;&nbsp; // will process mouse events on the Frame object, the
+&nbsp;&nbsp;&nbsp; // Button object, or the TextField object.
+&nbsp;&nbsp;&nbsp; MouseProc mouseProcCmd = new MouseProc();
+&nbsp;&nbsp;&nbsp; myFrame.addMouseListener(mouseProcCmd);
+&nbsp;&nbsp;&nbsp; myTextField.addMouseListener(mouseProcCmd);
+&nbsp;&nbsp;&nbsp; myButton.addMouseListener(mouseProcCmd);
+
+&nbsp;&nbsp;&nbsp; //Instantiate and register a Listener object which will
+&nbsp;&nbsp;&nbsp; // terminate the program when the user closes the Frame
+&nbsp;&nbsp;&nbsp; // object
+&nbsp;&nbsp;&nbsp; WProc1 winProcCmd1 = new WProc1();
+&nbsp;&nbsp;&nbsp; myFrame.addWindowListener(winProcCmd1);
+&nbsp; }//end constructor
+}//end class GUI definition
+//=======================================================//
+
+//Semantic event monitor.
+// This ActionListener class is used to instantiate a
+// Listener object that monitors for action events on the
+// TextField and the Button.&nbsp; Whenever an actionPerformed()
+// event occurs, it displays the ActionCommand and the
+// identification of the component that generated the
+// event. The listener object distinguishes between the
+// components on the basis of their component names which
+// are embedded in the object passed in as a parameter
+// when an event occurs.
+
+class ActionProc implements ActionListener{
+&nbsp; public void actionPerformed(ActionEvent e){
+&nbsp;&nbsp;&nbsp; System.out.println("e.getActionCommand() = " +&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; e.getActionCommand());
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; if( e.toString().indexOf("on TextField1") != -1 ){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Got actionPerformed event from TextField1 object");
+&nbsp;&nbsp;&nbsp; }//end if
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; if( e.toString().indexOf("on Button1") != -1 ){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Got actionPerformed event from Button1 object");
+&nbsp;&nbsp;&nbsp; }//end if
+&nbsp; }//end actionPerformed()
+}//end class ActionProc
+//=======================================================//
+
+//Semantic event monitor.
+// This FocusListener class is used to instantiate a
+// Listener object that monitors for focus events on the
+// TextField and the Button.&nbsp; Whenever a focusLost() or&nbsp;
+// focusGained() event occurs, it displays the&nbsp;
+// identification of the component that generated the
+// event.&nbsp; The listener object distinguishes between the
+// components on the basis of their component names which
+// are embedded in the object passed in as a parameter when
+// an event occurs.
+
+class FocusProc implements FocusListener{
+&nbsp; public void focusGained(FocusEvent e){
+&nbsp;&nbsp;&nbsp; if( e.toString().indexOf("on TextField1") != -1 ){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Got focusGained event from TextField1 object");
+&nbsp;&nbsp;&nbsp; }//end if
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; if( e.toString().indexOf("on Button1") != -1 ){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Got focusGained event from Button1 object");
+&nbsp;&nbsp;&nbsp; }//end if&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp; }//end focusGained()
+
+&nbsp; public void focusLost(FocusEvent e){
+&nbsp;&nbsp;&nbsp; if( e.toString().indexOf("on TextField1") != -1 ){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Got focusLost event from TextField1 object");
+&nbsp;&nbsp;&nbsp; }//end if
+&nbsp;&nbsp;&nbsp; if( e.toString().indexOf("on Button1") != -1 ){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Got focusLost event from Button1 object");
+&nbsp;&nbsp;&nbsp; }//end if
+&nbsp; }//end focusLost()
+}//end class FocusProc
+//=======================================================//
+
+//Low-level event monitor.
+// This listener class monitors for mouse presses and&nbsp;
+// displays a message when a mousePressed() event occurs on
+// the Frame object, the Button object, or the TextField
+// object.&nbsp; The message identifies the component that&nbsp;
+// generated the event. The listener object distinguishes
+// between the components on the basis of their component
+// names which are embedded in the object passed in as a
+// parameter when an event occurs.
+
+class MouseProc extends MouseAdapter{
+&nbsp; public void mousePressed(MouseEvent e){
+&nbsp;&nbsp;&nbsp; if( e.toString().indexOf("on Frame") != -1 ){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Got mousePressed event from Frame object");
+&nbsp;&nbsp;&nbsp; }//end if
+
+&nbsp;&nbsp;&nbsp; if( e.toString().indexOf("on TextField1") != -1 ){&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Got mousePressed event from TextField1 object");
+&nbsp;&nbsp;&nbsp; }//end if
+
+&nbsp;&nbsp;&nbsp; if( e.toString().indexOf("on Button1") != -1 ){&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Got mousePressed event from Button1 object");
+&nbsp;&nbsp;&nbsp; }//end if
+&nbsp; }//end mousePressed()
+}//end class MouseProc
+//=======================================================//
+
+//The following listener is used to display a message and
+// terminate the program when the user closes the Frame
+// object.
+class WProc1 extends WindowAdapter{
+&nbsp; public void windowClosing(WindowEvent e){
+&nbsp;&nbsp;&nbsp; System.exit(0);
+&nbsp; }//end windowClosing()
+}//end class WProc1
+//=======================================================//</pre></td></tr></table>
+
+<center><h2><a name="review"></a><font color="#ff0000">Review</font></h2></center>
+Q - Write a Java application that originally displays a Frame object containing
+a Button object at the top and a TextField object at the bottom. Cause
+the TextField to have red letters on a yellow background.
+
+<p>When you click on the TextField object, it disappears. When you click
+on the Button object, the TextField object reappears.
+
+<p><b>Use only low-level events.</b>
+
+<p>When you click on the close button in the upper right-hand corner of
+the Frame object, the program terminates and control is properly returned
+to the operating system.
+
+<p><font color="#0000ff"><font size=-1>A - See program below.</font></font><br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td><pre>/*From lesson 84
+Copyright 1997, R.G.Baldwin
+
+Without viewing the following solution, write a Java
+application that originally displays a Frame object
+containing a button at the top and a TextField object
+at the bottom.
+
+Cause the TextField to have red letters on a yellow
+background.
+
+When you click on the TextField object, it disappears.
+When you click on the Button object, the TextField object
+reappears.</pre>
+
+<pre>Use only low level events.
+
+When you click on the close button in the upper right-hand
+corner of the Frame object, the program terminates and
+control is properly returned to the operating system.
+//=========================================================
+*/
+
+import java.awt.*;
+import java.awt.event.*;
+
+public class SampProg200 {
+&nbsp; public static void main(String[] args){
+&nbsp;&nbsp;&nbsp; GUI gui = new GUI();
+&nbsp; }//end main
+}//end class SampProg200
+//=========================================================
+
+class GUI {
+&nbsp; public GUI(){//constructor
+&nbsp;&nbsp;&nbsp; //Create a visual TextField object&nbsp;
+&nbsp;&nbsp;&nbsp; TextField myTextField = new TextField("Initial String");
+&nbsp;&nbsp;&nbsp; myTextField.setName("TextField1");
+&nbsp;&nbsp;&nbsp; myTextField.setBackground(Color.yellow);
+&nbsp;&nbsp;&nbsp; myTextField.setForeground(Color.red);
+
+&nbsp;&nbsp;&nbsp; //Create a visual Button object
+&nbsp;&nbsp;&nbsp; Button myButton = new Button("Click me");
+&nbsp;&nbsp;&nbsp; myButton.setName("Button1");
+&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Create a visual Frame object
+&nbsp;&nbsp;&nbsp; Frame myFrame = new Frame();
+&nbsp;&nbsp;&nbsp; myFrame.setSize(300,100);
+&nbsp;&nbsp;&nbsp; myFrame.setTitle("Copyright 1997, R.G.Baldwin");
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Add the Button and the TextField to the Frame object
+&nbsp;&nbsp;&nbsp; myFrame.add("North",myButton);
+&nbsp;&nbsp;&nbsp; myFrame.add("South",myTextField);
+&nbsp;&nbsp;&nbsp; myFrame.setVisible(true);
+&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Instantiate and register a MouseListener object which
+&nbsp;&nbsp;&nbsp; // will process mouse events on the Button object, and&nbsp;
+&nbsp;&nbsp;&nbsp; // the TextField object.
+&nbsp;&nbsp;&nbsp; MouseProc mouseProcCmd = new MouseProc(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; myButton,myTextField);
+&nbsp;&nbsp;&nbsp; myTextField.addMouseListener(mouseProcCmd);
+&nbsp;&nbsp;&nbsp; myButton.addMouseListener(mouseProcCmd);
+
+&nbsp;&nbsp;&nbsp; //Instantiate and register a Listener object which will
+&nbsp;&nbsp;&nbsp; // terminate the program when the user closes the&nbsp;
+&nbsp;&nbsp;&nbsp; // Frame object
+&nbsp;&nbsp;&nbsp; myFrame.addWindowListener(new WProc1());
+&nbsp; }//end constructor
+}//end class GUI definition
+//=========================================================
+
+//Low-level event monitor.
+// This listener class monitors for low-level mousePressed()
+// events. Whenever a mousePressed() event occurs, the&nbsp;
+// event handler determines which object was the source of
+// the event and takes the appropriate action.
+
+class MouseProc extends MouseAdapter{
+&nbsp; Button refToButton = null;
+&nbsp; TextField refToTextField = null;
+&nbsp; String refToButtonName = null;
+&nbsp; String refToTextFieldName = null;
+&nbsp;&nbsp;
+&nbsp; public MouseProc(//constructor
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Button inRefToButton, TextField inRefToTextField){
+&nbsp;&nbsp;&nbsp; refToButton = inRefToButton;
+&nbsp;&nbsp;&nbsp; refToTextField = inRefToTextField;
+&nbsp;&nbsp;&nbsp; refToButtonName = inRefToButton.getName();
+&nbsp;&nbsp;&nbsp; refToTextFieldName = inRefToTextField.getName();
+&nbsp; }//end constructor
+&nbsp;&nbsp;
+&nbsp; public void mousePressed(MouseEvent e){
+&nbsp;&nbsp;&nbsp; if(e.getComponent().getName().compareTo(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; refToTextFieldName) == 0)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; refToTextField.setVisible(false);
+&nbsp;&nbsp;&nbsp; if(e.getComponent().getName().compareTo(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; refToButtonName) == 0)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; refToTextField.setVisible(true);
+&nbsp; }//end mousePressed()
+}//end class MouseProc
+//========================================================
+
+//The following listener class is used to terminate the&nbsp;
+// program when the user closes the Frame object.
+class WProc1 extends WindowAdapter{
+&nbsp; public void windowClosing(WindowEvent e){
+&nbsp;&nbsp;&nbsp; System.exit(0);
+&nbsp; }//end windowClosing()
+}//end class WProc1
+//========================================================</pre></td></tr></table>
+.
+
+<p>Q - Write a Java application that originally displays a Frame object
+containing a Button object at the top and a TextField object at the bottom.
+Cause the TextField to have red letters on a yellow background.
+
+<p>When you click on the TextField object, it disappears. When you click
+on the Button object, the TextField object reappears.
+
+<p><b>Use a mixture of low-level and semantic events</b>.
+
+<p>When you click on the close button in the upper right-hand corner of
+the Frame object, the program terminates and control is properly returned
+to the operating system.
+
+<p><font color="#0000ff"><font size=-1>A - See program below.</font></font><br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td><pre>/*From lesson 84
+Copyright 1997, R.G.Baldwin
+*/
+
+import java.awt.*;
+import java.awt.event.*;
+
+public class SampProg201 {
+&nbsp; public static void main(String[] args){
+&nbsp;&nbsp;&nbsp; GUI gui = new GUI();
+&nbsp; }//end main
+}//end class SampProg201
+//=========================================================
+
+class GUI {
+&nbsp; public GUI(){//constructor
+&nbsp;&nbsp;&nbsp; //Create a visual TextField object&nbsp;
+&nbsp;&nbsp;&nbsp; TextField myTxtField = new TextField("Initial String");
+&nbsp;&nbsp;&nbsp; myTxtField.setBackground(Color.yellow);
+&nbsp;&nbsp;&nbsp; myTxtField.setForeground(Color.red);
+
+&nbsp;&nbsp;&nbsp; //Create a visual Button object
+&nbsp;&nbsp;&nbsp; Button myButton = new Button("Click me");
+&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Create a visual Frame object
+&nbsp;&nbsp;&nbsp; Frame myFrame = new Frame();
+&nbsp;&nbsp;&nbsp; myFrame.setSize(300,100);
+&nbsp;&nbsp;&nbsp; myFrame.setTitle("Copyright 1997, R.G.Baldwin");
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Add the Button and the TextField to the Frame object
+&nbsp;&nbsp;&nbsp; myFrame.add("North",myButton);
+&nbsp;&nbsp;&nbsp; myFrame.add("South",myTxtField);
+&nbsp;&nbsp;&nbsp; myFrame.setVisible(true);
+&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Instantiate and register a MouseListener object which
+&nbsp;&nbsp;&nbsp; // will process mouse events on the TextField object.
+&nbsp;&nbsp;&nbsp; myTxtField.addMouseListener(new MouseProc(myTxtField));
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Instantiate and register an ActionListener object&nbsp;
+&nbsp;&nbsp;&nbsp; // which will process action events on the Button&nbsp;
+&nbsp;&nbsp;&nbsp; // object.
+&nbsp;&nbsp;&nbsp; myButton.addActionListener(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new MyActionProcessor(myTxtField));
+
+&nbsp;&nbsp;&nbsp; //Instantiate and register a Listener object which will
+&nbsp;&nbsp;&nbsp; // terminate the program when the user closes the&nbsp;
+&nbsp;&nbsp;&nbsp; // Frame object
+&nbsp;&nbsp;&nbsp; myFrame.addWindowListener(new WProc1());
+&nbsp; }//end constructor
+}//end class GUI definition
+//=========================================================
+
+//Low-level event monitor.
+// This listener class monitors for low-level&nbsp;
+// mousePressed() events.&nbsp;
+class MouseProc extends MouseAdapter{
+&nbsp; TextField refToTextField = null;
+
+&nbsp; public MouseProc(TextField inRefToTextField){
+&nbsp;&nbsp;&nbsp; refToTextField = inRefToTextField;&nbsp;&nbsp;
+&nbsp; }//end constructor
+&nbsp;&nbsp;
+&nbsp; public void mousePressed(MouseEvent e){
+&nbsp;&nbsp;&nbsp; refToTextField.setVisible(false);
+&nbsp; }//end mousePressed()
+}//end class MouseProc
+//=========================================================
+//Semantic event monitor.
+// This listener class monitors for semantic action events.
+
+class MyActionProcessor implements ActionListener{
+&nbsp; TextField refToTextField = null;
+&nbsp;&nbsp;
+&nbsp; MyActionProcessor(TextField inRefToTextField){//construct
+&nbsp;&nbsp;&nbsp; refToTextField = inRefToTextField;
+&nbsp; }//end constructor
+
+&nbsp; public void actionPerformed(ActionEvent e){
+&nbsp;&nbsp;&nbsp; refToTextField.setVisible(true);&nbsp;&nbsp;&nbsp;
+&nbsp; }//end overridden actionPerformed method
+
+}//end class MyActionProcessor
+
+
+//=========================================================
+
+//The following listener class is used to terminate the&nbsp;
+// program when the user closes the Frame object.
+class WProc1 extends WindowAdapter{
+&nbsp; public void windowClosing(WindowEvent e){
+&nbsp;&nbsp;&nbsp; System.exit(0);
+&nbsp; }//end windowClosing()
+}//end class WProc1
+//=========================================================</pre></td></tr></table>
+-end-<!--end--></body></html>

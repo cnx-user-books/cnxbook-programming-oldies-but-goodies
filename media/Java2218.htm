@@ -1,0 +1,2440 @@
+<!DOCTYPE doctype PUBLIC "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+  <meta http-equiv="Content-Type"
+ content="text/html; charset=iso-8859-1">
+  <title>... in Java by Richard G Baldwin</title>
+</head>
+<body link="#0000ff" vlink="#666666" alink="#ff0000" lang="EN-US">
+<h2 align="center">Writing Java servlets to produce XHTML code that references 
+external SVG files</h2>
+<i>Learn how to write servlets that produce XHTML output containing references 
+to external SVG files.&nbsp; The SVG files may be static, or they may be created on-the-fly during the 
+execution of the servlet.</i><p><b>Published:</b>&nbsp; June 19, 2007<br>
+<b>By <a href="mailto:Baldwin@DickBaldwin.com">Richard G. Baldwin</a></b>
+</p>
+<p>Java Programming Notes # 2218</p>
+<ul>
+	<li><a href="#Preface">Preface</a></li>
+
+	<ul>
+		<li><a href="#General">General</a></li>
+		<li><a href="#Viewing_tip">Viewing tip</a><ul>
+			<li><a href="#Figures">Figures</a></li>
+			<li><a href="#Listings">Listings</a></li>
+		</ul></li>
+		<li><a href="#Supplementary_material">Supplementary material</a></li>
+	</ul>
+	
+	<li><a href="#General%20Background%20Information">General
+	background information</a></li>
+	<li><a href="#Preview">Preview</a></li>
+	<li><a href="#Discussion%20and%20Sample%20Programs">Discussion and
+	sample code</a></li>
+	<ul>
+		<li><a href="#The_program_named_Svg09">The program named Svg09</a></li>
+		<li><a href="#The_program_named_Svg10">The program named Svg10</a></li>
+		<li><a href="#The_program_named_Svg11">The program named Svg11</a></li>
+	</ul>
+	<li><a href="#Run%20the%20program">Run the program</a></li>
+	<li><a href="#Summary">Summary</a></li>
+	<li><a href="#Whats%20Next">What's next?</a></li>
+	<li><a href="#Resources">Resources</a></li>
+	<li><a href="#Complete%20Program%20Listings">Complete program
+	listings</a></li>
+	<li><a href="#Copyright">Copyright</a></li>
+	<li><a href="#About_the_author">About the author</a></li>
+</ul>
+<hr size="3" width="100%" align="center">
+<center>
+<h2> <a name="Preface"></a>Preface</h2>
+</center>
+<h3> <a name="General">General</a></h3>
+<p>This lesson is part of a series <i>(see <a href="#Resources">Resources</a>)</i> 
+designed to teach you how to write servlets to produce SVG code that will be 
+rendered in graphic form by an SVG-capable browser such as Firefox 1.5.&nbsp; In this lesson you will 
+learn how to write servlets that produce XHTML output containing references to 
+external SVG files.&nbsp; The SVG files may be static, or may be created on-the-fly during the 
+execution of the servlet.</p>
+<p><font color="#ff0000"><b>An SVG graphics library</b></font></p>
+<p>I taught you how write your own SVG 
+graphics library to eliminate, or at least alleviate the requirement to write 
+raw XML code or raw JAXP DOM code in earlier lessons in the series.&nbsp; The use of the SVG graphics library makes it 
+possible for you to produce SVG output simply by making typical Java method 
+calls.&nbsp; One of the sample programs in this lesson makes use of that SVG 
+graphics library.</p>
+<h3> <a name="Viewing_tip">Viewing tip</a></h3>
+<p> I recommend that you open another copy of this document in a separate 
+browser window and use the following links to easily find and view the figures 
+and listings while you are reading about them.</p>
+<h4> <a name="Figures">Figures</a></h4>
+<ul>
+	<li><a href="#Figure_1">Figure 1</a>. Graphic output for all three programs.</li>
+	<li><a href="#Figure_2">Figure 2</a>. Output XHTML produced by the program 
+	Svg09.</li>
+	<li><a href="#Figure_3">Figure 3</a>. Five steps for writing a servlet 
+	program.</li>
+</ul>
+<h4> <a name="Listings">Listings</a></h4>
+<ul>
+	<li><a href="#Listing_1">Listing 1</a>. The beginning of the Svg09 class.</li>
+	<li><a href="#Listing_2">Listing 2</a>. Create the <i>object</i> element.</li>
+	<li><a href="#Listing_3">Listing 3</a>. Finish writing the file and 
+	terminate the program.</li>
+	<li><a href="#Listing_4">Listing 4</a>. Beginning of the program named 
+	Svg10.</li>
+	<li><a href="#Listing_5">Listing 5</a>. The beginning of the class and the 
+	doGet method.</li>
+	<li><a href="#Listing_6">Listing 6</a>. Abbreviated code for creating the 
+	DOM tree.</li>
+	<li><a href="#Listing_7">Listing 7</a>. Transform the DOM tree.</li>
+	<li><a href="#Listing_8">Listing 8</a>. Execute some more required servlet 
+	code.</li>
+	<li><a href="#Listing_9">Listing 9</a>. Create the XHTML document.</li>
+	<li><a href="#Listing_10">Listing 10</a>. Program code for Svg09.</li>
+	<li><a href="#Listing_11">Listing 11</a>. Program code for Svg10.</li>
+	<li><a href="#Listing_12">Listing 12</a>. Program code for Svg11.</li>
+</ul>
+<h3 align="left"> <a name="Supplementary_material">Supplementary material</a></h3>
+<p> I recommend that you also study the other lessons in my extensive collection 
+of online Java tutorials.&nbsp; You will find a consolidated index at
+<font
+ color="#000000"> <a href="http://www.dickbaldwin.com/toc.htm">
+www.DickBaldwin.com</a>.</font></p>
+<h2 align="center"><font color="#000000"> <a
+ name="General Background Information">General background information</a></font></h2>
+<p>SVG is a language for describing two-dimensional graphics in XML. SVG allows 
+for three types of graphic objects:</p>
+<ul>
+	<li>vector graphic shapes</li>
+	<li>images</li>
+	<li>text</li>
+</ul>
+<p>The <a href="http://www.w3.org/TR/SVG/">Scalable Vector Graphics (SVG) 1.1 
+Specification</a> is extensive, but it is not easy reading, particularly if your 
+knowledge of XML is weak.</p>
+<p>While I don't claim to be an expert in XML, I do know enough about the topic 
+that I can usually make sense of the material provided in the SVG 
+specification.&nbsp; One of my objectives for this series is to help Java programmers 
+who lack a strong background in XML take advantage of the capabilities of SVG.</p>
+<p><font color="#ff0000"><b>Great graphics in the browser</b></font></p>
+<table align="right" border="0" cellpadding="0" cellspacing="0" width="275">
+	<tr>
+		<td width="10">&nbsp;</td>
+		<td>
+		<table border="1" cellpadding="5" cellspacing="0" width="100%">
+			<tr>
+				<td bgcolor="#eeeeee"><b>No experience with IE/SVG plug-in</b><br>
+				The SVG rendering engines that are available include Firefox 
+				1.5.&nbsp; I have also read that IE can be made SVG capable by 
+				installing an SVG plug-in.&nbsp;&nbsp; Please note however that I have not 
+				installed and tested the SVG plug-in for IE.&nbsp; The sample 
+				programs in this series were tested using Firefox 1.5.</td>
+			</tr>
+		</table>
+		</td>
+	</tr>
+</table>
+You can write Java programs that will produce XML output, which, when loaded 
+into an SVG rendering engine, will result in the display of rich graphic 
+material.&nbsp; When combined with the use of servlets, this makes it possible to 
+display graphic material in the client area of a web browser that competes 
+favorably with the graphic material that can be displayed using the Java 2D API
+<i>(see <a href="#Resources">Resources</a>)</i> in desktop 
+applications.<h2 align="center"><font color="#000000"><a name="Preview">Preview</a></font></h2>
+<p><font color="#FF0000"><b>A desktop application</b></font></p>
+<p>I will present and explain three different programs in this lesson.&nbsp; The 
+first program, named <b>Svg09</b> is a stand-alone desktop application that 
+produces an output XHTML file, <i>(which will validate at
+<a href="http://validator.w3.org/file-upload.html">
+http://validator.w3.org/file-upload.html</a>)</i>.&nbsp; When this XHTML file is 
+loaded into an SVG-capable browser, <i>(such as Firefox 1.5)</i>, it references 
+an SVG file stored in the same directory and causes the graphic contents of the 
+SVG file to be rendered by the browser.</p>
+<p>This program is mainly a first step towards the writing of servlets that 
+produce XHTML data that serves SVG files.&nbsp; I will present and explain this 
+program first because it is much easier to test and debug desktop applications than it 
+is to test and debug servlets.&nbsp; As I demonstrated in the earlier lesson 
+titled &quot;Using Java to produce SVG code in XHTML data&quot; <i>(see
+<a href="#Resources">Resources</a>)</i>, once you finish writing, testing, and 
+debugging a desktop application, it is not a difficult task to convert it a 
+servlet.</p>
+<p><font color="#FF0000"><b>A servlet that serves a static SVG file</b></font></p>
+<p>The second program named <b>Svg10</b> is a Java servlet program that delivers 
+XHTML data, which, in turn references a static SVG file stored on the server.&nbsp; 
+When this servlet is accessed using Firefox 1.5, the static SVG file is accessed 
+and the graphic contents of the file are rendered by the browser.&nbsp; </p>
+<p>The XHTML output produced by this servlet will validate at
+<a href="http://validator.w3.org/file-upload.html">
+http://validator.w3.org/file-upload.html</a>.</p>
+<p>
+
+
+<font color="#FF0000"><b>Something a little more dynamic</b></font></p>
+<p>
+<table width="275" cellpadding="0" cellspacing="0" border="0" align="right">
+<tr>
+<td width="10">
+<td>
+  <table width="100%" cellpadding="5" cellspacing="0" border="1">
+  <tr><td bgcolor="#eeeeee">
+  <b>A word of caution.</b><br />
+  Although this approach is interesting, you should probably be very 
+	careful how you apply it.&nbsp; I can foresee some problems if the approach 
+	is used in a multi-client situation without proper protection against the 
+	possibility of conflicts regarding access to the SVG file.</td></tr></table>
+</td>
+</tr>
+</table>
+
+The third program named <b>Svg11</b> is similar to <b>Svg10</b>, with the 
+major exception that it first creates an SVG file and stores it on the server 
+and then delivers XHTML data that references that new SVG file.&nbsp; When this 
+servlet is accessed using Firefox 1.5, the new SVG file is accessed and the 
+graphic contents of the file are rendered by the browser.<p>The output 
+produced by this servlet will also validate at
+<a href="http://validator.w3.org/file-upload.html">
+http://validator.w3.org/file-upload.html</a>.</p>
+
+
+
+<font color="#FF0000"><b>The graphic output</b></font></p>
+<p>
+<table width="275" cellpadding="0" cellspacing="0" border="0" align="right">
+<tr>
+<td width="10">
+<td>
+  <table width="100%" cellpadding="5" cellspacing="0" border="1">
+  <tr><td bgcolor="#eeeeee">
+  <b>Actual graphic output.</b><br />
+  The actual graphic output produced by the first two programs isn't too 
+	important, because that output is the rendering of a previously generated 
+	SVG file.&nbsp; The actual graphic output is important only for the third 
+	program because that program creates the SVG file that is served by the 
+	servlet on-the-fly as the servlet is executing.
+</td></tr></table>
+</td>
+</tr>
+</table>
+
+All three programs produce the same graphic output, which is shown 
+in Figure 1.<p>The first two programs require the availability of a previously 
+generated SVG file.&nbsp; Hopefully, by now, you know how to write your own Java 
+programs to create SVG files.&nbsp; Or, you can create an SVG file by 
+executing the program named <b>Svg08</b>, that I explained in the earlier lesson 
+titled &quot;An improved approach for creating SVG/XML code and SVG/XML DOM nodes 
+using Java&quot; <i>(see <a href="#Resources">Resources</a>)</i>.</p>
+
+<p>
+ <b><a name="Figure_1">Figure 1</a>. Graphic output for all three programs. </b>
+<table cols="1" bgcolor="ffffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><img border="0" src="java2218a01.jpg" width="250" height="683"></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The graphic image shown in Figure 1 is the same image that I explained in the 
+earlier lesson titled &quot;Using Java to produce SVG code in XHTML data&quot; <i>(see
+<a href="#Resources">Resources</a>)</i>.&nbsp; I <a name="will_explain">will explain</a> later how the 
+scrollbars and the text in Figure 1 were produced.</p>
+<center>
+<h2> <a name="Discussion and Sample Programs"></a><font color="#000000">Discussion
+and sample code</font></h2>
+</center>
+<h3><a name="The_program_named_Svg09">The program named Svg09</a></h3>
+<p><font color="#FF0000"><b>Description of the program</b></font></p>
+<p>The purpose of 
+this program is to show you how to write a Java program that creates an XHTML 
+file, which references a static SVG graphics file stored in the same directory 
+on the local hard disk.</p>
+<p>As I mentioned earlier, my main reason for showing you this desktop 
+application first is because desktop applications are much easier to test and debug 
+than servlets.&nbsp; Further, once you have the desktop application running 
+correctly, it is not very difficult to convert it to a servlet.</p>
+<p><font color="#FF0000"><b>Three ways to reference a static SVG file</b></font></p>
+<p>There are at least three ways to write the XHTML code to reference an SVG 
+file, each of which has 
+advantages and disadvantages.&nbsp; <i>(The following 
+information was taken from the web page titled &quot;SVG in HTML pages.&quot;&nbsp; 
+(See
+<a href="#Resources">Resources</a>.)</i></p>
+<p><b><tt>&lt;embed&gt;</tt></b></p>
+<ul>
+	<li>Advantage: supported in nearly any browser, allows html2svg and svg2html 
+	scripting, is recommended by Adobe for their SVG Viewer</li>
+	<li>Disadvantage: not clearly standardized within any HTML specification</li>
+</ul>
+<p><b><tt>&lt;object&gt;</tt></b></p>
+<ul>
+	<li>Advantage: HTML4 and higher standard, supported in newer browser 
+	generations</li>
+	<li>Disadvantage: works on newer browsers but without html2svg and svg2html 
+	scripting.</li>
+</ul>
+<p><b><tt>&lt;iframe&gt;</tt></b></p>
+<ul>
+	<li>Advantage: works in most browsers, but not documented</li>
+	<li>Disadvantage: generates a window-like border without specific styling</li>
+</ul>
+<p><font color="#FF0000"><b>How I did it</b></font></p>
+<p>This program embeds the reference to the SVG file in an <b>object</b> element.&nbsp; 
+The XHTML output file produced by this program was tested and confirmed to be 
+valid at: <a href="http://validator.w3.org/">http://validator.w3.org/</a>&nbsp; </p>
+<p><font color="#FF0000">
+ <b>Output XHTML produced by the program Svg09</b></font></p>
+<p>The XML code produced by this 
+program <i>(with some line breaks manually inserted for compatibility with this 
+narrow publication format)</i> is shown in Figure 2.&nbsp; I will refer back to 
+this output XML code later while explaining the program code.</p>
+<p>
+ <b><a name="Figure_2">Figure 2</a>. Output XHTML produced by the program Svg09. </b>
+<table border="1" cols="1" width="477" bgcolor="#efefef">
+  <tbody>
+    <tr>
+      <td>
+      <pre>&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;!DOCTYPE html PUBLIC "-//W3C//DTD 
+XHTML 1.0 Transitional//EN" 
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"&gt;
+&lt;html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" &gt;
+&lt;head&gt;
+&lt;meta http-equiv="content-type" content="image/svg+xml; 
+charset=UTF-8" /&gt;
+&lt;title&gt;Generated XHTML file&lt;/title&gt;
+&lt;/head&gt;
+&lt;body style="border:1px solid black;width:220px;
+height:500px;" &gt;
+
+<b>&lt;p&gt;There is an image below here.
+&lt;object type="image/svg+xml" width="210" height="430" 
+data="Svg09.svg" /&gt;
+There is an image above here.&lt;/p&gt;</b>
+
+&lt;/body&gt;&lt;/html&gt;</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The most interesting code in Figure 2 is highlighted in boldface.</p>
+<p><font color="#FF0000"><b>Program testing</b></font></p>
+<p>The program was tested using J2SE 5.0 and Firefox 1.5.09, running under WinXP.</p>
+<p><font color="#FF0000">
+<b>The beginning of the Svg09 class</b></font></p>
+<p>As is my custom, I will discuss and explain this program in fragments.&nbsp; 
+You can view a complete listing of the program named <b>Svg09</b> in Listing 10 
+near the end of the lesson.</p>
+<p>The beginning of the class named <b>Svg09</b> is shown in Listing 1.</p>
+<p>
+<b><a name="Listing_1">Listing 1</a>. The beginning of the Svg09 class. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>public class <b>Svg09</b>{
+
+  public static void <b>main</b>(String argv[]){
+
+    try{
+      //Get an output stream.
+      PrintWriter out = new PrintWriter(
+                      new FileOutputStream("junk.xhtml"));
+                      
+      //Create the beginning text required for the XHTML
+      // document.
+      <b>makeXhtmlText</b>(out);</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Get an output stream and write normal XHTML text</b></font></p>
+<p>Listing 1 begins by getting an output stream for writing the XHTML file named
+<b>junk.xhtml</b>.</p>
+<p>Then it calls a convenience method named <b>makeXhtmlText</b> for the purpose 
+of writing the normal text that is required for the beginning of a valid XHTML 
+document.&nbsp; The method named <b>makeXhtmlText</b> creates all of the text 
+above the boldface text in Figure 2.&nbsp; There is nothing new about this text 
+or this code.&nbsp; 
+I have discussed it in several previous lessons.&nbsp; I broke this code out 
+into a separate method here simply for clarity.&nbsp; You can view the method named
+<b>makeXhtmlText</b> in Listing 10.</p>
+<p><font color="#FF0000">
+<b>Create the <i>object</i> element</b></font></p>
+<p>
+<table width="275" cellpadding="0" cellspacing="0" border="0" align="right">
+<tr>
+<td width="10">
+<td>
+  <table width="100%" cellpadding="5" cellspacing="0" border="1">
+  <tr><td bgcolor="#eeeeee">
+  <b>The makeElement method.</b><br />
+  I first presented and explained the convenience method named makeElement in an 
+	earlier lesson titled &quot;An improved approach for creating SVG/XML code and 
+	SVG/XML DOM nodes using Java&quot; <i>(see <a href="#Resources">Resources</a>)</i>.&nbsp; The purpose of this method is to alleviate the 
+	difficulty of dealing with the many quotation marks that are required to 
+	surround attribute values in raw SVG/XML code.&nbsp; You can view the method 
+	in its entirety in Listing 10.</td></tr></table>
+</td>
+</tr>
+</table>
+
+Listing 2 calls the convenience method named <b>makeElement</b> to insert an
+<b>object</b> element into the output file.&nbsp; The <b>object</b> element references an SVG file named <b>Svg09</b> in the same directory.<p>
+<font color="#FF0000"><b>Two lines of plain text</b></font></p>
+<p>I promised <a href="#will_explain">earlier</a> that I would explain how the 
+two lines of text shown in Figure 1 are produced.&nbsp; Listing 2 inserts one line of plain text above and one line of plain 
+text below the <b>object</b> element.&nbsp; You can view those two lines of text 
+above and below the area allocated for the image by Firefox in Figure 1.</p>
+<p>
+<b><a name="Listing_2">Listing 2</a>. Create the <i>object</i> element. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>      out.println("&lt;p&gt;<b>There is an image below here.</b>");
+
+      out.println(<b>makeElement</b>(
+                  true,
+                  "object",
+                  new String[]{"type","image/svg+xml",
+                               "width","<b>210</b>",
+                               "height","<b>430</b>",
+                               "data","<b>Svg09.svg</b>",
+                              })//end call to makeElement
+      );//end call to println
+      
+      out.println("<b>There is an image above here.</b>&lt;/p&gt;");</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>The scrollbars</b></font></p>
+<p>I also promised you <a href="#will_explain">earlier</a> that I would explain the presence of the scrollbars in 
+Figure 1.&nbsp; Well, the time for that explanation has come.</p>
+<p>The image in the file named <b>Svg09.svg</b> that is rendered in Figure 1 has an 
+actual width of 220 pixels and an actual 
+height of 440 pixels.&nbsp; As you can see, the values of the <b>width</b> and
+<b>height</b> attributes in the <b>object</b> element that is created in Listing 
+2 are smaller than those dimensions <i>(210 x 430 pixels)</i>.&nbsp; Firefox 1.5 
+responds to this situation by automatically placing horizontal and vertical 
+scrollbars on the image as shown in Figure 1.&nbsp; This makes it possible to 
+view the entire image by manipulating the scroll bars.</p>
+<p><font color="#FF0000">
+<b>Finish writing the file and terminate the program</b></font></p>
+<p>Listing 3 writes the final XHTML text and flushes the output buffer.</p>
+<p>
+<b><a name="Listing_3">Listing 3</a>. Finish writing the file and terminate the 
+program. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>      out.println("&lt;/body&gt;&lt;/html&gt;");
+      out.flush();
+
+    }catch(Exception e){
+      //Note that no effort was made to provide meaningful
+      // information in the event of an exception or
+      // error.
+      e.printStackTrace(System.err);
+    }//end catch
+
+  }// end main()</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Listing 3 also signals the end of the <b>main</b> method.&nbsp; When control 
+returns from the <b>flush</b> method, there is nothing more for the <b>main</b> 
+method to do, so the program terminates.</p>
+<p><font color="#FF0000"><b>Not much effort required</b></font></p>
+<p>As you can see, once you have access to the convenience methods that I have 
+provided, it doesn't require much effort to write a Java program that will 
+produce an output XHTML file that references an SVG file, which will be rendered 
+when the XHTML file is loaded into Firefox 1.5.</p>
+<p><font color="#FF0000"><b>Conversion to a servlet</b></font></p>
+<p>In the Summary section of the lesson titled &quot;Using Java to produce SVG code 
+in XHTML data&quot; <i>(see <a href="#Resources">Resources</a>)</i>, I explained 
+the list of five fairly simple steps shown in Figure 3 that are required to convert a desktop 
+application such as <b>Svg09</b> into a servlet.</p>
+<p><b><a name="Figure_3">Figure 3</a>. Five steps for writing a servlet program.</b>
+<table width="477" bgcolor="#efefef" border="1" cols="1">
+	<tr>
+		<td>
+<ol>
+	<li>Declare the following import directives:
+	<pre>  import javax.servlet.*;
+  import javax.servlet.http.*;</pre>
+	</li>
+	<li>Define the main class to extend the <b>HttpServlet</b> class.</li>
+	<li>Replace the signature for the <b>main</b> method in the desktop 
+	application with the signature for the <b>doGet</b> method in the servlet 
+	program:<pre>  public void doGet(HttpServletRequest req,
+                    HttpServletResponse res)
+                           throws ServletException,
+	                          IOException{</pre>
+	</li>
+	<li>Execute the following statement to set the content type:
+	<pre>  res.setContentType(&quot;image/svg+&quot;);</pre>
+	</li>
+	<li>Execute the following statement to get an output stream:
+	<pre>  PrintWriter out = res.getWriter();</pre>
+	</li>
+</ol>
+		</td>
+	</tr>
+</table>
+<p><font color="#FF0000"><b>Will convert Svg09 into a servlet program</b></font></p>
+<p>The next program that I will 
+explain will be a servlet program that serves a 
+static SVG file that is stored on the server.&nbsp; The program named <b>Svg10</b> 
+was written by converting the program named <b>Svg09</b> into a servlet.&nbsp; When the servlet is accessed 
+using Firefox 1.5, the SVG file is retrieved and rendered.&nbsp; An example 
+of the output using my SVG 
+file is shown in Figure 1.&nbsp; If you use a different SVG file, you should get 
+a different output.</p>
+<h3><a name="The_program_named_Svg10">The program named Svg10</a></h3>
+<p><font color="#FF0000"><b>Description of the program</b></font></p>
+<p>The purpose of this program is to show you how to write a simple servlet that 
+will serve a static SVG graphics file stored on a jakarta-tomcat server running 
+as a localhost server under WinXP.</p>
+<p><font color="#FF0000"><b>Where should the SVG file be stored on the server?</b></font></p>
+<p>One of the more difficult aspects of writing this servlet program had nothing 
+to do with Java programming.&nbsp; Rather, it had to do with figuring out where 
+to store the SVG file on the server and how to refer to the file in the SVG/XML code so that 
+it would be found and retrieved by the browser.&nbsp; In this regard, my 
+thanks go to Marty Hall at <a href="http://www.apl.jhu.edu/~hall/">
+http://www.apl.jhu.edu/~hall/</a> for helping me to understand:</p>
+<ul>
+	<li>Where to place static files to cause them to be accessible by a servlet.</li>
+	<li>How to reference those files within the servlet.</li>
+</ul>
+<p><font color="#FF0000"><b>Must be tested as a servlet</b></font></p>
+<p>This program can only be tested by deploying the servlet on a 
+servlet-compatible server and then accessing it using an SVG-capable browser, 
+such as Firefox 1.5.</p>
+<p>For this demonstration, the static SVG file was stored in the following 
+location on my hard drive:</p>
+<p>
+
+<pre><b>C:\jakarta-tomcat-5.0.27\webapps\ROOT\images</b></pre></p>
+
+<p>The servlet class file was stored in:</p>
+<p>
+
+<pre><b>C:\jakarta-tomcat-5.0.27\webapps\ROOT\WEB-INF\classes</b></pre></p>
+
+<p>The servlet was accessed by addressing the following URL with Firefox:</p>
+<p>
+
+<pre><b>http://localhost/servlet/Svg10</b></pre>
+
+</p>
+<p>The code produced by this servlet was tested and confirmed to be valid at:
+<a href="http://validator.w3.org/">http://validator.w3.org/</a></p>
+<p>The program was tested using J2SE 5.0, Firefox 1.5.09, 
+and jakarta-tomcat-5.0.27 running as a localhost server under WinXP.</p>
+<p><font color="#FF0000"><b>Will discuss in fragments</b></font></p>
+<p>As usual, I will discuss this program in fragments.&nbsp; Also as usual, the program can be 
+viewed in its entirety in Listing 11 near the end of the lesson.</p>
+<p>However, because of the similarity of this program to the program named <b>
+Svg09</b>, I will only discuss those parts of the program that are different 
+from <b>Svg09</b> that were required to 
+convert it from a desktop application to a servlet as described in the previous 
+list of <a href="#Figure_3">steps</a>.</p>
+<p><font color="#FF0000">
+<b>Beginning of the program named Svg10</b></font></p>
+<p>The beginning of the program is shown in Listing 4.</p>
+<p>
+<b><a name="Listing_4">Listing 4</a>. Beginning of the program named Svg10. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+<pre>
+import java.io.*;
+import javax.<b>servlet.*</b>;
+import javax.<b>servlet.http.*;</b>
+
+public class Svg10 extends <b>HttpServlet</b>{
+
+  public void <b>doGet</b>(HttpServletRequest req,
+                    HttpServletResponse res)
+                      throws ServletException,IOException{
+                        
+    <b>res.setContentType(&quot;image/svg+xml&quot;)</b>;
+
+    try{
+      //Get an output stream.
+      PrintWriter out = <b>res.getWriter()</b>;</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The code in Listing 4 satisfies all five steps listed in the 
+previous list of <a href="#Figure_3">steps</a> that were required to convert the 
+program named <b>Svg09</b> into the servlet program named <b>Svg10</b>.&nbsp; Therefore, there is nothing 
+more for me to discuss and explain in this program.</p>
+<p>Therefore, that ends the discussion of the program named <b>Svg10.</b></p>
+<h3><a name="The_program_named_Svg11">The program named Svg11</a></h3>
+<p><font color="#FF0000"><b>Description of the program</b></font></p>
+<p>This program is much longer than either of the previous two programs in this 
+lesson.&nbsp; However, there is very little that is new in this program.&nbsp; 
+Mainly, this program was written by combining sections of code that I have 
+previously explained in this and earlier lessons.&nbsp; Therefore, the 
+explanations of the code for this program will be fairly brief.</p>
+<p>The purpose of this program is to write a servlet that will first create a 
+static SVG file and store it on the server and then serve that file to an 
+SVG-capable web client by way of XHTML code that is sent to the client.</p>
+<p>The code to accomplish this is somewhat simpler than the code required to 
+create the SVG graphic code and to send it directly to the client as in-line 
+graphic code.&nbsp; This is because this approach makes better use of JAXP to 
+process the DOM tree that represents the graphic image.</p>
+<p>This program uses an SVG graphic library that has been discussed and 
+explained in earlier lessons on this topic.</p>
+<p><font color="#FF0000"><b>The beginning of the program named Svg11</b></font></p>
+<p>The program begins by:</p>
+<ul>
+	<li>Defining a servlet that: Creates a DOM tree describing the graphic image 
+shown in Figure 1.</li>
+	<li>Transforming that tree into corresponding SVG XML code.</li>
+	<li>Writing the SVG code into an output file on the server named Svg11.svg.</li>
+</ul>
+<p><font color="#FF0000"><b>Producing the XHTML output</b></font></p>
+<p>Then the servlet creates the code for a short XHTML document that references 
+the SVG file that was just written and sends that XHTML code back to the client.</p>
+<p>The XHTML code sent to the client is valid according to:</p>
+<p><a href="http://validator.w3.org/file-upload.html">
+http://validator.w3.org/file-upload.html</a></p>
+<p><font color="#FF0000"><b>Must be tested as a servlet</b></font></p>
+<p>This program can only be tested by deploying the servlet on a 
+servlet-compatible server and then accessing it using an SVG-capable browser 
+such as Firefox 1.5.</p>
+<p>On my system, the SVG file was written by the servlet into the following directory:</p>
+<p>
+
+<pre><b>C:\jakarta-tomcat-5.0.27\webapps\ROOT\images</b></pre>
+
+</p>
+<p>The servlet was tested by first copying it into the following directory on the 
+Tomcat server:</p>
+<p>
+
+<pre><b>C:\jakarta-tomcat-5.0.27\webapps\ROOT\WEB-INF\classes</b></pre>
+
+</p>
+<p>Then the servlet was accessed using Firefox 1.5.09 at the URL given below:</p>
+<p>
+
+<pre><b>http://localhost/servlet/Svg11</b></pre>
+
+</p>
+<p>The program was tested using J2SE 5.0, Firefox 1.5.09, and 
+jakarta-tomcat-5.0.27 running as a localhost server under WinXP.</p>
+<p><font color="#FF0000">
+<b>The beginning of the class and the doGet method</b></font></p>
+<p>As usual, I will discuss this program in fragments.&nbsp; Also, as usual, you 
+can view the entire program in its entirety in Listing 12 near the end of the 
+lesson.</p>
+<p>Listing 5 contains some of the requisite servlet code that you saw earlier in the 
+program named <b>Svg10</b>.</p>
+<p>
+<b><a name="Listing_5">Listing 5</a>. The beginning of the class and the doGet 
+method. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>public class Svg11 extends <b>HttpServlet</b>{
+
+  public void <b>doGet</b>(HttpServletRequest req,
+                    HttpServletResponse res)
+                      throws ServletException,IOException{</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000">
+<b>Abbreviated code for creating the DOM tree</b></font></p>
+<p>Listing 6 shows an abbreviated version of essentially the same code that 
+I explained in detail in Listing 1 through Listing 20 in the earlier lesson titled 
+&quot;Using Java to produce SVG code in XHTML data&quot; <i>(see <a href="#Resources">
+Resources</a>)</i>.&nbsp; Note that I deleted most of the code from Listing 6 
+for brevity, but you can view that code in its entirety in Listing 12.&nbsp; The 
+code that is represented by Listing 6 creates a DOM tree that represents the 
+graphic image shown in Figure 1.</p>
+<p>
+<b><a name="Listing_6">Listing 6</a>. Abbreviated code for creating the DOM 
+tree. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    //The following data values will be used to create
+    // SVG graphics.
+    int ellipseCenterX = 110;
+//...
+      //Begin by creating a Document object and a root
+      // node named svg.
+      Document document = SvgGraphics.getDocument();      
+      Element svg = SvgGraphics.makeNode(
+//...
+      //Create a node named defs, which will be the parent
+      // for three gradient definitions.
+      Element defs = SvgGraphics.makeNode(document,
+//...
+      //Create nodes that define three different gradient
+      // coloring schemes.
+      Element gradientA = SvgGraphics.makeLinearGradient(
+//...
+      //Create three stop nodes that identify the colors
+      // used to produce the gradient and specify where
+      // the colors begin and end, 
+      SvgGraphics.makeGradientStop(document,
+//...
+      Element gradientB = SvgGraphics.makeLinearGradient(
+//...
+      Element gradientC = SvgGraphics.makeRadialGradient(
+//...                    
+      //Create a node named g, which will be the parent
+      // for an ellipse,a circle, a rectangle, a line,
+      // a polyline, and a polygon.
+      Element g = SvgGraphics.makeNode(document,
+//...
+      //Create an ellipse with a blue border that is two
+      // pixels wide. Fill it with the yellow-red-blue
+      // gradient defined by gradientA.
+      Element theEllipse = SvgGraphics.makeEllipse(
+//...
+      //Rotate the ellipse by 15-degrees clockwise about
+      // its center.
+ efeheEllipse.setAttribute("transform",
+//...
+      //Position a circle so that it appears to be inside
+      // the ellipse.
+      Element theCircle = SvgGraphics.makeCircle(
+//...
+      //Set the appearance of the circle and rotate it by
+      // 15-degrees clockwise about its center.
+      theCircle.setAttribute("fill","url(#gradientB)");
+      theCircle.setAttribute("transform",
+//...
+      //Make a rounded rectangle and fill it with
+      // gradientC
+      Element theRect = SvgGraphics.makeRect(
+//...
+      //Draw a polyline with four points.
+      int[] polylinePoints = 
+                         {10,235,210,235,110,275,110,225};
+      Element polyline = SvgGraphics.makePolyline(
+//...
+      //Rotate the polyline by 10 degrees around the first
+      // point.
+      polyline.setAttribute("transform",
+//...
+      //Draw a polygon with four points. Give it a red
+      // border and fill it with green.
+      int[] polygonPoints = 
+                         {10,335,210,335,110,375,110,325};
+      Element polygon = SvgGraphics.makePolygon(
+//...
+      //Draw a green line 12 pixels wide.  Make the line
+      // 60% opaque, or 40% transparent, whichever you
+      // prefer.
+      Element line = SvgGraphics.makeLine(document,
+//...</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000">
+<b>Transform the DOM tree</b></font></p>
+<p>Listing 7 transforms the DOM tree into SVG XML code and writes that code into an SVG file on the server.</p>
+<p>
+<b><a name="Listing_7">Listing 7</a>. Transform the DOM tree. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>
+      SvgGraphics.transformTheDom(document,
+        getServletContext().getRealPath("/") + "images" 
+                          + File.separator + "Svg11.svg");</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The code in Listing 7 is essentially the same as the code that I explained 
+beginning with Listing 21 in the previous lesson titled &quot;An improved approach 
+for creating SVG/XML code and SVG/XML DOM nodes using Java&quot; <i>(see
+<a href="#Resources">Resources</a>)</i> with one exception.&nbsp; That exception 
+has to do with the code required to specify the location where the SVG file will 
+be written.&nbsp; In the earlier lesson, the file was written into the current 
+directory on the local hard disk.&nbsp; In Listing 7, the SVG file is written 
+into a file on the server.</p>
+<p><font color="#FF0000"><b>The getServletContext method</b></font></p>
+<p>The <b>getServletContext</b> method is inherited into the <b>Svg11</b> class by way of 
+the superclass named <b>HttpServlet</b>.&nbsp; The method returns a 
+reference to an object of type <b>ServletContext</b>.&nbsp; Here is part of what 
+Sun has to say about the <b>getServletContext</b> method:</p>
+<blockquote>
+	<p><i>&quot;Returns a ServletContext object, which contains information about the 
+network service in which the servlet is running.&quot;</i></p>
+</blockquote>
+<p>According to Sun, an object that implements the <b>ServletContext</b> 
+interface is: </p>
+<blockquote>
+	<p><i>&quot;A servlet engine generated object that gives servlets information 
+about their environment.&quot;</i></p>
+</blockquote>
+<p>Also according to Sun, the invocation of the <b>getRealPath</b> method on the <b>
+ServletContext</b> object:</p>
+<blockquote>
+	<p><i>&quot;Returns a String representing the corresponding real 
+path in the format that is appropriate for the operating system the servlet 
+engine is running under (including the proper path separators).&quot;</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>To make a long story short</b></font></p>
+<p>To make a long story short, on my system, the execution of the <b>getRealPath</b> 
+method as shown in Listing 7 returns the following string:</p>
+<p>
+
+<pre><b>C:\jakarta-tomcat-5.0.27\webapps\ROOT\</b></pre>
+
+</p>
+<p>The code in Listing 7 then concatenates the proper material onto the end of 
+that string to produce the 
+following string, which is where the SVG file was written by the servlet.</p>
+<pre><b>C:\jakarta-tomcat-5.0.27\webapps\ROOT\images</b></pre>
+<p><font color="#FF0000"><b>Execute some more required servlet code</b></font></p>
+<p>By now, you should recognize the first statement in Listing 8 as the code 
+required to get an output stream for the XHTML text that will be sent directly from the servlet to the browser.</p>
+<p>
+<b><a name="Listing_8">Listing 8</a>. Execute some more required servlet code. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>      PrintWriter out = res.getWriter();
+
+      res.setContentType("image/svg+xml");</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>You should also recognize the second statement in Listing 8 as the code 
+required to set the type of the servlet output to the correct type for SVG data.</p>
+<p><font color="#FF0000">
+<b>Create the XHTML document</b></font></p>
+<p>The code in Listing 9 is essentially the same as the code that I explained 
+earlier in this lesson in Listing 1 through Listing 3.</p>
+<p>
+<b><a name="Listing_9">Listing 9</a>. Create the XHTML document. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>      //Create the beginning text required for the XHTML
+      // document.
+      makeXhtmlText(out);
+      
+      //Insert an object element that references a static
+      // SVG file in the directory listed in the
+      // opening comments to this program. The servlet
+      // also causes plain text to be displayed above and
+      // below the object element.
+      out.println("&lt;p&gt;There is an image below here.");
+
+      out.println(SvgGraphics.makeElement(
+                  true,
+                  "object",
+                  new String[]{"type","image/svg+xml",
+                               "width","210",
+                               "height","430",
+                               "data","/images/Svg11.svg",
+                              })//end call to makeElement
+      );//end call to println
+      
+      out.println("There is an image above here.&lt;/p&gt;");
+
+      //Write the final XHTML text and flush the output
+      // buffer.
+      out.println("&lt;/body&gt;&lt;/html&gt;");
+      out.flush();
+
+    }catch(Exception e){
+      //Note that no effort was made to provide meaningful
+      // information in the event of an exception or
+      // error.
+      e.printStackTrace(System.err);
+    }//end catch
+
+  }// end doGet()</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>End of the program</b></font></p>
+<p>That concludes the explanation of the program named <b>Svg11</b>.</p>
+<center>
+<h2><a name="Run the program"></a>Run the program</h2>
+</center>
+<p>I encourage you to copy the code from Listing 10, Listing 11, and Listing 12 into your text
+editor, compile it, and execute it.&nbsp; Then view the results in Firefox 1.5, 
+or some other suitable SVG rendering engine.&nbsp; Experiment with the code, making 
+changes, and observing the results of your changes. </p>
+<p>Above all, enjoy the process. Programming, particularly graphics programming, 
+can be fun.</p>
+<h2 align="center"><a name="Summary">Summary</a></h2>
+<p>In this lesson I taught you how to write a Java desktop application 
+that creates an output XHTML file containing references to an external SVG file.&nbsp; 
+After that, I taught you how to write servlets that produce XHTML output containing 
+references to external SVG files.&nbsp; The SVG files may be static, or may be 
+created on-the-fly during the execution of the servlet. </p>
+<h2 align="center"><a name="Whats Next">What's next?</a></h2>
+<p>Future lessons in this series will teach you how to write servlets that:</p>
+<ul>
+	<li>Deal with the following graphics elements:
+	<ul>
+		<li>path</li>
+		<li>text</li>
+		<li>image <i>(Deal with bit-mapped images in SVG.)</i></li>
+		<li>use <i>(Create and re-use graphics elements.)</i></li>
+	</ul>
+	</li>
+	<li>Use SVG <i>symbols</i>.</li>
+	<li>Deal with stroke caps in SVG in comparison with similar caps in Java 2D.</li>
+	<li>Use the <i>switch</i> element in SVG.</li>
+	<li>Deal with other features of SVG, such as animation.</li>
+</ul>
+<h2 align="center"><a name="Resources">Resources</a></h2>
+<p><b>Java 2D Graphics</b><br>
+<a href="http://www.dickbaldwin.com/java/Java300.htm">300</a> Java 2D Graphics, 
+Nested Top-Level Classes and Interfaces&nbsp; <br>
+<a href="http://www.dickbaldwin.com/java/Java302.htm">302</a> Java 2D Graphics, 
+The Point2D Class&nbsp; <br>
+<a href="http://www.dickbaldwin.com/java/Java304.htm">304</a> Java 2D Graphics, 
+The Graphics2D Class&nbsp; <br>
+<a href="http://www.dickbaldwin.com/java/Java306.htm">306</a> Java 2D Graphics, 
+Simple Affine Transforms&nbsp; <br>
+<a href="http://www.dickbaldwin.com/java/Java308.htm">308</a> Java 2D Graphics, 
+The Shape Interface, Part 1&nbsp; <br>
+<a href="http://www.dickbaldwin.com/java/Java310.htm">310</a> Java 2D Graphics, 
+The Shape Interface, Part 2&nbsp; <br>
+<a href="http://www.dickbaldwin.com/java/Java312.htm">312</a> Java 2D Graphics, 
+Solid Color Fill&nbsp; <br>
+<a href="http://www.dickbaldwin.com/java/Java314.htm">314</a> Java 2D Graphics, 
+Gradient Color Fill&nbsp; <br>
+<a href="http://www.dickbaldwin.com/java/Java316.htm">316</a> Java 2D Graphics, 
+Texture Fill&nbsp; <br>
+<a href="http://www.dickbaldwin.com/java/Java318.htm">318</a> Java 2D Graphics, 
+The Stroke Interface&nbsp; <br>
+<a href="http://www.dickbaldwin.com/java/Java320.htm">320</a> Java 2D Graphics, 
+The Composite Interface and Transparency&nbsp; <br>
+<a href="http://www.dickbaldwin.com/java/Java322.htm">322</a> Java 2D Graphics, 
+The Composite Interface, GradientPaint, and Transparency&nbsp; <br>
+<a href="http://www.dickbaldwin.com/java/Java324.htm">324</a> Java 2D Graphics, 
+The Color Constructors and Transparency<br>
+<a href="http://java.sun.com/j2se/1.5.0/docs/guide/2d/spec.html">Java 2D API 
+Specification</a><br>
+<a href="http://java.sun.com/products/java-media/2D/">Java 2D API</a></p>
+<p><b>Java API for XML Processing (JAXP)</b><br>
+<a href="http://www.developer.com/java/other/article.php/3099751">2200</a> Java 
+API for XML Processing (JAXP), Getting Started<br>
+<a href="http://www.developer.com/xml/article.php/3113351">2202</a> Getting 
+Started with Java JAXP and XSL Transformations (XSLT)<br>
+<a href="http://www.developer.com/java/other/article.php/3292751">2204</a> Java 
+JAXP, Exposing a DOM Tree<br>
+<a href="http://www.developer.com/java/other/article.php/3313341">2206</a> Java 
+JAXP, Implementing Default XSLT Behavior in Java<br>
+<a href="http://www.developer.com/java/other/article.php/3361261">2208</a> Java 
+JAXP, Writing Java Code to Emulate an XSLT Transformation<br>
+<a href="http://www.developer.com/java/data/article.php/3398741">2210</a> Java 
+JAXP, Transforming XML to XHTML<br>
+<a href="http://www.dickbaldwin.com/tocxml.htm">Links to numerous XML tutorials 
+by Richard G. Baldwin</a><br>
+<br>
+<b>Scalable Vector Graphics (SVG)</b><br>
+<a href="http://www.developer.com/java/other/article.php/3655506">2212</a> Java JAXP, Creating graphics using Java and SVG<br>
+<a href="http://www.developer.com/java/other/article.php/3665131">2214</a> An improved approach for creating SVG/XML code and SVG/XML DOM nodes 
+using Java<br>
+<a href="http://www.developer.com/java/data/article.php/3676331">2216</a> Using Java to produce SVG code in XHTML data<br>
+<a href="http://www.w3.org/TR/SVG/">Scalable Vector Graphics (SVG) 1.1 
+Specification</a><br>
+<a href="http://www.adobe.com/svg/">Adobe SVG Viewer plug-in</a><br>
+<a href="https://www6.software.ibm.com/developerworks/education/x-svggraphics/index.html">
+Create vector graphics in the browser with SVG</a> by Uche Ogbuji<br>
+<a href="http://www.w3schools.com/svg/default.asp">SVG Tutorial</a><br>
+<a href="http://www.svgbasics.com/shapes.html">SVG Basics</a><br>
+<a href="http://www.carto.net/papers/svg/samples/svg_html.shtml">SVG in HTML 
+pages</a></p>
+<p><b>Miscellaneous<br>
+</b><a href="http://validator.w3.org/file-upload.html">W3C Markup Validation 
+Service</a>.</p>
+<center>
+<h2> <a name="Complete Program Listings"></a>Complete program listings</h2>
+</center>
+Complete listings of the programs discussed in this lesson are shown in Listing 
+10 through Listing 12 below.
+<p>
+<b><a name="Listing_10">Listing 10</a>. Program code for Svg09. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>/*File Svg09.java
+Copyright 2006 R.G.Baldwin
+
+The purpose of this program is to show you how to write a 
+Java program that creates an XHTML file, which references
+a static SVG graphics file stored in the same directory on
+the local hard disk.
+
+There are several ways to accomplish this.  This program
+embeds the reference to the SVG file in an object element.
+
+The XHTML output file produced by this program was tested
+and confirmed to be valid at:
+
+http://validator.w3.org/
+
+The XML code produced by this program (with some line 
+breaks manually inserted for compatibility with this 
+narrow publication format) is shown below:
+
+&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;!DOCTYPE html PUBLIC "-//W3C//DTD 
+XHTML 1.0 Transitional//EN" 
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"&gt;
+&lt;html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" &gt;
+&lt;head&gt;
+&lt;meta http-equiv="content-type" content="image/svg+xml; 
+charset=UTF-8" /&gt;
+&lt;title&gt;Generated XHTML file&lt;/title&gt;
+&lt;/head&gt;
+&lt;body style="border:1px solid black;width:220px;
+height:500px;" &gt;
+&lt;p&gt;There is an image below here.
+&lt;object type="image/svg+xml" width="210" height="430" 
+data="Svg09.svg" /&gt;
+There is an image above here.&lt;/p&gt;
+&lt;/body&gt;&lt;/html&gt;
+
+Tested using J2SE 5.0 and Firefox 1.5.09, running under 
+WinXP.
+*********************************************************/
+
+import java.io.*;
+
+public class Svg09{
+
+  public static void main(String argv[]){
+
+    try{
+      //Get an output stream.
+      PrintWriter out = new PrintWriter(
+                      new FileOutputStream("junk.xhtml"));
+                      
+      //Create the beginning text required for the XHTML
+      // document.
+      makeXhtmlText(out);
+      
+      //Insert an object element that references an SVG
+      // file in the same directory, with plain text
+      // above and below the object element.
+      out.println("&lt;p&gt;There is an image below here.");
+
+      out.println(makeElement(
+                  true,
+                  "object",
+                  new String[]{"type","image/svg+xml",
+                               "width","210",
+                               "height","430",
+                               "data","Svg09.svg",
+                              })//end call to makeElement
+      );//end call to println
+      
+      out.println("There is an image above here.&lt;/p&gt;");
+
+      //Write the final XHTML text and flush the output
+      // buffer.
+      out.println("&lt;/body&gt;&lt;/html&gt;");
+      out.flush();
+
+    }catch(Exception e){
+      //Note that no effort was made to provide meaningful
+      // information in the event of an exception or
+      // error.
+      e.printStackTrace(System.err);
+    }//end catch
+
+  }// end main()
+  //----------------------------------------------------//
+
+  //This is a convenience method used to separate out the
+  // code required to write a lot of XHTML text into the
+  // output file.
+  static void makeXhtmlText(PrintWriter out){
+    
+    
+    out.println("&lt;?xml version=\"1.0\" "
+                       + "encoding=\"UTF-8\"?&gt;");
+    out.println(
+          "&lt;!DOCTYPE html PUBLIC \"-//W3C//DTD "
+             + "XHTML 1.0 Transitional//EN\" "
+             + "\"http://www.w3.org/TR/xhtml1/"
+             + "DTD/xhtml1-transitional.dtd\"&gt;");
+
+    out.println(makeElement(false,"html",
+      new String[]{"xmlns","http://www.w3.org/1999/xhtml",
+                   "xml:lang","en"
+                  })//end call to makeElement
+    );//end println
+
+    out.println("&lt;head&gt;");
+    
+    out.println(makeElement(
+               true,
+               "meta",
+               new String[]{"http-equiv","content-type",
+                            "content",
+                            "image/svg+xml; charset=UTF-8"
+                           })//end call to makeElement
+    );//end println
+  
+    out.println("&lt;title&gt;Generated XHTML file&lt;/title&gt;");
+
+    out.println("&lt;/head&gt;");
+
+    out.println(makeElement(
+           false,
+           "body",
+           new String[]{"style","border:1px solid black;"
+                        + "width:220px;"
+                        + "height:500px;"
+                       })//end call to makeElement
+    );//end println
+    
+  }//end makeXhtmlText
+  
+  //----------------------------------------------------//
+  
+  /*
+  One of the most frustrating things about using Java
+   to create elements in XML, XHTML, or HTML is having
+   to deal with the escape characters for the many
+   required quotation marks. This method constructs an
+   element, which may or may not have attributes. Also,
+   the element may or may not be empty.
+  The user of this method does not have to deal with the
+   required quotation marks surrounding attribute values
+   and the corresponding escape characters     
+  The first incoming parameter must be true if the
+   element is empty and false if the element is not
+   empty.
+  If the first parameter is true, the element is sealed
+   off in the required manner for an empty element. If
+   the first parameter is false, the method returns the
+   complete start tag for the element but does not
+   return a complete element. It is the responsibility
+   of the calling method to provide the content and the
+   end tag for the element.
+  The second parameter to the method must be a String
+   that specifies the name of the element.
+  The third parameter to the method must be a reference
+   to an array object of type String.  This array must 
+   contain an even number of elements.  Each pair of 
+   elements constitutes the name and the value of an 
+   attribute, in the order name, value, name, value, etc.
+
+  If the reference to the array object is null and the
+   first parameter is false, the method returns the start
+   tag for an element that has no attributes and is not 
+   empty.
+  If the reference is null and the first parameter is
+   true, the method returns a complete empty element with 
+   no attributes (which probably doesn't make any sense).
+   
+  An example of the recommended usage of the method
+   follows:
+   
+  String newElement = SvgGraphics.makeElement(
+                  true/false,
+                  name,
+                  new String[]{"name","value",
+                               "name","value",
+                               "name","value",
+                               "name","value",
+                               "name","value",
+                               "name","value",
+                               "name","value",
+                               "name","value",
+                               "name","value"
+                              });//end call to makeElement
+   
+  */
+
+  static String makeElement(
+          boolean empty,String elementName,String[] data){
+
+    //Begin constructing the start tag.
+    String element = "&lt;" + elementName + " ";
+    
+    //Deal with elements that have no attributes.
+    if((empty==false) &amp;&amp; (data == null)){
+      //Return a complete start tag.
+      return element + "&gt;";
+    }else if((empty==true) &amp;&amp; (data == null)){
+      //Return a complete empty element.
+      return element + "/&gt;";
+    }//end if
+
+    for(int cnt=0;cnt&lt;data.length;cnt+=2){
+
+      String name = data[cnt];
+      String value = data[cnt+1];
+      element += name + "=" + "\"" + value + "\" ";
+    }//end for loop
+    
+    if(empty){
+      //Terminate the element appropriately for an
+      // empty element. A complete empty element will
+      // be returned.
+      element += "/&gt;";
+    }else{
+      //End the start tag for an element that is not
+      // empty. In this case, only the start tag will
+      // be returned.  The calling program must provide
+      // the content for the element as well as the end
+      // tag for the element.
+      element += "&gt;";
+    }//end else
+      
+    return element;
+  }//end makeElement
+  //----------------------------------------------------//
+
+}//End class Svg09
+</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>&nbsp;</p>
+<p>
+<b><a name="Listing_11">Listing 11</a>. Program code for Svg10.</b><table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>/*File Svg10.java
+Copyright 2007, R.G.Baldwin
+
+The purpose of this program is to show you how to write a 
+simple servlet that will serve a static SVG graphics file
+stored on a jakarta-tomcat server running as a localhost 
+server under WinXP.
+
+Note that everything reasonable was done to keep this 
+servlet as small and simple as practical.
+
+Many thanks go to Marty Hall at 
+http://www.apl.jhu.edu/~hall/ 
+for helping this author understand:
+
+A.  Where to place static files to cause them to be 
+    accessible by a servlet.
+B.  How to reference those files within the servlet.
+C.  Some other hints regarding good programming practice 
+    using Java servlets on a jakarta-tomcat server.
+
+This program can only be tested by deploying the servlet
+on a servlet-compatible server and then accessing it 
+using an SVG-compatible browser, such as Firefox 1.5.
+
+For this demonstration, the static SVG file is stored in:
+C:\jakarta-tomcat-5.0.27\webapps\ROOT\images
+
+The servlet class file is stored in:
+C:\jakarta-tomcat-5.0.27\webapps\ROOT\WEB-INF\classes
+
+The servlet is accessed using Firefox at the following 
+URL:
+
+http://localhost/servlet/Svg10
+
+The code produced by this servlet was tested and confirmed
+to be valid at:
+
+http://validator.w3.org/
+
+The following XML code is produced by this servlet (with 
+some line breaks manually entered here for compatibility 
+with this narrow publication format):
+
+&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 
+Transitional//EN" 
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"&gt;
+&lt;html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" &gt;
+&lt;head&gt;
+&lt;meta http-equiv="content-type" content="image/svg+xml; 
+charset=UTF-8" /&gt;
+&lt;title&gt;Generated XHTML file&lt;/title&gt;
+&lt;/head&gt;
+&lt;body style="border:1px solid black;width:220px;
+height:500px;" &gt;
+&lt;p&gt;There is an image below here.
+&lt;object type="image/svg+xml" width="210" height="430" 
+data="/images/Svg10.svg" /&gt;
+There is an image above here.&lt;/p&gt;
+&lt;/body&gt;&lt;/html&gt;
+
+Tested using J2SE 5.0, Firefox 1.5.09, and 
+jakarta-tomcat-5.0.27 running as a localhost server under
+WinXP.
+*********************************************************/
+
+import java.io.*;
+import javax.servlet.*;
+import javax.servlet.http.*;
+
+public class Svg10 extends HttpServlet{
+
+  public void doGet(HttpServletRequest req,
+                    HttpServletResponse res)
+                      throws ServletException,IOException{
+                        
+    res.setContentType("image/svg+xml");
+
+    try{
+      //Get an output stream.
+      PrintWriter out = res.getWriter();
+                      
+      //Create the beginning text required for the XHTML
+      // document.
+      makeXhtmlText(out);
+      
+      //Insert an object element that references a static
+      // SVG file in the directory listed in the
+      // opening comments to this program. The servlet
+      // also causes plain text to be displayed above and
+      // below the object element.
+      out.println("&lt;p&gt;There is an image below here.");
+
+      out.println(makeElement(
+                  true,
+                  "object",
+                  new String[]{"type","image/svg+xml",
+                               "width","210",
+                               "height","430",
+                               "data","/images/Svg10.svg",
+                              })//end call to makeElement
+      );//end call to println
+      
+      out.println("There is an image above here.&lt;/p&gt;");
+
+      //Write the final XHTML text and flush the output
+      // buffer.
+      out.println("&lt;/body&gt;&lt;/html&gt;");
+      out.flush();
+
+    }catch(Exception e){
+      //Note that no effort was made to provide meaningful
+      // information in the event of an exception or
+      // error.
+      e.printStackTrace(System.err);
+    }//end catch
+
+  }// end doGet()
+  //----------------------------------------------------//
+
+  //This is a convenience method used to separate out the
+  // code required to write a lot of XHTML text into the
+  // output file.
+  static void makeXhtmlText(PrintWriter out){
+    
+    
+    out.println("&lt;?xml version=\"1.0\" "
+                       + "encoding=\"UTF-8\"?&gt;");
+    out.println(
+          "&lt;!DOCTYPE html PUBLIC \"-//W3C//DTD "
+             + "XHTML 1.0 Transitional//EN\" "
+             + "\"http://www.w3.org/TR/xhtml1/"
+             + "DTD/xhtml1-transitional.dtd\"&gt;");
+
+    out.println(makeElement(false,"html",
+      new String[]{"xmlns","http://www.w3.org/1999/xhtml",
+                   "xml:lang","en"
+                  })//end call to makeElement
+    );//end println
+
+    out.println("&lt;head&gt;");
+    
+    out.println(makeElement(
+               true,
+               "meta",
+               new String[]{"http-equiv","content-type",
+                            "content",
+                            "image/svg+xml; charset=UTF-8"
+                           })//end call to makeElement
+    );//end println
+  
+    out.println("&lt;title&gt;Generated XHTML file&lt;/title&gt;");
+
+    out.println("&lt;/head&gt;");
+
+    out.println(makeElement(
+           false,
+           "body",
+           new String[]{"style","border:1px solid black;"
+                        + "width:220px;"
+                        + "height:500px;"
+                       })//end call to makeElement
+    );//end println
+    
+  }//end makeXhtmlText
+  //----------------------------------------------------//
+  
+  /*
+  One of the most frustrating things about using Java
+   to create elements in XML, XHTML, or HTML is having
+   to deal with the escape characters for the many
+   required quotation marks. This method constructs an
+   element, which may or may not have attributes. Also,
+   the element may or may not be empty.
+  The user of this method does not have to deal with the
+   required quotation marks surrounding attribute values
+   and the corresponding escape characters     
+  The first incoming parameter must be true if the
+   element is empty and false if the element is not
+   empty.
+  If the first parameter is true, the element is sealed
+   off in the required manner for an empty element. If
+   the first parameter is false, the method returns the
+   complete start tag for the element but does not
+   return a complete element. It is the responsibility
+   of the calling method to provide the content and the
+   end tag for the element.
+  The second parameter to the method must be a String
+   that specifies the name of the element.
+  The third parameter to the method must be a reference
+   to an array object of type String.  This array must 
+   contain an even number of elements.  Each pair of 
+   elements constitutes the name and the value of an 
+   attribute, in the order name, value, name, value, etc.
+
+  If the reference to the array object is null and the
+   first parameter is false, the method returns the start
+   tag for an element that has no attributes and is not 
+   empty.
+  If the reference is null and the first parameter is
+   true, the method returns a complete empty element with 
+   no attributes (which probably doesn't make any sense).
+   
+  An example of the recommended usage of the method
+   follows:
+   
+  String newElement = makeElement(
+                  true/false,
+                  name,
+                  new String[]{"name","value",
+                               "name","value",
+                               "name","value",
+                               "name","value",
+                               "name","value",
+                               "name","value",
+                               "name","value",
+                               "name","value",
+                               "name","value"
+                              });//end call to makeElement
+   
+  */
+
+  static String makeElement(
+          boolean empty,String elementName,String[] data){
+
+    //Begin constructing the start tag.
+    String element = "&lt;" + elementName + " ";
+    
+    //Deal with elements that have no attributes.
+    if((empty==false) &amp;&amp; (data == null)){
+      //Return a complete start tag.
+      return element + "&gt;";
+    }else if((empty==true) &amp;&amp; (data == null)){
+      //Return a complete empty element.
+      return element + "/&gt;";
+    }//end if
+
+    for(int cnt=0;cnt&lt;data.length;cnt+=2){
+
+      String name = data[cnt];
+      String value = data[cnt+1];
+      element += name + "=" + "\"" + value + "\" ";
+    }//end for loop
+    
+    if(empty){
+      //Terminate the element appropriately for an
+      // empty element. A complete empty element will
+      // be returned.
+      element += "/&gt;";
+    }else{
+      //End the start tag for an element that is not
+      // empty. In this case, only the start tag will
+      // be returned.  The calling program must provide
+      // the content for the element as well as the end
+      // tag for the element.
+      element += "&gt;";
+    }//end else
+      
+    return element;
+  }//end makeElement
+  //----------------------------------------------------//
+
+}//End class Svg10
+</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>&nbsp;</p>
+<p>
+<b><a name="Listing_12">Listing 12</a>. Program code for Svg11.
+</b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>/*File Svg11.java
+Copyright 2007, R.G.Baldwin
+
+The purpose of this program is to write a servlet that 
+will first create a static SVG file and store it on the
+server and then serve that file to an SVG-capable web 
+client by way of XHTML code that is sent to the client.
+
+The code to accomplish this is somewhat simpler than the
+code required to create the SVG graphic code and send it
+directly to the client as in-line graphic code.  This is 
+because this approach makes better use of JAXP to process 
+the DOM tree that represents the graphic image.
+
+This program uses an SVG graphic library that has been
+discussed and explained in earlier lessons on this topic.
+
+The program defines a servlet that:
+
+Creates a DOM tree describing a specific graphic image.
+Transforms that tree into corresponding SVG XML code.
+Writes the SVG code into an output file on the server.
+
+Then the servlet creates the code for a short XHTML 
+document that references the SVG file just written and
+sends that XHTML code back to the client.
+
+The XHTML code sent to the client is valid according to:
+
+http://validator.w3.org/file-upload.html
+
+This program can only be tested by deploying the servlet
+on a servlet-compatible server and then accessing it 
+using an SVG-compatible browser, such as Firefox 1.5.
+
+On my system, the SVG file is written into the following
+directory:
+
+C:\jakarta-tomcat-5.0.27\webapps\ROOT\images
+
+The servlet was tested by copying it into the following 
+directory on the Tomcat server:
+
+C:\jakarta-tomcat-5.0.27\webapps\ROOT\WEB-INF\classes
+
+Then the servlet was accessed using Firefox 1.5.09 at 
+the URL given below:
+
+http://localhost/servlet/Svg11
+
+Tested using J2SE 5.0, Firefox 1.5.09, and 
+jakarta-tomcat-5.0.27 running as a localhost server under
+WinXP.
+*********************************************************/
+
+import javax.xml.parsers.*;
+import org.w3c.dom.*;
+import java.io.*;
+import javax.servlet.*;
+import javax.servlet.http.*;
+import javax.xml.transform.*;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+
+public class Svg11 extends HttpServlet{
+
+  public void doGet(HttpServletRequest req,
+                    HttpServletResponse res)
+                      throws ServletException,IOException{
+
+    //The following data values will be used to create
+    // SVG graphics.
+    int ellipseCenterX = 110;
+    int ellipseCenterY = 100;
+    int ellipseWidth = 100;
+    int ellipseHeight = 40;
+    int ellipseRotate = 15;//degrees
+    
+    int circleCenterX = 110;
+    int circleCenterY = 100;
+    int circleRadius = 30;
+    int circleRotate = 15;
+
+    int rectCenterX = 110;
+    int rectCenterY = 200;
+    int rectWidth = 110;
+    int rectHeight = 80;
+    int rectRoundX = 26;
+    int rectRoundY = 25;
+    
+    int rotatePolyline = 10;
+    
+    try{
+      //Create a DOM tree that describes a particular
+      // graphic image.
+      //Begin by creating a Document object and a root
+      // node named svg.  All of the graphic content will
+      // be contained in the svg element.
+      
+      //At this point, the program starts using the 
+      // SVG graphics library encapsulated in the class
+      // named SvgGraphics.
+      Document document = SvgGraphics.getDocument();      
+
+      //Create the root node named svg and append it to
+      // the document.
+      //Set some attributes on the root node that are
+      // required for proper rendering.
+      Element svg = SvgGraphics.makeNode(
+        document,
+        null,//parent could be null
+        "svg",//node type
+        new String[]{"xmlns","http://www.w3.org/2000/svg",
+                     "version","1.1",
+                     "width","220px",
+                     "height","440px",
+                     "position","static",
+                     "top","0",
+                     "left","0"
+                    });//end call to makeNode
+
+      //Create a node named defs, which will be the parent
+      // for three gradient definitions.  There will be 
+      // two linear gradients and one radial gradient.
+      // Pass null for the reference to the object for the
+      // special case where the node has no attribtes.
+      Element defs = SvgGraphics.makeNode(document,
+                                          svg,//parent
+                                          "defs",
+                                          null);
+
+      //Create nodes that define three different gradient
+      // coloring schemes.
+      //The definitions are identified as gradientA,
+      // gradientB, and gradientC.  They will be referred
+      // to later to specify the fill colors for an 
+      // ellipse, a circle, and a rounded rectangle.
+
+      //Define gradientA, which provides a linear
+      // gradient from yellow to red to blue going from
+      // left to right.
+      Element gradientA = SvgGraphics.makeLinearGradient(
+                              document,    //this document
+                              defs,        //parent
+                              "gradientA");//id
+      //Create three stop nodes that identify the colors
+      // used to produce the gradient and specify where
+      // the colors begin and end, 
+      SvgGraphics.makeGradientStop(document,
+                                   gradientA,//parent
+                                   "2%",     //start here
+                                   "yellow");//color
+                             
+      SvgGraphics.makeGradientStop(document,
+                                   gradientA,
+                                   "50%",
+                                   "red");
+                             
+      SvgGraphics.makeGradientStop(document,
+                                   gradientA,
+                                   "98%",
+                                   "blue");
+      
+      //Define gradientB, which provides a linear
+      // gradient having two stops from green to blue
+      // going from left to right.
+      Element gradientB =SvgGraphics.makeLinearGradient(
+                             document,    //this document
+                             defs,        //parent
+                             "gradientB");//id
+                   
+      SvgGraphics.makeGradientStop(document,
+                                   gradientB,//parent
+                                   "0%",     //start here
+                                   "green"); //color
+                             
+      SvgGraphics.makeGradientStop(document,
+                                   gradientB,
+                                   "100%",
+                                   "blue");
+                                     
+      //Define gradientC, which provides a radial
+      // gradient from yellow to red to blue going from
+      // the center to the outer edge.
+      Element gradientC = 
+                 SvgGraphics.makeRadialGradient(
+                   document,        //this document
+                   defs,            //parent
+                   "gradientC",     //ID
+                   "userSpaceOnUse",
+                   rectCenterX,     //cx
+                   rectCenterY,     //cy
+                   rectWidth/2);    //r
+                   
+      SvgGraphics.makeGradientStop(document,
+                                   gradientC,
+                                   "0%",
+                                   "yellow");
+                             
+      SvgGraphics.makeGradientStop(document,
+                                   gradientC,
+                                   "50%",
+                                   "red");
+                             
+      SvgGraphics.makeGradientStop(document,
+                                   gradientC,
+                                   "100%",
+                                   "blue");
+                                   
+      //Create a node named g, which will be the parent
+      // for an ellipse,a circle, a rectangle, a line,
+      // a polyline, and a polygon. Pass null for the
+      // reference to the object for the special case
+      // where the node has no attribtes.
+      Element g = SvgGraphics.makeNode(document,
+                                       svg,//parent
+                                       "g",
+                                       null);
+
+      //Create an ellipse with a blue border that is two
+      // pixels wide. Fill it with the yellow-red-blue
+      // gradient defined by gradientA.
+      Element theEllipse = SvgGraphics.makeEllipse(
+                             document,
+                             g,//Owner
+                             ellipseCenterX,
+                             ellipseCenterY,
+                             ellipseWidth,
+                             ellipseHeight);
+      //Set the appearance of the ellipse.
+      theEllipse.setAttribute("fill","url(#gradientA)");
+      theEllipse.setAttribute("stroke","blue");
+      theEllipse.setAttribute("stroke-width","2");
+      
+      //Rotate the ellipse by 15-degrees clockwise about
+      // its center.
+      theEllipse.setAttribute("transform",
+                  "translate(" + ellipseCenterX + "," 
+                  + ellipseCenterY + ") "
+                  + "rotate(" + ellipseRotate + ") "
+                  + "translate(" + (-ellipseCenterX) + ","
+                  + (-ellipseCenterY) + ") ");
+
+      //Position a circle so that it appears to be inside
+      // the ellipse.  Fill it with the green-blue
+      // gradient defined by gradientB.
+      Element theCircle = SvgGraphics.makeCircle(
+                            document,
+                            g,//Owner
+                            circleCenterX,
+                            circleCenterY,
+                            circleRadius);
+                            
+      //Set the appearance of the circle and rotate it by
+      // 15-degrees clockwise about its center.
+      theCircle.setAttribute("fill","url(#gradientB)");
+      theCircle.setAttribute("transform",
+                   "translate(" + circleCenterX + "," 
+                   + circleCenterY + ") "
+                   + "rotate(" + circleRotate + ") "
+                   + "translate(" + (-circleCenterX) + ","
+                   + (-circleCenterY) + ") ");
+
+      //Make a rounded rectangle and fill it with
+      // gradientC
+      Element theRect = SvgGraphics.makeRect(
+                            document,
+                            g,//Owner
+                            rectCenterX - rectWidth/2,//x
+                            rectCenterY - rectHeight/2,//y
+                            rectWidth,
+                            rectHeight);
+
+      theRect.setAttribute("fill","url(#gradientC)");
+
+      //Round the corners.
+      theRect.setAttribute("rx",""+ rectRoundX);
+      theRect.setAttribute("ry",""+ rectRoundY);
+
+      //Draw a polyline with four points.
+      int[] polylinePoints = 
+                         {10,235,210,235,110,275,110,225};
+      Element polyline = SvgGraphics.makePolyline(
+                                          document,
+                                          g,//owner
+                                          polylinePoints);
+      
+      //Rotate the polyline by 10 degrees around the first
+      // point.
+      polyline.setAttribute("transform",
+                    "translate(" + polylinePoints[0] + ","
+                    + polylinePoints[1] + ")" 
+                    + "rotate(" + rotatePolyline + ")" 
+                    + "translate(" + (-polylinePoints[0]) 
+                    + "," + (-polylinePoints[1]) + ")");
+      
+      //Draw a polygon with four points. Give it a red
+      // border and fill it with green.
+      int[] polygonPoints = 
+                         {10,335,210,335,110,375,110,325};
+      Element polygon = SvgGraphics.makePolygon(
+                                           document,
+                                           g,//parent
+                                           polygonPoints);
+      polygon.setAttribute("fill","green");
+      polygon.setAttribute("stroke","red");
+      polygon.setAttribute("stroke-width","3");
+      
+      //Draw a green line 12 pixels wide.  Make the line
+      // 60% opaque, or 40% transparent, whichever you
+      // prefer.
+      Element line = SvgGraphics.makeLine(document,
+                                          g,   //owner
+                                          0,   //x1
+                                          0,   //y1
+                                          220, //x2
+                                          440);//y2
+      line.setAttribute("stroke","green");
+      line.setAttribute("stroke-width","12");
+      line.setAttribute("stroke-opacity","0.6");
+
+
+      //Now transform the DOM tree into SVG XML code and
+      // write that code into an SVG file on the server.
+      SvgGraphics.transformTheDom(document,
+        getServletContext().getRealPath("/") + "images" 
+                          + File.separator + "Svg11.svg");
+      
+      //Get an output stream for the XHTML text that will
+      // be sent directly from the servlet to the browser.
+      PrintWriter out = res.getWriter();
+
+      res.setContentType("image/svg+xml");
+                      
+      //Create the beginning text required for the XHTML
+      // document.
+      makeXhtmlText(out);
+      
+      //Insert an object element that references a static
+      // SVG file in the directory listed in the
+      // opening comments to this program. The servlet
+      // also causes plain text to be displayed above and
+      // below the object element.
+      out.println("&lt;p&gt;There is an image below here.");
+
+      out.println(SvgGraphics.makeElement(
+                  true,
+                  "object",
+                  new String[]{"type","image/svg+xml",
+                               "width","210",
+                               "height","430",
+                               "data","/images/Svg11.svg",
+                              })//end call to makeElement
+      );//end call to println
+      
+      out.println("There is an image above here.&lt;/p&gt;");
+
+      //Write the final XHTML text and flush the output
+      // buffer.
+      out.println("&lt;/body&gt;&lt;/html&gt;");
+      out.flush();
+
+    }catch(Exception e){
+      //Note that no effort was made to provide meaningful
+      // information in the event of an exception or
+      // error.
+      e.printStackTrace(System.err);
+    }//end catch
+
+  }// end doGet()
+  //----------------------------------------------------//
+
+  //This is a convenience method used to separate out the
+  // code required to write a lot of XHTML text into the
+  // output file.
+  static void makeXhtmlText(PrintWriter out){
+    
+    
+    out.println("&lt;?xml version=\"1.0\" "
+                       + "encoding=\"UTF-8\"?&gt;");
+    out.println(
+          "&lt;!DOCTYPE html PUBLIC \"-//W3C//DTD "
+             + "XHTML 1.0 Transitional//EN\" "
+             + "\"http://www.w3.org/TR/xhtml1/"
+             + "DTD/xhtml1-transitional.dtd\"&gt;");
+
+    out.println(SvgGraphics.makeElement(false,"html",
+      new String[]{"xmlns","http://www.w3.org/1999/xhtml",
+                   "xml:lang","en"
+                  })//end call to makeElement
+    );//end println
+
+    out.println("&lt;head&gt;");
+    
+    out.println(SvgGraphics.makeElement(
+               true,
+               "meta",
+               new String[]{"http-equiv","content-type",
+                            "content",
+                            "image/svg+xml; charset=UTF-8"
+                           })//end call to makeElement
+    );//end println
+  
+    out.println("&lt;title&gt;Generated XHTML file&lt;/title&gt;");
+
+    out.println("&lt;/head&gt;");
+
+    out.println(SvgGraphics.makeElement(
+           false,
+           "body",
+           new String[]{"style","border:1px solid black;"
+                        + "width:220px;"
+                        + "height:500px;"
+                       })//end call to makeElement
+    );//end println
+    
+  }//end makeXhtmlText
+  
+  //----------------------------------------------------//
+
+
+}//End class Svg11
+//======================================================//
+
+//This is a proof-of-concept graphics class that
+// provides method calls for the creation of the following
+// DOM tree nodes:
+//  A general node of any type
+//  A linear gradient element.
+//  A radial gradient element.
+//  An ellipse.
+//  A circle.
+//  A rectangle.
+//  A line.
+//  A polyline.
+//  A polygon.
+
+//Each method receives a reference to the overall document
+// along with a reference to the parent for the new node.
+//When the method returns, the new node has been appended
+// to the parent node.
+class SvgGraphics{
+  //----------------------------------------------------//
+
+  //This method creates a linear gradient node to which
+  // stop elements must be appended.
+  static Element makeLinearGradient(Document document,
+                                    Element parent,
+                                    String id){
+    Element gradient = 
+        (Element)document.createElement("linearGradient");
+    parent.appendChild(gradient);
+    gradient.setAttribute("id",id);
+    return gradient;
+  }//End makeLinearGradient
+  //----------------------------------------------------//
+  
+  //This method creates a radial gradient node to which
+  // stop elements must be appended. Note that numeric
+  // attributes are set as type String.
+  static Element makeRadialGradient(Document document,
+                                    Element parent,
+                                    String id,
+                                    String gradientUnits,
+                                    int cx,
+                                    int cy,
+                                    int r){
+    Element gradient = 
+        (Element)document.createElement("radialGradient");
+    parent.appendChild(gradient);
+    gradient.setAttribute("id",id);
+    gradient.setAttribute("gradientUnits",gradientUnits);
+    gradient.setAttribute("cx",""+cx);
+    gradient.setAttribute("cy",""+cy);
+    gradient.setAttribute("r",""+r);
+    return gradient;
+  }//End makeRadialGradient
+  //----------------------------------------------------//
+
+  //This method creates a gradient stop node to be
+  // appended to a linear gradient node or a radial
+  // gradient node.                                      
+  static Element makeGradientStop(Document document,
+                                  Element parent,
+                                  String location,
+                                  String color){
+    Element stopElement = 
+                  (Element)document.createElement("stop");
+    parent.appendChild(stopElement);
+    stopElement.setAttribute("offset",location);
+    stopElement.setAttribute("stop-color",color);
+    return stopElement;
+  }//End makeGradientStop
+  //----------------------------------------------------//
+  
+  //This method returns a reference to an ellipse. The
+  // xCoor and yCoor parameters specify the center of the
+  // ellipse.  The xRadius and yRadius parameters specify
+  // the width and height of the  ellipse respectively
+  // while it is in the horizontal plane before being
+  // rotated.  Numeric attributes are set at type String.
+  static Element makeEllipse(Document document,
+                             Element parent,
+                             int xCoor,
+                             int yCoor,
+                             int xRadius,
+                             int yRadius){
+    Element ellipse  = 
+               (Element)document.createElement("ellipse");
+    parent.appendChild(ellipse);
+    ellipse.setAttribute("cx",""+xCoor);
+    ellipse.setAttribute("cy",""+yCoor);
+    ellipse.setAttribute("rx",""+xRadius);
+    ellipse.setAttribute("ry",""+yRadius);
+    return ellipse;
+  }//end makeEllipse
+  //----------------------------------------------------//
+
+  //This method returns a reference to a circle. The
+  // xCoor and yCoor parameters specify the center of the
+  // circle.  The radius parameter specifies the radus of
+  // the circle.  Numeric attributes are set as type
+  // String.
+  static Element makeCircle(Document document,
+                            Element parent,
+                            int xCoor,
+                            int yCoor,
+                            int radius){
+    Element circle  = 
+                (Element)document.createElement("circle");
+    parent.appendChild(circle);
+    circle.setAttribute("cx",""+xCoor);
+    circle.setAttribute("cy",""+yCoor);
+    circle.setAttribute("r",""+radius);
+    return circle;
+  }//end makeCircle
+  //----------------------------------------------------//
+  
+  //This method returns a reference to a rectangle. The
+  // xCoor and yCoor parameters specify the location of
+  // the upper left corner.  The width and height
+  // parameters specify the width and the height while
+  // the rectangle is in the horizontal plane before
+  // being rotated.  Numeric attributes are set as type
+  // String.
+  static Element makeRect(Document document,
+                          Element parent,
+                          int xCoor,
+                          int yCoor,
+                          int width,
+                          int height){
+    Element rect  = 
+                  (Element)document.createElement("rect");
+    parent.appendChild(rect);
+    rect.setAttribute("x",""+xCoor);
+    rect.setAttribute("y",""+yCoor);
+    rect.setAttribute("width",""+width);
+    rect.setAttribute("height",""+height);
+    return rect;
+  }//end makeRect
+  
+  //----------------------------------------------------//
+  
+  //This method returns a reference to a line. x1 and y1
+  // specify the starting point of the line before it is
+  // rotated. x2 and y2 specify the end point.  By
+  // default, the stroke is set to black one pixel wide.
+  // This can be overridden to speciy other colors and
+  // other widths if you need to do so.
+  static Element makeLine(Document document,
+                          Element parent,
+                          int x1,
+                          int y1,
+                          int x2,
+                          int y2){
+    Element line  = 
+                  (Element)document.createElement("line");
+    parent.appendChild(line);
+    line.setAttribute("x1",""+x1);
+    line.setAttribute("y1",""+y1);
+    line.setAttribute("x2",""+x2);
+    line.setAttribute("y2",""+y2);
+    line.setAttribute("stroke","black");
+    line.setAttribute("stroke-width","1");
+    return line;
+  }//end makeLine
+  //----------------------------------------------------//
+
+  //This method returns a reference to a polyline. The
+  // array of type int[] must contain an even number of
+  // values for things to work correctly.
+  //The values are extracted from the array and treated
+  // as coordinate values x1,y1, x2,y2, x3,y3 ... etc.
+  // By default, the stroke is set to black one pixel
+  // wide with no fill.  This can be overridden to other
+  // colors and other widths if you need to do so.
+  static Element makePolyline(Document document,
+                              Element parent,
+                              int[] points){
+    Element polyline  = 
+              (Element)document.createElement("polyline");
+    parent.appendChild(polyline);
+
+    String dataPoints = "";
+    for(int cnt=0;cnt&lt;points.length;cnt++){
+      dataPoints += "" + points[cnt] + ",";
+    }//end for loop
+    
+    polyline.setAttribute("points",dataPoints);
+    polyline.setAttribute("stroke","black");
+    polyline.setAttribute("stroke-width","1");
+    polyline.setAttribute("fill","none");
+    return polyline;
+  }//end makePolyline
+  //----------------------------------------------------//
+  
+  //This method returns a reference to a polygon. The
+  // array of type int[] must contain an even number of
+  // values for things to work correctly.
+  //The values are extracted from the array and treated
+  // as coordinate values x1,y1, x2,y2, x3,y3 ... etc.
+  // By default, the stroke is set to black, one pixel
+  // wide with no fill.  This can be overridden to other
+  // colors and other widths if you need to do so.
+  //The major difference between a polygon and a polyline
+  // is that a polyline leaves the last point dangling.
+  // However, a polygon automatically draws a line from
+  // the last point back to the first point to close
+  // the polygon.
+  static Element makePolygon(Document document,
+                           Element parent,
+                           int[] points){
+    Element polygon  = 
+               (Element)document.createElement("polygon");
+    parent.appendChild(polygon);
+
+    String dataPoints = "";
+    for(int cnt=0;cnt&lt;points.length;cnt++){
+      dataPoints += "" + points[cnt] + ",";
+    }//end for loop
+    
+    polygon.setAttribute("points",dataPoints);
+    polygon.setAttribute("stroke","black");
+    polygon.setAttribute("stroke-width","1");
+    polygon.setAttribute("fill","none");
+    return polygon;
+  }//end makePolygon
+  
+  //----------------------------------------------------//
+  
+  /*
+  One of the most frustrating things about using Java
+   to create elements in XML, XHTML, or HTML is having
+   to deal with the escape characters for the many
+   required quotation marks. This method constructs an
+   element, which may or may not have attributes. Also,
+   the element may or may not be empty.
+  The user of this method does not have to deal with the
+   required quotation marks surrounding attribute values
+   and the corresponding escape characters     
+  The first incoming parameter must be true if the
+   element is empty and false if the element is not
+   empty.
+  If the first parameter is true, the element is sealed
+   off in the required manner for an empty element. If
+   the first parameter is false, the method returns the
+   complete start tag for the element but does not
+   return a complete element. It is the responsibility
+   of the calling method to provide the content and the
+   end tag for the element.
+  The second parameter to the method must be a String
+   that specifies the name of the element.
+  The third parameter to the method must be a reference
+   to an array object of type String.  This array must 
+   contain an even number of elements.  Each pair of 
+   elements constitutes the name and the value of an 
+   attribute, in the order name, value, name, value, etc.
+
+  If the reference to the array object is null and the
+   first parameter is false, the method returns the start
+   tag for an element that has no attributes and is not 
+   empty.
+  If the reference is null and the first parameter is
+   true, the method returns a complete empty element with 
+   no attributes (which probably doesn't make any sense).
+   
+  An example of the recommended usage of the method
+   follows:
+   
+  String newElement = SvgGraphics.makeElement(
+                  true/false,
+                  name,
+                  new String[]{"name","value",
+                               "name","value",
+                               "name","value",
+                               "name","value",
+                               "name","value",
+                               "name","value",
+                               "name","value",
+                               "name","value",
+                               "name","value"
+                              });//end call to makeElement
+   
+  */
+  
+  static String makeElement(
+          boolean empty,String elementName,String[] data){
+
+    //Begin constructing the start tag.
+    String element = "&lt;" + elementName + " ";
+    
+    //Deal with elements that have no attributes.
+    if((empty==false) &amp;&amp; (data == null)){
+      //Return a complete start tag.
+      return element + "&gt;";
+    }else if((empty==true) &amp;&amp; (data == null)){
+      //Return a complete empty element.
+      return element + "/&gt;";
+    }//end if
+
+    for(int cnt=0;cnt&lt;data.length;cnt+=2){
+
+      String name = data[cnt];
+      String value = data[cnt+1];
+      element += name + "=" + "\"" + value + "\" ";
+    }//end for loop
+    
+    if(empty){
+      //Terminate the element appropriately for an
+      // empty element. A complete empty element will
+      // be returned.
+      element += "/&gt;";
+    }else{
+      //End the start tag for an element that is not
+      // empty. In this case, only the start tag will
+      // be returned.  The calling program must provide
+      // the content for the element as well as the end
+      // tag for the element.
+      element += "&gt;";
+    }//end else
+      
+  return element;
+  }//end makeElement
+  //----------------------------------------------------//
+  
+  /*
+  The purpose of this method is to create a general node
+   having any name, and any number of attributes with any 
+   attribute names and any String values for the 
+   attributes, or no attributes at all.
+   
+  The first parameter is a reference to the document to
+   which the new node belongs.
+  
+  The second parameter is a reference to the parent node
+   to which this node is to be appended so as to become a
+   child of that node. If this parameter is null, the new
+   node is appended to the document.  Otherwise, it is
+   appended to the specified parent node.
+   
+  The third parameter is a String that specifies the type
+   of node.
+  
+  The fourth parameter to the method must be a reference
+   to an array object of type String.  This array must 
+   contain an even number of elements.  Each pair of 
+   elements constitutes the name and the value of an 
+   attribute, in the order name, value, name, value, etc.
+  
+  An example of the recommended usage of the method
+   follows:
+  Element abc = SvgGraphics.makeNode(
+                     document,
+                     def,//parent could be null
+                     "ghi",//node type
+                     new String[]{"name","value",
+                                  "name","value",
+                                  "name","value",
+                                  "name","value",
+                                  "name","value",
+                                  "name","value",
+                                  "name","value",
+                                  "name","value",
+                                  "name","value"
+                                 });//end call to makeNode
+  */
+  static Element makeNode(Document document,
+                                Element parent,
+                                String nodeType,
+                                String[] data){
+  
+    Element element = 
+                (Element)document.createElement(nodeType);
+    
+    if(parent == null){
+      //For the special case of parent equal to null,
+      // append the new node to the document.
+      document.appendChild(element);
+    }else{
+      //Otherwise, append the new node to the specified
+      // parent.
+      parent.appendChild(element);
+    }//end else
+  
+    //Deal with elements that have no attributes.
+    if(data == null){
+      return element;
+    }//end if
+    
+    for(int cnt=0;cnt&lt;data.length;cnt+=2){
+      String name = data[cnt];
+      String value = data[cnt+1];
+      element.setAttribute(name,value);
+    }//end for loop
+    
+    return element;
+  }//end makeNode
+  //----------------------------------------------------//
+  
+  //This is a utility method that is used to execute code
+  // that is the same regardless of the graphic image
+  // being produced.
+  static Document getDocument(){
+    Document document = null;
+    try{
+      DocumentBuilderFactory factory = 
+                     DocumentBuilderFactory.newInstance();
+
+      DocumentBuilder builder = 
+                             factory.newDocumentBuilder();
+      document = builder.newDocument();
+
+    }catch(Exception e){
+      e.printStackTrace(System.err);
+      System.exit(0);
+    }//end catch
+    return document;
+  }//end getDocument
+  //----------------------------------------------------//
+  
+  //This is a utility method that is used to execute code
+  // that is the same regardless of the graphic image
+  // being produced.  This method transforms the DOM into
+  // raw XML code and writes that code into the output.
+  static void transformTheDom(Document document,
+                              String filename){
+    try{
+      //Get a TransformerFactory object.
+      TransformerFactory xformFactory =
+                         TransformerFactory.newInstance();
+           
+      //Get an XSL Transformer object.
+      Transformer transformer = 
+                            xformFactory.newTransformer();
+    
+      //Get a DOMSource object that represents the
+      // Document object
+      DOMSource source = new DOMSource(document);
+
+      //Get an output stream for the output file.
+      PrintWriter outStream = new PrintWriter(filename);
+
+      //Get a StreamResult object that points to the
+      // output file.  Then transform the DOM sending XML
+      // code to to the file
+      StreamResult fileResult = 
+                              new StreamResult(outStream);
+      transformer.transform(source,fileResult);
+    }//end try block
+
+    catch(Exception e){
+      e.printStackTrace(System.err);
+    }//end catch
+  }//end transformTheDom
+  //----------------------------------------------------//
+}//end class SvgGraphics
+</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>&nbsp;</p>
+
+<p> </p>
+<hr align="center" size="3" width="100%">
+<h2 align="center"><a name="Copyright">Copyright</a></h2>
+<p>Copyright 2007, Richard G. Baldwin.&nbsp; Reproduction in whole or in part in any 
+form or medium without express written permission from Richard Baldwin is 
+prohibited. </p>
+<h2 align="center"><a name="About_the_author">About the author</a></h2>
+<b><a href="mailto:Baldwin@DickBaldwin.com">Richard Baldwin</a></b><i> is a 
+college professor (at Austin Community College in Austin, TX) and private 
+consultant whose primary focus is a combination of Java, C#, and XML. In 
+addition to the many platform and/or language independent benefits of Java and 
+C# applications, he believes that a combination of Java, C#, and XML will become 
+the primary driving force in the delivery of structured information on the Web.</i>    
+<p><i>Richard has participated in numerous consulting projects and he 
+frequently provides onsite training at the high-tech companies located in and 
+around Austin, Texas.&nbsp; He is the author of Baldwin's Programming
+<a href="http://www.dickbaldwin.com">Tutorials</a>, which have gained a 
+worldwide following among experienced and aspiring programmers. He has also 
+published articles in JavaPro magazine.</i> </p>
+<p><i>In addition to his programming expertise, Richard has many years of 
+practical experience in Digital Signal Processing (DSP).&nbsp; His first job after he 
+earned his Bachelor's degree was doing DSP in the Seismic Research Department of 
+Texas Instruments.&nbsp; (TI is still a world leader in DSP.)&nbsp; In the following 
+years, he applied his programming and DSP expertise to other interesting areas 
+including sonar and underwater acoustics.</i> </p>
+<p><i>Richard holds an MSEE degree from Southern Methodist University and has 
+many years of experience in the application of computer technology to real-world 
+problems.</i> </p>
+<p><i><a href="mailto:baldwin@dickbaldwin.com">Baldwin@DickBaldwin.com</a></i>
+</p>
+<p><b>Keywords</b><br>
+java jaxp svg &quot;scalable vector graphics&quot; </p>
+<p>-end- </p>
+</body>
+</html>

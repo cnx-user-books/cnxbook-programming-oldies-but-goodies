@@ -1,0 +1,1204 @@
+<!doctype html public "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+   <meta name="GENERATOR" content="Microsoft FrontPage 5.0">
+   <title>... in Java by Richard G Baldwin</title>
+</head>
+<body link="#DD0000" vlink="#0000FF" alink="#FF0000" lang="EN-US">
+<h2>
+FileChannel Objects in Java, Using View Objects for Different Types</h2>
+<i>Baldwin shows you how to use the <b>FileChannel</b> class, along with view 
+objects of classes such as <b>DoubleBuffer</b>,<b> </b>to transfer data of all 
+primitive types (other than boolean) between the computer's memory and a 
+physical disk file.</i><p><b>Published:</b>&nbsp; October 29, 2002<br><b>By <a href="mailto:Baldwin@DickBaldwin.com">Richard G. Baldwin</a></b>
+<p>Java Programming Notes # 1790<ul >
+<li>
+<a href="#Preface">Preface</a></li>
+
+<li>
+<a href="#Discussion and Sample Programs">Discussion and Sample Code</a></li>
+
+<li>
+<a href="#Run the program">Run the Program</a></li>
+
+<li>
+<a href="#Summary">Summary</a></li>
+
+<li>
+<a href="#Whats Next">What's Next?</a></li>
+
+<li>
+<a href="#Complete Program Listings">Complete Program Listing</a></li>
+</ul>
+
+<hr size=3 width="100%" align=center>
+<center>
+<h2>
+<a NAME="Preface"></a>Preface</h2></center>
+<p>
+<b><font color="#FF0000">New features in SDK Version 1.4.0</font></b> </p>
+<p>The recently released Java<sup>TM</sup> 2 SDK, Standard Edition Version 1.4 contains a 
+large number of new features, including the concept
+of  IO <i>channels.&nbsp; </i>The first lesson in this miniseries, entitled
+<a href="http://softwaredev.earthweb.com/java/article/0,,12082_1473151,00.html">
+FileChannel Objects in Java, Background Information</a>, introduced you to the concept of channels from a read/write IO viewpoint.&nbsp; 
+The previous lesson, entitled
+<a href="http://softwaredev.earthweb.com/java/article/0,,12082_1481941,00.html">
+FileChannel Objects in Java, ByteBuffer Type</a>, showed you the basics of read/write 
+programming using channels.<p><font color="#FF0000"><b>Showing off the 
+advantages of channels</b></font><p>While the sample program in the previous 
+lesson illustrated the basics of using channels, it 
+didn't do a very good job of showing off the advantages of channels.&nbsp; The sample program  in 
+this and subsequent lessons will do a 
+much better job of showing off the 
+advantages.</p>
+<p><font color="#FF0000"><b>Different primitive types</b></font></p>
+<p>In this lesson, I will show you how to use the <b>FileChannel</b> class, the <b>
+ByteBuffer</b> class,  the <b>DoubleBuffer</b> class, and the <b>ShortBuffer </b>
+class to transfer data of type
+<b>double</b> and data of type <b>short </b>between the computer's memory and a physical file.&nbsp; You will 
+learn how to extend the concept to any primitive data type other than <b>boolean.&nbsp;
+</b></p>
+<p><font color="#FF0000"><b>Mixed primitive types</b></font></p>
+<p>In the next lesson, I will show you how to use the <b>FileChannel</b> class along 
+with the <b>ByteBuffer</b> class to create records consisting of sequences of 
+data values of mixed primitive types, and how to transfer those records 
+between the computer's memory and a physical file.</p>
+<p><b><font color="#FF0000">Memory-mapped IO</font></b><p>Future lessons will teach you how to do <i>memory-mapped</i> IO using channels.<p>
+<b><font color="#FF0000">Viewing tip</font></b>
+<p>You may find it useful to open another copy of this lesson in a separate
+browser window.&nbsp; That will make it easier for you to scroll back and
+forth among the different listings and figures while you are reading about
+them.
+<p><b><font color="#FF0000">Supplementary material</font></b>
+<p>I recommend that you also study the other lessons in my extensive collection
+of online Java tutorials.&nbsp; You will find those lessons published at
+<a href="http://softwaredev.earthweb.com/java">Gamelan.com</a>.&nbsp;
+However, as of the date of this writing, Gamelan doesn't maintain a consolidated
+index of my Java tutorial lessons, and sometimes they are difficult to
+locate there.&nbsp; You will find a consolidated index at <font color="#000000">
+<a href="http://www.DickBaldwin.com">www.DickBaldwin.com</a>.</font>
+<p><b><font color="#FF0000">What is a FileChannel?</font></b>
+<p>Sun describes an object of the <b>FileChannel</b> class simply as <i>"A
+channel for reading, writing, mapping, and manipulating a file."</i><center>
+<h2>
+<a NAME="Discussion and Sample Programs"></a><font color="#000000">Discussion
+and Sample Code</font></h2></center>
+<p>
+I will illustrate the <b>FileChannel</b> class using<b> </b>the sample program named <b>
+Channel02</b>.&nbsp; You will find a complete listing 
+of the program in Listing 17 near the end of the lesson.&nbsp; As is my normal 
+approach, I will discuss this program in fragments.<p><font color="#FF0000"><b>
+Writing and reading different primitive types</b></font><p>This program, which 
+was tested using Java SDK version 1.4.0 under Win2000, illustrates the use of <b>
+FileChannel</b> objects to write and read data of different primitive types from 
+a disk file.<p><font color="#FF0000"><b>Begin with type double</b></font><p>The program begins by first writing and then reading data of type
+<b>double </b>using a <b>DoubleBuffer</b> <i>view</i> of a <b>ByteBuffer</b> object.<p>
+<font color="#FF0000"><b>Applicable to primitive types other than boolean</b></font><p>
+Then the program illustrates that this approach is applicable to any primitive 
+type <i>(other than <b>boolean)</b></i> by writing and then reading data of type<b> 
+short </b>using a <b>ShortBuffer</b> view of a <b>ByteBuffer</b> object.<p>
+<font color="#FF0000"><b>The main method</b></font></p><p>To keep things simple, the program consists of a <b>main</b> 
+method and several static convenience methods.&nbsp; The beginning of the <b>
+main</b> method is shown in Listing 1.</p><table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>  public static void <b>main</b>(
+                        String[] args){
+    ByteBuffer bBuf = 
+        ByteBuffer.<b>wrap</b>(new byte[56]);
+
+<b><font face="Courier New,Courier">Listing 1</font></b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>Wrap an array object in a ByteBuffer object</b></font></p>
+<p>The code in Listing 1 uses the<b> wrap</b> method<b> </b>of the <b>ByteBuffer</b> 
+class to create a <b>ByteBuffer </b>object with a capacity of 56 bytes.&nbsp; 
+Each byte in the buffer is initialized to a value of zero.&nbsp; <i>(This is not 
+new.&nbsp; The methodology for creating <b>ByteBuffer</b> objects was discussed in 
+previous lessons.)</i> </p>
+<p><font color="#FF0000"><b>Create a DoubleBuffer view of the ByteBuffer object</b></font></p>
+<p>The code in Listing 2 is new to this series of tutorial lessons, and is very 
+significant.&nbsp; This code invokes the<b> asDoubleBuffer</b> method<b> </b>on 
+the <b>ByteBuffer </b>object's reference to create a<b> DoubleBuffer </b>view<b>
+</b>of the <b>ByteBuffer</b> object.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>    DoubleBuffer dBuf = 
+                 bBuf.<b>asDoubleBuffer</b>();
+
+<b><font face="Courier New,Courier">Listing 2</font></b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>DoubleBuffer contents and properties</b></font></p>
+<p>The content of the <b>DoubleBuffer</b> object starts at the<b> ByteBuffer</b> 
+object's<b> </b>current position, <i>(which is zero in this case).</i> <br>
+<br>
+The <b>DoubleBuffer</b> object's <i>position</i> will be zero.&nbsp; Its <i>capacity</i> and 
+its <i>limit</i> will be the number of bytes remaining in the<b> ByteBuffer</b> object 
+divided by eight.&nbsp; Its <i>mark</i> will be undefined.&nbsp; <i>(The concept 
+of the bytes remaining in a <b>ByteBuffer</b> object was discussed in  previous lessons.)</i></p>
+<p><font color="#FF0000"><b>Important, changes will be visible ...</b></font></p>
+<p>It is very important to note that changes to 
+the <b>ByteBuffer</b> object's<b> </b>content will be visible in the <b>
+DoubleBuffer</b> object and vice versa.</p>
+<blockquote>
+<p><i>(Although I can't tell you how the virtual machine manages this data from 
+a physical memory viewpoint, the effect is as if each of the two buffers simply provides a different 
+view of the same data.)</i></p>
+</blockquote>
+<p>However, even though the two buffers appear to provide different views of the 
+same data, the two buffers' <i>position, limit,
+</i>and <i>mark</i> values will be independent of one another. </p>
+<p><font color="#FF0000"><b>Also reflected in the original array object</b></font></p>
+<p>Although it isn't demonstrated in this program, changes to the original array 
+object's contents will also be visible in the <b>ByteBuffer</b> object, and in 
+the <b>DoubleBuffer</b> object, and vice versa.&nbsp; Thus, these two objects 
+simply provide different views of the data in the original array object.&nbsp; 
+Stated differently, the original array object, the <b>ByteBuffer</b> object, and 
+the <b>DoubleBuffer</b> object all provide different views of the same data.</p>
+<p><font color="#FF0000"><b>Units of type double</b></font></p>
+<p>As you will see later, methods invoked on the <b>DoubleBuffer</b> object 
+operate in units of type <b>double</b>, and not in units of type <b>byte</b>.&nbsp; 
+This makes it easy, for example, to iterate through the <b>DoubleBuffer</b> 
+object, accessing one <b>double</b> value during each iteration.</p>
+<p><font color="#FF0000"><b>Populating the DoubleBuffer object</b></font></p>
+<p>The code in Listing 3 uses the relative <b>put </b>method of the <b>
+DoubleBuffer </b>class to populate the <b>DoubleBuffer</b> object with six <b>
+double</b> values.&nbsp; <i>(Some of the  values, such as 0.6666666666666666, were purposely designed to make 
+full use of the precision of the <b>double</b> type.)</i></p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>    int cnt = 0;
+    for(cnt = 0; cnt < 6; cnt++){
+      dBuf.<b>put</b>((cnt+1.0)/3);
+    }//end for loop
+
+<b><font face="Courier New,Courier">Listing 3</font></b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>The relative put method</b></font></p>
+<p>The relative <b>put</b> method writes the specified <b>double</b> value into 
+the buffer at the current position, and then increments the position by one. </p>
+<blockquote>
+<p><i>(Several other overloaded versions of the <b>put</b> method are available, 
+including an absolute version that allows you to provide an index that specifies 
+the element into which the <b>double</b> value will be written.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Prepare for writing to a disk file</b></font></p>
+<p>At this point, I need to prepare the buffer for writing to a disk file.&nbsp; 
+In particular, I need to set its limit to the number of values that I want to 
+have written to the file.&nbsp;  </p>
+<p>The first statement in Listing 4 sets the limit of the <b>
+DoubleBuffer</b> object to the number of <b>double</b> values that I have 
+written into the buffer.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>    dBuf.limit(cnt);
+    bBuf.limit(dBuf.limit()*8);
+
+<b><font face="Courier New,Courier">Listing 4</font></b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>Will actually write the ByteBuffer to the disk file</b></font></p>
+<p>Actually, I'm not going to write the <b>DoubleBuffer</b> object to the disk 
+file.&nbsp; Rather, I will use a <b>FileChannel </b>object to write the backing
+<b>ByteBuffer</b> object to the disk file.</p>
+<blockquote>
+<p><i>(<b>FileChannel</b> objects don't deal directly with <b>DoubleBuffer</b> 
+objects, <b>FloatBuffer</b> objects, <b>ShortBuffer</b> objects, etc.&nbsp; 
+Rather, they deal with the backing <b>ByteBuffer</b> object.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>What I really need to do ...</b></font></p>
+<p>Therefore, what I really need to do is set the limit on the <b>ByteBuffer</b> 
+object to correspond to the number of bytes consumed by the <b>double</b> values 
+written into the <b>DoubleBuffer</b> object.</p>
+<p>After setting the limit on the <b>DoubleBuffer</b> object, the second 
+statement in 
+Listing 4 sets the limit on the backing <b>ByteBuffer</b> object to eight times 
+the limit of the <b>DoubleBuffer</b> object <i>(remember, each <b>double</b> 
+value consists of eight bytes).</i></p>
+<p><font color="#FF0000"><b>Display the DoubleBuffer data</b></font></p>
+<p>The code in Listing 5 invokes the <b>showDoubleBufferData</b> method to 
+display the contents of the <b>DoubleBuffer</b> object.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>    <b>showDoubleBufferData</b>(
+                 dBuf,"dBuf-raw data");
+                 
+<b><font face="Courier New,Courier">Listing 5</font></b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>The showDoubleBufferData method</b></font></p>
+<p>The entire <b>showDoubleBufferData</b> method is shown in Listing 6.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>  static void <b>showDoubleBufferData</b>(
+        DoubleBuffer buf, String name){
+    //Displays buffer contents
+    
+    //Save position
+    int pos = buf.position();
+    //Set position to zero
+    buf.position(0);
+    System.out.println(
+                   "Data for " + name);
+<b>    while(buf.hasRemaining()){
+      System.out.println(buf.get());
+    }//end while loop</b>
+    System.out.println();//new line
+    //Restore position and return
+    buf.position(pos);
+  }//end showDoubleBufferData
+
+<b><font face="Courier New,Courier">Listing 6</font></b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>Similar to a previous lesson</b></font></p>
+<p>This method is essentially the same as a similar method that I explained in 
+the previous lesson.&nbsp; The most significant difference is the 
+fact that the iterative loop <i>(shown in boldface)</i> iterates through the 
+object in eight-byte groups instead of iterating on  individual bytes <i>(as was the case in 
+the previous lesson).</i>&nbsp; 
+ 
+</p>
+<p>Thus, each invocation of the relative <b>get</b> method retrieves an entire <b>double</b> 
+value <i>(eight bytes)</i> from the <b>DoubleBuffer</b> object, and then 
+increments the value of the position property of the <b>DoubleBuffer</b> object.</p>
+<p><font color="#FF0000"><b>The output</b></font></p>
+<p>The output produced by the code in Listing 6 is shown in Figure 1.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Data for dBuf-raw data
+0.3333333333333333
+0.6666666666666666
+1.0
+1.3333333333333333
+1.6666666666666667
+2.0
+
+<b>Figure 1</b></pre>
+</td>
+</tr>
+</table>
+<p>Hopefully this is what you expected to see for <b>double</b> data based on 
+division by three.</p>
+<p><font color="#FF0000"><b>Return to the main method</b></font></p>
+<p>Now, I'll return the discussion to the flow of control in the <b>main</b> method.</p>
+<p><font color="#FF0000"><b>Getting the size of a disk file</b></font></p>
+<p>Later on, I'm going to write code to display the number of bytes in a disk 
+file.&nbsp; I can do that by invoking the <b>size </b>method on a <b>FileChannel
+</b>object.&nbsp; I can also do that, <i>
+(independently of the <b>FileChannel </b>object)</i> by using a <b>File</b> 
+object that represents the file under investigation.</p>
+<blockquote>
+<p> <i>(In this lesson, I chose to take the independent 
+route and use a <b>File </b>object instead of invoking the <b>size</b> method on 
+the <b>FileChannel</b> object.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Get and save an object of type File</b></font></p>
+<p>The code in Listing 7 gets a <b>File</b> object that will represent a 
+physical file named <b>junk.txt</b> <i>(when such a file comes into existence).</i></p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>    String fileName = "<b>junk.txt</b>"; 
+    File file = new <b>File</b>(fileName);
+
+<b><font face="Courier New,Courier">Listing 7</font></b></pre>
+</td>
+</tr>
+</table>
+<blockquote>
+<p><i>(As you may recall, a <b>File</b> object that represents a physical disk 
+file can provide information about the file that it represents, such as its 
+size, its location in the disk file structure, etc.&nbsp; Note that the 
+use of the <b>File</b> object is not required for the proper operation of 
+this program, other than to make it easy to determine the size of the file.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Local variables</b></font></p>
+<p>The code in Listing 8 declares three local reference variables, which will be 
+used later.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>    FileOutputStream oStr;
+    FileInputStream iStr;
+    FileChannel fileChan;
+
+<b><font face="Courier New,Courier">Listing 8</font></b></pre>
+</td>
+</tr>
+</table>
+<p>The variables declared in Listing 8 will be used later to hold references to 
+input and output file stream objects, as well as holding a reference to a <b>
+FileChannel</b> object.</p>
+<p><b><font color="#FF0000">Get FileChannel object for output</font></b></p>
+<p>In the previous lesson, I showed you that the methodology for getting a <b>
+FileChannel</b> object <i>(to be used for output only)</i> is:</p>
+<ul>
+  <li>Get a <b>FileOutputStream</b> object.</li>
+  <li>Invoke the <b>getChannel </b>method on the <b>FileOutputStream</b> object.</li>
+</ul>
+<p>The code in Listing 9 uses this methodology to get a <b>FileChannel</b> 
+object that can be used to transfer data from a <b>ByteBuffer </b>object to the 
+file named <b>junk.txt</b>.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>    //Get FileChannel for output
+    try{
+      oStr = new FileOutputStream(
+                             fileName);
+      fileChan = oStr.getChannel();
+
+<b><font face="Courier New,Courier">Listing 9</font></b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>Write the data to the disk file</b></font></p>
+<p>The code in Listing 10 invokes the<b> write</b> method<b> </b>of the<b> 
+FileChannel</b> class to write the output data from the <b>ByteBuffer</b> object 
+to the disk file.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      System.out.println(
+               "Bytes written = " 
+               + fileChan.<b>write</b>(bBuf));
+
+      //Close stream and channel
+      oStr.close();
+      fileChan.close();
+
+<b><font face="Courier New,Courier">Listing 10</font></b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>Important, also writes DoubleBuffer data to file</b></font></p>
+<p>In the process of writing the data from the <b>ByteBuffer</b> object to the 
+disk file, the code in Listing 10 also writes the data from the <b>DoubleBuffer</b> 
+object to the disk file <i>(remember, these are simply different views of the 
+same data).</i></p>
+<p><font color="#FF0000"><b>Recap</b></font></p>
+<p>The overall process implemented to this point in the program is:</p>
+<ul>
+  <li>Get a <b>ByteBuffer </b>object to serve as a <i>backing buffer</i> for a
+  <b>DoubleBuffer</b> object.</li>
+  <li>Get a <b>DoubleBuffer</b> view of the <b>ByteBuffer</b> object <i>(a <b>
+  DoubleBuffer</b> object).</i></li>
+  <li>Manipulate the data in the <b>DoubleBuffer</b> object.</li>
+  <li>Write the contents of the <b>ByteBuffer</b> object <i>(and hence the 
+  contents of the <b>DoubleBuffer</b> object)</i> to the disk file.</li>
+</ul>
+<p><font color="#FF0000"><b>Close the stream and the channel</b></font></p>
+<p>The code in Listing 10 also closes the <b>FileOutputStream</b> object and the
+<b>FileChannel</b> object.</p>
+<p><font color="#FF0000"><b>Screen output</b></font></p>
+<p>Note that the invocation of the <b>write</b> method in Listing 10 is in the 
+argument list of a <b>println</b> method.&nbsp; The <b>write</b> method returns 
+the number of bytes written to the disk file, which is passed to the <b>println
+</b>method.&nbsp; Thus, the code in Listing 
+10 displays the number of bytes written to the disk file as shown in Figure 2.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Bytes written = 48
+
+<b>Figure 2</b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>Six double values at eight bytes each equals ...</b></font></p>
+<p>Recall that six <b>double</b> values were stored in the <b>DoubleBuffer</b> 
+object.&nbsp; Each <b>double</b> value requires eight bytes.&nbsp; Therefore, 
+48 bytes were written to the disk file named <b>junk.txt</b>.</p>
+<p><font color="#FF0000"><b>Get and display the size of the file</b></font></p>
+<p>Recall the earlier discussion about using a <b>File</b> object that 
+represents the file named <b>junk.txt</b> to get and display the size of the 
+disk file.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      System.out.println(
+                     "File length = " +
+                        file.<b>length</b>());
+
+<b><font face="Courier New,Courier">Listing 11</font></b></pre>
+</td>
+</tr>
+</table>
+<p>The code in Listing 11 invokes the <b>length</b> method on the <b>File</b> 
+object to get and display the size of the file named <b>junk.txt</b>, producing 
+the output shown in Figure 3.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>File length = 48
+
+<b>Figure 3</b></pre>
+</td>
+</tr>
+</table>
+<p>Happily, the size of the file in bytes matches the number of bytes reported 
+earlier as having been written to the file.</p>
+<blockquote>
+<p><i>(Keep in mind, however, that from our viewpoint, the file really contains six values of type
+<b>double</b>, each of which requires eight bytes.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Clear the ByteBuffer object</b></font></p>
+<p>The code in Listing 12 invokes the method named<b> clearByteBufferData</b> to 
+write a zero value in each element of the<b> ByteBuffer</b> object.<b> </b> </p>
+<blockquote>
+<p><i>(I discussed this method in detail in the previous lesson, and won't 
+repeat that discussion here.)</i></p>
+</blockquote>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      <b>clearByteBufferData</b>(bBuf,"bBuf");
+
+      <b>showDoubleBufferData</b>(
+                          dBuf,"dBuf");
+
+
+<b><font face="Courier New,Courier">Listing 12</font></b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>Changes made to the ByteBuffer ...</b></font></p>
+<p>Recall that changes made to the contents of the <b>ByteBuffer</b> object are reflected in 
+the <b>DoubleBuffer</b> object, and vice versa.&nbsp; Therefore, setting the 
+individual element values to zero in the <b>ByteBuffer</b> object causes the elements in 
+the <b>DoubleBuffer</b> object to also be set to zero.</p>
+<p><font color="#FF0000"><b>Display the DoubleBuffer data again</b></font></p>
+<p>The code in Listing 12 also invokes the <b>showDoubleBufferData</b> method to 
+display the  current contents of the <b>DoubleBuffer</b> object.&nbsp; 
+The code in Listing 12 produces the output shown in Figure 4, which is probably 
+what you expected.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Clear bBuf
+Data for dBuf
+0.0
+0.0
+0.0
+0.0
+0.0
+0.0
+
+<b>Figure 4</b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>Why did I clear the ByteBuffer?</b></font></p>
+<p>The main reason for first clearing and then displaying the contents of the <b>
+DoubleBuffer</b> object was to show that it no longer contains the six <b>double</b> 
+values written there earlier.&nbsp;  </p>
+<p>The contents of the disk file will be read 
+into the <b>DoubleBuffer</b> object, overwriting the current contents of the 
+buffer.&nbsp; Then the contents will be displayed again, showing that the data was 
+properly read from the disk file back into the buffer.</p>
+<p><font color="#FF0000"><b>Get another FileChannel object</b></font></p>
+<p>The code in Listing 13 uses the same methodology discussed earlier to get a<b> 
+FileChannel</b> object suitable for reading the contents of the physical file 
+named <b>junk.txt</b> into the buffer.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      iStr = new FileInputStream(
+                             fileName);
+      fileChan = iStr.<b>getChannel</b>();
+
+
+<b><font face="Courier New,Courier">Listing 13</font></b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>Read the file data into the buffer</b></font></p>
+<p>The code in Listing 14 invokes the <b>read</b> method on the <b>FileChannel</b> 
+object to read the contents of the physical file into the <b>ByteBuffer</b>.&nbsp; </p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      System.out.println(
+                "Bytes read = " 
+                + fileChan.<b>read</b>(bBuf));
+
+      //Close stream and channel
+      iStr.close();
+      fileChan.close();
+      //Display file length
+
+      System.out.println(
+                      "File length = " 
+                      + file.length());
+
+
+<b><font face="Courier New,Courier">Listing 14</font></b></pre>
+</td>
+</tr>
+</table>
+<p>Then the stream and the channel are both closed.</p>
+<p><font color="#FF0000"><b>The number of bytes read</b></font></p>
+<p>The <b>read</b> method returns the number of bytes read, which is passed to 
+the <b>println</b> method for display.</p>
+<p>Then the code in Listing 14 invokes the <b>length</b> method on the <b>File</b> 
+object to get and display the size of the physical file.&nbsp; These operations 
+produce the output 
+shown in Figure 5.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Bytes read = 48
+File length = 48
+
+<b>Figure 5</b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>No surprise here</b></font></p>
+<p>There should be no surprise that the number of bytes read is reported to be 48 bytes, since 
+that is the size of the file, as shown in Figure 5.</p>
+<p><font color="#FF0000"><b>The double data is in the DoubleBuffer object</b></font></p>
+<p>The <b>read</b> method in Listing 14 reads the contents in the disk file into 
+the <b>ByteBuffer</b> object <i>(and hence into the <b>DoubleBuffer</b> object).</i></p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      showDoubleBufferData(
+                          dBuf,"dBuf");
+                          
+<b><font face="Courier New,Courier">Listing 15</font></b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>Display the double data read from the disk file</b></font></p>
+<p>The code in Listing 15 displays the contents of the <b>DoubleBuffer</b> object, 
+producing the output shown in Figure 6. </p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Data for dBuf
+0.3333333333333333
+0.6666666666666666
+1.0
+1.3333333333333333
+1.6666666666666667
+2.0
+
+<b>Figure 6</b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>Again, no surprise</b></font></p>
+<p>Happily, the current contents of the <b>
+DoubleBuffer</b> object are the same as the original contents that were written 
+to, and read back from the physical disk file.</p>
+<p><font color="#FF0000"><b>What you have learned</b></font></p>
+<p>Now you know how to use a <b>DoubleBuffer</b> object, in conjunction with a 
+backing <b>ByteBuffer</b> object to manipulate data of type <b>double</b>, 
+including writing the <b>double</b> data to a disk file and reading it back from 
+the disk file.</p>
+<p><font color="#FF0000"><b>Classes for other primitive types</b></font></p>
+<p>The following classes can be used in a similar fashion to manipulate all of 
+the primitive data types except <b>boolean</b>.</p>
+<ul>
+  <li>ByteBuffer</li>
+  <li>CharBuffer</li>
+  <li>DoubleBuffer</li>
+  <li>FloatBuffer</li>
+  <li>IntBuffer</li>
+  <li>LongBuffer</li>
+  <li>ShortBuffer </li>
+</ul>
+<p><font color="#FF0000"><b>Repeat the process for data of type short</b></font></p>
+<p>For  purposes of illustration, the code in Listing 16 essentially repeats the 
+process shown above, using the<b> ShortBuffer</b> class in conjunction with the<b> ByteBuffer</b> class, to manipulate primitive data of type<b> short</b>.<b> </b> </p>
+<p>Because of the similarity of this code to the code explained above, I won't 
+discuss this code on a step-by-step basis.&nbsp; However, the code does contain 
+numerous explanatory comments.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      clearByteBufferData(bBuf,"bBuf");
+              
+      //Get a DoubleBuffer view of the
+      // ByteBuffer object
+      ShortBuffer sBuf = 
+                  bBuf.asShortBuffer();
+      //Populate the ShortBuffer with
+      // six short values.  Set its 
+      // limit to the number of short
+      // values stored there. Force the
+      // limit of the ByteBuffer to 
+      // track the limit of the 
+      // ShortBuffer.
+      // Note that it is necessary to 
+      // take the number of bytes in a 
+      // short into account when 
+      // setting the limit on the 
+      // ByteBuffer.
+
+      for(cnt = 0; cnt < 6; cnt++){
+        sBuf.put(
+               (short)(32767/(cnt+1)));
+      }//end for loop
+      sBuf.limit(cnt);
+      bBuf.limit(sBuf.limit()*2);
+
+      //Display the data in the 
+      // ShortBuffer
+      showShortBufferData(
+                 sBuf,"sBuf-raw data");
+    
+      //Get FileChannel for output
+      oStr = new FileOutputStream(
+                             fileName);
+      fileChan = oStr.getChannel();
+
+      //Write output data from the
+      // ByteBuffer to the disk file.
+      System.out.println(
+               "Bytes written = " 
+               + fileChan.write(bBuf));
+      //Close stream and channel
+      oStr.close();
+      fileChan.close();
+      //Display file length
+      System.out.println(
+                      "File length = " 
+                      + file.length());
+
+      //Clear the ByteBuffer, which in
+      // turn will clear the 
+      // ShortBuffer.
+      clearByteBufferData(bBuf,"bBuf");
+
+      //Display the ShortBuffer to 
+      // confirm that it has been
+      // cleared.
+      showShortBufferData(
+                          sBuf,"sBuf");
+
+      //Get FileChannel for input
+      iStr = new FileInputStream(
+                             fileName);
+      fileChan = iStr.getChannel();
+
+      //Read data from disk file into
+      // ByteBuffer.  Then display data
+      // in the ShortBuffer.
+      System.out.println(
+                "Bytes read = " 
+                + fileChan.read(bBuf));
+      //Close stream and channel
+      iStr.close();
+      fileChan.close();
+      //Display file length
+      System.out.println(
+                      "File length = " 
+                      + file.length());
+
+      //Display data
+      showShortBufferData(sBuf,"sBuf");
+      
+
+<b><font face="Courier New,Courier">Listing 16</font></b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>The screen output</b></font></p>
+<p>The code in Listing 16 produces the output shown in Figure 7.&nbsp; You will 
+note that the output shown in Figure 7 is very similar to the output in the 
+previous figures, except that Figure 7 reflects data of type <b>short</b> 
+whereas 
+the previous figures reflect data of type <b>double</b>.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Clear bBuf
+Data for sBuf-raw data
+32767
+16383
+10922
+8191
+6553
+5461
+
+Bytes written = 12
+File length = 12
+Clear bBuf
+Data for sBuf
+0
+0
+0
+0
+0
+0
+
+Bytes read = 12
+File length = 12
+Data for sBuf
+32767
+16383
+10922
+8191
+6553
+5461
+
+<b>Figure 7</b></pre>
+</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">That's it for now</font></b>
+<p>By now you should understand a quite a lot about the use of the<b> 
+FileChannel</b> class<b>, </b>the <b>Buffer</b> class, and the following view 
+classes:<ul>
+  <li>ByteBuffer</li>
+  <li>CharBuffer</li>
+  <li>DoubleBuffer</li>
+  <li>FloatBuffer</li>
+  <li>IntBuffer</li>
+  <li>LongBuffer</li>
+  <li>ShortBuffer</li>
+  </ul>
+<center>
+<h2>
+<a NAME="Run the program"></a>Run the Program</h2></center>
+If you haven't already done so, I encourage you to copy the code from Listing
+  17 into your text editor, compile it, and execute it.&nbsp; Experiment
+with it, making changes, and observing the results of your changes.
+<p>Remember, however, that you must be running Java version 1.4.0 or later
+to compile and execute this program.<h2 align="center"><a name="Summary">Summary</a></h2>
+<p>In this lesson, I have shown you how to use the <b>FileChannel</b> class, the
+<b>ByteBuffer</b> class, the <b>DoubleBuffer</b> class, and the <b>ShortBuffer</b> 
+class to transfer data of type <b>double</b> and data of type <b>short</b> 
+between the computer's memory and a physical file. You have also learned how to 
+extend the concept to any primitive data type other than <b>boolean</b>. </p>
+<p>You have learned how to create different primitive views of a <b>ByteBuffer</b> 
+object and how to manipulate the data in the buffer using the primitive views.</p>
+<p>You have learned that changes made to the view objects are reflected in the
+<b>ByteBuffer</b> object and vice versa.&nbsp; You have also learned that those 
+changes are also reflected in the array object from which the <b>ByteBuffer</b> 
+object was created in the first place.</p>
+<h2 align="center"><a name="Whats Next">What's Next</a>?</h2>
+<p>In the next lesson, I will show you how to use the <b>FileChannel</b> class 
+along with the <b>ByteBuffer</b> class to create records consisting of sequences 
+of data values of mixed primitive types, and how to transfer those records 
+between the computer's memory and a physical file.</p>
+<p>In a lesson following that one, I will teach you how to do memory-mapped IO 
+using channels.</p>
+<p><b><font color="#FF0000">Future plans</font></b>
+<p>As time goes on, I plan to publish additional lessons that will help
+you learn to use other new IO features including:
+<ul>
+<li>
+File locks</li>
+
+<li>
+Character-set encoders and decoders</li>
+
+<li>
+Pattern matching on files using regular expressions</li>
+
+<li>
+Socket channels for both clients and servers</li>
+
+<li>
+Non-blocking reads</li>
+
+<li>
+Non-blocking servers</li>
+</ul>
+  <center>
+<h2>
+<a NAME="Complete Program Listings"></a>Complete Program Listing</h2></center>
+A complete listing of the program discussed in this lesson is shown in
+Listing 17 below.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>/* File Channel02.java
+Copyright 2002, R.G.Baldwin
+Revised 9/19/02
+
+Illustrates use of FileChannel objects
+to write and read data of different 
+types from a disk file.
+
+Writes and then reads data using a
+DoubleBuffer view of a ByteBuffer.
+
+Then writes and reads data using a
+ShortBuffer view of a ByteBuffer.
+
+Tested using JDK 1.4.0 under Win2000
+
+The output is:
+
+Data for dBuf-raw data
+0.3333333333333333
+0.6666666666666666
+1.0
+1.3333333333333333
+1.6666666666666667
+2.0
+
+Bytes written = 48
+File length = 48
+Clear bBuf
+Data for dBuf
+0.0
+0.0
+0.0
+0.0
+0.0
+0.0
+
+Bytes read = 48
+File length = 48
+Data for dBuf
+0.3333333333333333
+0.6666666666666666
+1.0
+1.3333333333333333
+1.6666666666666667
+2.0
+
+Clear bBuf
+Data for sBuf-raw data
+32767
+16383
+10922
+8191
+6553
+5461
+
+Bytes written = 12
+File length = 12
+Clear bBuf
+Data for sBuf
+0
+0
+0
+0
+0
+0
+
+Bytes read = 12
+File length = 12
+Data for sBuf
+32767
+16383
+10922
+8191
+6553
+5461
+
+**************************************/
+
+import java.io.*;
+import java.nio.channels.*;
+import java.nio.*;
+
+class Channel02{
+  public static void main(
+                        String[] args){
+ 
+    //Create a ByteBuffer with a 
+    // capacity of 56 bytes, and all
+    // elements initialized to zero.
+    ByteBuffer bBuf = 
+        ByteBuffer.wrap(new byte[56]);
+        
+    //Get a DoubleBuffer view of the
+    // ByteBuffer object
+    DoubleBuffer dBuf = 
+                 bBuf.asDoubleBuffer();
+                                  
+    //Populate the DoubleBuffer with
+    // six double values.  Set its 
+    // limit to the number of double
+    // values stored there.  Force the
+    // limit of the ByteBuffer to track
+    // the limit of the DoubleBuffer.
+    // Note that it is necessary to 
+    // take the number of bytes in a 
+    // double into account when setting
+    // the limit on the ByteBuffer.
+    int cnt = 0;
+    for(cnt = 0; cnt < 6; cnt++){
+      dBuf.put((cnt+1.0)/3);
+    }//end for loop
+    dBuf.limit(cnt);
+    bBuf.limit(dBuf.limit()*8);
+
+    //Display the data in the 
+    // DoubleBuffer
+    showDoubleBufferData(
+                 dBuf,"dBuf-raw data");
+                 
+    //Get a File object to represent
+    // a physical file.  Will use it
+    // later to get the file length.
+    String fileName = "junk.txt"; 
+    File file = new File(fileName);
+    
+    //Declare variables for use later
+    FileOutputStream oStr;
+    FileInputStream iStr;
+    FileChannel fileChan;
+
+    //Get FileChannel for output
+    try{
+      oStr = new FileOutputStream(
+                             fileName);
+      fileChan = oStr.getChannel();
+
+      //Write output data from the
+      // ByteBuffer to the disk file.
+      System.out.println(
+               "Bytes written = " 
+               + fileChan.write(bBuf));
+      //Close stream and channel
+      oStr.close();
+      fileChan.close();
+      //Display file length
+      System.out.println(
+                     "File length = " +
+                        file.length());
+      
+      //Clear the ByteBuffer, which in
+      // turn will clear the 
+      // DoubleBuffer.
+      clearByteBufferData(bBuf,"bBuf");
+
+      //Display the DoubleBuffer to 
+      // confirm that it has been
+      // cleared.
+      showDoubleBufferData(
+                          dBuf,"dBuf");
+
+      //Get FileChannel for input
+      iStr = new FileInputStream(
+                             fileName);
+      fileChan = iStr.getChannel();
+
+      //Read data from disk file into
+      // ByteBuffer.  Then display data
+      // in the DoubleBuffer.
+      System.out.println(
+                "Bytes read = " 
+                + fileChan.read(bBuf));
+      //Close stream and channel
+      iStr.close();
+      fileChan.close();
+      //Display file length
+      System.out.println(
+                      "File length = " 
+                      + file.length());
+
+      //Display data
+      showDoubleBufferData(
+                          dBuf,"dBuf");
+                          
+      //Now repeat the process using 
+      // the same ByteBuffer and the
+      // same disk file, but using a
+      // ShortBuffer view and 
+      // populating the buffer with
+      // primitive short data.
+        
+      clearByteBufferData(bBuf,"bBuf");
+              
+      //Get a DoubleBuffer view of the
+      // ByteBuffer object
+      ShortBuffer sBuf = 
+                  bBuf.asShortBuffer();
+      //Populate the ShortBuffer with
+      // six short values.  Set its 
+      // limit to the number of short
+      // values stored there. Force the
+      // limit of the ByteBuffer to 
+      // track the limit of the 
+      // ShortBuffer.
+      // Note that it is necessary to 
+      // take the number of bytes in a 
+      // short into account when 
+      // setting the limit on the 
+      // ByteBuffer.
+
+      for(cnt = 0; cnt < 6; cnt++){
+        sBuf.put(
+               (short)(32767/(cnt+1)));
+      }//end for loop
+      sBuf.limit(cnt);
+      bBuf.limit(sBuf.limit()*2);
+
+      //Display the data in the 
+      // ShortBuffer
+      showShortBufferData(
+                 sBuf,"sBuf-raw data");
+    
+      //Get FileChannel for output
+      oStr = new FileOutputStream(
+                             fileName);
+      fileChan = oStr.getChannel();
+
+      //Write output data from the
+      // ByteBuffer to the disk file.
+      System.out.println(
+               "Bytes written = " 
+               + fileChan.write(bBuf));
+      //Close stream and channel
+      oStr.close();
+      fileChan.close();
+      //Display file length
+      System.out.println(
+                      "File length = " 
+                      + file.length());
+
+      //Clear the ByteBuffer, which in
+      // turn will clear the 
+      // ShortBuffer.
+      clearByteBufferData(bBuf,"bBuf");
+
+      //Display the ShortBuffer to 
+      // confirm that it has been
+      // cleared.
+      showShortBufferData(
+                          sBuf,"sBuf");
+
+      //Get FileChannel for input
+      iStr = new FileInputStream(
+                             fileName);
+      fileChan = iStr.getChannel();
+
+      //Read data from disk file into
+      // ByteBuffer.  Then display data
+      // in the ShortBuffer.
+      System.out.println(
+                "Bytes read = " 
+                + fileChan.read(bBuf));
+      //Close stream and channel
+      iStr.close();
+      fileChan.close();
+      //Display file length
+      System.out.println(
+                      "File length = " 
+                      + file.length());
+
+      //Display data
+      showShortBufferData(sBuf,"sBuf");
+      
+    }catch(Exception e){
+      System.out.println(e);}
+  }// end main
+
+  //---------------------------------//
+  static void showDoubleBufferData(
+        DoubleBuffer buf, String name){
+    //Displays buffer contents
+    
+    //Save position
+    int pos = buf.position();
+    //Set position to zero
+    buf.position(0);
+    System.out.println(
+                   "Data for " + name);
+    while(buf.hasRemaining()){
+      System.out.println(buf.get());
+    }//end while loop
+    System.out.println();//new line
+    //Restore position and return
+    buf.position(pos);
+  }//end showDoubleBufferData
+  //---------------------------------//
+
+  static void showShortBufferData(
+         ShortBuffer buf, String name){
+    //Displays buffer contents
+    
+    //Save position
+    int pos = buf.position();
+    //Set position to zero
+    buf.position(0);
+    System.out.println(
+                   "Data for " + name);
+    while(buf.hasRemaining()){
+      System.out.println(buf.get());
+    }//end while loop
+    System.out.println();//new line
+    //Restore position and return
+    buf.position(pos);
+  }//end showShortBufferData
+  //---------------------------------//
+  
+  static void clearByteBufferData(
+          ByteBuffer buf, String name){
+    //Stores 0 in each element of a
+    // byte buffer.
+    
+    //Set position to zero
+    buf.position(0);
+    System.out.println(
+                      "Clear " + name);
+    while(buf.hasRemaining()){
+      buf.put((byte)0);
+    }//end while loop
+    //Set position to zero and return
+    buf.position(0);
+  }//end clearByteBufferData
+  //---------------------------------//
+  
+}//end class Channel02 definition
+
+<b><font face="Courier New,Courier">Listing 17</font></b></pre>
+</td>
+</tr>
+</table>
+
+<hr size=3 width="100%" align=center>
+<p>Copyright 2002, Richard G. Baldwin.&nbsp; Reproduction in whole or in
+part in any form or medium without express written permission from Richard
+Baldwin is prohibited.
+<h4>
+<a NAME="About the author"></a>About the author</h4>
+<b><a href="mailto:Baldwin@DickBaldwin.com">Richard Baldwin</a></b><i>
+is a college professor (at Austin Community College in Austin, TX) and
+private consultant whose primary focus is a combination of Java, C#, and
+XML. In addition to the many platform and/or language independent benefits
+of Java and C# applications, he believes that a combination of Java, C#,
+and XML will become the primary driving force in the delivery of structured
+information on the Web.</i>
+<p><i>Richard has participated in numerous consulting projects, and he
+frequently provides onsite training at the high-tech companies located
+in and around Austin, Texas.&nbsp; He is the author of Baldwin's Programming
+<a href="http://www.DickBaldwin.com">Tutorials</a>,
+which has gained a worldwide following among experienced and aspiring programmers.
+He has also published articles in JavaPro magazine.</i>
+<p><i>Richard holds an MSEE degree from Southern Methodist University and
+has many years of experience in the application of computer technology
+to real-world problems.</i>
+<p><i><a href="mailto:Baldwin@DickBaldwin.com">Baldwin@DickBaldwin.com</a></i>
+<p>-end-
+<br>&nbsp;
+</body>
+</html>

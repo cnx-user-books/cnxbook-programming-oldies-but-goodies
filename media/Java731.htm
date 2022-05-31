@@ -1,0 +1,1405 @@
+<!DOCTYPE doctype PUBLIC "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+  <meta http-equiv="Content-Type"
+ content="text/html; charset=iso-8859-1">
+  <meta name="GENERATOR" content="Microsoft FrontPage 6.0">
+  <title>... JAVA and DSP by Richard G Baldwin</title>
+</head>
+<body alink="#ff0000" lang="EN-US" link="#0000ff" vlink="#666666">
+<h2>Signing Messages using Redundancy Functions in Java</h2>
+<i>Learn how to implement a digital signature scheme with message recovery, 
+whereby the signature can be verified without knowledge of the original message that was 
+signed.&nbsp; With this scheme, signature verification also produces a copy of the original message.</i><p><b>Published:</b>&nbsp; 
+June 28, 2005<br>
+<b>By <a href="#About_the_author">Richard G. Baldwin</a></b> </p>
+<p>Java Programming, Notes # 731</p>
+<ul>
+  <li><a href="#Preface">Preface</a></li>
+  <li><a href="#Background_Information">Background Information</a></li>
+  <li><a href="#Preview">Preview</a></li>
+  <li><a href="#Discussion_and_Sample_Code">Discussion and Sample Code</a></li>
+  <li><a href="#Run_the_Programs">Run the Program</a></li>
+  <li><a href="#Summary">Summary</a></li>
+  <li><a href="#Complete_Program_Listings">Complete Program Listing</a>
+  </li>
+</ul>
+<hr align="center" size="3" width="100%">
+<center>
+<h2> <a name="Preface">Preface</a></h2>
+</center>
+<p><font color="#FF0000"><b>A series on cryptography in Java</b></font></p>
+<p>This lesson is one in a series designed to teach you
+about the inner workings of cryptography using Java.&nbsp;
+The first lesson was entitled 
+<a href="http://www.developer.com/java/ent/article.php/3447491">Public Key 
+Cryptography 101 Using Java</a>.&nbsp; The previous lesson was entitled 
+<a href="http://www.developer.com/java/ent/article.php/3498666">Digital 
+Signatures using Message Digests with Java</a>.</p>
+<p><font color="#FF0000"><b>Public key cryptography and the RSA algorithm</b></font></p>
+<p>Let's begin this lesson by recapping what you have learned so far in this 
+series.&nbsp; In the first lesson entitled 
+<a href="http://www.developer.com/java/ent/article.php/3447491">Public Key 
+Cryptography 101 Using Java</a>, you learned about public key cryptography in 
+general, and you learned how to implement the RSA encryption algorithm in 
+Java in particular.&nbsp; You also learned about the differences between symmetric and 
+asymmetric key cryptography.</p>
+<p><font color="#FF0000"><b>Introduction to digital message signing</b></font></p>
+<p>In the second lesson entitled 
+<a href="http://www.developer.com/java/web/article.php/3469641">Digital 
+Signatures 101 using Java</a>, you learned how to use public-key 
+cryptography and a simple protocol to create digital signatures and to sign 
+messages.&nbsp; The usual purpose of signing messages is to make it possible for 
+the receiving party to confirm both the authenticity and the integrity of a 
+received message.</p>
+<p>Signing a message does not contribute to the preservation of the 
+confidentiality of the message.&nbsp; However, you also learned how to use 
+public key cryptography in addition to message signing to preserve the 
+confidentiality of a signed message.</p>
+<p><font color="#FF0000"><b>Message digests</b></font></p>
+<p>In the third lesson entitled 
+<a href="http://www.developer.com/java/data/article.php/3487986">Message Digests 
+101 using Java</a>, you learned about message digests.&nbsp; 
+You also learned how to write Java programs that implement the SHA-1 message 
+digest algorithm.</p>
+<p><font color="#FF0000"><b>Using message digests to sign messages</b></font></p>
+<p>In the fourth lesson entitled 
+<a href="http://www.developer.com/java/ent/article.php/3498666">Digital 
+Signatures using Message Digests with Java</a>, you learned how to use the SHA-1 message 
+digest algorithm in conjunction with the RSA encryption algorithm to create and 
+use digital signatures that conserve communication bandwidth.</p>
+<p><font color="#FF0000"><b>Purpose of this lesson</b></font></p>
+<p>In this lesson, you will learn how to use redundancy functions in conjunction 
+with the RSA encryption algorithm to sign messages in order to reduce the 
+probability of message forgery.</p>
+<p><font color="#ff0000"><b>Not a lesson on JCE</b></font></p>
+<p>The lessons in this series do not provide instructions on how to use
+the
+<a
+ href="http://java.sun.com/j2se/1.4/docs/guide/security/jce/JCERefGuide.html">Java
+Cryptography Extension <i>(JCE)</i></a>.&nbsp; The purpose of this series is to 
+teach you how to implement common cryptography algorithms for small cases 
+without dependence on a cryptography API.</p>
+<p><font color="#ff0000"><b>Not intended for production use</b></font></p>
+<p>The programs that I will provide and explain in this series of
+lessons are not intended to be used for production cryptography.&nbsp;
+If you need to do production cryptography using Java, you should use Sun's
+<a href="http://java.sun.com/j2se/1.4/docs/guide/security/jce/JCERefGuide.html">Java Cryptography Extension <i>(JCE)</i></a><i>.</i></p>
+<p>The programs that I will provide and explain in this series are intended to help
+you to learn about and to experiment with various cryptosystems as implemented 
+in Java code.&nbsp; They are designed to help you to gain a better understanding of how they work, and why
+they do what they do.&nbsp; In addition, the lessons in this series are intended 
+to help you to understand some of the common uses of cryptography such as the use 
+of digital signatures.</p>
+<p><b><font color="#ff0000">Viewing tip</font></b> </p>
+<p>You may find it useful to open another copy of this lesson in a
+separate browser window.&nbsp; That will make it easier for you to
+scroll back and forth among the different figures and listings while
+you are reading about them.</p>
+<p><b><font color="#ff0000">Supplementary material</font></b> </p>
+<p>I recommend that you also study the other lessons in my extensive collection 
+of online Java tutorials.&nbsp; You will find those lessons published at
+<a href="http://softwaredev.earthweb.com/java">Gamelan.com</a>.&nbsp; However, as of 
+the date of this writing, Gamelan doesn't maintain a consolidated index of my 
+Java tutorial lessons, and sometimes they are difficult to locate there.&nbsp; You 
+will find a consolidated index at <a href="http://www.dickbaldwin.com">
+www.DickBaldwin.com</a><font color="#000000">.</font></p>
+<h2 align="center"><a name="Background_Information">Background
+Information</a></h2>
+<p>The lessons in this series will present and explain programs that
+implement cryptographic and secure hash algorithms intended to achieve secure
+communications between two parties.&nbsp; These algorithms fall into
+two broad categories:</p>
+<ul>
+  <li>Public <i>(asymmetric)</i> key cryptography</li>
+  <li>Symmetric key cryptography</li>
+</ul>
+<p>The first several lessons will deal with
+<a
+ href="http://en.wikipedia.org/wiki/Cryptography#Public_key_cryptography">public
+key cryptography</a>.&nbsp; Subsequent lessons will deal with
+<a
+ href="http://en.wikipedia.org/wiki/Cryptography#Symmetric_key_cryptography">symmetric
+key cryptography</a>. </p>
+<p>Please see the earlier lesson entitled  
+<a href="http://www.developer.com/java/ent/article.php/3447491">Public Key 
+Cryptography 101 Using Java</a> for a discussion of
+the difference between the two.</p>
+<p><font color="#FF0000"><b>Asymmetric or public key cryptography</b></font></p>
+<p>This lesson deals with <i>asymmetric</i> or <i>public key </i>cryptography.&nbsp;
+With asymmetric key cryptography, there are two keys.&nbsp; One key is
+used to encrypt the data and the other is used to decrypt the
+data.&nbsp; Thus, one of the keys <i>(the encryption key)</i> can be
+publicly disclosed without compromising secrecy so long as the other key <i>(the
+decryption key)</i> is held secret.&nbsp; This leads to the common name
+of <i>public key </i>cryptography<i>.</i></p>
+<p><font color="#FF0000"><b>Sometimes the roles are switched</b></font></p>
+<p>Actually the concept that the <i>encryption key</i> is public and the
+<i>decryption key</i> is secret isn't always correct.&nbsp; As you will
+see in this lesson, either key can be used to encrypt the data provided
+that the other key is used to decrypt the data.&nbsp; It is very important, 
+however, that one of the keys be kept secret.&nbsp; For purposes of the <i>digital
+signing</i> of messages, the secret key is used to encrypt 
+some representation of the message and the public key is used to decrypt it.</p>
+<p><font color="#ff0000"><b>The RSA algorithm</b></font></p>
+<p>This lesson deals with a particular asymmetric key algorithm known
+as the <a href="http://theory.lcs.mit.edu/%7Erivest/rsapaper.pdf">
+RSA</a> algorithm.&nbsp; Please see the earlier lesson entitled  
+<a href="http://www.developer.com/java/ent/article.php/3447491">Public Key 
+Cryptography 101 Using Java</a> to gain a basic understanding of the RSA
+algorithm.</p>
+<p><font color="#ff0000"><b>Message signing and digital signatures</b></font></p>
+<p>In one of their papers, the authors of the RSA algorithm point out that <i>"... publicly
+revealing an encryption key does not thereby reveal the corresponding
+decryption key.</i></p>
+<p>An important consequence of this is that a message can be <i>"signed"</i>
+using a privately held key.&nbsp; The signature can be verified using the 
+corresponding publicly revealed key.</p>
+<p><font color="#FF0000"><b>The need for redundancy functions</b></font></p>
+<p>Consider the scenario involving Alice and Bob.&nbsp; Alice needs to send a 
+message to Bob and to treat it in such a way that Bob can confirm that the 
+message was actually sent by her, and was not sent by someone else <i>(a 
+forger)</i> pretending to be her.&nbsp; This process is commonly referred to 
+as authentication.</p>
+<p>Even after confirming that the message was actually sent by Alice, Bob needs 
+to confirm the integrity of the message.&nbsp; In other words, he needs to 
+confirm that the message was not modified <i>(purposely or otherwise)</i> during transmission from Alice to Bob.</p>
+<p><font color="#FF0000"><b>Why not just encrypt the message using Alice's 
+private key?</b></font></p>
+<p>At first blush, it would seem that Alice can accomplish this simply by 
+encrypting her message using her private key so that Bob <i>(and anyone else)</i> 
+can decrypt it using her public key.&nbsp; After all, it would seem that if 
+Alice's private key is truly secret, then no one else could possibly encrypt and 
+send a message which, when decrypted using Alice's public key, would appear to 
+have been sent by her.</p>
+<p><font color="#FF0000"><b>Don't be fooled</b></font></p>
+<p>However, the people who analyze things like this aren't comfortable with that 
+assessment.&nbsp; Recall that a message that has been encrypted using the RSA 
+algorithm is just a <i>(potentially long)</i> string of numeric characters.&nbsp; 
+Therefore, it is just a number.</p>
+<p>The people who know about these things seem to believe that a forger might 
+systematically generate random numbers and decrypt them using Alice's public key 
+until he finds one that will decrypt and decode into a message that would be a 
+plausible message for Alice to have sent.&nbsp; If the forger can find such a 
+number, he can send it to Bob pretending to be Alice and fool Bob into thinking 
+that the message was sent by Alice.&nbsp; After all, when Bob decrypts it using 
+Alice's public key and decodes the result, he sees a message that could have 
+been sent by Alice.</p>
+<p><font color="#FF0000"><b>The forged message</b></font></p>
+<p>For example, the forged message might read:</p>
+<p><b><font face="Arial Narrow">Meet me tonight.</font></b></p>
+<p>Bob might be fooled by this message and might go to their regular meeting 
+place only to learn that he has been fooled when Alice doesn't show up.&nbsp; </p>
+<blockquote>
+	<p><i>(The private detective hired by Bob's wife to gather 
+	evidence about Bob's affair with Alice might show up instead of Alice.&nbsp; In 
+	fact, the private detective may have been the forger who sent the forged 
+	message to Bob in the first place in order to trick him into showing up for 
+	a phony meeting with Alice.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Redundancy functions to the rescue</b></font></p>
+<p>As protection against such forgeries, Alice and Bob could have agreed in advance that every message sent by Alice 
+to Bob would be processed through a mutually agreed upon redundancy function 
+prior to encryption using Alice's private key.&nbsp; For example, Alice and Bob 
+might agree in advance that every message that is sent from Alice to Bob would consist of two 
+concatenated versions of the same message text as shown below:</p>
+<p><b><font face="Arial Narrow">Meet me tonight.Meet me tonight.</font></b></p>
+<p><font color="#FF0000"><b>More difficult to forge</b></font></p>
+<p>It would be much more difficult for the forger to find a random number that 
+would produce a message which is plausible and which would also match the 
+structure defined by the redundancy function.&nbsp; This would greatly reduce 
+the risk that the forger could forge a message that would fool Bob into thinking 
+that the message was actually sent by Alice.</p>
+<p><font color="#FF0000"><b>Good and poor redundancy functions</b></font></p>
+<p>There are lots of discussions on various web sites regarding good redundancy 
+functions and poor redundancy functions.&nbsp; In the final analysis, it seems 
+that a good redundancy function is a redundancy function that will produce a 
+message structure that would be very unlikely to be produced by using Alice's 
+public key to decrypt a randomly generated number.</p>
+<h2 align="center"><a name="Preview">Preview</a></h2>
+<p>Although I can't say whether it is a good redundancy function or a poor 
+redundancy function, the program named <b>Rsa11</b> that I will explain in this 
+lesson illustrates the digital signing of an unencrypted message using a 
+redundancy function that causes every message sent by Alice to consist of two 
+concatenated versions of the same message text as shown above.</p>
+<p><font color="#ff0000"><b>Three important aspects</b></font></p>
+<p>There are at least three important aspects of electronic
+communication:</p>
+<ul>
+  <li><b>Authentication:</b> Confirming the identities of the parties involved.
+  </li>
+  <li><b>Confidentiality:</b> Making certain that only authorized
+parties can understand the message, even if it is intercepted by
+unauthorized persons. </li>
+  <li><b>Integrity:</b> Confirming that the content of the message wasn't
+modified during transmission, purposely or otherwise.</li>
+</ul>
+<p>The program named <b>Rsa11</b> illustrates a scenario
+where only <i>
+authentication</i> and <i>integrity</i> are of concern.&nbsp; In this
+scenario, there is no need to be concerned about the public disclosure
+of the content of a message.&nbsp; I will have more to say later about how this 
+program could be upgraded to also provide for confidentiality later in this 
+lesson.</p>
+<h2 align="center"><a name="Discussion_and_Sample_Code">Discussion and
+Sample Code</a></h2>
+<p><font color="#ff0000"><b>The program named Rsa11</b></font></p>
+<p>IMPORTANT: BECAUSE THIS PROGRAM USES PREDETERMINED KEYS THAT WERE DESIGNED 
+FOR A BLOCK SIZE OF 12, IT WILL WORK CORRECTLY ONLY FOR A BLOCK SIZE OF 12.</p>
+<p><font color="#FF0000"><b>The purpose of the program</b></font></p>
+<p>The purpose of this program is to illustrate the use of <i>redundancy functions</i> 
+along with <i>public-key cryptography</i> to sign messages in such a way that the 
+person receiving the message can confirm the authenticity and the integrity of the 
+message.</p>
+<p><font color="#FF0000"><b>No confidentiality</b></font></p>
+<p>Even though the message is encrypted <i>(using Alice's private key),</i> this program does not 
+provide for maintaining the confidentiality of the message.&nbsp; 
+Anyone having access to Alice's public key can decrypt and read the message.&nbsp; 
+Preserving confidentiality would 
+require an additional encryption and decryption operation as discussed later.</p>
+<p><font color="#FF0000"><b>Alice and Bob</b></font></p>
+<p>The comments in the program use the scenario of Alice and Bob. Alice needs to 
+send a message to Bob.&nbsp; She needs to treat the message in such a way that Bob can 
+later confirm that the message was actually sent by Alice, and was not sent by 
+someone pretending to be Alice.&nbsp; Bob also needs to be able to confirm that the 
+message was not modified <i>(purposely or otherwise)</i> during the transmission of the message from Alice to 
+Bob.</p>
+<p><font color="#FF0000"><b>Digital signature scheme with message recovery</b></font></p>
+<p>The digital signature scheme that is illustrated by this program is commonly 
+called a <b>digital signature scheme with message recovery</b>.&nbsp; This is 
+because the signature can be verified without knowing the original message that 
+was signed, and the signature verification produces a copy of the original 
+message.</p>
+<p><font color="#FF0000"><b>Apply redundancy function</b></font></p>
+<p>Alice begins by applying a redundancy function to her message.&nbsp;&nbsp; The redundancy 
+function used in this program consists simply of concatenating the message onto 
+itself.&nbsp; However, there are numerous other redundancy functions that could be 
+used by pre-agreement with Bob.</p>
+<p><font color="#FF0000"><b>Extend the message for encryption</b></font></p>
+<p>Then Alice extends the unencoded message causing its length to be a multiple of half the 
+block size in preparation for encryption using the RSA algorithm.&nbsp; Since 
+encoding later will double the length of the message, this causes the length of 
+the encoded message to be a multiple of the block size as required by the RSA 
+encryption algorithm.</p>
+<p><font color="#FF0000"><b>Specify length of original message</b></font></p>
+<p>The last four characters in the pad that is added at the end of the message 
+to extend its length consist of four numeric characters that specify the length of the 
+original message.&nbsp; All remaining characters in the pad consist of equal 
+characters <i>(=).</i></p>
+<p>Although including the length of the original message in the pad is not 
+necessary, it does make it easier for Bob to confirm the authenticity and 
+integrity of the message later.</p>
+<blockquote>
+	<p><i>(Most messages will require an 
+extension that is greater than or equal to four characters, so the inclusion of 
+these four characters at the end of the pad does not increase the length of the 
+message in most cases.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Encode message into numeric format</b></font></p>
+<p>Following this, Alice encodes the extended message into numeric format in 
+preparation for encrypting it.&nbsp;&nbsp; The encoding scheme that Alice uses makes it 
+possible for the message to include all of the ASCII characters from the space 
+character to the tilde (~) character.&nbsp;&nbsp; As mentioned above, this encoding process 
+doubles the length of the message.</p>
+<p><font color="#FF0000"><b>Encrypt the message</b></font></p>
+<p>Alice uses the RSA encryption algorithm to encrypt the encoded message using 
+her <i>private</i> key.&nbsp;&nbsp; Bob can later decrypt the message using her 
+<i>public</i> key.</p>
+<p><font color="#FF0000"><b>Send the message to Bob</b></font></p>
+<p>Then Alice sends the encrypted message to Bob.</p>
+<p><font color="#FF0000"><b>Decrypt and decode the message</b></font></p>
+<p>Bob decrypts the message using Alice's public key.&nbsp; Then he decodes the message using the previously agreed-upon decoding 
+algorithm.</p>
+<p><font color="#FF0000"><b>Get the message length and extract the original 
+message</b></font></p>
+<p>Following this, Bob extracts the original message length from the end of the 
+decoded message.</p>
+<blockquote>
+	<p><i>(Note that the decoded message exhibits the result of Alice having 
+	applied the redundancy function.&nbsp; For this particular redundancy function, the decoded message contains two concatenated copies of the 
+	original message text plus the required extension at the end.)</i></p>
+</blockquote>
+<p>Then Bob uses the message length information to extract the original message 
+text from the 
+beginning of the decoded message.</p>
+<p><font color="#FF0000"><b>Validate the message</b></font> </p>
+<p>Having agreed in advance on the redundancy function, Bob knows that he should 
+be able to compare the extracted message text with a substring of the decoded 
+message having an equal number of characters immediately following the extracted message and 
+get an exact match.&nbsp; In other words, he knows that the decoded message 
+should contain two concatenated copies of the original message text.</p>
+<p>Although it would be possible for Bob to perform this comparison visually, he 
+elects to automate the comparison process.&nbsp; If there is a match, Bob will 
+conclude that the authenticity and the integrity of the message have been confirmed.&nbsp; Otherwise, he concludes that 
+either the authenticity or the integrity of the message is suspect.</p>
+<p><font color="#FF0000"><b>Confidentiality</b></font></p>
+<p>As mentioned above, this program does not maintain the confidentiality of the 
+message.&nbsp; Anyone having access to Alice's public key can read the message.</p>
+<p>If 
+Alice also needed to maintain confidentiality, she could encrypt the message 
+using Bob's public key after she encrypts it using her private key.&nbsp;&nbsp; Then only 
+Bob or someone having access to his private key could decrypt the message 
+and gain access to the version of the message that was encrypted using Alice's 
+private key.</p>
+<p><font color="#FF0000"><b>Predetermined key values</b></font></p>
+<p>This program uses predetermined values for the following:</p>
+<ul>
+	<li>Alice's public key, e</li>
+	<li>Alice's private key, d</li>
+	<li>Alice's modulus operand, n</li>
+</ul>
+<p>The predetermined key values were designed to be used with the RSA algorithm 
+and a block size of 12.</p>
+<p><font color="#FF0000"><b>A disclaimer</b></font></p>
+<p>This program should not be used for production purposes.&nbsp; If you need a 
+Java program for production use, you should develop it using Sun's
+<a href="http://java.sun.com/j2se/1.4/docs/guide/security/jce/JCERefGuide.html">
+Java Cryptography Extension <i>(JCE)</i></a>.</p>
+<p><font color="#FF0000"><b>The program output</b></font></p>
+<p>This program produces the output shown in Figure 1.&nbsp; Note that line 
+breaks were manually entered into Figure 1 to force the material to fit into this 
+narrow publication format.&nbsp; I will frequently refer back to Figure 1 as I explain the 
+code in this program.</p>
+<table bgcolor="#ccffff" border="1" cols="1" width="400">
+  <tbody>
+    <tr>
+      <td>
+      <pre>1. Alice's keys:
+2. e: 17
+3. d: 279263220413
+4. n: 951386374109
+
+5. Block size: 12
+
+6. Alice's msg: Hello Bob, how are you?
+
+7. Alice's msg with redundancy: Hello Bob, how ar
+e you?Hello Bob, how are you?
+
+8. Alice's extended msg: Hello Bob, how are you?H
+ello Bob, how are you?====0023
+
+9. Alice's encoded msg: 4069767679003479661200727
+9870065826900897985314069767679003479661200727987
+0065826900897985312929292916161819
+
+10. Alice's encrypted msg: 6249959457456353354512
+1866764635465214767698085962583373435382001645227
+8218572814588502473073132340176706053
+
+11. Bob's encoded msg: 40697676790034796612007279
+8700658269008979853140697676790034796612007279870
+065826900897985312929292916161819
+
+12. Bob's decoded msg: Hello Bob, how are you?Hel
+lo Bob, how are you?====0023
+
+13. Bob's msg length: 23
+
+14. Bob's extracted msg: Hello Bob, how are you?
+
+15. Msg is valid
+      
+<b>Figure 1</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<p><font color="#FF0000"><b>Discuss in fragments</b></font></p>
+<p>As is my custom, I will discuss and explain this program by breaking it down 
+into fragments and explaining the fragments.&nbsp; You can view the program in its entirety in 
+Listing 13 
+near the end of the lesson.</p>
+<p>Much of the code in this program is either identical to or very 
+similar to code that I explained in the previous lesson entitled 
+<a href="http://www.developer.com/java/ent/article.php/3498666">Digital 
+Signatures using Message Digests with Java</a> and 
+earlier lessons in this series.&nbsp; Therefore, I will simply refer you to 
+those lessons for discussion of the common code.</p>
+<p><font color="#FF0000"><b>The Rsa11 and Keys classes</b></font></p>
+<p>The class named <b>Rsa11</b> begins in Listing 1.&nbsp; This class begins 
+with the definition of a <b>static</b> class named <b>Keys</b>.&nbsp; This code 
+is identical to code that I explained in the lesson entitled 
+<a href="http://www.developer.com/java/ent/article.php/3498666">Digital 
+Signatures using Message Digests with Java</a>, so I will 
+simply refer you to that lesson for an explanation.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+  <tbody>
+    <tr>
+      <td>
+      <pre>class Rsa11{
+  static class Keys{
+    //Note, these key values were designed to
+    // be used with a block size of 12
+    BigInteger n = 
+                  new BigInteger("951386374109");
+    BigInteger d = 
+                  new BigInteger("279263220413");
+    BigInteger e = new BigInteger("17");
+  }//end inner class Keys
+
+<b>Listing 1</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p></p>
+<p><font color="#FF0000"><b>Beginning of the main method</b></font></p>
+<p>The <b>main</b> method begins in Listing 2.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  public static void main(String[] args){
+    //Instantiate an object containing
+    // keys.
+    Keys aliceKeys = new Keys();
+
+    //Test msg.
+    String aliceMsg="Hello Bob, how are you?";
+
+    //Set blockSize.
+    int blockSize = 12;
+
+    //Instantiate an object of this class
+    Rsa11 obj = new Rsa11();
+
+    //Display the key values along with the
+    // modulus operand.
+    System.out.println("1. Alice's keys:");
+    System.out.println("2. e: " + aliceKeys.e);
+    System.out.println("3. d: " + aliceKeys.d);
+    System.out.println("4. n: " + aliceKeys.n);
+    System.out.println("\n5. Block size: " 
+                                    + blockSize);
+    
+    //Display the message that Alice will sign 
+    // and send to Bob.
+    System.out.println("\n6. Alice's msg: "
+                                     + aliceMsg);
+    //Get and save the length of the original
+    // message.
+    int origMsgLen = aliceMsg.length();
+
+<b>Listing 2</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p></p>
+<p>Once again, I will refer you to the previous lesson entitled 
+<a href="http://www.developer.com/java/ent/article.php/3498666">Digital 
+Signatures using Message Digests with Java</a> for an 
+explanation of the code in Listing 2.</p>
+<p><font color="#FF0000"><b>Apply the redundancy function</b></font></p>
+<p>Alice applies the redundancy function to the original message in Listing 3.&nbsp; 
+The redundancy function used in this program simply concatenates the original 
+message text onto itself, creating a new message that is twice the length of the 
+original message.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    aliceMsg += aliceMsg;
+    System.out.println(
+             "\n7. Alice's msg with redundancy: "
+             + aliceMsg);
+
+<b>Listing 3</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p></p>
+<p>Listing 3 also displays the result of applying the redundancy function as 
+Line 7 in Figure 1.&nbsp; Compare the output in Line 7 with the output in Line 
+6, which shows the original message.</p>
+<p><font color="#FF0000"><b>Extend the message</b></font></p>
+<p>Alice invokes the method named <b>padTheMsg</b> in Listing 4 to extend the 
+length of the message to a multiple of half the block size including four 
+characters at the end that specify the length of the original message.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    aliceMsg = obj.padTheMsg(
+                aliceMsg,blockSize/2,origMsgLen);
+    System.out.println(
+                    "\n8. Alice's extended msg: "
+                    + aliceMsg);
+
+<b>Listing 4</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p></p>
+<p>Note that because the later process of encoding the message into numeric 
+format doubles the length of the message, this has the effect of causing the 
+length of the encoded message to be a multiple of the block size, as required by 
+the RSA encryption algorithm.</p>
+<p><font color="#FF0000"><b>The method named padTheMsg</b></font></p>
+<p>This method is identical to the method having the same name that was 
+explained in the lesson entitled 
+<a href="http://www.developer.com/java/ent/article.php/3498666">Digital 
+Signatures using Message Digests with Java</a>.&nbsp; Therefore, I will refer you to 
+that lesson for a further explanation of the method.&nbsp; You can view this 
+method, and all the methods used in this program in their entirety in Listing 13 
+near the end of this lesson.</p>
+<p><font color="#FF0000"><b>The output</b></font></p>
+<p>Listing 4 also displays the extended message producing Line 8 in Figure 1.&nbsp; 
+As you can see, the pad at the end is made up of equal characters <i>(=)</i> and 
+four numeric characters indicating that the length of the original message was 
+23 characters.</p>
+<p><font color="#FF0000"><b>Encode the message into numeric format</b></font></p>
+<p>As explained in earlier lessons in this series, text messages must be 
+converted into numeric format prior to encryption using the RSA 
+encryption algorithm.&nbsp; Alice invokes the <b>encode</b> method in Listing 5 
+to encode the message into numeric format.</p>
+<p>I have explained the <b>encode</b> method in several previous lessons in this 
+series, so I will refer you to those lessons for an explanation of the <b>encode</b> 
+method at this point.</p>
+<p>Suffice it to say that this encoding scheme makes it possible for the message 
+to contain any of the characters ranging from the space character to the tilde
+<i>(~)</i> character in the ASCII table.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    String aliceEncodedMsg = 
+                            obj.encode(aliceMsg);
+    System.out.println(
+                     "\n9. Alice's encoded msg: "
+                     + aliceEncodedMsg);
+
+<b>Listing 5</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p></p>
+<p>Listing 5 also displays the encoded message, producing the numeric output shown in 
+Line 9 in Figure 1.&nbsp; The encoded message is now ready for encryption using 
+the RSA algorithm.</p>
+<blockquote>
+	<p><i>(Note that the length of the encoded message is 108 characters, which 
+	is a multiple of the block size of 12, as required by the RSA encryption 
+	algorithm.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Encrypt the encoded message</b></font></p>
+<p>Alice invokes the <b>doRSA</b> method in Listing 6 to encrypt the encoded 
+message using her <i>private</i> key.&nbsp; The <b>doRSA</b> method has been 
+explained in previous lessons in this series.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    String aliceEncryptedMsg = obj.doRSA(
+                         aliceEncodedMsg,
+                         aliceKeys.d,aliceKeys.n,
+                         blockSize);
+    System.out.println(
+                  "\n10. Alice's encrypted msg: "
+                  + aliceEncryptedMsg);
+
+<b>Listing 6</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p></p>
+<p>Because the message is encoded using Alice's private key, it can later be decrypted 
+by Bob <i>(or anyone else)</i> using Alice's public key.</p>
+<p>Listing 6 also displays the encrypted message producing Line 10 in Figure 1.</p>
+<p><font color="#FF0000"><b>Send the encrypted message to Bob</b></font></p>
+<p>The statement in Listing 7 is intended to simulate the transmission of the 
+encrypted message from Alice to Bob.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    //*****************************************//
+    String bobEncryptedMsg = aliceEncryptedMsg;
+    //*****************************************//
+
+<b>Listing 7</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p></p>
+<p><font color="#FF0000"><b>Decrypt the message</b></font></p>
+<p>Bob invokes the <b>doRSA</b> method to decrypt the message in Listing 8.&nbsp; 
+He uses Alice's public key to produce the encoded message.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    String bobEncodedMsg = obj.doRSA(
+                                 bobEncryptedMsg,
+                                 aliceKeys.e,
+                                 aliceKeys.n,
+                                 blockSize);
+    System.out.println(
+                      "\n11. Bob's encoded msg: "
+                      + bobEncodedMsg);
+
+<b>Listing 8</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p></p>
+<p>Listing 8 also displays the encoded message producing Line 11 in Figure 1.&nbsp; 
+Compare Line 11 with Line 9 to confirm that Alice's encoded message has been 
+correctly reproduced.</p>
+<p>You can view the <b>doRSA</b> method in Listing 13 near the end of this 
+lesson, and read explanations of the method in previous lessons in this series.</p>
+<p><font color="#FF0000"><b>Decode the message</b></font></p>
+<p>Bob invokes the <b>decode</b> method to decode the message in Listing 9.&nbsp; 
+You can view the <b>decode</b> method in Listing 13 and read explanations of the 
+method in previous lessons in this series.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    String bobDecodedMsg = obj.decode(
+                                  bobEncodedMsg);
+    System.out.println(
+                      "\n12. Bob's decoded msg: "
+                      + bobDecodedMsg);
+
+<b>Listing 9</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p></p>
+<p>Listing 9 also displays the decoded message producing Line 12 in Figure 1.&nbsp; 
+Compare Line 12 with Line 8 in Figure 1 to confirm that Alice's extended message 
+has been correctly reproduced.&nbsp; Bob now has access to Alice's extended 
+message with redundancy as shown in Line 12.&nbsp; Note that the last four 
+characters specify the length of the original message.</p>
+<p><font color="#FF0000"><b>Extract original message length</b></font></p>
+<p>Bob extracts the original message length from the end of the decoded message 
+in Listing 10.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    int bobMsgLen = Integer.parseInt(
+                    bobDecodedMsg.substring(
+                    bobDecodedMsg.length() - 4));
+    System.out.println("\n13. Bob's msg length: "
+                       + bobMsgLen);
+
+<b>Listing 10</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p></p>
+<p>Listing 10 also produces Line 13 in Figure 1, indicating that the length of 
+the original message was 23 characters.</p>
+<p><font color="#FF0000"><b>Extract the original message</b></font></p>
+<p>Bob uses the original message length in Listing 11 to extract the first 23 
+characters of the decoded message.&nbsp; On the basis of the previously agreed 
+upon redundancy function, this is the original message.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    String bobMsg = bobDecodedMsg.substring(
+                                    0,bobMsgLen);
+    System.out.println(
+                    "\n14. Bob's extracted msg: "
+                    + bobMsg);
+
+<b>Listing 11</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p></p>
+<p>Listing 11 produces Line 14 in the output shown in Figure 1.&nbsp; Compare 
+Line 14 with Line 6 in Figure 1 to confirm that the original message has been 
+successfully reproduced.</p>
+<p><font color="#FF0000"><b>Confirm authenticity and integrity</b></font></p>
+<p>Having agreed in advance on the redundancy function that was used by Alice to 
+construct the message, Bob knows that he should be able to compare the extracted 
+message text with a substring having an equal number of characters immediately 
+following the extracted message in the decoded message and get an exact match.&nbsp; 
+If there is a match, he concludes that the authenticity and the integrity of the 
+message have been confirmed.&nbsp; Otherwise, he concludes that either the 
+authenticity or the integrity is suspect.</p>
+<p>While Bob could perform this comparison visually, he has elected to automate 
+the comparison as shown in Listing 12.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    if(bobMsg.equals(bobDecodedMsg.substring(
+                      bobMsgLen,2 * bobMsgLen))){
+      System.out.println("\n15. Msg is valid");
+    }else{
+      System.out.println(
+                       "\n15. Msg is not valid");
+    }//end else
+
+  }//end main
+
+<b>Listing 12</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p></p>
+<p>Listing 12 produces the output shown in Line 15 in Figure 1.&nbsp; The fact 
+that the message is deemed to be <i>valid</i> indicates that the message was 
+sent by Alice and was not sent by a forger pretending to be Alice.&nbsp; Line 15 
+also indicates that the integrity of Alice's message has been confirmed.</p>
+<h2 align="center"><a name="Run_the_Programs">Run the Program</a></h2>
+<p>I encourage you to copy, compile and run the program named <b>Rsa11</b> that 
+you will find in Listing 13.&nbsp; Experiment with the program, making changes and observing the
+results of your changes.</p>
+<p>For example, you might want to experiment by replacing the redundancy function with a 
+different redundancy function of your own design.&nbsp; You might also want to 
+experiment by decrypting and decoding a few thousand random numbers to see if 
+any of them produce plausible messages.&nbsp; Another good experiment would be 
+to modify the redundancy function so that it doesn't properly replicate the 
+original message and then view the final result shown in Line 15 of Figure 1.</p>
+<p>In addition, you might want to upgrade the program so as to protect 
+the confidentiality of the message during transmission.</p>
+<p>Above all, have fun and use this program to learn as much as you
+can about the theory behind and the mechanics of digital signatures
+using redundancy functions and public key cryptography as implemented using Java.</p>
+<h2 align="center"><a name="Summary">Summary</a></h2>
+<p>There are numerous protocols that can be used along with public key 
+cryptography and digital signatures to validate the authenticity and integrity 
+of a message.</p>
+<p>I explained two of those protocols in earlier lessons.&nbsp; In this lesson I 
+explained the use of <i>redundancy functions</i> which give rise to what is 
+commonly called a <b>digital signature scheme with message recovery</b>.&nbsp; 
+With this scheme, the signature can be verified without knowledge of the 
+original message that was signed.&nbsp; In addition, signature verification 
+produces a copy of the original message.</p>
+<p>The scheme, as explained in this message, does not provide for protecting the 
+confidentiality of the message during transmission.&nbsp; However, 
+confidentiality could be achieved if the sender were to encrypt the signed 
+message using the receiver's public key prior to transmitting of the message.&nbsp; 
+I leave the implementation of such encryption as an exercise for the reader.</p>
+<h2 align="center"><a name="Complete_Program_Listings">Complete Program
+Listing</a></h2>
+<p>A complete listing of the program discussed in this lesson is provided in 
+Listing 13 below.&nbsp; </p>
+<p><font color="#ff0000"><b>A disclaimer</b></font></p>
+<p>The programs that I am providing and explaining in this series of
+lessons are not intended to be used for production cryptography.&nbsp;
+If you need to do production cryptography using Java, you should use
+<a
+ href="http://java.sun.com/j2se/1.4/docs/guide/security/jce/JCERefGuide.html">Sun's
+Java Cryptography Extension <i>(JCE)</i></a><i>.</i></p>
+<p>The programs that I am providing were developed solely for
+instructional purposes.&nbsp; They are intended to help you to
+experiment with and to learn about various cryptosystems and
+to gain a better understanding of how they work, and why they do what
+they do.</p>
+<table bgcolor="#ffff00" border="1" cols="1" width="400">
+  <tbody>
+    <tr>
+      <td>
+      <pre>/*File Rsa11.java
+Copyright 2005, R.G.Baldwin
+
+IMPORTANT:  BECAUSE THIS PROGRAM USES
+PREDETERMINED KEYS THAT WERE DESIGNED FOR A BLOCK
+SIZE OF 12, IT WILL WORK CORRECTLY ONLY FOR A
+BLOCK SIZE OF 12.
+
+The purpose of this program is to illustrate the 
+use of redundancy functions along with public-key
+cryptography to sign messages in such a way that 
+the person receiving the message can confirm the 
+authenticity and integrity of the message.
+
+This program does not maintain the 
+confidentiality of the message. That would 
+require an additional encryption and decryption 
+operation as discussed later.
+
+The comments in the program use the scenario of 
+Alice and Bob.  Alice needs to send a message to 
+Bob.  She needs to treat the message in such a 
+way that Bob can later confirm that the message 
+was actually sent by Alice, and was not sent by 
+someone pretending to be Alice.  He also needs to
+be able to confirm that the message was not 
+modified during the transmission of the message 
+from Alice to Bob.
+                                     
+Alice begins by applying a redundancy function to
+her message. The redundancy function used in this
+program consists simply of concatenating the 
+message onto itself. However, there are numerous 
+other redundancy functions that could be used by 
+prior agreement between Alice and Bob.
+    
+Then Alice extends the unencoded message length 
+to a multiple of half the block size in 
+preparation for encryption using the RSA 
+algorithm. Since encoding later will double the 
+length of the message, this causes the length of 
+the encoded message to be a multiple of the block
+size.
+
+The last four characters in the pad that is added
+at the end of the message to extend it consist of
+four numeric characters that specify the length 
+of the original message. All remaining characters
+in the pad consist of equal characters (=). 
+Although including the length of the original 
+message is not necessary, it does make it easier 
+for Bob to validate the authenticity and 
+integrity of the message later. In addition, most
+messages will require an extension that is 
+greater than or equal to four characters, so the 
+inclusion of these four characters at the end of 
+the pad does not increase the length of the 
+message in most cases.
+    
+Following this, Alice encodes the extended 
+message into numeric format in preparation for 
+encrypting it. The encoding scheme that Alice 
+uses makes it possible for the message to include
+all of the characters from the space character to
+the tilde (~) character. As mentioned above, this
+encoding process doubles the length of the 
+message.
+    
+Alice uses the RSA encryption algorithm to 
+encrypt the encoded message using her private 
+key. Bob can later decrypt the message using her 
+public key.
+
+Then Alice sends the encrypted message to Bob.
+    
+Bob decrypts the message using Alice's public 
+key.
+    
+Then he decodes the message using the previously 
+agreed-upon decoding algorithm.
+    
+Following this, Bob extracts the original message
+length from the end of the decoded message.
+
+Note that the decoded message exhibits the result
+of the redundancy function having been applied to
+the original message by Alice. For this 
+particular redundancy function, the decoded 
+message contains two concatenated copies of the 
+original message plus the required extension at 
+the end.
+
+Then Bob uses the message length to extract the 
+original message from the beginning of the 
+decoded message. 
+
+Having agreed in advance on the redundancy 
+function, Bob knows that he should be able to 
+compare the extracted message text with a 
+substring of the decoded message having an equal 
+number of characters following the extracted 
+message and get an exact match. If there is a 
+match, he concludes that the authenticity and 
+integrity of the message is confirmed. Otherwise,
+he concludes that either the authenticity or the 
+integrity or both are suspect.
+
+As mentioned above, this program does not 
+maintain the confidentiality of the message. 
+Anyone having access to Alice's public key can 
+read the message. If Alice also needed to 
+maintain confidentiality, she could encrypt the 
+message using Bob's public key after she encrypts
+it using her private key. Then only Bob or 
+someone having access to his private key could 
+decrypt the message gaining access to the version
+of the message that was encrypted using Alice's 
+private key.
+
+This program uses predetermined values for the
+following:
+Alice's public key, e
+Alice's private key, d
+Alice's modulus operand, n
+
+This program should not be used for production
+purposes.  If you need a Java program for
+production use, you should develop it using Sun's
+JCE API.
+
+See the theoretical basis for the RSA algorithm
+at:
+http://theory.lcs.mit.edu/~rivest/rsapaper.pdf
+
+Another good reference is at:
+http://www.math.mtu.edu/mathlab/COURSES/holt/dnt
+/phi4.html
+
+Tested using SDK 1.5 and WinXP.  This program
+produces the following output.  Note that line
+breaks were manually entered to force the 
+material to fit in this narrow publication
+format.
+
+1. Alice's keys:
+2. e: 17
+3. d: 279263220413
+4. n: 951386374109
+
+5. Block size: 12
+
+6. Alice's msg: Hello Bob, how are you?
+
+7. Alice's msg with redundancy: Hello Bob, how ar
+e you?Hello Bob, how are you?
+
+8. Alice's extended msg: Hello Bob, how are you?H
+ello Bob, how are you?====0023
+
+9. Alice's encoded msg: 4069767679003479661200727
+9870065826900897985314069767679003479661200727987
+0065826900897985312929292916161819
+
+10. Alice's encrypted msg: 6249959457456353354512
+1866764635465214767698085962583373435382001645227
+8218572814588502473073132340176706053
+
+11. Bob's encoded msg: 40697676790034796612007279
+8700658269008979853140697676790034796612007279870
+065826900897985312929292916161819
+
+12. Bob's decoded msg: Hello Bob, how are you?Hel
+lo Bob, how are you?====0023
+
+13. Bob's msg length: 23
+
+14. Bob's extracted msg: Hello Bob, how are you?
+
+15. Msg is valid
+
+************************************************/
+import java.math.BigInteger;
+import java.security.*;
+
+class Rsa11{
+  //This is a static inner class whose sole
+  // purpose is to create an object that serves
+  // as a container for keys.  It was made static
+  // so that it can be instantiated from within
+  // main.  It contains precomputed values for
+  // the two keys, e and d, and the modulus
+  // operand n.
+  //
+  // e is the public key
+  // d is the private key
+  static class Keys{
+    //Note, these key values were designed to
+    // be used with a block size of 12
+    BigInteger n = 
+                  new BigInteger("951386374109");
+    BigInteger d = 
+                  new BigInteger("279263220413");
+    BigInteger e = new BigInteger("17");
+  }//end inner class Keys
+
+  public static void main(String[] args){
+    //Instantiate an object containing
+    // keys.
+    Keys aliceKeys = new Keys();
+
+    //Test msg.
+    String aliceMsg="Hello Bob, how are you?";
+
+    //Set blockSize.
+    int blockSize = 12;
+
+    //Instantiate an object of this class
+    Rsa11 obj = new Rsa11();
+
+    //Display the key values along with the
+    // modulus operand.
+    System.out.println("1. Alice's keys:");
+    System.out.println("2. e: " + aliceKeys.e);
+    System.out.println("3. d: " + aliceKeys.d);
+    System.out.println("4. n: " + aliceKeys.n);
+    System.out.println("\n5. Block size: " 
+                                    + blockSize);
+    
+    //Display the message that Alice will sign 
+    // and send to Bob.
+    System.out.println("\n6. Alice's msg: "
+                                     + aliceMsg);
+                                     
+    //Get and save the length of the original
+    // message.
+    int origMsgLen = aliceMsg.length();
+                                     
+    //Alice applies a redundancy function, which
+    // consists simply of concatenating the
+    // message onto itself.
+    aliceMsg += aliceMsg;
+    System.out.println(
+             "\n7. Alice's msg with redundancy: "
+             + aliceMsg);
+    
+    //Alice extends the message length to a
+    // multiple of half the block size including
+    // four char at the end that specify the
+    // length of the original message.
+    
+    aliceMsg = obj.padTheMsg(
+                aliceMsg,blockSize/2,origMsgLen);
+    System.out.println(
+                    "\n8. Alice's extended msg: "
+                    + aliceMsg);
+    
+    //Alice encodes the extended msg into
+    // numeric format in preparation for
+    // encrypting it.
+    String aliceEncodedMsg = 
+                            obj.encode(aliceMsg);
+    System.out.println(
+                     "\n9. Alice's encoded msg: "
+                     + aliceEncodedMsg);
+    
+    //Alice encrypts the encoded message using
+    // her private key
+    String aliceEncryptedMsg = obj.doRSA(
+                         aliceEncodedMsg,
+                         aliceKeys.d,aliceKeys.n,
+                         blockSize);
+    System.out.println(
+                  "\n10. Alice's encrypted msg: "
+                  + aliceEncryptedMsg);
+    
+    //*****************************************//
+    //Alice sends the encrypted message to Bob
+    String bobEncryptedMsg = aliceEncryptedMsg;
+    //*****************************************//
+    
+    //Bob decrypts the message using Alice's
+    // public key.
+    String bobEncodedMsg = obj.doRSA(
+                                 bobEncryptedMsg,
+                                 aliceKeys.e,
+                                 aliceKeys.n,
+                                 blockSize);
+    System.out.println(
+                      "\n11. Bob's encoded msg: "
+                      + bobEncodedMsg);
+    
+    //Bob decodes the message using the
+    // agreed-upon decoding algorithm.
+    String bobDecodedMsg = obj.decode(
+                                  bobEncodedMsg);
+    System.out.println(
+                      "\n12. Bob's decoded msg: "
+                      + bobDecodedMsg);
+    
+    //Bob extracts the original message length
+    // from the end of the decoded message
+    int bobMsgLen = Integer.parseInt(
+                    bobDecodedMsg.substring(
+                    bobDecodedMsg.length() - 4));
+    System.out.println("\n13. Bob's msg length: "
+                       + bobMsgLen);
+    
+    //Bob uses the msg length to extract the
+    // original msg.
+    String bobMsg = bobDecodedMsg.substring(
+                                    0,bobMsgLen);
+    System.out.println(
+                    "\n14. Bob's extracted msg: "
+                    + bobMsg);
+    
+    //Having agreed in advance on the redundancy
+    // function, Bob knows that he should be able
+    // to compare the extracted msg text with a
+    // substring having an equal number of
+    // characters following the extracted msg in
+    // the decoded msg and get an exact match. 
+    // If there is a match, he concludes that the
+    // authenticity and integrity of the message
+    // is confirmed.  Otherwise, he concludes
+    // that either the authenticity or the
+    // integrity or both are suspect.
+    if(bobMsg.equals(bobDecodedMsg.substring(
+                      bobMsgLen,2 * bobMsgLen))){
+      System.out.println("\n15. Msg is valid");
+    }else{
+      System.out.println(
+                       "\n15. Msg is not valid");
+    }//end else
+
+  }//end main
+  //-------------------------------------------//
+  
+  //This method pads a message such that the
+  // final length is a multiple of block and the
+  // last four bytes specify the origMsgLength.
+  // All the remaining bytes in the pad are
+  // filled with equal characters (=). The padded
+  // message is returned as type String.
+  private String padTheMsg(
+          String msgIn,int block,int origMsgLen){
+    byte[] msgData = msgIn.getBytes();
+    int msgInLen = msgData.length;
+    int tailLength = msgInLen%block;
+    int padLength = 0;
+    if((block - tailLength >= 4))
+      padLength = block - tailLength;
+    else 
+      padLength = 2*block - tailLength;
+      
+    //Create a four-byte array containing
+    // characters that indicate the length of
+    // the original msg with leading zeros if
+    // necessary.
+    String msgLenAsStr = "" + origMsgLen;
+    //Confirm number of characters.
+    if((msgLenAsStr.length() > 4) 
+                 || (msgLenAsStr.length() <= 0)){
+      System.out.println(
+                        "Message length error.");
+      System.exit(0);
+    }//end if
+    
+    //Prepend leading zeros if necessary
+    if(msgLenAsStr.length() == 1){
+      msgLenAsStr = "000" + msgLenAsStr;
+    }else if(msgLenAsStr.length() == 2){
+      msgLenAsStr = "00" + msgLenAsStr;
+    }else if(msgLenAsStr.length() == 3){
+      msgLenAsStr = "0" + msgLenAsStr;
+    }else if(msgLenAsStr.length() == 1){
+      msgLenAsStr = "000" + msgLenAsStr;
+    }//end else
+    
+    //Create a four-byte array containing the
+    // original message length as four numeric
+    // characters with leading zeros.
+    byte[] msgLenAsBytes = 
+                          msgLenAsStr.getBytes();
+      
+    //Construct an array containing the bytes
+    // required to make the padded message length
+    // equal to a multiple of block
+    byte[] thePad = new byte[padLength];
+
+    //Populate the array with = characters. 
+    // No need to put = characters in the last
+    // four bytes.
+    for(int cnt = 0;cnt < thePad.length - 4;
+                                          cnt++){
+      thePad[cnt] = '=';
+    }//end for loop
+    
+    //Put the original message length at the end
+    // of the pad.
+    System.arraycopy(msgLenAsBytes,0,thePad,
+                            thePad.length - 4,4);
+    
+    //Create an output array.
+    byte[] output = 
+                  new byte[msgInLen + padLength];
+
+    //Populate the output array with the original
+    // msgData concatenated with the pad.
+    System.arraycopy(msgData,0,output,0,
+                                       msgInLen);
+    System.arraycopy(
+       thePad,0,output,msgInLen,thePad.length);
+       
+    //Convert the output to a String and return
+    // the String..
+    String outputAsStr = new String(output);
+    return outputAsStr;
+
+  }//end padTheMsg
+  //-------------------------------------------//
+  
+  //The purpose of this method is to encode a
+  // plain text msg into numeric format
+  // where:
+  // space = 32 - 32 = 0
+  // A = 65 - 32 = 33
+  // ...
+  // Z = 90 - 32 = 58
+  // ...
+  // a = 97 - 32 = 65
+  // ...
+  // ~ = 126 - 32 = 94
+
+  //Note that this encoding method supports all
+  //of the ASCII characters from space through
+  // tilde (~) inclusive.
+  String encode(String msg){
+    byte[] textChars = msg.getBytes();
+    String temp = "";
+    String encodedMsg = "";
+
+    //Build the encoded text string two numeric
+    // characters at a time.  Each msg
+    // character is converted into two numeric
+    // characters according to the relationships
+    // given above.
+    for(int cnt = 0; cnt < msg.length();
+                                          cnt++){
+      temp = String.valueOf(
+                       textChars[cnt] - ' ');
+      //Convert all single-character numeric
+      // values to two characters with a leading
+      // zero, as in 09.
+      if(temp.length() < 2) temp = "0" + temp;
+      encodedMsg += temp;
+    }//end for loop
+    return encodedMsg;
+  }//end encode
+  //-------------------------------------------//
+
+  //Apply the RSA algorithm to an input string
+  // using the exponent exp and the modulus
+  // operator n, which are provided as input
+  // parameters.  This method can be used to
+  // encrypt or to decipher the input string
+  // depending on whether the exponent is an
+  // encryption key or a decryption key.  Apply
+  // the algorithm for the block size given by
+  // the incoming parameter named blockSize.
+  String doRSA(String inputString,
+               BigInteger exp,
+               BigInteger n,
+               int blockSize){
+
+    BigInteger block;
+    BigInteger output;
+    String temp = "";
+    String outputString = "";
+
+    //Iterate and process one block at a time.
+    for(int cnt = 0; cnt < inputString.length();
+                               cnt += blockSize){
+      //Get the next block of characters
+      // and encapsulate them in a BigInteger
+      // object.
+      temp = inputString.substring(
+                            cnt,cnt + blockSize);
+
+      block = new BigInteger(temp);
+      //Raise the block to the power exp, apply
+      // the modulus operand n, and save the
+      // remainder.  This is the essence of the
+      // RSA algorithm.
+      output = block.modPow(exp,n);
+
+      //Convert the numeric result to a
+      // four-character string, appending leading
+      // zeros as necessary.
+      temp = output.toString();
+      while(temp.length() < blockSize){
+        temp = "0" + temp;
+      }//end while
+
+      //Build the outputString blockSize
+      // characters at a time.  Each character
+      // in the inputString results in one
+      // character in the outputString.
+      outputString += temp;
+    }//end for loop
+
+    return outputString;
+  }//end doRSA
+  //-------------------------------------------//
+  
+  //The purpose of this method is to reverse the
+  // encoding process implemented by the encode
+  // method, converting a string of numeric
+  // characters back to a text string containing
+  // the ASCII characters from space through
+  // tilde.
+  String decode(String encodedMsg){
+    String temp = "";
+    String decodedText = "";
+    for(int cnt = 0; cnt < encodedMsg.length();
+                                       cnt += 2){
+      temp = encodedMsg.substring(cnt,cnt + 2);
+      //Convert two numeric text characters to a
+      // value of type int.
+      int val = Integer.parseInt(temp) + 32;
+      //Convert the ASCII character values to
+      // numeric String values and build the
+      // output String one character at a time.
+      decodedText += String.valueOf((char)val);
+    }//end for loop
+    return decodedText;
+  }//end decode
+  //-------------------------------------------//
+}//end class Rsa11
+
+<b>Listing 13</b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p></p>
+<p>&nbsp;</p>
+<p>
+<hr align="center" size="3" width="100%">
+<p>Copyright 2005, Richard G. Baldwin.&nbsp; Reproduction in whole or in part in any 
+form or medium without express written permission from Richard Baldwin is 
+prohibited. </p>
+<h4><a name="About_the_author">About the author</a></h4>
+<b><a href="mailto:Baldwin@DickBaldwin.com">Richard Baldwin</a></b><i> is a 
+college professor (at Austin Community College in Austin, TX) and private 
+consultant whose primary focus is a combination of Java, C#, and XML. In 
+addition to the many platform and/or language independent benefits of Java and 
+C# applications, he believes that a combination of Java, C#, and XML will become 
+the primary driving force in the delivery of structured information on the Web.</i>    
+<p><i>Richard has participated in numerous consulting projects and he 
+frequently provides onsite training at the high-tech companies located in and 
+around Austin, Texas.&nbsp; He is the author of Baldwin's Programming
+<a href="http://www.dickbaldwin.com">Tutorials</a>, which have gained a 
+worldwide following among experienced and aspiring programmers. He has also 
+published articles in JavaPro magazine.</i> </p>
+<p><i>In addition to his programming expertise, Richard has many years of 
+practical experience in Digital Signal Processing (DSP).&nbsp; His first job after he 
+earned his Bachelor's degree was doing DSP in the Seismic Research Department of 
+Texas Instruments.&nbsp; (TI is still a world leader in DSP.)&nbsp; In the following 
+years, he applied his programming and DSP expertise to other interesting areas 
+including sonar and underwater acoustics.</i> </p>
+<p><i>Richard holds an MSEE degree from Southern Methodist University and has 
+many years of experience in the application of computer technology to real-world 
+problems.</i> </p>
+<p><i><a href="mailto:baldwin@dickbaldwin.com">Baldwin@DickBaldwin.com</a></i>
+</p>
+<p><b>Keywords</b><br>
+java message digital signature recovery signed verification redundancy key 
+cryptography RSA signing digest asymmetric decrypt encrypt encryption encrypted 
+authentication authenticity&nbsp; confidentiality integrity validate </p>
+<p>-end-</p>
+</body>
+</html>

@@ -1,0 +1,265 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>... in Java by Richard G Baldwin</TITLE>
+<META NAME="Template" CONTENT="C:\PROGRAM FILES\MICROSOFT OFFICE\OFFICE\html.dot">
+</HEAD>
+<BODY LINK="#0000ff" VLINK="#800080" BGCOLOR="#ffffff">
+
+<P><!--start--></P>
+<I><H3 ALIGN="CENTER">Richard G Baldwin (512) 223-4758, </I><A HREF="mailto:baldwin@austin.cc.tx.us"><I>baldwin@austin.cc.tx.us</I></A><I>, </I><A HREF="http://www2.austin.cc.tx.us/baldwin/"><I>http://www2.austin.cc.tx.us/baldwin/</I></A></H3>
+<H2 ALIGN="CENTER"><!--title-->Servlets, Session Tracking Using Hidden Fields <!--endtitle--></H2>
+<P>Java Programming, Lecture Notes # 691, Revised 3/16/99. </P>
+<P><A HREF="#Preface">Preface</A> </P>
+<P><A HREF="#Introduction">Introduction</A> </P>
+<P><A HREF="#sample_program">Sample Program</A> </P><DIR>
+<DIR>
+
+<P><A HREF="#Interesting_Code_Fragments">Interesting Code Fragments</A> </P>
+<P><A HREF="#program_listing">Program Listing</A> </P></DIR>
+</DIR>
+
+<P><HR></P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Preface">Preface</A></H2>
+</FONT><P>Students in Prof. Baldwin's <B><U>Advanced Java Programming</B></U> classes at ACC will be responsible for knowing and understanding all of the material in this lesson beginning with the spring semester of 1999. </P>
+<P>This lesson was originally written on March 16, 1999. </P>
+<P>The sample servlet in this lesson was tested using Win95, the JDK 1.2 download package from JavaSoft, the JSDK 2.0 download package from JavaSoft, and the <STRONG>servletrunner</STRONG> program that is included in the JSDK.  The sample program was tested using <B>servletrunner</B> both from the same machine, and from a different machine on the network.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Introduction">Introduction</A></H2>
+</FONT><P>Session tracking is very important from a web commerce viewpoint.  Therefore, this and the next several lessons will show you some of the ways that you can accomplish session tracking using servlets.</P>
+<P>Perhaps the most common example of the need for session tracking is with a web commerce application involving a shopping cart.  The customer (client) downloads various pages from a vendor catalog, selecting items, and placing them in a shopping cart.  At some point, the customer decides either to purchase the items or abandon the shopping trip.</P>
+<P>If the customer decides to purchase the items in the cart, the web application must have a record of all the items in the cart.  Furthermore, that record must be associated with that particular customer so that the sale can be consummated.</P>
+<P>Insofar as the HTTP protocol is concerned, each time the customer views a different page in the catalog, all information regarding previously viewed pages is forgotten.  The HTTP protocol doesn't save state information regarding an ongoing session by that customer involving multiple pages.  It is the responsibility of the application to track the session involving that client (customer).</P>
+<P>In the case of the shopping cart application, it is also the responsibility of the application to keep track of the items in the cart associated with that customer.</P>
+<P>There are several different ways to accomplish session tracking with a servlet.  This lesson will illustrate one of them.  Other ways will be illustrated in subsequent lessons.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="sample_program"></A>Sample Program</H2>
+</FONT><STRONG><P>Servlet07.java</STRONG> illustrates session tracking using <I>hidden fields</I> on the HTML form.</P>
+<P>Each time the servlet is activated, it creates and displays an HTML form on the client screen.  The form displays:</P>
+
+<UL>
+<LI>An input field through which the client can submit a name</LI>
+<LI>A submit button</LI>
+<LI>A list of previously submitted names</LI></UL>
+
+<P>Each time the client makes a GET request of the server, an HTML form is created and sent back to the client.  Hidden fields are added to the form each time it is created.  The hidden fields contain the name submitted for that GET request plus hidden fields containing each of the names submitted by each previous GET request.  In other words, the hidden fields on each successive form match those of the previous form plus a new hidden field for the new name submitted with that GET request.</P>
+<P>Using this approach, the historical data is saved by embedding it in the new HTML form that is returned to the client.  Thus, there is no requirement to save the historical data in a database or in the server's file system.</P>
+<P>While not particularly elegant, this approach has been used by CGI programmers for some time, is reliable, and is easy to implement.  Furthermore, it places no special requirements on the server software and is compatible with all browsers that support HTML forms.</P>
+<FONT COLOR="#ff0000"><H3 ALIGN="CENTER"><A NAME="Interesting_Code_Fragments">Interesting Code Fragments</A></H3>
+</FONT><P>The first fragment shows the beginning of the controlling class and the beginning of the <B>doGet()</B> method.  You have seen this before, so I won't discuss it further.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>public class <B>Servlet07</B> extends HttpServlet{
+  public void <B>doGet</B>(HttpServletRequest req, 
+                    HttpServletResponse res)
+                      throws ServletException, IOException{</PRE></TD>
+</TR>
+</TABLE>
+
+<P>An HTML form can have multiple fields with the same name.  In this case, the hidden fields are all named <B>item</B>.  The next fragment gets the values stored in all of the hidden fields named <B>item</B> and saves them in a <B>String </B>array named <B>items</B>.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>    String[] items = req.<B>getParameterValues</B>("item");</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The next fragment gets and saves the name value submitted by the client in the field named <B>firstName</B>.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>    String name = req.<B>getParameter</B>("firstName");</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The next fragment begins the creation of the output HTML page.  You have seen code like this many times before, so I won't discuss it further at this point.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>    //Establish the type of output
+    res.setContentType("text/html");
+    
+    //Get an output stream
+    PrintWriter out = res.getWriter();
+    
+    //Construct an HTML form and send it back to the client
+    out.println("&lt;HTML&gt;");
+    out.println("&lt;HEAD&gt;&lt;TITLE&gt;Servlet07&lt;/TITLE&gt;&lt;/HEAD&gt;");
+    out.println("&lt;BODY&gt;");</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The next fragment continues the construction of the HTML form that is to be returned to the client.  This is a little more specialized, beginning a series of HTML statements necessary to support the input field and the submit button.  You may need to refer to earlier lessons that discussed the format of an HTML form in order to understand the next few fragments.</P>
+<P>If you compile and run this servlet, you will need to substitute the name of your server machine or <I>localhost</I> in place of <B><I>baldwin</B></I> in this statement.  <B><I>baldwin</B></I> is the name of my server machine.</P>
+<P>This fragment causes a <B>GET</B> request to be sent to the HTTP server containing field data as parameters whenever the user presses the <B>submit</B> button.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>    out.println("&lt;FORM METHOD=GET ACTION="
+           + "\"http://baldwin:8080/servlet/Servlet07\"&gt;");
+<B></PRE></B></TD>
+</TR>
+</TABLE>
+
+<P>The next fragment places a line of instructional text on the client screen.  </P>
+<P>It also creates the HTML statements necessary to place an <I>input field</I> and a <I>submit</I> button on the form that will be displayed on the screen. </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>    out.println("<B>Enter a name and press the button</B>&lt;P&gt;");<BR>
+
+    out.println("Name: &lt;INPUT TYPE=TEXT NAME="
+                                    + "\"firstName\"&gt;&lt;P&gt;");
+    out.println("&lt;INPUT TYPE=submit VALUE="
+                                     + "\"Submit Name\"&gt;");</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The next fragment provides a line of introductory text for the list of names to be displayed on the screen.  The first time the form appears on the screen, the value stored in the <B>name</B> variable is null, and the word <B>Empty</B> is also displayed.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>    out.println("&lt;BR&gt;&lt;BR&gt;<B>Your list of names is:</B>&lt;BR&gt;");<BR>
+
+    if(name == null){
+      out.println("Empty&lt;BR&gt;");
+    }//end if </PRE></TD>
+</TR>
+</TABLE>
+
+<P>An earlier fragment retrieved all of the data in the hidden fields on the form and saved that data in a <B>String</B> array named <B>items</B>.</P>
+<P>If that array contains data, the next fragment performs two actions using the data from each element of the array:</P>
+
+<UL>
+<LI>Display the historical data stored in that element of the array.</LI>
+<LI>Create a new hidden field in the HTML form under construction and place the data value from the array in that hidden field.</LI></UL>
+
+<P>Thus, the historical data is passed forward from the hidden fields of one HTML form to the hidden fields of the next HTML form.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>    if(items != null){
+      for(int i = 0; I &lt; items.length; i++){
+        out.println(items[i] + "&lt;BR&gt;");
+        out.println("&lt;INPUT TYPE = <B>hidden</B> NAME=item "
+                              + "VALUE=" + <B>items[i]</B> + "&gt;");
+      }//end for loop
+    }//end if</PRE></TD>
+</TR>
+</TABLE>
+
+<P>An earlier fragment also retrieved the field value submitted by the client and saved that value in a variable named <B>name</B>.</P>
+<P>If that variable contains data, the next fragment also performs two actions using the data stored in the variable.</P>
+
+<UL>
+<LI>Display the value at the end of the list of names.</LI>
+<LI>Create a new hidden field in the HTML form under construction and place the value from the variable in that hidden field.</LI></UL>
+
+<P>Thus, each time the client accesses the servlet, one additional hidden field is added to the HTML form under construction.  The new hidden field contains the field value submitted by the client.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>    if(name != null){
+      out.println(name + "&lt;BR&gt;");
+      out.println("&lt;INPUT TYPE = <B>hidden</B> NAME=item "
+                                  + "VALUE=" + <B>name</B> + "&gt;");
+    }//end if</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The remainder of the code is typical of what you have seen before and can be viewed in the complete listing of the servlet in the next section.</P>
+<FONT COLOR="#ff0000"><H3 ALIGN="CENTER"><A NAME="program_listing"></A>Program Listing</H3>
+</FONT><P>A complete listing of the program follows.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Servlet07.java, Copyright 1999, R.G.Baldwin
+Rev 3/16/99
+The purpose of this program is to illustrate session
+tracking through the use of hidden fields.
+
+Each time the servlet is activated, it displays an html
+form on the client screen.  The form contains:
+  An input field for submitting a name
+  A submit button
+  A list of previously submitted names
+  
+Each time the html form is created and sent back to the
+client, hidden fields are placed on the form.  The hidden
+fields contain the name submitted for that GET request
+from the client plus hidden fields containing each of
+the names submitted by each previous GET request.
+ 
+The servlet was tested using the JDK 1.2 download package
+from JavaSoft along with the Java Servlet Development Kit
+(JSDK) 2.0 from JavaSoft. All tests were performed 
+under Win95.
+
+The servlet was tested using the servletrunner program that
+is included in the JSDK with the servletrunner program 
+running on the same machine and also with the servletrunner
+program running on a different machine on the network. 
+
+
+**********************************************************/
+import java.io.*;
+import javax.servlet.*;
+import javax.servlet.http.*;
+
+public class Servlet07 extends HttpServlet{
+  public void doGet(HttpServletRequest req, 
+                    HttpServletResponse res)
+                      throws ServletException, IOException{
+
+    //An array for getting and saving the values contained
+    // in the hidden fields named item.
+    String[] items = req.getParameterValues("item");
+    
+    //Get the submitted name for the current GET request
+    String name = req.getParameter("firstName");
+
+    //Establish the type of output
+    res.setContentType("text/html");
+    
+    //Get an output stream
+    PrintWriter out = res.getWriter();
+    
+    //Construct an HTML form and send it back to the client
+    out.println("&lt;HTML&gt;");
+    out.println("&lt;HEAD&gt;&lt;TITLE&gt;Servlet07&lt;/TITLE&gt;&lt;/HEAD&gt;");
+    out.println("&lt;BODY&gt;");
+        
+    //Substitute the name of your server or localhost in
+    // place of baldwin in the following statement.
+    out.println("&lt;FORM METHOD=GET ACTION="
+           + "\"http://baldwin:8080/servlet/Servlet07\"&gt;");
+    out.println("Enter a name and press the button&lt;P&gt;");
+    out.println("Name: &lt;INPUT TYPE=TEXT NAME="
+                                    + "\"firstName\"&gt;&lt;P&gt;");
+    out.println("&lt;INPUT TYPE=submit VALUE="
+                                     + "\"Submit Name\"&gt;");
+    out.println("&lt;BR&gt;&lt;BR&gt;Your list of names is:&lt;BR&gt;");
+    if(name == null){
+      out.println("Empty&lt;BR&gt;");
+    }//end if 
+    
+    if(items != null){
+      for(int i = 0; i &lt; items.length; i++){
+        //Display names previously saved in hidden fields
+        out.println(items[i] + "&lt;BR&gt;");
+        //Save the names in hidden fields on form currently
+        // under construction.
+        out.println("&lt;INPUT TYPE = hidden NAME=item "
+                              + "VALUE=" + items[i] + "&gt;");
+      }//end for loop
+    }//end if
+
+    if(name != null){
+      //Display name submitted with current GET request
+      out.println(name + "&lt;BR&gt;");
+      //Save name submitted with current GET request in a
+      // hidden field on the form currently under
+      // construction
+      out.println("&lt;INPUT TYPE = hidden NAME=item "
+                                  + "VALUE=" + name + "&gt;");
+    }//end if
+
+    out.println("&lt;/BODY&gt;&lt;/HTML&gt;");
+      
+  }//end doGet()
+}//end class Servlet07</PRE></TD>
+</TR>
+</TABLE>
+
+<P>-end-<!--end--></P></BODY>
+</HTML>

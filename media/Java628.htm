@@ -1,0 +1,315 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>... in Java by Richard G Baldwin</TITLE>
+<META NAME="Template" CONTENT="C:\PROGRAM FILES\MSOFFICE\OFFICE\html.dot">
+</HEAD>
+<BODY LINK="#0000ff" VLINK="#800080" BGCOLOR="#ffffff">
+
+<P><!--start--></P>
+<I><H3 ALIGN="CENTER">Richard G Baldwin (512) 223-4758, </I><A HREF="mailto:baldwin@austin.cc.tx.us"><I>baldwin@austin.cc.tx.us</I></A><I>, </I><A HREF="http://www2.austin.cc.tx.us/baldwin/"><I>http://www2.austin.cc.tx.us/baldwin/</I></A></H3>
+<H2 ALIGN="CENTER"><!--title-->CORBA, IDLs with Multiple Modules Having Interfaces with Multiple Operations<!--endTitle--></H2>
+<P>Java Programming, Lecture Notes 628, Revised 08/22/99. </P>
+
+<UL>
+<LI><A HREF="#Preface">Preface</A> </LI>
+<LI><A HREF="#Introduction">Introduction</A> </LI>
+<LI><A HREF="#Sample_Program">Sample Program</A> </LI>
+<LI><A HREF="#IDL_File">The Interface Definition Language (IDL) File</A> </LI>
+<LI><A HREF="#The_Batch_file">The Batch File</A> </LI>
+<LI><A HREF="#The_Server_File">The Server File</A> </LI>
+<LI><A HREF="#The_Client_File">The Client File</A> </LI>
+<LI><A HREF="#Program_Listings">Program Listings</A> </LI></UL>
+
+<P><HR></P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Preface">Preface</A></H2>
+</FONT><P>Students in Prof. Baldwin's <B><U>Advanced Java Programming</B></U> classes at ACC will be responsible for knowing and understanding all of the material in this lesson beginning with the spring semester of 1999. </P>
+<P>This lesson was originally written on October 25, 1998. The sample program was tested using the JDK 1.2beta4 download package. The purpose of this lesson is to illustrate the changes required to the client and server code to accommodate an expansion of the IDL to include multiple modules and interfaces with multiple operations. </P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Introduction">Introduction</A></H2>
+</FONT><P>There is a great deal more technical information of a fairly complex nature that I need to present before we wrap up our studies of CORBA and Java. However, this lesson is not intended to provide any significant new technical material. Rather, this lesson is intended for the sole purpose of expanding the IDL to contain multiple modules having interfaces with multiple operations and showing you how you can organize your code to accommodate this expanded situation. As you add modules and operations to the IDL file, the overall structure of the program becomes more complex. Therefore, I wanted to present that expanded structure before getting into other complex technical issues.</P>
+<P>Following this lesson, I will revert back to the simpler IDL cases for discussion of complex technical issues such as parameter passing, callback methods, and alternatives to the use of a name service.</P>
+<P>This lesson builds directly upon the previous lessons, so it is important that you understand the material in those lessons before embarking on this lesson.</P>
+<P>As you will recall, both the client code and the server code have access to an IDL file, which declares the methods that can be invoked remotely. This is the key to the whole process and is the glue that holds it all together. </P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Sample_Program">Sample Program</A></H2>
+</FONT><P>As in the previous lessons, this application requires three separate source files and two utility programs to compile and execute.&nbsp; The source files are: </P>
+
+<UL>
+<LI>An IDL file that declares the signatures of the operations on the servant objects that can be invoked by the client. </LI>
+<LI>A file that serves as the server program. </LI>
+<LI>A file that serves as the client program. </LI></UL>
+
+<P>The two utility programs are: </P>
+
+<UL>
+<B><LI>idltojava.exe</B> - a program that converts the IDL file to several Java source files, producing stub and skeleton source files and some other source files used by the client and the server. </LI>
+<B><LI>tnameserv.exe</B> - a program that creates and maintains a name service allowing for the registration of objects on a server whose methods can be invoked remotely by clients. </LI></UL>
+
+<P>I prefer to make the process semi-automatic by encapsulating the process in an MS-DOS batch file.&nbsp; If you are not running under Windows or NT, you will need to figure out how to produce an equivalent script file for the platform that you are running on. </P>
+<P>I have a folder on my computer that contains the following four source files:</P>
+
+<UL>
+<LI>Corba04.bat </LI>
+<LI>Corba04.idl </LI>
+<LI>Corba04Server.java </LI>
+<LI>Corba04Client.java </LI></UL>
+
+<P>Only the last three files are required. The batch file is optional, but is useful for managing the whole process.</P>
+<P>Initially, this folder doesn't have any sub folders. However, execution of the program <STRONG>idltojava</STRONG> in this case creates two packages that contain the source files that it generates. As you will recall, I force the packages to be part of a directory tree that begins with a folder named <STRONG>junk</STRONG>. As a result, a <STRONG>junk</STRONG> folder is automatically generated which contains one folder named <STRONG>TheLottoApp</STRONG> and another folder named <STRONG>TheDateApp</STRONG>. These are the actual package names..</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="IDL_File">The Interface Definition Language (IDL) File</A></H2>
+</FONT><P>Complete listings of all of the files for this application (except those that are automatically generated by the <STRONG>idltojava</STRONG> program) are available for you to view near the end of this lesson. Since the thing that triggered the major changes in this application relative to the applications in previous lessons was an expansion of the IDL file, a copy of the IDL file is also presented below for your convenience.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Corba04.idl
+**********************************************************/
+module <STRONG>TheDateApp</STRONG>{
+  interface <STRONG>TheDate</STRONG>{
+    string <STRONG>getTheDate</STRONG>();
+    long <STRONG>getTheTemperature</STRONG>();
+  };//end interface TheDate
+};//end module TheDateApp
+//=======================================================//
+
+module <STRONG>TheLottoApp</STRONG>{
+  interface <STRONG>TheLotto</STRONG>{
+    long <STRONG>getTheLotto</STRONG>();
+  };//end interface TheLotto
+};//end module TheLottoAppp</PRE></TD>
+</TR>
+</TABLE>
+
+<P>This IDL file specifies two modules named <STRONG>TheDateApp</STRONG> and <STRONG>TheLottoApp</STRONG>. Each of the modules results in a different package having the same name when the IDL file is converted to Java using the <STRONG>idltojava</STRONG> program.</P>
+<P>Each module declares one interface. The module named <STRONG>TheDateApp</STRONG> declares an interface named <STRONG>TheDate</STRONG>, and the module named <STRONG>TheLottoApp</STRONG> declares an interface named <STRONG>TheLotto</STRONG>. Each interface results in an object having operations or methods that can be invoked remotely by clients. One of the objects has two methods and the other object has one method.</P>
+<P>The interface named <STRONG>TheDate</STRONG> declares two operations named <STRONG>getTheDate()</STRONG> and <STRONG>getTheTemperature()</STRONG>. These are the two methods that can be invoked remotely on one of the objects by client code. </P>
+<P>The other interface named <STRONG>TheLotto</STRONG> declares one operation named <STRONG>getTheLotto()</STRONG>. This is the one method that can be invoked remotely on the other object.</P>
+<P>When this IDL file is processed against the program named <STRONG>idltojava</STRONG>, two packages are created having names that correspond to the names of the two modules. Each package contains five Java source files that are automatically generated by the <STRONG>idltojava</STRONG> program. If you examine the source code for the files in the package named <STRONG>TheDateApp</STRONG>, you will see that it contains material designed to deal with the fact that the interface in that module has two different operations.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="The_Batch_file">The Batch file</A></H2>
+</FONT><P>The batch file for this application is named <STRONG>Corba04.bat</STRONG>. When you review it, you will see that I simplified it somewhat by allowing the name service to default to port 900 and by allowing the machine on which the name service runs to default to <STRONG>localhost</STRONG>. I also made similar simplifications in the server code and the client code. The simplified batch file is shown below.</P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>rem File Corba04.bat
+idltojava -fno-cpp -p junk Corba04.idl
+javac Corba04*.java
+start tnameserv
+start java Corba04Server
+start java Corba04Client</PRE></TD>
+</TR>
+</TABLE>
+
+<P>I also took advantage of the fact that the <STRONG>javac</STRONG> compiler will automatically compile all of the files in the packages generated by <STRONG>idltojava</STRONG> because the are referenced either directly or indirectly in either the server code or the client code. This resulted in simplification to the batch file as well.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="The_Server_File">The Server File</A></H2>
+</FONT><P>The name of the file containing the server code is <STRONG>Corba04Server.java</STRONG>. I'm not going to make any attempt to explain or highlight the changes that were required to the code in this file due to the expansion of the IDL. Rather, I am providing this material so that you can study it on your own and identify those changes yourself. However, I felt that you would be able to do that more easily if you had an operational example to work with.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="The_Client_File">The Client File</A></H2>
+</FONT><P>The file containing the client code is named <STRONG>Corba04Client.java</STRONG>. Similar to the server file, I'm not going to make any attempt to explain the changes to you. I will leave it up to you to study the expanded IDL file and the client code and determine for yourself what changes to the code were required to accommodate the expansion of the IDL file.</P>
+<P>There are other ways to expand the IDL file as well. I recommend that as an experiment, you expand the IDL file to contain multiple interfaces having multiple operations in one of the modules and determine the changes that are required to the server and client code to accommodate the expansion.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Program_Listings">Program Listings</A></H2>
+</FONT><P>Complete listings for the IDL file, the batch file and the source code files that you must create are provided in this section. Listings are not provided for the Java source code files that are automatically generated by the <STRONG>idltojava</STRONG> program.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Corba04.idl
+See Corba04Server.java for information on this program.
+This is the IDL file for one servant object that provides
+two operations and a second servant object that provides
+one operation.
+**********************************************************/
+module TheDateApp{//creates package TheDateApp
+  interface TheDate{//one interface with two operations
+    string getTheDate();//one operation
+    long getTheTemperature();// a second operation
+  };//end interface TheDate
+};//end module TheDateApp
+//=======================================================//
+
+module TheLottoApp{//creates package TheLottoApp
+  interface TheLotto{//one interface with one operation
+    long getTheLotto();//the operation
+  };//end interface TheLotto
+};//end module TheLottoAppp</PRE></TD>
+</TR>
+</TABLE>
+
+<FONT COLOR="#ff0000"><P>.</P></FONT>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>rem File Corba04.bat
+rem Use default port 900 on localhost for name service
+rem See Corba04Server.java for description of program
+
+echo off
+
+echo Convert the idl file to the required set of java files
+idltojava -fno-cpp -p junk Corba04.idl
+
+echo Compile the java files
+javac Corba04*.java
+
+echo Start the transient name server as a new process
+start tnameserv
+
+echo Start the server as a new process.
+start java Corba04Server
+
+echo Start the client as a new process.
+start java Corba04Client</PRE></TD>
+</TR>
+</TABLE>
+
+<P>. </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Corba04Server.java
+This is a simple CORBA server that provides two servant
+objects.  One object provides two different operations and
+the other object provides one operation.  To reduce 
+complexity, the program was written to default to name 
+service port 900 on localhost.
+**********************************************************/
+import junk.TheDateApp.*;
+import junk.TheLottoApp.*;
+import org.omg.CosNaming.*;
+import org.omg.CosNaming.NamingContextPackage.*;
+import org.omg.CORBA.*;
+import java.util.Date;
+
+//Define the class for the servant object that provides
+// two different operations. 
+class TheDateServant extends _TheDateImplBase{
+  public String getTheDate(){//one operation
+    return new Date().toString();
+  }//end getTheDate()
+  //-----------------------------------------------------//
+  public int getTheTemperature(){//another operation
+    return 91;
+  }//end getTheTemperature
+}//end TheDateServant class
+//=======================================================//
+
+//Define the class for the servant object that provides
+// one operation. 
+class TheLottoServant extends _TheLottoImplBase{
+  public int getTheLotto(){
+    return 123456789;
+  }//end getTheLotto()
+}//end TheLottoServant class
+//=======================================================//
+
+//Define the class for the server 
+public class Corba04Server{
+ 
+  public static void main(String args[]){
+    try{      
+      // create and initialize the ORB
+      ORB orb = ORB.init(args, null);
+
+      //Instantiate two servant objects and register them
+      // with the ORB
+      TheDateServant theDateRef = new TheDateServant();
+      orb.connect(theDateRef);
+
+      TheLottoServant theLottoRef = new TheLottoServant();
+      orb.connect(theLottoRef);
+ 
+      //Get the root naming context
+      org.omg.CORBA.Object objRef = 
+             orb.resolve_initial_references("NameService");
+      NamingContext ncRef 
+                      = NamingContextHelper.narrow(objRef);
+ 
+      //Establish id values for and bind the servabt
+      // objects in the naming service
+      NameComponent ncDate = new NameComponent("TheDate", "");
+      NameComponent datePath[] = {ncDate};
+      ncRef.rebind(datePath, theDateRef);
+
+      NameComponent ncLotto = new NameComponent("TheLotto", "");
+      NameComponent lottoPath[] = {ncLotto};
+      ncRef.rebind(lottoPath, theLottoRef);
+      
+
+      System.out.println("Server is running");
+ 
+      //Wait for invocations from clients
+      java.lang.Object sync = new java.lang.Object();
+      synchronized (sync) {
+        sync.wait();
+      }//end synchronized block
+ 
+    }catch (Exception e) {
+       System.err.println("ERROR: " + e);
+       e.printStackTrace(System.out);
+    }//end catch block
+  }//end main()
+}//end Corba04Server class</PRE></TD>
+</TR>
+</TABLE>
+
+<P>. </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Corba04Client.java
+See Corba04Server.java for information on this program.
+**********************************************************/
+import junk.TheDateApp.*;
+import junk.TheLottoApp.*;
+import org.omg.CosNaming.*;
+import org.omg.CORBA.*;
+ 
+public class Corba04Client{
+  public static void main(String args[]){
+    try{
+      //Create and initialize the ORB
+      ORB orb = ORB.init(args, null);
+ 
+      //Get the root naming context
+      org.omg.CORBA.Object objRef = 
+             orb.resolve_initial_references("NameService");
+      NamingContext ncRef = 
+                        NamingContextHelper.narrow(objRef);
+
+      //Resolve the Object Reference for the servant obj
+      // with the id of TheDate.
+      NameComponent ncDate = 
+                           new NameComponent("TheDate","");
+      NameComponent datePath[] = {ncDate};
+      TheDate theDateRef = 
+             TheDateHelper.narrow(ncRef.resolve(datePath));
+ 
+      //Invoke methods on the servant object and display
+      // the returned value
+      String theDate = theDateRef.getTheDate();
+      System.out.println("theDate: " + theDate);
+      int theTemperature = theDateRef.getTheTemperature();
+      System.out.println("theTemperature: " 
+                                        + theTemperature);
+
+      //Now resolve the Object Reference for the servant
+      // obj with the id of TheLotto.
+      NameComponent ncLotto = 
+                         new NameComponent("TheLotto", "");
+      NameComponent lottoPath[] = {ncLotto};
+      TheLotto theLottoRef = 
+           TheLottoHelper.narrow(ncRef.resolve(lottoPath));
+ 
+      //Invoke a method on the servant object and display
+      // the returned value
+      int theLotto = theLottoRef.getTheLotto();
+      System.out.println("theLotto: " + theLotto);
+      
+      //Delay program termination so that the console
+      // won't disappear from the screen when running
+      // under control of a batch file.
+      int ch1 = '0';
+      System.out.println("Press Ctrl-z to terminate");
+      while( (ch1 = System.in.read() ) != -1);      
+    }catch (Exception e) {
+      System.out.println("ERROR : " + e) ;
+      e.printStackTrace(System.out);
+    }//end catch block
+  }//end main() method
+}//end Corba04Client class</PRE></TD>
+</TR>
+</TABLE>
+
+<P>-end- </P>
+<P><!--end--></P></BODY>
+</HTML>

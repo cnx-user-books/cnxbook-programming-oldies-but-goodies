@@ -1,0 +1,613 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>... in Java by Richard G Baldwin</TITLE>
+<META NAME="Template" CONTENT="C:\PROGRAM FILES\MICROSOFT OFFICE\OFFICE\html.dot">
+</HEAD>
+<BODY LINK="#0000ff" VLINK="#800080" BGCOLOR="#ffffff">
+
+<P><!--start--></P>
+<I><H3 ALIGN="CENTER">Richard G Baldwin (512) 223-4758, </I><A HREF="mailto:baldwin@austin.cc.tx.us"><I>baldwin@austin.cc.tx.us</I></A><I>, </I><A HREF="http://www2.austin.cc.tx.us/baldwin/"><I>http://www2.austin.cc.tx.us/baldwin/</I></A></H3>
+<H2 ALIGN="CENTER"><!--title-->CORBA, Java IDL, Under the Hood<!--endTitle--></H2>
+<P>Java Programming, Lecture Notes 624, Revised 08/22/99. </P>
+
+<UL>
+<LI><A HREF="#Preface">Preface</A> </LI>
+<LI><A HREF="#Introduction">Introduction</A> </LI>
+<LI><A HREF="#Overview">Overview</A> </LI>
+<LI><A HREF="#Sample_Program">Sample Program</A> </LI>
+<LI><A HREF="#The_Interface_Definition_Language__IDL__">The Interface Definition Language (IDL) File</A> </LI>
+<LI><A HREF="#The_Batch_file">The Batch File</A> </LI>
+<LI><A HREF="#The_Server_File">The Server File</A> </LI>
+<LI><A HREF="#The_Client_File">The Client File</A> </LI>
+<LI><A HREF="#Summary">Summary</A> </LI>
+<LI><A HREF="#Program_Listings">Program Listings</A> </LI></UL>
+
+<P><HR></P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Preface">Preface</A></H2>
+</FONT><P>Students in Prof. Baldwin's <B><U>Advanced Java Programming</B></U> classes at ACC will be responsible for knowing and understanding all of the material in this lesson beginning with the Spring semester of 1999. </P>
+<P>This lesson was originally written on October 25, 1998. The sample program was tested using the JDK 1.2beta4 download package. The purpose of this lesson is to illustrate the inner workings of JavaSoft's Java IDL with CORBA using a very simple example program. </P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Introduction">Introduction</A></H2>
+</FONT><P>Before embarking on this lesson, you need to study and understand the lesson entitled <U>CORBA, Introduction to Common Object Request Broker Architecture</U>. This lesson builds directly upon that lesson, and unless you understand the material in that lesson, you probably won't understand what is going on here.</P>
+<P>As you learned in the earlier lesson, as of October 1998, Java JDK 1.2beta4 supports CORBA with some limitations. CORBA is both platform independent and language independent. The code at either end may be written in any language for which there is an OMG Interface Definition Language (IDL) mapping. Client software written in any of the available languages can invoke methods on server objects (servants) written in any of the available languages.</P>
+<P>This means that a client machine anywhere in the world has the capability of invoking methods on an object on a server anywhere in the world, and the programs at the two ends can be developed using different programming languages.</P>
+<P>The roles of client and server can switch back and forth between the two machines. The machine with the object whose methods are invoked remotely is the server, and the machine invoking the methods on the remote object is the client. </P>
+<P>Special code is required in the program on the client side to get a reference to the remote object.&nbsp; Once the client code has a reference to the remote object, the invocation of methods on the remote object is very similar to the invocation of methods on local objects. </P>
+<P>The code on the server side must define the class and instantiate the remote object of that class.&nbsp; Beyond this, special code is required on the server side to register the object and expose its methods to client machines so that those methods can be invoked remotely. </P>
+<P>Both the client code and the server code have access to an IDL file which declares the methods that can be invoked remotely. This is the key to the whole process and the glue that holds it all together.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Overview">Overview</A></H2>
+</FONT><P>This lesson contains a minimal CORBA application written in Java. It is essentially the same application that was discussed in the earlier lesson mentioned above with a couple of minor modifications. This application requires you to write three short source code files and to execute two different utility programs.&nbsp; Executing one of the utility programs produces several additional Java source files including stub and skeleton files.</P>
+<P>Because the entire process can be tedious, I prefer to encapsulate the process in a batch file. Then I don't have to remember from one run to the next exactly what I need to do and the order in which I need to do it. </P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Sample_Program">Sample Program</A></H2>
+</FONT><P>CORBA makes it possible for a method in an object running under one virtual machine to invoke a method in an object running under a different virtual machine just as if it were a method in a local object.&nbsp; The two virtual machines can be running as different processes on the same hardware machine.&nbsp; Or, they can be running on different machines, of the same or different types, on different parts of the Earth, connected by a TCP/IP network. </P>
+<P>This is a Java/CORBA application that makes it possible for code in a client object running under one JVM to access a method in a servant object running under a different JVM on the same machine to get the date and time. (Comments are included which explain how to put the client and the server on different machines.) The application requires three separate source files and two utility programs to compile and execute.&nbsp; The source files are: </P>
+
+<UL>
+<LI>An IDL file that declares the signature of the method on the servant object that can be invoked by the client. </LI>
+<LI>A file that serves as the server program. </LI>
+<LI>A file that serves as the client program. </LI></UL>
+
+<P>The two utility programs are: </P>
+
+<UL>
+<B><LI>idltojava.exe</B> - a program that converts the IDL file to several java files, producing stub and skeleton source files and some other source files used by the client and the server. </LI>
+<B><LI>tnameserv.exe</B> - a program that creates and maintains a name service allowing for the registration of objects on a server whose methods can be invoked remotely by clients. </LI></UL>
+
+<P>I prefer to make the process semi-automatic by encapsulating the process in an MS-DOS batch file.&nbsp; If you are not running under Windows or NT, you will need to figure out how to produce an equivalent script file for the platform that you are running on. </P>
+<P>I have a folder on my computer that contains the following four source files:</P>
+
+<UL>
+<LI>Corba03.bat </LI>
+<LI>Corba03.idl </LI>
+<LI>Corba03Server.java </LI>
+<LI>Corba03Client.java </LI></UL>
+
+<P>Only the last three files are required. The batch file is optional, but is useful for managing the whole process.</P>
+<P>Initially, this folder doesn't have any sub folders. However, execution of the program <STRONG>idltojava</STRONG> creates a package to contain the source files that it generates. By default, it makes that package reside in a sub folder of the folder from which it is executed. To avoid cluttering up my disk with generated files (or more properly to make it easier to find and delete the generated files), I forced the package to be in a tree that begins with a folder named <STRONG>junk</STRONG>. As a result, a <STRONG>junk</STRONG> folder is automatically generated which contains another folder named <STRONG>TheDateApp</STRONG> which is the actual package name.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="The_Interface_Definition_Language__IDL__">The Interface Definition Language (IDL) File</A></H2>
+</FONT><P>The IDL file is the glue that holds the system of programs together and makes it possible for code in a client to invoke methods in a remote object on a basis that is both platform and language independent. This was discussed in some detail in the earlier lesson that made use of the IDL file named Corba02.idl.</P>
+<P>Except for the name (Corba03.idl), the IDL file for this application is identical to the one for the previous application. A complete copy of the IDL file is shown near the end of this lesson, so I won't discuss it any further at this point..</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="The_Batch_file">The Batch file</A></H2>
+</FONT><P>The batch file for this application is named <STRONG>Corba03.bat</STRONG>. It contains two changes relative to the batch file used for the previous program named <STRONG>Corba02.bat</STRONG>. I will discuss only the changes since I explained the remainder of the file in the previous lesson.</P>
+<P>The batch file for the application in the previous lesson contained the two statements shown below. These statements started the server and the client programs in their own processes. The command-line argument specified that the <STRONG>ORB</STRONG> object instantiated inside each of the programs should use port 1050 to communicate with the name service.</P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>start java Corba02Server -ORBInitialPort 1050
+start java Corba02Client -ORBInitialPort 1050</PRE></TD>
+</TR>
+</TABLE>
+
+<P>Information regarding the port (and other configuration information as well) can be specified either on the command line when the program is started (as shown above), or can be specified by the code inside the program. In the revised version of the application used for this lesson, that information is specified by code inside the client and server programs. Therefore, the batch file was modified to that shown below where the port specification was removed from two of the statements. (Note that some cosmetic statements were also omitted from this listing. A complete listing of the batch file can be viewed near the end of this lesson.)</P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>rem File Corba03.bat
+idltojava -fno-cpp -p junk Corba03.idl
+javac Corba03*.java junk/TheDateApp/*.java
+start tnameserv -ORBInitialPort 1050
+
+<STRONG>start java Corba03Server
+start java Corba03Client</PRE></STRONG></TD>
+</TR>
+</TABLE>
+
+<P>I will have a lot more to say about this in the discussion of the client and server programs. For now, simply note that there is no port specification when the server and the client programs are started by the statements in the batch file shown above.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="The_Server_File">The Server File</A></H2>
+</FONT><P>The name of the file containing the server code is <STRONG>Corba03Server.java</STRONG>.</P>
+<P>Of necessity, the code for a CORBA server or a CORBA client includes quite a lot of code that is very similar from one application to the next. This is the code that is necessary to get everything initialized so that all the pieces work together in a cooperative manner. In the previous lesson, I ignored that code, which I referred to as <EM>boilerplate</EM> code, and discussed only the code that usually differs from one application to the next. </P>
+<P>The purpose of this lesson is to go back and discuss the <EM>boilerplate</EM> code in detail and to explain how it works. In this lesson, I won't discuss much of the code that I discussed in the previous lesson. </P>
+<P>The name of the server program is <STRONG>Corba03Server.java</STRONG>. I will discuss this program in fragments. You can view a complete listing of the server program near the end of this lesson. Again, in order to understand what is going on, you will need to understand the material in the previous lesson.</P>
+<P>Every client and every server working in a CORBA environment must have an object of type <STRONG>ORB</STRONG> to handle communications with the other objects. In the version of the server program in the previous lesson, the <STRONG>ORB</STRONG> object was created by the following single statement..</P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>&nbsp;      ORB orb = ORB.<STRONG>init</STRONG>(args, null); </PRE></TD>
+</TR>
+</TABLE>
+
+<P>This invocation of the static <STRONG>init()</STRONG> method of the <STRONG>ORB</STRONG> class created an object of type <STRONG>ORB</STRONG> that relies on the command-line arguments for configuration of the <STRONG>ORB</STRONG> object. It was intended by the designers of the class that the first parameter be the array of <STRONG>String</STRONG> references created by the JVM for the command-line arguments. (It is also possible to configure the object by passing a <STRONG>Properties</STRONG> object as the second parameter which I will discuss below.)</P>
+<P>For our purposes in this discussion, there are two interesting possibilities for configuration as shown in the following box.</P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#00ffff">
+
+<UL>
+<LI><STRONG>org.omg.CORBA.ORBInitialPort </STRONG>- The port the initial name service listens to. The default value is 900. </LI>
+<STRONG><LI>org.omg.CORBA.ORBInitialHost</STRONG> - The host name of a machine running a server or daemon that provides initial bootstrap services, such as a name service. The default value for this property is <STRONG>localhost</STRONG> for applications. </UL>
+</TD>
+</TR>
+</TABLE>
+
+<P>Recall from the earlier discussion about the batch file that the <STRONG>ORBInitialPort</STRONG> was specified in the previous version of the program to be <STRONG>1050</STRONG> by the command-line parameters in the batch file. The <STRONG>ORBInitialHost </STRONG>was not specified, causing the system to default to <STRONG>localhost</STRONG> for the location of the name service.</P>
+<P>That approach was perfectly satisfactory for the previous version of the program which was intended to run on a single computer. However, it didn't provide any illumination as to how you might go about running the client on one computer and the server on a different computer.</P>
+<P>Even though I also wrote and tested this version of the program on a single computer, I decided to explicitly specify the port and the computer on which the name service is running in order to provide such illumination. I also provided comments to indicate how you should be able to modify the program to cause it to run on more than one computer in a network. That was the reason for leaving the port specification off of the two statements in the batch file as discussed earlier.</P>
+<P>I began the explicit specification of the computer that the name service is running on and the port that it is listening on in the following fragment. This statement instantiates a <STRONG>Properties</STRONG> object that I will populate and pass as the second parameter to the static <STRONG>init()</STRONG> method of the <STRONG>ORB</STRONG> class to create the <STRONG>ORB</STRONG> object.</P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      Properties props = <STRONG>new Properties()</STRONG>;</PRE></TD>
+</TR>
+</TABLE>
+
+<P>When the program is written in this manner, the programmer must know the IP address of the computer that the name service will be running on, and the port that it will be listening on when the program is compiled. (The command-line argument approach makes it possible to delay those decisions until runtime.)</P>
+<P>The following statement was used to populate the property to indicate that the name service will be listening on port 1050.</P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      props.put("org.omg.CORBA.ORBInitialPort", "<STRONG>1050</STRONG>"); </PRE></TD>
+</TR>
+</TABLE>
+
+<P>The following statement was used to populate the property to indicate that the name service will be running on the same computer.</P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      props.put("org.omg.CORBA.ORBInitialHost", "<STRONG>localhost</STRONG>"); </PRE></TD>
+</TR>
+</TABLE>
+
+<P>If the name service will not be running on the same computer, you will need to specify the IP address of the computer where the name service will be running as in the following statement. In this statement, the IP address of the computer where the name service will be running is provided as a string to the second argument of the <STRONG>put()</STRONG> method, causing it to be used to populate the <STRONG>Properties</STRONG> object.</P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>//props.put("org.omg.CORBA.ORBInitialHost", "<STRONG>123.213.3.159</STRONG>");</PRE></TD>
+</TR>
+</TABLE>
+
+<P>Actually, you can use this formulation and still test your program on a single computer by providing the IP address of that computer as the second argument to <STRONG>put()</STRONG>. In case you don't already know the IP address of the computer, it can be obtained using Java network programming methods as discussed in the lessons on networking programming. Be aware, however, that if you use a commercial dial-up ISP like I do, the IP address will change every time to dial in and log on.</P>
+<P>Having instantiated and populated the <STRONG>Properties</STRONG> object, the following statement passes that object as the second parameter to the <STRONG>init()</STRONG> method. This causes the <STRONG>ORB</STRONG> object to later look for the name service on the port and computer specified by the <STRONG>Properties</STRONG> object (provided that the <STRONG>args</STRONG> array doesn't contain that configuration information).</P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      ORB orb = ORB.init(args, props);</PRE></TD>
+</TR>
+</TABLE>
+
+<P>Therefore, even for this simple application, if you happen to have three computers on an IP network, you could test the application with the name service running on one computer, the server running on a second computer, and the client running on a third computer.</P>
+<P>The rules governing how the arguments are used to configure the <STRONG>ORB</STRONG> follow:</P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#00ffff">
+<P>For applications, the arguments for the <STRONG>init()</STRONG> method are as described below (applets are treated slightly differently):</P>
+
+<UL>
+<STRONG><LI>args</STRONG> - Provides the ORB access to the application's arguments or applet's parameters. </LI>
+<STRONG><LI>props</STRONG> - A java.util.Properties object. </LI></UL>
+
+<P>The<STRONG> init()</STRONG> method uses these parameters, as well as the system properties, to obtain information it needs to configure the ORB. It searches for ORB configuration properties in the <U>following places and order</U>:</P>
+<OL>
+
+<LI>The application parameters (first argument) </LI>
+<LI>A java.util.Properties object (second argument), if one has been supplied </LI>
+<LI>The java.util.Properties object returned by System.getProperties() </LI></OL>
+
+<P>The first value found for a particular property is the value the <STRONG>init()</STRONG> method uses. If a configuration property cannot be found in any of these places, the <STRONG>init()</STRONG> method assumes an implementation-specific value for it. </TD>
+</TR>
+</TABLE>
+
+<P>Even though the first argument is intended to pass the application command-line parameters along to the <STRONG>init()</STRONG> method, it is simply an array of references to <STRONG>String</STRONG> objects. It would probably be considered bad programming style to do so, but the configuration information could also be created and passed to the <STRONG>init()</STRONG> method using code such as the following:</P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      String[] abc = {"-ORBInitialPort","1050",
+                      "-ORBInitialHost","localhost"};
+      ORB orb = ORB.init(abc, null);&nbsp; </PRE></TD>
+</TR>
+</TABLE>
+
+<P>Once it is called and passed a parameter of type <STRONG>String[]</STRONG> as its first parameter, the <STRONG>init()</STRONG> method has no way of knowing whether that parameter is truly a reference to the array produced by the JVM from the command-line arguments or is a reference to an array produced by program code.</P>
+<P>Therefore, there are at least three ways to cause the <STRONG>ORB</STRONG> object to be configured the way you want it to be configured:</P>
+
+<UL>
+<LI>Specifying configuration information on the command line when the program that creates the <STRONG>ORB</STRONG> is started. </LI>
+<LI>Creating an array of configuration information and passing it as the first parameter to the <STRONG>init()</STRONG> method. </LI>
+<LI>Creating a <STRONG>Properties</STRONG> object and passing it as the second parameter to the <STRONG>init()</STRONG> method. </LI></UL>
+
+<P>Note that either of the first two methods will take precedence over the third method.</P>
+<P>An understanding of the above information is probably the most important aspect of this lesson. While the remaining details in this lesson are largely academic, the above information is not academic. It is not likely that you will be writing very many CORBA programs that operate solely within a single machine, so you need to know how to configure the <STRONG>ORB</STRONG> objects when more than one machine is involved.</P>
+<P>Having disposed of that matter, I will now discuss the remainder of the code that I ignored in the previous lesson.</P>
+<P>In order to be of much use to clients, the server needs to instantiate one or more <EM>servant</EM> objects and make them available to the clients. That process begins in the next fragment where a servant object is instantiated and passed to the <STRONG>connect()</STRONG> method of the <STRONG>ORB</STRONG> object..</P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      TheDateServant theDateRef = new TheDateServant();
+      orb.<STRONG>connect</STRONG>(theDateRef);</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The <STRONG>connect()</STRONG> method can be described as follows:</P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#00ffff">
+<P>The <STRONG>connect()</STRONG> method connects the servant object to the ORB so that the ORB can recognize invocations on it and pass them along to the correct servant. </P>
+<P>The servant object must be an instance of the server implementation class created by invoking <STRONG>idltojava</STRONG> on the IDL file.</P>
+<P>The servant class must extend the ImplBase class corresponding to the interface that is supported by the server. The servant must thus be a CORBA object reference, and inherit from org.omg.CORBA.Object. </P>
+<P>Servants created by the user can start receiving remote invocations after the <STRONG>connect()</STRONG> method has been called. </TD>
+</TR>
+</TABLE>
+
+<P>There are several ways to make it possible for a client <STRONG>ORB</STRONG> object to locate the servant object. This lesson uses the name service provided with JDK 1.2. Subsequent lessons will discuss alternative approaches.</P>
+<P>Using the name service requires first that the server program locate the name service program. Note that the name service program must already be running. Earlier sections discussed issues involving the port number and the identification of the computer that the name service is running on.</P>
+<P>The server needs an object reference to the name service so that it can register itself and ensure that invocations on the interface are routed to its servant object. The reference is obtained by invoking the <STRONG>resolve_initial_references()</STRONG> method on the <STRONG>ORB</STRONG> object as shown in the following fragment.</P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>
+      org.omg.CORBA.Object objRef = 
+             orb.<STRONG>resolve_initial_references</STRONG>("NameService");</PRE></TD>
+</TR>
+</TABLE>
+
+<P>CORBA defines services other than the name service, and this method is used to obtain a reference to those other services as well. The string "NameService" is defined for all CORBA ORBs. When you pass in that string, the ORB returns a naming context object that is an object reference for the name service. </P>
+<P>As a Java programmer, you should be very familiar with the concept of referring to objects by the generic type <STRONG>Object</STRONG> and later having to downcast them to their true type. For example, when you store and then retrieve objects from a Java <STRONG>Vector</STRONG> container object, they are retrieved as type <STRONG>Object</STRONG> and usually must be downcast to their true type to be useful.</P>
+<P>A similar situation exists with CORBA. The object reference obtained by the above code is a generic CORBA object reference and must be downcast before it can be used. However, in CORBA lingo, the process is known as <EM>narrowing</EM> rather than downcasting. The following statement <EM>narrows</EM> the generic object reference to one that can be used for its intended purpose.</P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      NamingContext ncRef 
+                      = NamingContextHelper.<STRONG>narrow</STRONG>(objRef);</PRE></TD>
+</TR>
+</TABLE>
+
+<P>This is an invocation of the static <STRONG>narrow()</STRONG> method of the <STRONG>NamingContextHelper</STRONG> class passing the generic CORBA object reference as a parameter. It returns an object of the <STRONG>NamingContext</STRONG> class that can be used to access the name service and register the server</P>
+<P>There are several steps required to publish or register the servant object via the name service in order to make it available to clients. Those steps involve three statements, the first of which is shown in the following fragment..</P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      NameComponent <STRONG>nc</STRONG> = new NameComponent("<STRONG>TheDate</STRONG>", "");</PRE></TD>
+</TR>
+</TABLE>
+
+<P>First, it is necessary obtain an object of type <STRONG>NameComponent</STRONG>. The statement in the above fragment obtains such an object and assigns it to the reference variable named <STRONG>nc</STRONG>. This statement sets the <STRONG>id</STRONG> field of <STRONG>nc</STRONG> to <STRONG>"TheDate"</STRONG> and the <STRONG>kind</STRONG> field to an empty string. This process is explained in more detail below.</P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#00ffff">
+<P>A name is an array of one or more <STRONG>NameComponent</STRONG> objects. A name with a single NameComponent is called a simple name; a name with multiple NameComponent objects is called a compound name.</P>
+<P>A <STRONG>NameComponent</STRONG> object consists of two fields: </P>
+
+<UL>
+<STRONG><LI>id</STRONG> - a String used as an identifier </LI>
+<STRONG><LI>kind</STRONG> - a String that can be used for any descriptive purpose. </LI></UL>
+
+<P>In a name, each NameComponent object except the last denotes a <STRONG>NamingContext</STRONG> object. The last NameComponent object denotes the bound object reference. This is similar to a path name, in which the last name is the file name, and all names before it are directory names.</TD>
+</TR>
+</TABLE>
+
+<P>Two different methods of the <STRONG>NamingContext</STRONG> class can be used to <EM>bind</EM> the servant object to a name in the name service: <STRONG>bind()</STRONG> and <STRONG>rebind()</STRONG>. The primary difference between the two is that the second method eliminates any previous binding regarding the servant object and the name and then establishes a new binding.</P>
+<P>Both methods require two parameters. The first parameter is a reference to an array of <STRONG>NameComponent</STRONG> objects, describing a path, as explained in the box above. The second parameter is a reference to the servant object. The two statements that complete the process of publishing the servant object and making it available to clients are shown in the following fragment.</P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      NameComponent path[] = {nc};
+      ncRef.<STRONG>rebind</STRONG>(path, theDateRef);&nbsp; </PRE></TD>
+</TR>
+</TABLE>
+
+<P>The first of these two statements creates and populates an array of <STRONG>NameComponent</STRONG> object references and assigns a reference to that array object to the reference variable <STRONG>path</STRONG>.. </P>
+<P>Because the path to the <STRONG>NameComponent</STRONG> containing the published name of the servant object is a single element, the array is created and populated with a single element that is the <STRONG>NameComponent</STRONG> object.</P>
+<P>Then that array, along with a reference to the servant object is passed to the <STRONG>rebind()</STRONG> method to complete the process.</P>
+<P>After this, when a client's <STRONG>ORB</STRONG> takes the necessary steps to obtain a CORBA reference to the servant object bound to the <STRONG>id</STRONG> known as <STRONG>TheDate</STRONG>, the <STRONG>resolve()</STRONG> method will be invoked on the <STRONG>NamingContext</STRONG> and a reference to the servant object will be returned by the name service. This reference can then be used by the client code to invoke methods on the servant object.</P>
+<P>The following box shows the complete server program with the elements that are likely to change from one application to the next highlighted in boldface. Of course, if the server makes more than one servant object available, that will have to be taken into account and additional code will be required to accommodate the additional servant objects.</P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>public class <STRONG>Corba03Server</STRONG>   {
+ 
+  public static void main(String args[]){
+    try{      
+      Properties props = new Properties();
+      props.put("org.omg.CORBA.ORBInitialPort", "<STRONG>1050</STRONG>");
+      props.put("org.omg.CORBA.ORBInitialHost", "<STRONG>localhost</STRONG>");
+      ORB orb = ORB.init(args, props);
+ 
+<STRONG>      TheDateServant theDateRef = new TheDateServant();
+</STRONG>      orb.connect(<STRONG>theDateRef</STRONG>);
+ 
+      org.omg.CORBA.Object objRef = 
+             orb.resolve_initial_references("NameService");
+      NamingContext ncRef 
+                      = NamingContextHelper.narrow(objRef);
+ 
+      NameComponent nc = new NameComponent("<STRONG>TheDate</STRONG>", "");
+      NameComponent path[] = {nc};
+      ncRef.rebind(path, <STRONG>theDateRef</STRONG>);
+
+      java.lang.Object sync = new java.lang.Object();
+      synchronized (sync) {
+        sync.wait();
+      }//end synchronized block
+ 
+    }catch (Exception e) {
+       System.err.println("ERROR: " + e);
+       e.printStackTrace(System.out);
+    }//end catch block
+  }//end main()
+}//end Corba03Server class&nbsp; </PRE></TD>
+</TR>
+</TABLE>
+
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="The_Client_File">The Client File</A></H2>
+</FONT><P>The file containing the client code is named <STRONG>Corba03Client.java</STRONG>.</P>
+<P>As is the case with the server code, quite a lot of boilerplate code is required when writing a client. This code is very similar from one application to the next. In the previous lesson, I ignored the boilerplate code. The purpose of this lesson is to go back and discuss that code.</P>
+<P>As was the case with the server code above, I won't discuss those portions of the code that were discussed in the previous lesson.</P>
+<P>The first fragment shows boilerplate code that is essentially the same as was discussed with regard to the server above and the same explanations apply. I have highlighted those portions that are likely to change from one application to the next.</P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      Properties props = new Properties();
+      props.put("org.omg.CORBA.ORBInitialPort", "<STRONG>1050</STRONG>");
+      props.put("org.omg.CORBA.ORBInitialHost", "<STRONG>localhost</STRONG>");
+      ORB orb = ORB.init(args, props);
+ 
+      org.omg.CORBA.Object objRef = 
+             orb.resolve_initial_references("NameService");
+      NamingContext ncRef = 
+                        NamingContextHelper.narrow(objRef);</PRE></TD>
+</TR>
+</TABLE>
+
+<P>I will highlight one caution regarding the use of JDK 1.2beta4 in the following sidebar. </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#00ffff">
+<P>In place of the statement in the previous fragment which establishes <STRONG>localhost</STRONG> as the machine providing startup services such as the name service, the complete listing of the program contains the following comment:</TD>
+</TR>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#00ffff">
+<PRE>      //If the name service is on a different computer,
+      // use something like the following which specifies
+      // the IP address of the computer with the name
+      // service.
+      props.put("org.omg.CORBA.<STRONG>ORBInitialHost", 
+                                        "123.213.3.159"</STRONG>);</PRE></TD>
+</TR>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#00ffff">
+<P>I have demonstrated experimentally that this works very well using two different computers for server and client on an IP network. However, there is one caution.</P>
+<P>Apparently the JDK 1.2beta4 version of the Java IDL requires the ORB in the client to use the name of the server as it appears in the <EM>internet Domain Name Service</EM> (not to be confused with the <EM>name service</EM> used in this program) instead of the IP address of the server, to connect the client code to the servant object. </P>
+<P>Unless the server machine is commonly used as an internet server, it may not have been configured at installation to support this. In particular, a Win95 machine has a network name that is set by entering information in the network setup portion of Win95. There is no guarantee that the person who did the setup on the operating system was careful to make certain that this name was an exact match for the name in the internet Domain Name Service (DNS) that maps to the IP addess of the machine. </P>
+<P>If the two names don't match, the JDK 1.2beta4 version of the JavaSoft Java IDL simply won't work when the client and the server are on different machines. Apparently the server generates the object reference containing the "local" name for the machine rather than the DNS name. Then the client asks the DNS for the IP address matching that name but no match is available. This results in a runtime error.</P>
+<P>The only way that I have found to resolve this problem is to make certain that the two names match. In some cases this is not possible. For example, some machines receive a new DNS name and IP address every time they log onto the network. In this case, there is no way that I have found to cause the local name to match the DNS name.</P>
+<P>In those cases where the DNS name of the machine is stable, the following short program can be used to discover the DNS name if you don't already know it. (You must be online to successfully run this program.) Then, assuming that you have the proper privileges, you can change the local name of the machine to make the two match.</TD>
+</TR>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#00ffff">
+<PRE>import java.net.*;
+import java.util.*;
+
+class Url001{
+  public static void main(String[] args){
+    try{
+
+      InetAddress address;
+      int temp;
+      
+      System.out.println("Get IP address");
+      address = InetAddress.getLocalHost();
+      System.out.println(address);
+
+      System.out.println("Do reverse lookup on IP address");
+      temp = address.toString().indexOf('/');
+      address = InetAddress.getByName(
+                     address.toString().substring(temp+1));
+      System.out.println(address);
+
+    }catch(UnknownHostException e){
+      System.out.println(e);
+      System.out.println("Must be online to run properly.");
+    }//end catch
+  }//end main
+}//end class Url001</PRE></TD>
+</TR>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#00ffff">
+<P>The output from running this program on my machine on one particular occasion was as follows:</P>
+<STRONG><P>Get IP address<BR>
+baldwin/129.37.119.74<BR>
+Do reverse lookup on IP address<BR>
+slip129-37-119-74.nc.us.ibm.net/129.37.119.74</P>
+</STRONG><P>In this case, the local name for the machine is <STRONG>baldwin</STRONG>. The DNS name for the machine is <STRONG>slip129-37-119-74.nc.us.ibm.net</STRONG>. The IP address for the machine is <STRONG>129.37.119.74</P>
+</STRONG><P>The rumor in the newsgroups has it that JavaSoft will correct this problem in the final release of JDK 1.2 and cause the ORB in the client to optionally use the IP address of the server. Until this is done, in my opinion, the JavaSoft Java IDL is of very limited usefulness in the real world</TD>
+</TR>
+</TABLE>
+
+<P>Now back to the main thread of this lesson. When programming in this style, the client programmer must know the <STRONG>id</STRONG> value used by the server program to expose or publish a servant object in the name service. In this case, the value was the string <STRONG>"TheDate"</STRONG>.</P>
+<P>The next fragment shows the <STRONG>resolve()</STRONG> method being invoked on the <STRONG>NamingContext</STRONG> object named <STRONG>ncRef</STRONG> (produced above) to obtain a CORBA reference to the servant object.</P>
+<P>Note that <STRONG>TheDate</STRONG> and <STRONG>TheDateHelper</STRONG> are classes that resulted from compiling source code that was generated when the <STRONG>idltojava</STRONG> program was applied to the IDL file.</P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      NameComponent nc = new NameComponent("<STRONG>TheDate</STRONG>", "");
+      NameComponent path[] = {nc};
+      <STRONG>TheDate</STRONG> <STRONG>theDateRef</STRONG> = 
+                   <STRONG>TheDateHelper</STRONG>.narrow(<STRONG>ncRef</STRONG>.resolve(path));</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The following fragment is not boilerplate code. Rather, it is the code that uses the reference to the servant object to invoke a method on that object. I show it here simply for completeness. Of course, the client programmer must also know the signatures for the available methods on the servant object.</P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      String theDate = <STRONG>theDateRef</STRONG>.<STRONG>getTheDate</STRONG>();
+      System.out.println(theDate);&nbsp; </PRE></TD>
+</TR>
+</TABLE>
+
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Summary">Summary</A></H2>
+</FONT><P>The following summary information was provided in the earlier lesson. I am repeating it here for convenience. In the earlier lesson, I restricted the instructions to CORBA applications where the name service, the client, and the server were all running on the same machine. Now that I have showed you how to take different machines into account when instantiating the <STRONG>ORB</STRONG> objects, that restriction no longer applies.</P>
+<P>Here are the steps for writing a CORBA application using Java under JDK 1.2 that uses name service. It is also possible to build a system that doesn't use the name service. I will discuss that possibility in a subsequent lesson.</P>
+
+<UL>
+<LI>Write the IDL file that declares the necessary information about the servant objects. In this lesson, we concentrated on servant object methods. However, other information about those objects can also be declared in the IDL file. </LI>
+<LI>Process the IDL file as a command-line parameter to the program named <STRONG>idltojava</STRONG>. This will generate one or more new packages with several Java source files in each package. </LI>
+<LI>Write the Java source code for the server and all of its servant classes. The servant classes implement the declarations in the IDL file. </LI>
+<LI>Write the Java source code for the client that will invoke methods on the servant objects. </LI>
+<LI>Compile all of the Java source files. </LI>
+<LI>Start the name server program named <STRONG>tnameserv</STRONG> in its own process. </LI>
+<LI>Start the server in its own process. </LI>
+<LI>Start the client in its own process. </LI></UL>
+
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Program_Listings">Program Listings</A></H2>
+</FONT><P>Complete listings for the IDL file, the batch file and the source code files that you must create are provided in this section. Listings are not provided for the Java source code files that are automatically generated by the <STRONG>idltojava</STRONG> program.</P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Corba03.idl
+See Corba03Server.java for information on this program.
+**********************************************************/
+module TheDateApp{
+  interface TheDate{
+    string getTheDate();
+  };//end interface TheDate
+};//end module TheDateApp</PRE></TD>
+</TR>
+</TABLE>
+
+<FONT COLOR="#ff0000"><P>.</P></FONT>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>rem File Corba03.bat
+rem See Corba03Server.java for description of program
+
+echo off
+
+echo Convert the idl file to the required set of java files
+idltojava -fno-cpp -p junk Corba03.idl
+
+echo Compile all of the java files
+javac Corba03*.java junk/TheDateApp/*.java
+
+echo Start the transient name server on port 1050 as
+echo  a new process
+start tnameserv -ORBInitialPort 1050
+
+echo Start the server as a new process. Computer and port
+echo  are specified in the server initialization code.
+start java Corba03Server
+
+echo Start the client as a new process. Computer and port
+echo  are specified in the client initialization code.
+start java Corba03Client</PRE></TD>
+</TR>
+</TABLE>
+
+<P>. </P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Corba03Server.java
+This is a simple CORBA server that provides a servant
+object to return the date and time as a string. This
+version is identical to the Corba02 version except that
+in this version, a property object is used to initialize
+the port and the computer for the name service when
+the ORB object is instantiated.  This initialization is
+performed for the ORBs for both the client and the server.
+**********************************************************/
+import junk.TheDateApp.*;
+import org.omg.CosNaming.*;
+import org.omg.CosNaming.NamingContextPackage.*;
+import org.omg.CORBA.*;
+import java.util.Date;
+import java.util.Properties;
+ 
+class TheDateServant extends _TheDateImplBase{
+  public String getTheDate(){
+    return new Date() + "\n";
+  }//end getTheDate()
+}//end TheDateservant class
+//=======================================================//
+ 
+public class Corba03Server   {
+ 
+  public static void main(String args[]){
+    try{      
+      // create and initialize the ORB
+      Properties props = new Properties();
+      //Following assumes that name service is operating
+      // on port 1050.
+      props.put("org.omg.CORBA.ORBInitialPort", "1050");
+      //Following assumes that name service is operating
+      // on the same computer.
+      props.put("org.omg.CORBA.ORBInitialHost", "localhost");
+      //If the name service is on a different computer,
+      // use something like the following which specifies
+      // the IP address of the computer with the name
+      // service.
+      //props.put("org.omg.CORBA.ORBInitialHost", 
+      //                                  "123.213.3.159");
+      ORB orb = ORB.init(args, props);
+
+ 
+      // create servant and register it with the ORB
+      TheDateServant theDateRef = new TheDateServant();
+      orb.connect(theDateRef);
+ 
+      // get the root naming context
+      org.omg.CORBA.Object objRef = 
+             orb.resolve_initial_references("NameService");
+      NamingContext ncRef 
+                      = NamingContextHelper.narrow(objRef);
+ 
+      // bind the Object Reference in Naming
+      NameComponent nc = new NameComponent("TheDate", "");
+      NameComponent path[] = {nc};
+      ncRef.rebind(path, theDateRef);
+
+      System.out.println("Server is running");
+ 
+      // wait for invocations from clients
+      java.lang.Object sync = new java.lang.Object();
+      synchronized (sync) {
+        sync.wait();
+      }//end synchronized block
+ 
+    }catch (Exception e) {
+       System.err.println("ERROR: " + e);
+       e.printStackTrace(System.out);
+    }//end catch block
+  }//end main()
+}//end Corba03Server class</PRE></TD>
+</TR>
+</TABLE>
+
+<P>. </P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Corba03Client.java
+See Corba03Server.java for information on this program.
+This version explicitly initializes the ORB for the port
+and host computer of the name service.
+**********************************************************/
+import junk.TheDateApp.*;
+import org.omg.CosNaming.*;
+import org.omg.CORBA.*;
+import java.util.Properties;
+ 
+public class Corba03Client{
+  public static void main(String args[]){
+    try{
+      // create and initialize the ORB
+      Properties props = new Properties();
+      //Following assumes that name service is operating
+      // on port 1050.
+      props.put("org.omg.CORBA.ORBInitialPort", "1050");
+      //Following assumes that name service is operating
+      // on the same computer.
+      props.put("org.omg.CORBA.ORBInitialHost", "localhost");
+      //If the name service is on a different computer,
+      // use something like the following which specifies
+      // the IP address of the computer with the name
+      // service.
+      //props.put("org.omg.CORBA.ORBInitialHost", 
+      //                                  "123.213.3.159");
+      ORB orb = ORB.init(args, props);
+ 
+      // get the root naming context
+      org.omg.CORBA.Object objRef = 
+             orb.resolve_initial_references("NameService");
+      NamingContext ncRef = 
+                        NamingContextHelper.narrow(objRef);
+
+      // resolve the Object Reference in Naming
+      NameComponent nc = new NameComponent("TheDate", "");
+      NameComponent path[] = {nc};
+      TheDate theDateRef = 
+                   TheDateHelper.narrow(ncRef.resolve(path));
+ 
+      // call the TheDate server object and print results
+      String theDate = theDateRef.getTheDate();
+      System.out.println(theDate);
+      
+      
+      //Delay program termination so that the console
+      // won't disappear from the screen when running
+      // under control of a batch file.
+      int ch1 = '0';
+      System.out.println("Press Ctrl-z to terminate");
+      while( (ch1 = System.in.read() ) != -1);      
+    }catch (Exception e) {
+      System.out.println("ERROR : " + e) ;
+      e.printStackTrace(System.out);
+    }//end catch block
+  }//end main() method
+}//end Corba03Client class</PRE></TD>
+</TR>
+</TABLE>
+
+<P>-end- </P>
+<P><!--end--></P></BODY>
+</HTML>

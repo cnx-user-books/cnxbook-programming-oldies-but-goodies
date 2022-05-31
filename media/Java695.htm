@@ -1,0 +1,252 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>... in Java by Richard G Baldwin</TITLE>
+<META NAME="Template" CONTENT="C:\PROGRAM FILES\MICROSOFT OFFICE\OFFICE\html.dot">
+</HEAD>
+<BODY LINK="#0000ff" VLINK="#800080" BGCOLOR="#ffffff">
+
+<P><!--start--></P>
+<I><H3 ALIGN="CENTER">Richard G Baldwin (512) 223-4758, </I><A HREF="mailto:baldwin@austin.cc.tx.us"><I>baldwin@austin.cc.tx.us</I></A><I>, </I><A HREF="http://www2.austin.cc.tx.us/baldwin/"><I>http://www2.austin.cc.tx.us/baldwin/</I></A></H3>
+<H2 ALIGN="CENTER"><!--title-->Servlets, Session Tracking Using Basic Authentication<!--endtitle--></H2>
+<P>Java Programming, Lecture Notes # 695, Revised 3/27/99. </P>
+<P><A HREF="#Preface">Preface</A> </P>
+<P><A HREF="#Introduction">Introduction</A> </P>
+<P><A HREF="#sample_program">Sample Program</A> </P><DIR>
+<DIR>
+
+<P><A HREF="#Interesting_Code_Fragments">Interesting Code Fragments</A> </P>
+<P><A HREF="#program_listing">Program Listing</A> </P></DIR>
+</DIR>
+
+<P><HR></P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Preface">Preface</A></H2>
+</FONT><P>Students in Prof. Baldwin's <B><U>Advanced Java Programming</B></U> classes at ACC will be responsible for knowing and understanding all of the material in this lesson beginning with the spring semester of 1999. </P>
+<P>This lesson was originally written on March 27, 1999. </P>
+<P>The sample servlet in this lesson was tested using Win95, Netscape Navigator, the JDK 1.2 download package from JavaSoft, the JSDK 2.0 download package from JavaSoft, and the Jigsaw web server that, as of 3/27/99, was freely available from http://www.w3.org/Jigsaw/. The sample program was tested using Jigsaw from the same machine, and also from a different machine on the network.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Introduction">Introduction</A></H2>
+</FONT><P>This is one of a series of lessons designed to show you various ways to implement session tracking using servlets. The purpose of the lesson is to illustrate session tracking using the <I>Basic Authentication</I> capability provided by most HTTP web servers.</P>
+<P>An HTTP server that provides Basic Authentication capability has the capability to maintain a list of user names and passwords. It also has the capability to protect resources (directories, files, servlets, etc.) making those resources available only to specified users.</P>
+<P>The manner in which the list of user names and passwords is maintained, and the manner in which resources are protected, differs from one server to the next. For the sample program in this lesson, I used the administrator features of the Jigsaw server to establish the list and the protection. You will need to see your server documentation for more information on this topic.</P>
+<P>When a resource is protected and a user attempts to access it, the server requires to the client to provide the user's name and password. The browser obtains the name and password from the user and provides it to the server. If that user is authorized to access the requested resource, the request is granted.</P>
+<P>Thereafter, the browser remembers and resends the name and the password as the user views different pages on the same site. This continues until the user moves on to a new site or exits the browser. If the user comes back to the site before exiting the browser, the process of sending the name and password resumes.</P>
+<P>After the user logs in by providing the name and password to the browser, the user name is available to the servlet through the <B>getRemoteUser()</B> method. Assuming that the user name is unique, it can be used as a key to persistent storage (such as a database) for the purpose of maintaining information about the session.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="sample_program"></A>Sample Program</H2>
+</FONT><P>The name of the servlet discussed below is <B>Servlet13A</B>. This is one of a group of three similar servlets named:</P>
+
+<UL>
+<LI>Servlet13A </LI>
+<LI>Servlet13B </LI>
+<LI>Servlet13C</LI></UL>
+
+<P>These three servlets are designed to work together to illustrate session tracking using Basic Authentication.</P>
+<P>In my case, the server was set up to protect all three servlets by protecting the directory in which they are stored. (It is also possible to protect individual servlets and individual files.) The list of users having access to the servlets in the protected directory was set up to include the user named <B>dick</B>. </P>
+<P>When the client makes a request to invoke one of the servlets, the server requires the client to provide a name and password. The server compares the name and password to the list of valid name/password combinations maintained in the database by the server. If the name/password combination is not valid, the client gets another opportunity to provide a name and password.</P>
+<P>If the name/password combination is valid, the server compares the name to the list of names established as having access to the directory containing the servlet. If the name matches one of the names on that list, the servlet is invoked on behalf of the client.</P>
+<P>When one of the servlets is invoked, it produces an output similar to the following on the client screen (only the name of the servlet differs from one servlet to the next):</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<PRE>Welcome to Servlet13A 
+Hello dick
+Authentication Type: Basic
+Authorization: Basic ZGljazpkcm93c3NhcA==
+Unencoded name and password: dick:drowssap
+Please visit these other servlets:
+<U>Servlet13A
+Servlet13B
+Servlet13C</PRE></U></TD>
+</TR>
+</TABLE>
+
+<P>The fourth line shows an encoded version of the name and password passed over the Internet. I will discuss the encoding scheme in more detail in a subsequent lesson on servlet security (for now, suffice it to say that it is not very secure). The fifth line shows the user name and password after it has been decoded by the servlet.</P>
+<P>The last three lines in the output are hyperlinks to each of the three servlets. Having invoked any one of the three servlets, the user can again invoke any one of the three. No matter which one is invoked, the servlet is able to identify the user and to get his name and password.</P>
+<FONT COLOR="#ff0000"><H3 ALIGN="CENTER"><A NAME="Interesting_Code_Fragments">Interesting Code Fragments</A></H3>
+</FONT><P>The first fragment shows the beginning of the controlling class and the beginning of the <B>doGet()</B> method. </P>
+<P>The fragment also shows the typical HTML boilerplate necessary to create an HTML page to be sent to the client. You have seen material such as this many times before.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>public class Servlet13A extends HttpServlet{
+  public void doGet(HttpServletRequest req, 
+                    HttpServletResponse res)
+                      throws ServletException, IOException{
+    res.setContentType("text/html");
+    PrintWriter out = res.getWriter();
+    out.println("&lt;HTML&gt;");
+    out.println("&lt;HEAD&gt;&lt;TITLE=Servlet13A&lt;/TITLE&gt;&lt;/HEAD&gt;");
+    out.println("&lt;BODY&gt;");
+    
+    out.println("Welcome to Servlet13A &lt;BR&gt;");</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The next fragment uses the <B>getRemoteUser()</B> method to get and display the name of the remote user.<B> </B>Note that the user name is available without performing any special decoding of the incoming information.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>    out.println("Hello " + req.<B>getRemoteUser</B>() + "&lt;BR&gt;");</PRE></TD>
+</TR>
+</TABLE>
+
+<P>Once the user has logged in, this name is available to servlets on this server until the user exits the browser. Therefore, it is important for the user to exit the browser when the session has been completed.</P>
+<P>The next fragment gets and displays the type of authentication being used by the server. </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>    out.println("Authentication Type: " 
+                             + req.<B>getAuthType</B>() + "&lt;BR&gt;");</PRE></TD>
+</TR>
+</TABLE>
+
+<P>In this case, the type is <I>Basic Authentication</I>. Some servers also support a more secure form of authentication known as <I>Digest Authentication</I>.</P>
+<P>The next fragment shows the use of the <B>getHeader()</B> method to get and display the authorization string in its encoded format.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>    String auth = req.<B>getHeader</B>("Authorization");
+    out.println("Authorization: " + auth + "&lt;BR&gt;");</PRE></TD>
+</TR>
+</TABLE>
+
+<P>Note that the string <B>"Authorization"</B> is passed to the method in order to get the authorization string. Other kinds of information is also available through the <B>getHeader()</B> by passing different parameters.</P>
+<P>Recall from above that the value of the authorization string displayed was:</P><DIR>
+<DIR>
+
+<P>Basic <B>ZGljazpkcm93c3NhcA==</P></DIR>
+</DIR>
+
+</B><P>The boldface portion of this string contains an encoded version of the user name and password. There is no simple method available for extracting the password as is the case with the name, but it isn't particularly difficult to extract. The next fragment </P>
+
+<UL>
+<LI>Extracts that substring from the entire string </LI>
+<LI>Unencodes the substring </LI>
+<LI>Displays the unencoded version. </LI></UL>
+
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>    String encodedNamePassword = auth.<B>substring</B>(6);
+    sun.misc.BASE64Decoder dec = 
+                              new <B>sun.misc.BASE64Decoder</B>();
+    String unencodedNamePassword = 
+         new String(dec.<B>decodeBuffer</B>(encodedNamePassword));
+    out.<B>println</B>("Unencoded name and password: " 
+                         + unencodedNamePassword + "&lt;BR&gt;");</PRE></TD>
+</TR>
+</TABLE>
+
+<P>In my case, the unencoded version is displayed as</P><DIR>
+<DIR>
+
+<B><P>dick:drowssap</P></DIR>
+</DIR>
+
+</B><P>This is the information that you could use as a key in persistent storage (such as a database) to maintain information about the session.</P>
+<P>I plan to discuss the unencoding mechanism in a subsequent lesson on servlet security, so I will simply show you how to do it at this point without further discussion.</P>
+<P>The next fragment creates hyperlinks for all three of the servlets allowing the user to navigate among the different servlets at will. It is important to note that each time the user invokes any one of these servlets prior to exiting the browser, the name and password information for that user will be available as shown above.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>    out.println("Please visit these other servlets:&lt;BR&gt;");
+
+    out.println("&lt;A HREF=\"http://baldwin:8001/servlets"
+                + "/Servlet13A\"&gt;Servlet13A&lt;/A&gt;" + "&lt;BR&gt;");
+    out.println("&lt;A HREF=\"http://baldwin:8001/servlets"
+                + "/Servlet13B\"&gt;Servlet13B&lt;/A&gt;" + "&lt;BR&gt;");
+    out.println("&lt;A HREF=\"http://baldwin:8001/servlets"
+                + "/Servlet13C\"&gt;Servlet13C&lt;/A&gt;" + "&lt;BR&gt;");</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The remaining code (not shown here) is the boilerplate necessary to close out the HTML page. You can view that code in the next section.</P>
+<FONT COLOR="#ff0000"><H3 ALIGN="CENTER"><A NAME="program_listing"></A>Program Listing</H3>
+</FONT><P>A complete listing of one of the servlets follows. The other two servlets are identical to this one with the exception of the servlet name, so they aren't shown here.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Servlet13A.java, Copyright 1999, R.G.Baldwin
+Rev 3/25/99
+This is one of a group of three servlets:
+Servlet13A
+Servlet13B
+Servlet13C
+
+that are designed to illustrate session tracking using 
+BASIC AUTHENTICATION.
+
+All three servlets are protected by the server.  When the
+user requests the server to invoke one of the servlets,
+the server requires the user to provide a name and 
+password.  That name and password is compared, by the
+server, to the set of name/password combinations maintained
+in a database by the server.
+
+If the name/password combination is valid, the server
+compares the name to the list of names established by
+the server administrator as being allowed access to the
+servlet.  If the name matches one of the names on that
+list, the servlet is invoked on behalf of the client.
+
+When the servlet is invoked, it produces an output
+similar to the following on the client screen:
+  
+Welcome to Servlet13A 
+Hello dick
+Authentication Type: Basic
+Authorization: Basic ZGljazpkcm93c3NhcA==
+Unencoded name and password: dick:drowssap
+Please visit these other servlets:
+Servlet13A
+Servlet13B
+Servlet13C
+
+where the last three lines are hyperlinks to each of the
+three servlets.
+
+The servlet was tested using the JDK 1.2 download package
+from JavaSoft along with the Java Servlet Development Kit
+(JSDK) 2.0 from JavaSoft and the Jigsaw web server. All 
+tests were performed under Win95.
+
+**********************************************************/
+import java.io.*;
+import javax.servlet.*;
+import javax.servlet.http.*;
+
+public class Servlet13A extends HttpServlet{
+  public void doGet(HttpServletRequest req, 
+                    HttpServletResponse res)
+                      throws ServletException, IOException{
+    res.setContentType("text/html");
+    PrintWriter out = res.getWriter();
+    out.println("&lt;HTML&gt;");
+    out.println("&lt;HEAD&gt;&lt;TITLE=Servlet13A&lt;/TITLE&gt;&lt;/HEAD&gt;");
+    out.println("&lt;BODY&gt;");
+    
+    out.println("Welcome to Servlet13A &lt;BR&gt;");
+
+    out.println("Hello " + req.getRemoteUser() + "&lt;BR&gt;");
+    out.println("Authentication Type: " 
+                             + req.getAuthType() + "&lt;BR&gt;");
+    String auth = req.getHeader("Authorization");
+    out.println("Authorization: " + auth + "&lt;BR&gt;");
+    String encodedNamePassword = auth.substring(6);
+    sun.misc.BASE64Decoder dec = 
+                              new sun.misc.BASE64Decoder();
+    String unencodedNamePassword = 
+         new String(dec.decodeBuffer(encodedNamePassword));
+    out.println("Unencoded name and password: " 
+                         + unencodedNamePassword + "&lt;BR&gt;");
+    out.println("Please visit these other servlets:&lt;BR&gt;");
+
+    out.println("&lt;A HREF=\"http://baldwin:8001/servlets"
+                + "/Servlet13A\"&gt;Servlet13A&lt;/A&gt;" + "&lt;BR&gt;");
+    out.println("&lt;A HREF=\"http://baldwin:8001/servlets"
+                + "/Servlet13B\"&gt;Servlet13B&lt;/A&gt;" + "&lt;BR&gt;");
+    out.println("&lt;A HREF=\"http://baldwin:8001/servlets"
+                + "/Servlet13C\"&gt;Servlet13C&lt;/A&gt;" + "&lt;BR&gt;");
+
+
+    out.println("&lt;/font&gt;&lt;/h1&gt;");
+    out.println("&lt;/BODY&gt;&lt;/HTML&gt;");
+  }//end doGet()
+}//end class Servlet13A</PRE></TD>
+</TR>
+</TABLE>
+
+<P>-end-<!--end--></P></BODY>
+</HTML>

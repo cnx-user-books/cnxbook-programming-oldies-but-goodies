@@ -1,0 +1,930 @@
+<!doctype html public "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+   <meta name="GENERATOR" content="Microsoft FrontPage 5.0">
+   <title>... in Java by Richard G Baldwin</title>
+</head>
+<body link="#DD0000" vlink="#0000FF" alink="#FF0000" lang="EN-US">
+<h2>
+Focus Traversal Policies in Java Version 1.4</h2>
+<i>Baldwin shows you how to establish a focus traversal policy, and how to 
+modify that policy at runtime.</i><p><b>Published:</b>&nbsp; April 29, 2003<br><b>By <a href="mailto:Baldwin@DickBaldwin.com">Richard G. Baldwin</a></b>
+<p>Java Programming Notes # 1840<ul >
+<li>
+<a href="#Preface">Preface</a></li>
+<li>
+<a href="#General Background Information">General Background Information</a></li>
+<li>
+<a href="#Preview">Preview</a></li>
+
+<li>
+<a href="#Discussion and Sample Programs">Discussion and Sample Code</a></li>
+
+<li>
+<a href="#Run the program">Run the Program</a></li>
+
+<li>
+<a href="#Summary">Summary</a></li>
+
+<li>
+<a href="#Whats Next">What's Next?</a></li>
+
+<li>
+<a href="#Complete Program Listings">Complete Program Listing</a></li>
+</ul>
+
+<hr size=3 width="100%" align=center>
+<center>
+<h2>
+<a NAME="Preface"></a>Preface</h2></center>
+<p>
+<b><font color="#FF0000">New features in SDK Version 1.4.0</font></b> </p>
+<p>Java<sup>TM</sup> 2 SDK, Standard Edition V1.4 contains a 
+large number of new features, including a completely new focus subsystem.<p>I became hooked 
+on Java in April 1996.&nbsp; Since then, Java has progressed from V1.0 up to 
+V1.4.&nbsp; Fortunately, during that period, few if any of the improvements 
+included in new versions have been incompatible with code written for previous 
+versions.&nbsp; Unfortunately, that history of upgrade success changed with the 
+release of the new focus subsystem in V1.4.&nbsp; Several aspects of the new 
+subsystem are incompatible with code written for previous versions.<p>
+<font color="#FF0000"><b>Historical problems with the focus subsystem</b></font><p>According 
+to Sun,<blockquote>
+<p><i>&quot;Prior to Java 2 Standard Edition, JDK 1.4, the AWT focus subsystem
+      was inadequate. It suffered from major design and API problems,
+      as well as over a hundred open bugs. Many of these bugs were caused by
+      platform inconsistencies, or incompatibilities between the native
+      focus system for heavyweights and the Java focus system for
+      lightweights.&quot;</i></blockquote>
+<p><font color="#FF0000"><b>What does Sun say about focus in V1.4?</b></font><p>Sun goes on to describe some of the specific problems and then states:<blockquote>
+<p><i>&quot;To address these and other deficiencies, we have designed a new focus
+      model for the AWT in JDK 1.4. The primary design changes were the
+      construction of a new centralized KeyboardFocusManager class, and a
+      lightweight focus architecture. The amount of focus-related,
+      platform-dependent code has been minimized and replaced by fully
+      pluggable and extensible public APIs in the AWT. While we have
+      attempted to remain backward compatible with the existing
+      implementation, we were forced to make minor incompatible changes in
+      order to reach an elegant and workable conclusion. We anticipate that
+      these incompatibilities will have only a trivial impact on existing
+      applications.&quot;</i></blockquote>
+<p><font color="#FF0000"><b>A lot to learn</b></font><p>There is a lot to learn 
+about the new focus subsystem.&nbsp; It is anything but trivial.&nbsp; This lesson 
+will deal with only one aspect of the new subsystem, and will deal with that 
+aspect from 
+a relatively simple viewpoint.&nbsp; This lesson deals with focus traversal 
+among the components in a single-level container.<blockquote>
+<p><i>(In this lesson, there are no containers that contain focusable components within that 
+single container.&nbsp; Thus, I refer to it as a single-level container.&nbsp; 
+In particular, there is no requirement to deal with the complexities of having the focus move 
+from one container up or down a level to a parent or child container, known as
+<b>up cycle</b> and <b>down cycle</b>.)</i></blockquote>
+<p>
+<b><font color="#FF0000">Viewing tip</font></b>
+<p>You may find it useful to open another copy of this lesson in a separate
+browser window.&nbsp; That will make it easier for you to scroll back and
+forth among the different listings and figures while you are reading about
+them.
+<p><b><font color="#FF0000">Supplementary material</font></b>
+<p>I recommend that you also study the other lessons in my extensive collection
+of online Java tutorials.&nbsp; You will find those lessons published at
+<a href="http://softwaredev.earthweb.com/java">Gamelan.com</a>.&nbsp;
+However, as of the date of this writing, Gamelan doesn't maintain a consolidated
+index of my Java tutorial lessons, and sometimes they are difficult to
+locate there.&nbsp; You will find a consolidated index at <font color="#000000">
+<a href="http://www.DickBaldwin.com">www.DickBaldwin.com</a>.</font>
+<h2 align="center"><font color="#000000">
+<a name="General Background Information">General Background Information</a></font></h2>
+<p><font color="#FF0000"><b>Focusability</b></font></p>
+<p>
+A focusable Component is a component that can become the focus owner and 
+participates in keyboard focus traversal with
+a <b>FocusTraversalPolicy</b>.<p><font color="#FF0000"><b>Focus traversal</b></font><p>
+Since focus traversal is the primary topic of this lesson, we should probably 
+begin with a description of that term.&nbsp; Here is how Sun describes <b>focus 
+traversal</b>:<blockquote>
+<p><i>&quot;<b>Focus traversal</b> -- the user's ability to change the "<b>focus
+          owner</b>" without moving the cursor. Typically, this is done using
+          the keyboard (for example, by using the TAB key), or an
+          equivalent device in an accessible environment. Client code can
+          also initiate traversal programmatically. Normal focus traversal
+          can be either "<b>forward</b>" to the "<b>next</b>" Component, or "<b>backward</b>" to
+          the "<b>previous</b>" Component.&quot;</i></blockquote>
+<p>I imagine that everyone reading this lesson is  familiar with the <b>focus 
+traversal</b> process 
+described above.<p><font color="#FF0000"><b>The focus cycle root</b></font><p>
+Focus traversal is governed by a <i>focus traversal policy</i>.&nbsp; Before getting into a discussion of the focus traversal policy, 
+however, I need to 
+introduce the concept of a <i>focus cycle root</i> along with some other related 
+terms.<p>According to Sun,<blockquote>
+<p><i>"<b>Focus cycle root</b> -- Container that is the root of the Component
+          hierarchy for a particular &quot;<b>focus traversal cycle</b>&quot;. When the
+          &quot;<b>focus owner</b>&quot; is a Component inside a particular cycle, normal
+          forward and backward focus traversal cannot move the "focus owne<b>r</b>" above the focus cycle root in the Component hierarchy.
+          Instead, two additional traversal operations, "<b>up cycle</b>" and
+          "<b>down cycle</b>", are defined to allow keyboard and programmatic
+          navigation up and down the focus traversal cycle hierarchy.&quot;</i></blockquote>
+<p><font color="#FF0000"><b>Focus traversal cycle</b></font><p>Sun has this to 
+say about the <b>focus traversal cycle</b>.<blockquote>
+<p><i>&quot;<b>Focus traversal cycle</b> -- a portion of the Component hierarchy, 
+such that normal focus traversal &quot;forward&quot; (or &quot;backward&quot;) will traverse through 
+all of the Components in the focus cycle, but no other Components. This cycle 
+provides a mapping from an arbitrary Component in the cycle to its &quot;next&quot; 
+(forward traversal) and &quot;previous&quot; (backward traversal) Components.&quot;</i></blockquote>
+<p><font color="#FF0000"><b>Focus owner</b></font><p>According to Sun, the <b>focus owner</b> 
+is the Component that typically receives
+          keyboard input.<p><font color="#FF0000"><b>Up cycle and down cycle 
+traversal operations</b></font><p>I will deal with <b>up cycle</b> and <b>down 
+cycle</b> traversal operations in a subsequent lesson.<p><font color="#FF0000">
+<b>Focus traversal policy</b></font><p>And finally, here is how Sun describes a
+<b>FocusTraversalPolicy</b>.<blockquote>
+<p><i>&quot;<span style="background-color: #FFFFFF">A <b>FocusTraversalPolicy</b> 
+defines the order in which Components with a particular focus cycle root are 
+traversed.</span></i>&quot;</blockquote>
+<p>I will show you how to establish and use a focus traversal policy in the 
+sample program to be discussed later in this lesson.<p><font color="#FF0000"><b>
+Primary responsibility of a FocusTraversalPolicy</b></font><p>The primary 
+responsibility of a <b>FocusTraversalPolicy</b> is to specify the <i>next</i> 
+and <i>previous</i> Components to gain focus when traversing forward or backward in a 
+user interface.&nbsp; Within a list of focusable components, this involves 
+specifying the components to receive focus after and before the currently 
+focused component.<p><font color="#FF0000"><b>Focus traversal wraparound</b></font><p>
+In order to support wraparound at each end of a list of focusable components, 
+each <b>FocusTraversalPolicy</b> must also specify the <i>first </i>and <i>last
+</i>Components in a traversal cycle.&nbsp; According to Sun, these are the components that receive 
+focus when the traversal wraps around the end of the list going in either 
+direction.&nbsp;
+<p>
+<span style="background-color: #FFFFFF">The <i>first</i> 
+Component is the Component that receives the focus when traversal wraps in the 
+forward direction.&nbsp; The <i>last</i> Component is the Component that 
+receives the focus when traversal wraps in the reverse direction.</span><blockquote>
+  <p>
+<span style="font-style: italic; background-color: #FFFFFF">(Note that I will 
+raise, but will not answer, some interesting questions regarding the wraparound 
+later.)</span></blockquote>
+<p><font color="#FF0000"><b>A default component and an initial component</b></font><p>
+The <b>FocusTraversalPolicy</b> must also specify a <i>default</i> Component, 
+which is the first component to receive the focus when traversing down into a 
+new focus traversal cycle.<p>A <b>FocusTraversalPolicy</b> can optionally 
+specify an <i>initial</i> Component, which is the first to receive focus when a 
+Window is first made visible.<blockquote>
+<p><i>(The sample program in this lesson doesn't specify the optional initial 
+component.)</i></blockquote>
+<p><font color="#FF0000"><b>Five methods are involved</b></font><p>I will 
+discuss and explain a sample program that satisfies the requirements listed 
+above by defining the behavior of the following five methods:<ul>
+  <li>getComponentAfter</li>
+  <li>getComponentBefore</li>
+  <li>getFirstComponent</li>
+  <li>getLastComponent</li>
+  <li>getDefaultComponent</li>
+</ul>
+<blockquote>
+  <p><i>(The sample program in this lesson doesn't make use of the optional 
+  getInitialComponent method.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Establishing the FocusTraversalPolicy</b></font><p>
+<span style="background-color: #FFFFFF">The <b>FocusTraversalPolicy</b> for a 
+container is established by invoking the container's <b>setFocusTraversalPolicy</b> 
+method and passing a <b>FocusTraversalPolicy</b> object's reference as a parameter.</span><p>
+<span style="background-color: #FFFFFF">If a policy is not
+explicitly set on a container, then the container inherits its policy from its nearest
+focus-cycle-root ancestor.</span><h2 align="center"><font color="#000000">
+<a name="Preview">Preview</a></font></h2>
+<p>In this lesson, I will show you how to establish a custom focus traversal 
+policy, and how to modify that policy at runtime.<center>
+<h2>
+<a NAME="Discussion and Sample Programs"></a><font color="#000000">Discussion
+and Sample Code</font></h2></center>
+<p><font color="#FF0000"><b>The program named FocusTraversal01</b></font><p>This program illustrates the new
+<b>FocusTraversalPolicy</b> that was released in Java SDK Version 1.4.<p>
+<font color="#FF0000"><b>Description of the program</b></font><p>A single <b>JFrame</b> object appears on the screen, 
+as shown in Figure 1.<p align="center">
+<img border="0" src="java1840a.gif" width="251" height="101"><p align="center">
+Figure 1&nbsp; The GUI at startup<p>Four <b>JButton</b> objects appear at the North, South, East, and West locations in the frame.&nbsp; The buttons display the captions 03, 06, 09, and 12.<blockquote>
+<p><i>(The positions of the buttons with their captions mimic four of the numbers on a clock.)</i></blockquote>
+<p>When the program first starts running, the button with the caption 12 has the focus, and the number sequence 09,03,12,06,09,... appears near the center of the frame.<p>
+<font color="#FF0000"><b>Click to change the sequence</b></font><p>When you click on that sequence, the sequence changes to 09,06,12,03,09,... and the color of the characters changes to red, 
+as shown in Figure 2.<p align="center">
+<img border="0" src="java1840b.gif" width="251" height="101"><p align="center">
+Figure 2&nbsp; The GUI after clicking the sequence<p>Successive clicking on the sequence causes the sequence to toggle back and forth between the two sequences given above, and causes the color of the characters to toggle between black and red.<p>
+<font color="#FF0000"><b>Focus traversal in the forward direction</b></font><p>When the 
+black sequence 09,03,12,06,09,... appears, successively pressing the tab key causes the focus to traverse the four buttons in the order given by the 
+black sequence.<p>Similarly, when the red sequence 09,06,12,03,09,... appears, 
+successively pressing the tab key causes the focus to traverse the four buttons in the order given by 
+the red sequence.<p><font color="#FF0000"><b>Focus traversal in the reverse 
+direction</b></font><p>In both cases, holding down the shift key while pressing the tab key reverses the order of focus traversal.<p>
+<font color="#FF0000"><b>Focus is well behaved</b></font><p>When you click on 
+the sequence to change it, the focus does not jump from its current button to a different button.<p>When you 
+have clicked on a button, causing that button to have the focus, pressing the tab key 
+causes the focus to move from that button to the next button  defined by the sequence that is showing.<p>
+<font color="#FF0000"><b>SDK Version 1.4 required</b></font><p>
+This program requires SDK V1.4 or later, because features used in this program 
+were first released in V1.4.<p>
+The program was tested using SDK 1.4.1 under WinXP<p>
+<font color="#FF0000"><b>Will discuss sample program in fragments</b></font><p>
+As usual, I will discuss the program in fragments.&nbsp; You can view a listing 
+of the entire program in Listing 13 near the end of the lesson.<p><font color="#FF0000"><b>The main method</b></font></p>
+  <p>The program begins in Listing 1 where the <b>main</b> method simply 
+  instantiates an object of the class named <b>GUI</b>.<br>
+&nbsp;<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>public class FocusTraversal01 {
+  public static void main(String[] args){
+    <b>new GUI();</b>
+  }//end main
+}//end class FocusTraversal01
+
+<b><font face="Courier New,Courier">Listing 1</font></b></pre>
+</td>
+</tr>
+</table>
+<p>It is the class named <b>GUI</b> that produces the user interface shown in 
+Figures 1 and 2.</p>
+<p><font color="#FF0000"><b>The class named GUI</b></font></p>
+  <p>The class named <b>GUI</b>, which extends <b>JFrame</b>, begins in Listing 
+  2.<br>
+&nbsp;<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>class GUI extends JFrame{
+  <b>boolean policyIsA = true;</b>
+  JLabel seq = new JLabel(
+                       "    09,03,12,06,09,...");
+  JButton button12 = new JButton("12");
+  JButton button03 = new JButton("03");
+  JButton button06 = new JButton("06");
+  JButton button09 = new JButton("09");
+  JFrame frame = this;
+
+<b><font face="Courier New,Courier">Listing 2</font></b></pre>
+</td>
+</tr>
+</table>
+<p>Listing 2 instantiates all four of the buttons and the label that you saw in 
+Figure 1.</p>
+  <blockquote>
+<p><i>(The component in the center of the GUI containing the sequence of numbers 
+is a <b>JLabel</b> whose reference is stored in a reference variable named <b>
+seq</b>.)</i></p>
+  </blockquote>
+<p>In addition, the code in Listing 2 saves a reference to the GUI object in the 
+reference variable named <b>frame</b>.&nbsp; This is used later to gain access 
+to the GUI object from within some inner classes.</p>
+<p><font color="#FF0000"><b>The variable named policyIsA</b></font></p>
+<p>This switches between 
+two different focus traversal policies at runtime.&nbsp; The <b>boolean</b> 
+variable named <b>policyIsA</b> in Listing 1 is used later to keep track of 
+which policy is currently in force.</p>
+<p><font color="#FF0000"><b>The constructor for the GUI class</b></font></p>
+  <p>The constructor for the GUI class begins in Listing 3.<br>
+&nbsp;<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>  public GUI(){//constructor
+    setSize(250,100);
+    setTitle("Copyright 2003, R.G.Baldwin");
+    setDefaultCloseOperation(
+                           JFrame.EXIT_ON_CLOSE);
+
+    getContentPane().add(button12,"North");
+    getContentPane().add(button03,"East");
+    getContentPane().add(button06,"South");
+    getContentPane().add(button09,"West");
+    getContentPane().add(seq,"Center");
+
+<b><font face="Courier New,Courier">Listing 3</font></b></pre>
+</td>
+</tr>
+</table>
+<p>The code in Listing 3 is completely straightforward, so I won't discuss it 
+further.</p>
+  <blockquote>
+<p><i>(In case you are unfamiliar with the construction of graphical user 
+interfaces in Java, I have published numerous tutorial lessons on that topic on 
+my <a href="http://www.dickbaldwin.com">web site</a>.)</i></p>
+  </blockquote>
+<p><font color="#FF0000"><b>The class named TravPolicyA</b></font></p>
+  <p>Listing 4 shows the beginning of an inner class named <b>TravPolicyA</b>, 
+  which extends the class named <b>FocusTraversalPolicy</b>, and overrides five 
+  of the six methods defined in that class.<br>
+&nbsp;<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>    class <b>TravPolicyA</b>
+                    extends <b>FocusTraversalPolicy</b>{
+
+      public Component <b>getDefaultComponent</b>(
+                       Container focusCycleRoot){
+        return button12;
+      }//end getDefaultComponent
+
+<b><font face="Courier New,Courier">Listing 4</font></b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>Background information on the FocusTraversalPolicy 
+class</b></font></p>
+<p>The <b>FocusTraversalPolicy</b> class is an abstract class, 
+  and five of the six methods defined in the class are declared abstract.&nbsp; 
+  Therefore, the <b>FocusTraversalPolicy</b> class exists for the sole purpose 
+  of being extended, a task often relegated to interfaces in Java.</p>
+<p>However, the class defines one non-abstract method named <b>
+  getInitialComponent</b>, so the <b>FocusTraversalPolicy</b> class cannot be 
+  replaced by an interface.&nbsp; The default implementation of the <b>
+  getInitialComponent</b> method returns the default Component.</p>
+<p><font color="#FF0000"><b>Overridden methods</b></font></p>
+<p>The code in Listing 4 overrides the method named <b>getDefaultComponent</b>.&nbsp; 
+Subsequent listings will override the remaining four abstract methods of the <b>
+FocusTraversalPolicy</b> class.</p>
+<p>The overridden methods in the <b>FocusTraversalPolicy</b> object must specify the 
+next component that is to receive the focus whenever focus traversal occurs in a 
+forward or reverse direction.</p>
+<p><font color="#FF0000"><b>The getDefaultComponent method</b></font></p>
+<p>The code in the overridden <b>getDefaultComponent</b> method in Listing 4 returns a 
+reference to the button at the 12-o'clock position in the GUI as the <i>default</i> 
+component.&nbsp; According to Sun, </p>
+  <blockquote>
+<p><i>&quot;This Component will be the first to receive focus when traversing down 
+into a new focus traversal cycle rooted at focusCycleRoot.&quot;</i></p>
+  </blockquote>
+<p>Because this GUI has only one focus cycle root, this is the component that 
+receives the focus when the program starts running.</p>
+  <blockquote>
+<p><i>(Note that even though this method receives a reference to the focus cycle 
+root as an incoming parameter, that information is not used in this program.)</i></p>
+  </blockquote>
+<p><font color="#FF0000"><b>The <i>first</i> component</b></font></p>
+  <p>The overridden method named <b>getFirstComponent</b> in Listing 5 specifies 
+  the <i>first</i> component, as the component in the 9-o'clock position in the 
+  GUI.<br>
+&nbsp;<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      public Component getFirstComponent(
+                       Container focusCycleRoot){
+        return button09;
+      }//end getFirstComponent
+
+<b><font face="Courier New,Courier">Listing 5</font></b></pre>
+</td>
+</tr>
+</table>
+<p>According to Sun, </p>
+<blockquote>
+<p><i>&quot;This method is used to determine the next Component to focus when 
+traversal wraps in the forward direction.&quot;</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>The <i>last</i> component</b></font></p>
+  <p>Similarly, the overridden method named <b>getLastComponent</b> in Listing 6 
+  identifies component in the 6-o'clock position as the <i>&quot;Component to focus 
+  when traversal wraps in the reverse direction.</i>&quot;<br>
+&nbsp;<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      public Component getLastComponent(
+                       Container focusCycleRoot){
+        return button06;
+      }//end getLastComponent
+
+<b><font face="Courier New,Courier">Listing 6</font></b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>The next component in forward traversal</b></font></p>
+  <p>Listing 7 shows the overridden version of the method named <b>
+  getComponentAfter</b>.&nbsp; This method receives a reference to a component 
+  by the parameter name <b>aComponent</b>.&nbsp; According to Sun, this method<blockquote>
+  <p><i>&quot;Returns the Component that should receive the focus after <b>aComponent</b>.&quot;</i></blockquote>
+  <p>In this program, this method identifies each component that is to receive 
+  the focus in succession as focus is traversed in the forward direction.<br>
+&nbsp;<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      public Component <b>getComponentAfter</b>(
+                        Container focusCycleRoot,
+                        Component aComponent){
+        if(aComponent == button12){
+          return button06;
+        }else if(aComponent == button03){
+          return button12;
+<b>        }else if(aComponent == button06){
+          return button09;</b>
+        }else if(aComponent == button09){
+          return button03;
+        }//end else
+        return button12;//make compiler happy
+      }//end getComponentAfter
+
+<b><font face="Courier New,Courier">Listing 7</font></b></pre>
+</td>
+</tr>
+</table>
+<p>This method gets called by the focus subsystem, passing the currently focused 
+component as an input parameter.&nbsp; The method returns the component that 
+should be the next component to receive the focus for forward traversal.</p>
+<p><font color="#FF0000"><b>A little confusion</b></font></p>
+<p>The discussion up to this point, based on Sun's documentation, implies that 
+the system should know how to traverse from the <i>last</i> component to the <i>
+first</i> component when focus traversal wraps at the end of the traversal 
+cycle.&nbsp; This implies that, <i>(based on the specification of the first and 
+last components earlier),</i> the system should know how to traverse from <b>
+button06</b> to <b>button09</b> without being told how to do that in the method 
+named <b>getComponentAfter</b>.</p>
+<p>I'm probably missing something here, but I don't find that to be the case.&nbsp; 
+The only way that I have been able to cause the focus to traverse from <b>
+button06</b> to <b>button09</b> is to 
+explicitly include the information that <b>button09</b> is the <i>component 
+after</i> <b>button06</b> in the overridden version of the <b>getComponentAfter</b> 
+method.</p>
+<p><font color="#FF0000"><b>The next component in reverse traversal</b></font></p>
+  <p>Listing 8 shows the overridden version of the method named <b>
+  getComponentBefore</b>.&nbsp; Again, this method receives an incoming 
+  parameter known locally as <b>aComponent</b>, and according to Sun, this 
+  method<blockquote>
+  <p><i>&quot;Returns the Component that should receive the focus before <b>
+  aComponent</b>.&quot;</i></blockquote>
+  <p>In this program, this method identifies each component that is to 
+  receive the focus in succession as focus is traversed in the reverse 
+  direction.<br>
+&nbsp;<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      public Component <b>getComponentBefore</b>(
+                        Container focusCycleRoot,
+                        Component aComponent){
+        if(aComponent == button12){
+          return button03;
+        }else if(aComponent == button03){
+          return button09;
+        }else if(aComponent == button06){
+          return button12;
+        }else if(aComponent == button09){
+          return button06;
+        }//end else
+        return button12;//make compiler happy
+      }//end getComponentBefore
+
+    }//end TravPolicyA
+
+<b><font face="Courier New,Courier">Listing 8</font></b></pre>
+</td>
+</tr>
+</table>
+<p>The method named <b>getComponentBefore</b> is called by the focus subsystem 
+to learn the order of focus traversal as focus is traversed in the reverse 
+direction.&nbsp; This method simply identifies the button in the reverse order 
+of the method shown in Listing 7.</p>
+<p><font color="#FF0000"><b>The end of the class definition</b></font></p>
+<p>Listing 8 also signals the end of the inner class named <b>TravPolicyA</b>.&nbsp; 
+As you will see later, an object of this class provides the traversal policy 
+when the black number sequence is showing on the GUI.</p>
+<p><font color="#FF0000"><b>The TravPolicyB class</b></font></p>
+<p>Listing 13 near the end of the lesson includes 
+an inner class named <b>TravPolicyB</b>.&nbsp; An object of this class is used 
+to provide the traversal policy when the red number sequence is showing on the 
+GUI.</p>
+<p>Because of the similarity between this class and the class named <b>TravPolicyA</b> 
+discussed earlier, I won't discuss this class in detail.&nbsp; It differs from
+<b>TravPolicyA</b> only in the specified order of focus traversal among the 
+buttons.</p>
+  <p><font color="#FF0000"><b>Two FocusTraversalPolicy objects</b></font><p>
+Recall that we are still discussing code in the constructor for the <b>GUI</b> 
+class.<p>The code in Listing 9 instantiates one object from each of the inner 
+classes named <b>TravPolicyA</b> and <b>TravPolicyB</b> discussed earlier and 
+saves those object's references in the <b>final</b> local variables named <b>
+policyA</b> and <b>policyB</b>.<br>
+&nbsp;<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>    final TravPolicyA policyA =
+                               new TravPolicyA();
+    final TravPolicyB policyB =
+                               new TravPolicyB();
+
+<b><font face="Courier New,Courier">Listing 9</font></b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>Why are the variables final?</b></font></p>
+<p>In case you are wondering why these two variables were declared <b>final</b>, 
+that is a requirement of the compiler.&nbsp; When <b>policyA</b> is not declared 
+final, the following compiler error is produced by the javac compiler, V1.4.1:</p>
+  <blockquote>
+<p><i>&quot;local variable policyA is accessed from within inner class; needs to be 
+declared final&quot;</i></p>
+  </blockquote>
+<p>The inner class that is referred to by this error message is an anonymous 
+inner class that I will discuss later.&nbsp; The anonymous inner class is used to register a mouse 
+listener on the <b>JLabel</b> object.</p>
+<p><font color="#FF0000"><b>Set startup traversal policy</b></font></p>
+  <p>The code in Listing 10 sets the startup traversal policy to be governed by 
+  the object earlier instantiated from the class named <b>TravPolicyA</b>.&nbsp; 
+  The startup policy is established by invoking the <b>setFocusTraversalPolicy</b> on the <b>JFrame</b> object 
+  when the object is constructed.&nbsp;
+  <i>(The code in Listing 10 also causes the GUI to become visible on the 
+  screen.)</i><br>
+&nbsp;<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>    frame.setFocusTraversalPolicy(policyA);
+
+    frame.setVisible(true);
+
+<b><font face="Courier New,Courier">Listing 10</font></b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>The setFocusTraversalPolicy method</b></font></p>
+<p>Here is part of what Sun has to say about the <b>setFocusTraversalPolicy</b>, 
+method, which the <b>JFrame</b> class inherits from the <b>Container</b> class.</p>
+  <blockquote>
+    <p><i>&quot;Sets the focus traversal policy that will manage keyboard traversal 
+    of this Container's children, if this Container is a focus cycle root. If 
+    the argument is null, this Container inherits its policy from its focus- 
+    cycle-root ancestor. If the argument is non-null, this policy will be 
+    inherited by all focus-cycle-root children that have no keyboard- traversal 
+    policy of their own (as will, recursively, their focus-cycle- root 
+    children).&quot;</i></p>
+</blockquote>
+<p>Thus, whenever the <b>setFocusTraversalPolicy</b> method is invoked on the <b>
+JFrame</b> object, <i>(passing a valid <b>FocusTraversalPolicy</b> object's 
+reference as a parameter),</i> that object governs the traversal policy from 
+that point forward until the method is invoked again passing a different <b>
+FocusTraversalPolicy</b> object's reference as a parameter.</p>
+<p><font color="#FF0000"><b>A mouse listener on the JLabel object</b></font></p>
+<p>Listing 11 shows the beginning of an anonymous inner class, which is used to 
+register a mouse listener on the <b>JLabel</b> object that displays the 
+sequences of numbers.&nbsp; The beginning of an overridden <b>mousePressed</b> 
+method is shown in Listing 11.</p>
+  <blockquote>
+  <p><i>(Listing 11 shows the<b> if </b>clause of an if-else statement.&nbsp; 
+  The <b>else</b> clause will be shown in Listing 12.)</i></blockquote>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>    seq.addMouseListener(
+      new MouseAdapter(){
+        public void <b>mousePressed</b>(MouseEvent e){
+          //Switch traversal policy
+          if(policyIsA){
+            policyIsA = false;
+            seq.setText(
+                       "    09,06,12,03,09,...");
+            seq.setForeground(Color.RED);
+            <b>frame.setFocusTraversalPolicy(
+                                        policyB)</b>;
+<b><font face="Courier New,Courier">
+Listing 11</font></b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>Toggle between two focus traversal policies</b></font></p>
+<p>The purpose of the mouse listener is to toggle the focus subsystem between 
+the two <b>FocusTraversalPolicy</b> objects when the user clicks the <b>JLabel</b> 
+object in the center of the GUI.</p>
+<p>The code in Listing 11 is straightforward, with the operative statement being 
+the final statement in Listing 11, which invokes the <b>setFocusTraversalPolicy</b> 
+method on the <b>JFrame</b> to switch the traversal policy object from <b>
+policyA</b> to <b>policyB</b>.</p>
+  <blockquote>
+<p><i>(Some other changes to the displayed sequence of numbers and the color of 
+the sequence are also made in Listing 11.)</i></p>
+  </blockquote>
+<p><font color="#FF0000"><b>The else clause</b></font></p>
+  <p>The <b>else</b> clause of the <b>if-else</b> statement in the <b>
+  mousePressed</b> method is shown in Listing 12.<br>
+&nbsp;<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>          }else{
+            policyIsA = true;
+            seq.setText(
+                       "    09,03,12,06,09,...");
+            seq.setForeground(Color.BLACK);
+            frame.<b>setFocusTraversalPolicy</b>(
+                                        policyA);
+          }//end else
+
+        }//end mousePressed
+      }//end new MouseAdapter
+    );//end addMouseListener
+  }//end constructor
+}//end GUI
+
+<b><font face="Courier New,Courier">Listing 12</font></b></pre>
+</td>
+</tr>
+</table>
+<p>The code in Listing 12 switches the traversal policy from <b>policyB</b> back to
+<b>policyA</b>, changing the displayed sequence of numbers and the color of the 
+sequence in the process.</p>
+<p><font color="#FF0000"><b>That's a wrap</b></font></p>
+<p>Finally, the code in Listing 12 ends the definition of the anonymous class, 
+ends the definition of the constructor, and 
+ends the definition of the <b>GUI</b> class.</p>
+<p><font color="#FF0000"><b>The bottom line</b></font></p>
+<p>When the user clicks the <b>JLabel</b> in the center of the GUI, an 
+overridden <b>mousePressed</b> method is executed.&nbsp; The code in that method 
+determines which focus traversal policy object is currently governing focus 
+traversal, and replaces that object with a different focus traversal policy 
+object.&nbsp; This makes it possible to change the focus traversal order among 
+the components at runtime.</p>
+<center>
+<h2>
+<a NAME="Run the program"></a>Run the Program</h2></center>
+I encourage you to copy the code from Listing 13 into your text editor, compile it, and execute it.&nbsp; Experiment
+with it, making changes, and observing the results of your changes.
+<p>Remember, however, that you must be running Java V1.4 or later
+to compile and execute this program.
+<h2 align="center"><a name="Summary">Summary</a></h2>
+<p>In this lesson, I have taught you how to establish a custom focus traversal 
+policy, and how to modify that policy at runtime.<h2 align="center"><a name="Whats Next">What's Next?</a></h2>
+<p>As time goes on, I plan to publish additional lessons that will help
+you learn to use about other features of the new focus subsystem that was 
+introduced in Java SDK Version 1.4.&nbsp; Stay tuned for more on this subject.<center>
+<h2>
+<a NAME="Complete Program Listings"></a>Complete Program Listing</h2></center>
+A complete listing of the program discussed in this lesson is shown in Listing 
+13 below.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>/*File FocusTraversal01.java
+Copyright 2003 R.G.Baldwin
+
+This program illustrates the new
+FocusTraversalPolicy that was released in
+SDK V1.4.
+
+The behavior of this program is as follows:
+
+A single JFrame object appears on the screen.
+Four JButton objects appear at the North, South,
+East, and West locations in the frame.  The
+buttons display the captions 03, 06, 09, and 12.
+(The positions of the buttons with their captions
+mimic four of the numbers on a clock.)
+
+When the program first starts running, the
+button with the caption 12 has the focus, and the
+number sequence 09,03,12,06,09,... appears near
+the center of the frame.
+
+When you click on that sequence, the sequence
+changes to 09,06,12,03,09,... and the color of
+the characters changes to red to emphasize that
+the sequence has changed.
+
+Successive clicking on the sequence causes the
+sequence to toggle back and forth between the two
+sequences given above, and causes the color of
+the characters to toggle between black and red.
+
+When the sequence 09,03,12,06,09,... appears,
+successive pressing of the tab key causes the
+focus to traverse the four buttons in the order
+given by the sequence.
+
+Similarly, when the sequence 09,06,12,03,09,...
+appears, successive pressing of the tab key
+causes the focus to traverse the four buttons in
+the order given by that sequence.
+
+In both cases, holding down the shift key while
+pressing the tab key reverses the order of focus
+traversal.
+
+When you use the mouse to change the sequence,
+the focus does not jump from its current button
+to a different button.
+
+When you use the mouse to cause the focus to rest
+on a particular button and then press the tab
+key, the focus moves from that button to the next
+button as defined by the sequence that is showing
+in the center of the frame.
+
+Requires SDK V1.4 or later.  Tested using
+SDK 1.4.1 under WinXP
+************************************************/
+
+import java.awt.*;
+import java.awt.event.*;
+import javax.swing.*;
+
+public class FocusTraversal01 {
+  public static void main(String[] args){
+    new GUI();
+  }//end main
+}//end class FocusTraversal01
+//---------------------------------------------//
+
+class GUI extends JFrame{
+  boolean policyIsA = true;
+  JLabel seq = new JLabel(
+                       "    09,03,12,06,09,...");
+  JButton button12 = new JButton("12");
+  JButton button03 = new JButton("03");
+  JButton button06 = new JButton("06");
+  JButton button09 = new JButton("09");
+  JFrame frame = this;
+
+  public GUI(){//constructor
+    setSize(250,100);
+    setTitle("Copyright 2003, R.G.Baldwin");
+    setDefaultCloseOperation(
+                           JFrame.EXIT_ON_CLOSE);
+
+    getContentPane().add(button12,"North");
+    getContentPane().add(button03,"East");
+    getContentPane().add(button06,"South");
+    getContentPane().add(button09,"West");
+    getContentPane().add(seq,"Center");
+
+    //Inner class for traversal policy A
+    class TravPolicyA
+                    extends FocusTraversalPolicy{
+
+      public Component getDefaultComponent(
+                       Container focusCycleRoot){
+        return button12;
+      }//end getDefaultComponent
+      //---------------------------------------//
+
+      public Component getFirstComponent(
+                       Container focusCycleRoot){
+        return button09;
+      }//end getFirstComponent
+      //---------------------------------------//
+
+      public Component getLastComponent(
+                       Container focusCycleRoot){
+        return button06;
+      }//end getLastComponent
+      //---------------------------------------//
+
+      public Component getComponentAfter(
+                        Container focusCycleRoot,
+                        Component aComponent){
+        if(aComponent == button12){
+          return button06;
+        }else if(aComponent == button03){
+          return button12;
+        }else if(aComponent == button06){
+          return button09;
+        }else if(aComponent == button09){
+          return button03;
+        }//end else
+        return button12;//make compiler happy
+      }//end getComponentAfter
+      //---------------------------------------//
+
+      public Component getComponentBefore(
+                        Container focusCycleRoot,
+                        Component aComponent){
+        if(aComponent == button12){
+          return button03;
+        }else if(aComponent == button03){
+          return button09;
+        }else if(aComponent == button06){
+          return button12;
+        }else if(aComponent == button09){
+          return button06;
+        }//end else
+        return button12;//make compiler happy
+      }//end getComponentBefore
+
+    }//end TravPolicyA
+    //=========================================//
+
+    //Inner class for traversal policy B
+    class TravPolicyB
+                    extends FocusTraversalPolicy{
+
+      public Component getDefaultComponent(
+                       Container focusCycleRoot){
+        return button06;
+      }//end getDefaultComponent
+      //---------------------------------------//
+
+      public Component getFirstComponent(
+                       Container focusCycleRoot){
+        return button09;
+      }//end getFirstComponent
+      //---------------------------------------//
+
+      public Component getLastComponent(
+                       Container focusCycleRoot){
+        return button03;
+      }//end getLastComponent
+      //---------------------------------------//
+
+      public Component getComponentBefore(
+                        Container focusCycleRoot,
+                        Component aComponent){
+        if(aComponent == button12){
+          return button06;
+        }else if(aComponent == button03){
+          return button12;
+        }else if(aComponent == button06){
+          return button09;
+        }else if(aComponent == button09){
+          return button03;
+        }//end else
+        return button12;//make compiler happy
+      }//end getComponentBefore
+      //---------------------------------------//
+
+      public Component getComponentAfter(
+                        Container focusCycleRoot,
+                        Component aComponent){
+        if(aComponent == button12){
+          return button03;
+        }else if(aComponent == button03){
+          return button09;
+        }else if(aComponent == button06){
+          return button12;
+        }else if(aComponent == button09){
+          return button06;
+        }//end else
+        return button12;//make compiler happy
+      }//end getComponentAfter
+
+    }//end TravPolicyB
+    //=========================================//
+
+    //Local variables must be final for access
+    // within inner class
+    final TravPolicyA policyA =
+                               new TravPolicyA();
+    final TravPolicyB policyB =
+                               new TravPolicyB();
+
+    //Set startup traversal policy to Policy A
+    frame.setFocusTraversalPolicy(policyA);
+
+    frame.setVisible(true);
+
+    //Register mouse listener on the JLabel
+    seq.addMouseListener(
+      new MouseAdapter(){
+        public void mousePressed(MouseEvent e){
+          //Switch traversal policy
+          if(policyIsA){
+            policyIsA = false;
+            seq.setText(
+                       "    09,06,12,03,09,...");
+            seq.setForeground(Color.RED);
+            frame.setFocusTraversalPolicy(
+                                        policyB);
+          }else{
+            policyIsA = true;
+            seq.setText(
+                       "    09,03,12,06,09,...");
+            seq.setForeground(Color.BLACK);
+            frame.setFocusTraversalPolicy(
+                                        policyA);
+          }//end else
+        }//end mousePressed
+      }//end new MouseAdapter
+    );//end addMouseListener
+  }//end constructor
+}//end GUI
+
+<b><font face="Courier New,Courier">Listing 13</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>
+<hr size=3 width="100%" align=center>
+<p>Copyright 2003, Richard G. Baldwin.&nbsp; Reproduction in whole or in
+part in any form or medium without express written permission from Richard
+Baldwin is prohibited.
+<h4>
+<a NAME="About the author"></a>About the author</h4>
+<b><a href="mailto:Baldwin@DickBaldwin.com">Richard Baldwin</a></b><i>
+is a college professor (at Austin Community College in Austin, TX) and
+private consultant whose primary focus is a combination of Java, C#, and
+XML. In addition to the many platform and/or language independent benefits
+of Java and C# applications, he believes that a combination of Java, C#,
+and XML will become the primary driving force in the delivery of structured
+information on the Web.</i>
+<p><i>Richard has participated in numerous consulting projects, and he
+frequently provides onsite training at the high-tech companies located
+in and around Austin, Texas.&nbsp; He is the author of Baldwin's Programming
+<a href="http://www.DickBaldwin.com">Tutorials</a>,
+which has gained a worldwide following among experienced and aspiring programmers.
+He has also published articles in JavaPro magazine.</i>
+<p><i>Richard holds an MSEE degree from Southern Methodist University and
+has many years of experience in the application of computer technology
+to real-world problems.</i>
+<p><i><a href="mailto:Baldwin@DickBaldwin.com">Baldwin@DickBaldwin.com</a></i>
+<p>-end-
+<br>&nbsp;
+</body>
+</html>

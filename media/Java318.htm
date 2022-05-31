@@ -1,0 +1,740 @@
+<!doctype html public "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+   <meta name="GENERATOR" content="Mozilla/4.7 [en] (WinNT; I) [Netscape]">
+   <title>... in Java by Richard G Baldwin</title>
+</head>
+<body link="#0000FF" vlink="#0000FF" lang="EN-US">
+<!--start-->
+<center>
+<h2>
+<!--title-->Java 2D Graphics, The Stroke Interface<!--endtitle--></h2></center>
+<i>by Richard G. Baldwin</i>
+<br><i><a href="mailto:baldwin@austin.cc.tx.us">baldwin@austin.cc.tx.us</a></i>
+<p>Java Programming, Lecture Notes # 318
+<p>March 19, 2000
+<ul style='margin-top:0in' type=disc>
+<li>
+<a href="#_Introduction">Introduction</a></li>
+
+<li>
+<a href="#_What_is_a">What is a Stroke?</a></li>
+
+<li>
+<a href="#_What_is_a_1">What is a BasicStroke?</a></li>
+
+<li>
+<a href="#_The_setStroke()_method">The setStroke() Method</a></li>
+
+<li>
+<a href="#Sample Program">Sample Program</a></li>
+
+<li>
+<a href="#_End_Caps">End Caps</a></li>
+
+<li>
+<a href="#_Line_Joins">Line Joins</a></li>
+
+<li>
+<a href="#_Types_of_Line">Types of Line Joins</a></li>
+
+<li>
+<a href="#_Dash_Patterns_and">Dash Patterns and the Miter Limit</a></li>
+
+<li>
+<a href="#_The_Circle_in">The Circle in the Center</a></li>
+
+<li>
+<a href="#_Summary">Summary</a></li>
+
+<li>
+<a href="#Complete Program Listing">Complete Program Listing</a></li>
+</ul>
+
+<center>
+<hr size=3 width="100%" align=center></center>
+
+<center>
+<h2>
+<a NAME="_Introduction"></a>Introduction</h2></center>
+In an earlier lesson, I explained that the <b>Graphics2D</b> class extends
+the <b>Graphics</b> class to provide more sophisticated control over geometry,
+coordinate transformations, color management, and text layout. Beginning
+with JDK 1.2, <b>Graphics2D </b>is the fundamental class for rendering
+two-dimensional shapes, text and images.
+<p><b><font color="#FF0000">Understanding other classes is also required</font></b>
+<p>I also explained that without understanding the behavior of other classes
+and interfaces such as <b>Shape</b>, <b>AffineTransform</b>,
+<b>GraphicsConfiguration</b>,
+<b>PathIterator</b>,
+and <b>Stroke</b>, it is not possible to fully understand the inner workings
+of the <b>Graphics2D</b> class.
+<p><b><font color="#FF0000">Setter methods</font></b>
+<p>I explained in an earlier lesson that the manner in which <b>Graphics2D
+</b>renders
+shapes, text, and images depends on the current values of several properties
+of the <b>Graphics2D </b>object.&nbsp; The values of these properties are
+controlled using standard <i>setter</i> methods of the class, such as the
+following.
+<ul style='margin-top:0in' type=disc>
+<li>
+<b>setComposite()</b></li>
+
+<li>
+<b>setPaint()</b></li>
+
+<li>
+<b>setRenderingHint()</b></li>
+
+<li>
+<b>setStroke()</b></li>
+
+<li>
+<b>setTransform()</b></li>
+</ul>
+Previous lessons have explained how to use <b>setPaint()</b> and <b>setTransform()</b>.
+<p>This lesson will show you how to use <b>setStroke()</b> to control how
+a <b>Graphics2D</b> object renders <i>strokes</i>.
+<center>
+<h2>
+<a NAME="_What_is_a"></a>What is a Stroke?</h2></center>
+Here is what Sun has to say about the <b>Stroke</b> interface.
+<br>&nbsp;
+<table BORDER CELLSPACING=3 CELLPADDING=0 WIDTH="330" BGCOLOR="#FFFF80" >
+<tr>
+<td WIDTH="595" style="width:356.7pt;background:aqua;padding:.75pt .75pt .75pt .75pt">“The
+<b>Stroke</b>
+interface allows a <b>Graphics2D</b> object to obtain a <b>Shape</b> that
+is the decorated outline, or stylistic representation of the outline, of
+the specified <b>Shape</b>.&nbsp;
+<p>Stroking a <b>Shape</b> is like tracing its outline with a marking pen
+of the appropriate size and shape. The area where the pen would place ink
+is the area enclosed by the outline <b>Shape</b>.&nbsp;
+<p>The methods of the <b>Graphics2D</b> interface that use the outline
+<b>Shape</b>
+returned by a <b>Stroke</b> object include draw and any other methods that
+are implemented in terms of that method, such as drawLine, drawRect, drawRoundRect,
+drawOval, drawArc, drawPolyline, and drawPolygon.”</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">A Shape describes a Shape</font></b>
+<p>What this says to me is that the <b>Stroke</b> interface makes it possible
+to consider the outline of a <b>Shape</b> object to itself be considered
+as a <b>Shape</b> object.&nbsp; Once the outline is represented as a
+<b>Shape</b>,
+anything that can be done to a <b>Shape</b> object can be done to the <b>Shape</b>
+that represents the outline.
+<p><b><font color="#FF0000">Like tracing with a marking pen</font></b>
+<p>The geometry of the <b>Shape</b> that represents the outline is similar
+to what you would produce by tracing the original
+<b>Shape</b> with a marking
+pen.&nbsp; Different marking pens would yield different colors and pen
+widths.
+<p><b><font color="#FF0000">Could also produce dot-dash patterns</font></b>
+<p>In addition, if you had sufficient artistic talent,
+<ul>
+<li>
+You could lift and lower the pen to produce various dot-dash patterns.</li>
+
+<li>
+You could provide some specific treatment for the ends of the lines.</li>
+
+<li>
+You could provide some specific treatment for the vertices where line segments
+produce an angle.</li>
+</ul>
+Of course, you could do other things as well.
+<p><b><font color="#FF0000">Stroke interface method</font></b>
+<p>The Stroke interface declares a single method named
+<b>createStrokedShape()</b>.&nbsp;
+Here is what Sun has to say about this method.
+<br>&nbsp;
+<table BORDER CELLSPACING=3 CELLPADDING=0 WIDTH="330" BGCOLOR="#FFFF80" >
+<tr>
+<td WIDTH="595" style="width:356.7pt;background:aqua;padding:.75pt .75pt .75pt .75pt">Returns
+an outline <b>Shape</b>, which encloses the area that should be painted
+when the <b>Shape</b> is stroked according to the rules defined by the
+object implementing the <b>Stroke</b> interface.
+<p>Parameters:&nbsp;
+<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; p - a <b>Shape</b> to be
+stroked&nbsp;
+<p>Returns:&nbsp;
+<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; the stroked outline <b>Shape</b>.</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">BasicStroke implements the Stroke interface</font></b>
+<p>As of JDK 1.2.2, there is only one class in the API that implements
+the <b>Stroke</b> interface.&nbsp; The name of the class is <b>BasicStroke</b>.
+<p>Of course, if you need to do so, you can define your own class that
+implements the <b>Stroke</b> interface.
+<center>
+<h2>
+<a NAME="_What_is_a_1"></a>What is a BasicStroke?</h2></center>
+Here is what Sun has to say about the <b>BasicStroke</b> class.
+<br>&nbsp;
+<table BORDER CELLSPACING=3 CELLPADDING=0 WIDTH="330" BGCOLOR="#FFFF80" >
+<tr>
+<td WIDTH="595" style="width:356.7pt;background:aqua;padding:.75pt .75pt .75pt .75pt">“The
+<b>BasicStroke</b>
+class defines a basic set of rendering attributes for the outlines of graphics
+primitives. These attributes describe the shape of the mark made by a pen
+drawn along the outline of a <b>Shape</b> object and the decorations applied
+at the ends and joins of path segments of the
+<b>Shape</b> object. These
+attributes include:&nbsp;
+<ul style='margin-top:0in' type=disc>
+<li>
+<b>width:&nbsp; </b>The pen width, measured perpendicularly to the pen
+trajectory.&nbsp;</li>
+
+<li>
+<b>end caps:</b>&nbsp; The decoration applied to the ends of unclosed subpaths
+or dash segments.&nbsp;</li>
+
+<li>
+<b>line joins:</b>&nbsp; The decoration applied where two path segments
+are joined.&nbsp;</li>
+
+<li>
+<b>dash attributes:</b>&nbsp; The definition of how to make a dash pattern
+by alternating between opaque and transparent sections.”</li>
+</ul>
+</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">Matches what I said earlier</font></b>
+<p>You will recognize the attributes described here as matching the things
+that I said you could accomplish with the marking pen in an earlier paragraph.
+<center>
+<h2>
+<a NAME="_The_setStroke()_method"></a>The setStroke() Method</h2></center>
+Here is what Sun has to say about the <b>setStroke()</b> method.
+<br>&nbsp;
+<table BORDER CELLSPACING=3 CELLPADDING=0 WIDTH="330" BGCOLOR="#FFFF80" >
+<tr>
+<td WIDTH="595" style="width:356.7pt;background:aqua;padding:.75pt .75pt .75pt .75pt">Sets
+the <b>Stroke</b> for the <b>Graphics2D</b> context.
+<p>Parameters:&nbsp;
+<p>s - the <b>Stroke</b> object to be used to stroke a <b>Shape</b> during
+the rendering process</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">The bottom line</font></b>
+<p>Here is the bottom line regarding <i>stroke</i>.&nbsp; If you have a
+<b>Shape</b>
+object inside an overridden <b>paint() </b>method, and you would like to
+render the outline of that object onto an output device, you can do so
+by
+<ul style='margin-top:0in' type=disc>
+<li>
+Invoking <b>setStroke()</b> on your <b>Graphics2D</b> object, passing a
+reference to an object of a class that implements the <b>Stroke</b> interface
+as a parameter.</li>
+
+<li>
+Invoking the <b>draw()</b> method (or some other method that can be used
+to render the <b>Shape</b> object) passing the <b>Shape</b> object as a
+parameter.</li>
+</ul>
+<b><font color="#FF0000">You can define your own class</font></b>
+<p>You can define your own class that implements the
+<b>Stroke</b> interface.&nbsp;
+If you do so, you must implement the method named <b>createStrokedShape()</b>,
+returning a <b>Shape</b> object that represents the outline of the <b>Shape</b>
+object that you are rendering.
+<p><b><font color="#FF0000">Or, you can use the BasicStroke class</font></b>
+<p>Or, if the capabilities of the <b>BasicStroke</b> class will serve your
+needs, you don’t need to define your own class to implement the <b>Stroke</b>
+interface.&nbsp; You can simply instantiate an object of the <b>BasicStroke</b>
+class and pass a reference to that object to the <b>setStroke()</b> method.
+<p><b><font color="#FF0000">Rendering attributes</font></b>
+<p>The <b>BasicStroke</b> class has several overloaded constructors.&nbsp;
+By passing specific values as parameters to the constructor, you control
+several attributes of the rendering process including:
+<ul style='margin-top:0in' type=disc>
+<li>
+<b>width:&nbsp; </b>The pen width, measured perpendicularly to the pen
+trajectory.</li>
+
+<li>
+<b>end caps:</b>&nbsp; The decoration applied to the ends of unclosed subpaths
+or dash segments.</li>
+
+<li>
+<b>line joins:</b>&nbsp; The decoration applied where two path segments
+are joined.</li>
+
+<li>
+<b>dash attributes:</b>&nbsp; The definition of how to make a dash pattern
+by alternating between opaque and transparent sections.</li>
+</ul>
+<b><font color="#FF0000">The BasicStroke constructor</font></b>
+<p>Before getting into the details of the sample program, let’s take a
+look at the most complex of the <b>BasicStroke</b> constructors.&nbsp;
+Here is what Sun has to say about that constructor.
+<br>&nbsp;
+<table BORDER CELLSPACING=3 CELLPADDING=0 WIDTH="330" BGCOLOR="#FFFF80" >
+<tr>
+<td WIDTH="595" style="width:356.7pt;background:aqua;padding:.75pt .75pt .75pt .75pt">public
+<b>BasicStroke</b>(
+<br>&nbsp; float width,
+<br>&nbsp; int cap,&nbsp;
+<br>&nbsp; int join,&nbsp;
+<br>&nbsp; float miterlimit,&nbsp;
+<br>&nbsp; float[] dash,&nbsp;
+<br>&nbsp; float dash_phase)
+<p>Constructs a new <b>BasicStroke</b> with the specified attributes.
+<p>Parameters:&nbsp;
+<ul>
+<li>
+<b>width</b> - the width of the BasicStroke&nbsp;</li>
+
+<li>
+<b>cap</b> - the decoration of the ends of a BasicStroke&nbsp;</li>
+
+<li>
+<b>join</b> - the decoration applied where path segments meet&nbsp;</li>
+
+<li>
+<b>miterlimit</b> - the limit to trim the miter join&nbsp;</li>
+
+<li>
+<b>dash</b> - the array representing the dashing pattern&nbsp;</li>
+
+<li>
+<b>dash_phase</b> - the offset to start the dashing pattern</li>
+</ul>
+</td>
+</tr>
+</table>
+
+<p>With the exception of <b>miterlimit</b>, these are fairly self-explanatory.&nbsp;
+Later, I will tell you what another author has to say about <b>miterlimit</b>.
+<center>
+<h2>
+<a NAME="Sample Program"></a>Sample Program</h2></center>
+This program, named <b>Stroke01</b>, illustrates all of the attributes
+controlled by the constructor parameters listed above except for <b>dash_phase</b>.&nbsp;
+I will explain that attribute later.
+<p><b><font color="#FF0000">Compile and run the program</font></b>
+<p>You should compile and run this program now so that you can see the
+screen output while reading the remaining material in this lesson.&nbsp;
+If you can’t see the screen output, the text probably won’t mean a lot
+to you.
+<p>You can copy the program from the end of this lesson into a Java source
+file, compile it using JDK 1.2 or later, and then execute it.&nbsp; That
+should produce a <b>Frame</b> object on your screen.
+<p>In case you can't do that, here is a screen shot of the output. However,
+this image has been reduced considerably, so much of the detail, including
+the X and Y axes, is missing.
+<p><img SRC="Java318.gif" </P height=330 width=330>
+<p><b><font color="#FF0000">The GUI is a Frame object</font></b>
+<p>The program draws a four-inch by four-inch <b>Frame</b> on the screen.&nbsp;
+It translates the origin to the center of the <b>Frame</b>.&nbsp; Then
+it draws a pair of X and Y-axes centered on the new origin.
+<br>&nbsp;
+<table BORDER CELLSPACING=3 CELLPADDING=0 WIDTH="330" BGCOLOR="#FFFF80" >
+<tr>
+<td WIDTH="595" style="width:356.7pt;background:aqua;padding:.75pt .75pt .75pt .75pt">This
+discussion of dimensions in inches on the screen depends on the method
+named <b>getScreenResolution()</b> returning the correct value.&nbsp; However,
+the <b>getScreenResolution() </b>method always seems to return 120 on my
+computer regardless of the actual screen resolution settings.</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">Will discuss in fragments</font></b>
+<p>I will discuss this program in fragments.&nbsp; The controlling class
+and the constructor for the GUI class are essentially the same as you have
+seen in several previous lessons, so, I won’t repeat that discussion here.&nbsp;
+You can view that material in the complete listing of the program at the
+end of the lesson.
+<p>All of the interesting action takes place in the overridden
+<b>paint()</b>
+method, so I will begin the discussion there.
+<p><b><font color="#FF0000">Overridden paint() method</font></b>
+<p>The beginning portions of the overridden <b>paint()</b> method should
+be familiar to you by now as well.&nbsp; So, I am going to let the comments
+in <a href="Java318-fig01.htm">Figure 1</a> speak for themselves.
+<p><b><font color="#FF0000">Now things get interesting</font></b>
+<p>The output from this program is somewhat cluttered, and can be confusing.&nbsp;
+I will be discussing the material that you see on your screen in five steps.&nbsp;
+First, I will discuss the material in each of the four quadrants.&nbsp;
+Each quadrant illustrates a different stroking concept implemented by the
+<b>BasicStroke</b>
+class.
+<p>Then I will discuss the circle in the center.
+<p><b><font color="#FF0000">The upper-left quadrant</font></b>
+<p>Let me draw your attention to the upper-left quadrant that contains
+three horizontal lines.&nbsp; Each line is rendered in a different color.&nbsp;
+Within the set of three, the top line should be red, the middle line should
+be green, and the bottom line should be blue.
+<p>As you can see, each of these lines has a width of about 0.2 inches.&nbsp;
+Although it isn’t obvious, each of the lines has the same specified length.&nbsp;
+The difference in the actual length of the three lines has to do with how
+the end of the line is treated.&nbsp; The exposed ends of each line are
+<i>decorated</i>
+with a specific <i>end cap</i>.
+<center>
+<h2>
+<a NAME="_End_Caps"></a>End Caps</h2></center>
+The <b>BasicStroke</b> class provides three styles of end caps.&nbsp; Here
+is a list of the three styles along with the horizontal line to which they
+were applied:
+<ul style='margin-top:0in' type=disc>
+<li>
+CAP_BUTT – red line</li>
+
+<li>
+CAP_ROUND – green line</li>
+
+<li>
+CAP_SQUARE – blue line</li>
+</ul>
+<b><font color="#FF0000">What does Flannagan have to say?</font></b>
+<p>Here is what <u>Java Foundation Classes in a Nutshell</u>, by David
+Flanagan, has to say about the three styles.&nbsp; (Flanagan is referring
+to constants in the <b>BasicStroke</b> class.)
+<br>&nbsp;
+<table BORDER CELLSPACING=3 CELLPADDING=0 WIDTH="330" BGCOLOR="#FFFF80" >
+<tr>
+<td WIDTH="595" style="width:356.7pt;background:aqua;padding:.75pt .75pt .75pt .75pt">“The
+<b>BasicStroke.CAP_BUTT</b>
+constant specifies that the line should have no end cap.
+<p>The <b>CAP_SQUARE</b> constant specifies a rectangular end cap that
+projects beyond the end point of the line by a distance equal to half the
+line width; this is the default value for the end-cap attribute.
+<p><b>CAP_ROUND</b> specifies a semicircular end cap, with a radius equal
+to half of the line width.”</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">The wider the line, the longer the projection</font></b>
+<p>As you can see from this description, the wider the line, the longer
+will be the projection at the end of the line for the latter two end-cap
+styles.
+<p>As you can see from your screen, the actual length of the green and
+blue lines (including the end-cap projection) is the same, with each of
+these lines being longer than the red line by half the line width on each
+end.
+<p><b><font color="#FF0000">CAP_SQUARE can lead to confusion</font></b>
+<p>The fact that <b>CAP_SQUARE</b> is the default can lead to confusion
+if you don’t understand what is going on.
+<p>This means that by default, every line that you draw (whose width is
+greater than one pixel) will actually be rendered with a greater length
+than you specified when you instantiated the <b>Line2D</b> object.
+<p>By default, the total rendered length of the line will be the specified
+length plus the width.
+<p><b><font color="#FF0000">Red CAP_BUTT</font></b>
+<p><a href="Java318-fig02.htm">Figure 2</a> prepares the
+<b>Graphics2D</b>
+object to render lines with a width of 0.2 inches (see previous caveat
+about dimensions in inches) and a <b>CAP_BUTT</b> end cap, (which is no
+end cap at all).
+<p>Figure 2 instantiates a new <b>BasicStroke</b> object with these two
+parameter specifications, and then passes a reference to that object to
+the <b>setStroke()</b> method of the <b>Graphics2D</b> object.
+<p>(Figure 2 also sets a <b>JOIN_BEVEL</b> but that has no impact on the
+three lines in the upper-left quadrant.&nbsp; I will discuss the join styles
+later.)
+<p><b><font color="#FF0000">Render the red horizontal line</font></b>
+<p><a href="Java318-fig03.htm">Figure 3</a> renders a new <b>Line2D.Double</b>
+with a width of 0.2 inches.&nbsp; <b>Graphics2D
+</b>uses the width and
+end cap specification established by passing the
+<b>BasicStroke</b> object
+to the <b>setStroke()</b> method.&nbsp; Since there are no intersecting
+line segments, the JOIN_BEVEL has no effect.
+<p><b><font color="#FF0000">Green line with round end caps</font></b>
+<p><a href="Java318-fig04.htm">Figure 4</a> is very similar to the previous
+one.&nbsp; In this fragment, the <b>CAP_ROUND</b> constant is passed to
+the <b>BasicStroke</b> constructor, resulting in a horizontal line with
+round caps on each end.
+<p><b><font color="#FF0000">Blue line with square end caps</font></b>
+<p>Similarly, <a href="Java318-fig05.htm">Figure 5</a> produces a blue
+horizontal line with square end caps.
+<center>
+<h2>
+<a NAME="_Line_Joins"></a>Line Joins</h2></center>
+One issue that arises when line widths are greater than one pixel has to
+do with how to treat the points where the lines intersect to produce vertices.&nbsp;
+Java 2D deals with this issue using a technique known as <i>line joins</i>.
+<p>Look at the lower-left quadrant
+<p>Please concentrate on the lower-left quadrant.&nbsp; This quadrant illustrates
+the kind of problem that can arise without the availability of <i>line
+joins</i>.
+<p>The lower left quadrant contains four lines.&nbsp; There are two red
+lines and two green lines.
+<p><b><font color="#FF0000">An intersection with square end caps</font></b>
+<p>The two red lines begin at the same point and proceed downward at a
+slight angle to one another.&nbsp; If your screen display looks like mine,
+the intersection of those two lines appears to have ears on the sides with
+a slight depression on the top.
+<p>This is the result of drawing two independent lines (they are not segments
+of the same <b>Shape</b>) that begin at the same point and are decorated
+on the ends with a <b>CAP_SQUARE</b> end cap.&nbsp; This is shown in <a href="Java318-fig06.htm">Figure
+6</a>.
+<p>When two lines are joined in this fashion, the appearance of the joint
+is not pleasing.
+<p><b><font color="#FF0000">An intersection with no end caps</font></b>
+<p>The two green lines show the intersection of two lines with no end caps.&nbsp;
+While not quite as ugly, this joint is still not particularly pleasing.&nbsp;
+These two lines were produced by the code in <a href="Java318-fig07.htm">Figure
+7</a>, which is not much different from the previous fragment except for
+the specification of a different end-cap style and a different color.
+<p>You will note that the two green lines appear to be shorter than the
+two red lines, even though all four lines were specified to be the same
+length in their <b>Line2D.Double</b> constructors.
+<p><b><font color="#FF0000">So, what’s the answer to ugly intersections</font></b>
+<p>Now please concentrate on the upper-right quadrant.
+<p>As we saw earlier, the constructor for <b>BasicStroke</b> allows you
+specify a decoration style for the intersection (or join) of two line segments
+of the same <b>Shape</b> object.
+<p>It is important to note that this capability does not apply to independent
+lines whose ends just happen to intersect as in the previous example.
+<center>
+<h2>
+<a NAME="_Types_of_Line"></a>Types of Line Joins</h2></center>
+The <b>BasicStroke</b> class provides three styles of joins.&nbsp; Here
+is a list of the three styles along with the lines to which they were applied
+in the upper-right quadrant:
+<ul style='margin-top:0in' type=disc>
+<li>
+JOIN_BEVEL – blue lines</li>
+
+<li>
+JOIN_MITER – green lines</li>
+
+<li>
+JOIN_ROUND – red lines</li>
+</ul>
+Here is what David Flanagan, has to say about the three styles.
+<br>&nbsp;
+<table BORDER CELLSPACING=3 CELLPADDING=0 WIDTH="330" BGCOLOR="#FFFF80" >
+<tr>
+<td WIDTH="595" style="width:356.7pt;background:aqua;padding:.75pt .75pt .75pt .75pt">“The
+default join style is a mitered join, represented by the <b>Basic.Stroke.JOIN_MITER</b>
+constant.&nbsp; This value specifies that lines are joined by extending
+their outer edges until they meet.
+<p>The <b>JOIN_BEVEL</b> constant specifies that lines are joined by drawing
+a straight line between the outside corners of the two lines, while <b>JOIN_ROUND</b>
+specifies that the vertex formed by the two lines should be rounded, with
+a radius of half the line with.”</td>
+</tr>
+</table>
+
+<p>Note that exposed ends of line segments are subject to the application
+of end caps while the intersections are subject to the application of line
+joins.
+<p><b><font color="#FF0000">The miterlimit parameter</font></b>
+<p>When the angle between two line segments is small, the <b>JOIN_MITER</b>
+style can produce an undesirable result consisting of a very long pointed
+decoration at the joint.&nbsp; For that reason, the constructor for <b>BasicStroke</b>
+allows you to specify a parameter value to prevent this.&nbsp; Here is
+what Flanagan has to say about the
+<b>miterlimit</b> parameter.
+<br>&nbsp;
+<table BORDER CELLSPACING=3 CELLPADDING=0 WIDTH="330" BGCOLOR="#FFFF80" >
+<tr>
+<td WIDTH="595" style="width:356.7pt;background:aqua;padding:.75pt .75pt .75pt .75pt">“<b>BasicStroke</b>
+includes another attribute known as the miter limit.&nbsp; If the miter
+would be longer than this value times half of the line width, it is truncated.&nbsp;
+The default for miterlimit is 10.0.”</td>
+</tr>
+</table>
+
+<p>I will show you an example of the use of the <b>miterlimit</b> parameter
+in the bottom-right quadrant.&nbsp; For the moment, however, please continue
+to concentrate on the upper-right quadrant.
+<p><b><font color="#FF0000">Blue JOIN_BEVEL with CAP_SQUARE end caps</font></b>
+<p><a href="Java318-fig08.htm">Figure 8</a> prepares the <b>Graphics2D</b>
+object to apply a <b>JOIN_BEVEL</b> to the intersection of any line segments
+(belonging to the same <b>Shape</b> object) that are rendered.
+<p><b><font color="#FF0000">Apply the JOIN_BEVEL</font></b>
+<p><a href="Java318-fig09.htm">Figure 9</a>:
+<ul style='margin-top:0in' type=disc>
+<li>
+Instantiates a <b>Shape</b> object consisting of two line segments that
+intersect at an angle</li>
+
+<li>
+Sets the <b>paint</b> property to the color blue</li>
+
+<li>
+Draws the outline of the <b>Shape</b> object.</li>
+</ul>
+As you can see on your screen output, the join decoration at the intersection
+is a straight line as described by Flanagan above.
+<p><b><font color="#FF0000">Green JOIN_MITER with CAP_ROUND end caps</font></b>
+<p><a href="Java318-fig10.htm">Figure 10</a> is very similar, except that
+it uses round end caps and a miter join.
+<p>In this case, you can see that the miter join produces a pointed decoration
+at the point where the green line segments intersect.
+<p><b><font color="#FF0000">Red JOIN_ROUND with no end caps</font></b>
+<p>The two red line segments in the upper-right quadrant exhibit a round
+decoration at the intersection with no end caps, as created by the code
+in <a href="Java318-fig11.htm">Figure 11</a>.
+<center>
+<h2>
+<a NAME="_Dash_Patterns_and"></a>Dash Patterns and the Miter Limit</h2></center>
+Now please concentrate on the bottom-right quadrant for an illustration
+of <i>dash patterns</i> and the <i>miter limit</i>.
+<p>The blue and red line segments illustrate the use of dash patterns.&nbsp;
+The green line segments illustrates the use of a miter limit with no dash
+pattern.
+<p>Note that the three geometric figures in the lower-right quadrant are
+mirror images of the geometric figures immediately above them, but with
+the additional <i>dash pattern </i>and <i>miter limit </i>decorations applied.
+<p><b><font color="#FF0000">Dash patterns</font></b>
+<p>To review, here is how Sun describes dash patterns
+<br>&nbsp;
+<table BORDER CELLSPACING=3 CELLPADDING=0 WIDTH="330" BGCOLOR="#FFFF80" >
+<tr>
+<td WIDTH="595" style="width:356.7pt;background:aqua;padding:.75pt .75pt .75pt .75pt">&nbsp;<b>dash
+attributes:</b>&nbsp; The definition of how to make a dash pattern by alternating
+between opaque and transparent sections.</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">Interaction between dash patterns and end caps</font></b>
+<p>What this doesn’t say is that the end cap is applied to each end of
+each opaque section.&nbsp; As you will see shortly, this can lead to some
+confusion due to the fact that the end cap extends the length of the opaque
+sections.
+<p>The blue and red geometric figures in the bottom right-hand quadrant
+illustrates this situation.&nbsp; Each of these two figures has the same
+dash pattern applied.&nbsp; However, on the blue figure, the extension
+of the opaque sections by a <b>CAP_SQUARE</b> tends to fill the transparent
+sections.
+<p>The red figure, on the other hand, doesn’t apply an end cap so the transparent
+sections are much longer than on the blue figure.&nbsp; Obviously, this
+is something that you can cope with as long as you understand what is going
+on.
+<p><b><font color="#FF0000">Interaction between dash patterns and join
+decoration</font></b>
+<p>The dash pattern can also interact in unpredictable ways with the decoration
+at the join between two line segments.&nbsp; This is also illustrated by
+the blue and red figures in the lower-right quadrant.&nbsp; In this case,
+a transparent section occurred coincident with the join decoration causing
+the decoration to simply disappear.
+<p><b><font color="#FF0000">Applying the dash pattern</font></b>
+<p>In order to apply a dash pattern, you provide a reference to an array
+of type <b>float</b> as the fifth parameter to the constructor for a <b>BasicStroke</b>
+object.
+<p>This array can contain any number of <b>float</b> elements (although
+it probably makes more sense to specify them in pairs).&nbsp; Each element
+specifies the length of one section in a series of alternating opaque and
+transparent sections.
+<p><b><font color="#FF0000">One pair was used in this program</font></b>
+<p>In this program, the specification was for repetition of a single pair
+of sections.&nbsp; The length of the opaque section was specified to be
+0.1 inches.&nbsp; The length of the transparent section is specified to
+be 0.3 inches.
+<p>That is pretty close to what I see on my screen, for the red figure,
+but due to the end-cap extension problem mentioned earlier, that is not
+what I see for the blue figure.&nbsp; The opaque sections are much longer
+than the transparent sections for the blue figure.
+<p><a href="Java318-fig12.htm">Figure 12</a> shows the code that produced
+the blue figure.
+<p>The only thing new in this fragment is the specification of the dash
+pattern in the array, and the value for the <i>Dash Phase</i>.
+<p><b><font color="#FF0000">What is a <i>Dash Phase</i>?</font></b>
+<p>In case you don’t want the pattern to begin with the first element in
+the array, you can provide a <b>float</b> value for the sixth parameter.&nbsp;
+This value specifies a distance into the theoretical pattern that is used
+as the starting point for the actual pattern.&nbsp; In this fragment, that
+distance was specified as 0.0.
+<p><b><font color="#FF0000">The miterlimit</font></b>
+<p>As you can see, the miter for the green figure in the lower-right quadrant
+was truncated (relative to that shown for the green figure in the upper-right
+quadrant).
+<p>This truncation resulted from specifying a miterlimit value in the fourth
+parameter to the constructor shown in <a href="Java318-fig13.htm">Figure
+13</a>.&nbsp; I had a little difficulty coming up with a value for this
+parameter that would do the job.&nbsp; I’m not certain that this is the
+appropriate value for all screen resolutions, and you may need to experiment
+with the value for your screen resolution.&nbsp; (If the green figure in
+the bottom-right quadrant has a pointed join style, it isn’t working.)
+<p>The specification of the miterlimit value is the only thing new in this
+fragment.
+<p><b><font color="#FF0000">The red figure</font></b>
+<p>The code in
+<a href="Java318-fig14.htm">Figure 14</a> produced the red
+figure in the lower-right quadrant.&nbsp; As mentioned earlier, the dash
+pattern for this figure is the same as for the blue figure discussed earlier,
+even though they look considerably different on the screen.
+<p>The red figure provides a much closer representation of what you would
+expect, considering only the values in the <b>float</b> array and not taking
+end-cap extension into account.
+<center>
+<h2>
+<a NAME="_The_Circle_in"></a>The Circle in the Center</h2></center>
+Finally, that brings us to the circle in the center of the <b>Frame</b>
+object.&nbsp; The circle was provided as a capstone for the other things
+discussed earlier in the lesson.
+<p><a href="Java318-fig15.htm">Figure 15</a> produces an orange outline
+of a circle centered on the origin.&nbsp; There are no end-cap extensions.&nbsp;
+The dash pattern has an opaque section of 0.2 inches, followed by a transparent
+section of 0.1 inches.
+<p>Note that these section lengths didn’t come out even on the circumference
+of the circle, so there is an extra long segment on the right-hand side
+of the circle.&nbsp; At least, that is the case on my machine.
+<p>The width of the <b>Shape</b> that represents the outline is 0.1 inches.
+<center>
+<h2>
+<a NAME="_Summary"></a>Summary</h2></center>
+In this lesson, I have shown you how to use the following attributes of
+the <b>BasicStroke</b> class to produce a <b>Shape
+</b>object that represents
+the outline of another <b>Shape</b> object
+<ul style='margin-top:0in' type=disc>
+<li>
+width</li>
+
+<li>
+end caps</li>
+
+<li>
+line joins</li>
+
+<li>
+dash patterns</li>
+</ul>
+Although I didn’t illustrate it, I also explained how to use the <i>dash
+phase</i> in conjunction with <i>dash patterns</i>.
+<p>I also provided an illustration that shows why we need <i>line joins</i>
+to deal with the situation involving vertices produced by intersecting
+line segments.
+<center>
+<h2>
+<a NAME="Complete Program Listing"></a>Complete Program Listing</h2></center>
+A complete listing of the program is provided in <a href="Java318-fig16.htm">Figure
+16</a>.
+<p>Copyright 2000, Richard G. Baldwin.&nbsp; Reproduction in whole or in
+part in any form or medium without&nbsp; express written permission from
+Richard Baldwin is prohibited.&nbsp;
+<p><b>About the author</b>
+<p><i><b><a href="mailto:baldwin@austin.cc.tx.us">Richard Baldwin</a></b>
+is a college professor and private consultant whose primary focus is a
+combination of Java and XML. In addition to the many platform-independent
+benefits of Java applications, he believes that a combination of Java and
+XML will become the primary driving force in the delivery of structured
+information on the Web.</i>
+<p><i>Richard has participated in numerous consulting projects involving
+Java, XML, or a combination of the two.&nbsp; He frequently provides onsite
+Java and/or XML training at the high-tech companies located in and around
+Austin, Texas.&nbsp; He is the author of Baldwin's Java Programming <a href="http://www.geocities.com/Athens/7077/scoop/onjava.html">Tutorials</a>,
+which has gained a worldwide following among experienced and aspiring Java
+programmers. He has also published articles on Java Programming in Java
+Pro magazine.</i>
+<p><i>Richard holds an MSEE degree from Southern Methodist University and
+has many years of experience in the application of computer technology
+to real-world problems.</i>
+<p>-end-<!--end-->
+</body>
+</html>

@@ -1,0 +1,993 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type"
+content="text/html; charset=iso-8859-1">
+<meta name="AUTHOR" content="Richard G. Baldwin">
+<meta name="GENERATOR" content="Microsoft FrontPage Express 2.0">
+<title>... in Java by Richard G Baldwin</title>
+</head>
+
+<body bgcolor="#FFFFFF">
+<!--start-->
+<h3 align="center"><b><i>Richard G Baldwin (512) 223-4758, </i></b><a
+href="mailto:baldwin@austin.cc.tx.us"><b><i>baldwin@austin.cc.tx.us</i></b></a><b><i>,
+</i></b><a href="http://www2.austin.cc.tx.us/baldwin/"><b><i>http://www2.austin.cc.tx.us/baldwin/</i></b></a></h3>
+
+<h2 align="center"><b><!--title-->Stream Tokenizer<!--endTitle--></b></h2>
+
+<p>Java Programming, Lecture Notes # 61, Revised 12/16/98. </p>
+
+<ul>
+    <li><a href="#Preface">Preface</a></li>
+    <li><a href="#Introduction">Introduction</a></li>
+    <li><a href="#Methods">Methods</a></li>
+    <li><a href="#Sample Program">Sample Program</a></li>
+    <li><ul>
+            <li><a href="#Interesting Code Fragments">Interesting
+                Code Fragments</a></li>
+            <li><a href="#Program Listing">Program Listing</a></li>
+        </ul>
+    </li>
+</ul>
+
+<hr>
+
+<h2 align="center"><a name="Preface"></a><font color="#FF0000">Preface</font></h2>
+
+<p>Students in Prof. Baldwin's <b><u>Intermediate Java
+Programming</u></b> classes at ACC will be responsible for
+knowing and understanding all of the material in this lesson
+beginning with the Spring semester of 1999. </p>
+
+<p align="left">This lesson was originally written on September
+24, 1998, using the JDK 1.1.6 download package. Upgraded to JDK
+1.2 on 12/16/98. The purpose of this lesson is to illustrate the
+use of the <b>StreamTokenizer</b> class..</p>
+
+<h2 align="center"><a name="Introduction"></a><font
+color="#FF0000"><b>Introduction</b></font></h2>
+
+<p>The <b>StreamTokenizer</b> class makes it possible to parse an
+input stream into a set of tokens.&nbsp; The tokens can be read
+and dealt with one at a time.&nbsp; A table is used to control
+the parsing process.&nbsp; In addition, there are several flags
+that can be set to different states to assist in the control of
+the parsing process.&nbsp; The parsing process can recognize
+words, numbers, quoted strings, and comment styles.&nbsp; It also
+recognizes ordinary characters which are not included in any of
+the above. </p>
+
+<p>Each byte read from the input stream is treated as a character
+in the hexadecimal range from 00 to FF.&nbsp; Each input
+character is considered by the <b>StreamTokenizer</b> to be one
+of the following: </p>
+
+<ul>
+    <li>A whitespace character that separates tokens in the input
+        stream.</li>
+    <li>A character that is used to surround a quoted string.</li>
+    <li>An ordinary character that is not a delimiter, doesn't
+        surround a quoted string, and is neither of the
+        following.</li>
+    <li>A character that is part of a word.</li>
+    <li>A character that is part of a number.</li>
+</ul>
+
+<p>An instance of the class has four flags which can be set to
+true or false.&nbsp; These flags are set to indicate: </p>
+
+<ul>
+    <li>If line terminators are to be returned as tokens or
+        treated as white space that merely separates tokens.</li>
+    <li>If C-style comments are to be recognized and skipped
+        (/*...*/).</li>
+    <li>If C++-style comments are to be recognized and skipped
+        (//...).</li>
+    <li>If the characters of words are to be converted to
+        lowercase.</li>
+</ul>
+
+<p>Sequential tokens are extracted from the stream by invoking
+the <b>nextToken()</b> method on an object of the <b>StreamTokenizer</b>
+class after instantiating the object and passing a stream <b>Reader</b>
+object as a parameter to the constructor.&nbsp; The <b>Reader</b>
+object specifies the stream that will be tokenized. </p>
+
+<p>The <b>nextToken()</b> method always returns an <b>int</b>
+that can be used to interpret the token.&nbsp; The class contains
+four class constants.&nbsp; The <b>int</b> value returned by <b>nextToken()</b>
+will always either match one of the constants, or will contain
+the value of the character.&nbsp; (It appears that the constants
+are always negative <b>int</b> values which cannot possibly match
+the value of a character in the range 00 to FF.) </p>
+
+<p>The four constants are: </p>
+
+<ul>
+    <li><b>TT_EOF</b> - A constant indicating that the end of the
+        stream has been read.</li>
+    <li><b>TT_EOL</b> - A constant indicating that the end of the
+        line has been read.</li>
+    <li><b>TT_NUMBER</b> - A constant indicating that a number
+        token has been read.</li>
+    <li><b>TT_WORD</b> - A constant indicating that a word token
+        has been read.</li>
+</ul>
+
+<p>In addition, the class provides three public instance
+variables: <b>nval</b>, <b>sval</b>, and <b>ttype</b>. </p>
+
+<p>After a call to the <b>nextToken()</b> method, the <b>ttype</b>
+variable contains the type of the token just read. For a single
+character token, its value is the single character, converted to
+an integer. For a quoted string token its value is the quote
+character (&quot; or ').&nbsp; Otherwise, its value is one of the
+following: </p>
+
+<ul>
+    <li><b>TT_WORD</b> indicates that the token is a word.</li>
+    <li><b>TT_NUMBER</b> indicates that the token is a number.</li>
+    <li><b>TT_EOL</b> indicates that the end of line has been
+        read. The field can only have this value if the <b>eolIsSignificant()</b>
+        method has been called with a true argument.</li>
+    <li><b>TT_EOF</b> indicates that the end of the input stream
+        has been reached.</li>
+</ul>
+
+<p>The value contained in <b>ttype</b> is always the same as the
+value returned by the <b>nextToken()</b> method. </p>
+
+<p>After a call to the <b>nextToken()</b> method, the contents of
+the <b>sval</b> variable will depend on the type of token that
+was just read.&nbsp; If the current token is a word token, <b>sval</b>
+contains a string giving the characters of the word token.&nbsp;
+When the current token is a quoted string token, <b>sval</b>
+contains the body of the string.&nbsp; Note that the string can
+contain any characters including the characters which normally
+delimit words and numbers.&nbsp; <b>sval</b> will contain null if
+the current token is neither a word nor a quoted string. </p>
+
+<p>After a call to the <b>nextToken()</b> method, the contents of
+the <b>nval</b> variable will also depend on the type of
+token.&nbsp; If the current token is a number, <b>nval</b>
+contains the value of that number.&nbsp; Otherwise, it contains
+null. </p>
+
+<p>A variety of methods are available to modify the contents of
+the table used for parsing.&nbsp; However, one of the problems
+with the <b>StreamTokenizer</b> class is that I was unable to
+find any documentation that defined the default values contained
+in the table.&nbsp; Therefore, it was necessary for me to
+experiment in an attempt to determine the default state of the
+table.&nbsp; These are my general conclusions, based solely on
+experimentation. </p>
+
+<p>By default, the space character is a whitespace character used
+to separate tokens in the stream. </p>
+
+<p>Only the upper and lower-case alphabetic characters are word
+characters. </p>
+
+<p>The numeric characters from 0 through 9, the minus sign, and
+the period are treated as number characters. </p>
+
+<p>The / character behaves in ways that I was unable to figure
+out.&nbsp; For example, the /0 (slash zero) combination caused my
+program to return <b>TT_EOF</b> until I invoked a method to force
+the / character to be treated as an ordinary character.&nbsp; The
+behavior was as if it was a single-line comment, and since there
+were no <b>TT_EOL</b> characters in the stream, the entire
+remainder of the file was ignored. </p>
+
+<p>Pairs of double quotes or pairs of single quotes serve to
+delimit string data. </p>
+
+<p>Beyond this, it appears that all of the other characters
+between 32 and 126 are treated as ordinary characters unless one
+of the methods is invoked to cause them to be treated
+differently. </p>
+
+<p align="left">To use this class, instantiate an object of the
+class, link it to an input stream, set up the parsing table, and
+then loop calling the <b>nextToken()</b> method in each iteration
+of the loop until it returns the value <b>TT_EOF</b>. &nbsp; </p>
+
+<h2 align="center"><a name="Methods"></a><font color="#FF0000">Methods</font></h2>
+
+<p>A large number of methods are available, many of which are
+used to set up the parsing table.&nbsp; A sampling of those
+methods follows. <br>
+&nbsp; </p>
+
+<table border="1" width="100%" bgcolor="#66FFFF" cols="1">
+    <tr>
+        <td><ul>
+            <li><b>eolIsSignificant(boolean)</b> - Invoking this
+                method with a boolean parameter establishes
+                whether or not the end of line is treated as a
+                token.</li>
+            <li><b>lineno()</b> - Returns the current line
+                number.&nbsp;</li>
+            <li><b>lowerCaseMode(boolean)</b> - Lets you specify
+                that all the characters in word tokens are to be
+                converted to lower case.</li>
+            <li><b>nextToken()</b> - Gets the next token from the
+                stream.&nbsp; The type of the token is returned
+                in the <b>ttype</b> field. Additional information
+                about the token may be in the <b>nval</b> field
+                or the <b>sval</b> field.&nbsp; Returns the value
+                of the <b>ttype</b> field.&nbsp;</li>
+            <li><b>ordinaryChar(int)</b> - Lets you specify that
+                a character should be treated as <i>ordinary</i>.&nbsp;
+                This removes any special significance the
+                character has as a comment character, word
+                component, string delimiter, white space, or
+                number character. When such a character is
+                encountered by the parser, the parser treats it
+                as a single-character token, returns the value of
+                the character, and sets the <b>ttype</b> field to
+                the character value.&nbsp;</li>
+            <li><b>ordinaryChars(int, int)</b> - Lets you specify
+                a range of character values that are to be
+                treated as ordinary characters.</li>
+            <li><b>parseNumbers()</b> - Lets you specify that
+                numbers should be parsed by this tokenizer. The
+                syntax table of this tokenizer is modified so
+                that each of the characters from 0 through 9 and
+                including the minus sign and the period will have
+                the &quot;numeric&quot; attribute.&nbsp; This
+                appears to be the default case.&nbsp; When the
+                parser encounters a word token that has the
+                format of a double precision floating-point
+                number, it treats the token as a number rather
+                than a word.&nbsp; It sets the <b>ttype</b> field
+                to the value <b>TT_NUMBER</b> and puts the
+                numeric value of the token into the <b>nval</b>
+                field.</li>
+            <li><b>pushBack()</b> - Causes the next call to the <b>nextToken()</b>
+                method to return the current value in the <b>ttype</b>&nbsp;&nbsp;
+                field, and not to modify the value in the <b>nval</b>
+                or <b>sval</b> field.&nbsp;</li>
+            <li><b>quoteChar(int)</b> - Lets you specify that a
+                matching pair of the character specific by the <b>int</b>
+                parameter will delimit string constants.</li>
+            <li><b>resetSyntax()</b> - Resets the parsing table
+                so that all characters are treated as
+                ordinary.&nbsp; This makes it possible for you
+                use the other methods to construct your own
+                parsing table without having to contend with
+                default values.</li>
+            <li><b>commentChar(int)</b> - Lets you specify a
+                single-line comment delimiter.&nbsp; All
+                characters from the character to the end of the
+                line are ignored.</li>
+            <li><b>slashSlashComments(boolean)</b> - Determines
+                if the tokenizer recognizes C++-style
+                comments.&nbsp; If the argument is true, any
+                occurrence of two consecutive slash characters,
+                //, is treated as the beginning of a comment that
+                extends to the end of the line.&nbsp;</li>
+            <li><b>slashStarComments(boolean)</b> - Determines if
+                the tokenizer recognizes C-style comments. If the
+                argument is true, all text between successive
+                occurrences of /* and */ are discarded.&nbsp;</li>
+            <li><b>whitespaceChars(int, int)</b> - Lets you
+                specify a range of character values that will be
+                treated as whitespace characters.&nbsp;
+                Whitespace characters separate tokens in the
+                input stream.</li>
+            <li><b>wordChars(int, int)</b> - Lets you specify a
+                range of character values that will be treated as
+                word characters. A word token consists of a word
+                character followed by zero or more word
+                characters or number characters.&nbsp;</li>
+        </ul>
+        </td>
+    </tr>
+</table>
+
+<h2 align="center"><a name="Sample Program"></a><font
+color="#FF0000">Sample Program</font></h2>
+
+<p>The program begins by creating a test file containing the
+sequence of ASCII character values from 32 to 126
+inclusive.&nbsp; In addition, several extra characters are
+inserted in the sequence to illustrate special behavior of the <b>StreamTokenizer</b>
+class. </p>
+
+<p>For example, a space character is inserted every seventh
+character.&nbsp; A space character is a default word delimiter of
+the <b>StreamTokenizer</b> class and is used to separate tokens
+in the input stream. </p>
+
+<p>A double quote character (&quot;) is inserted several
+character positions beyond the normal position of the character
+in the ASCII sequence to cause the characters in&nbsp; between to
+be treated as a quoted string.&nbsp; The double quote is a
+default delimiter for a quoted string for the <b>StreamTokenizer</b>.
+</p>
+
+<p>Likewise, a single quote character (') or apostrophe is
+inserted several character positions beyond the normal position
+of the character in the ASCII sequence to cause the characters in
+between to be treated as a quoted string.&nbsp; The single quote
+is also a default delimiter for a quoted string for the <b>StreamTokenizer</b>.
+</p>
+
+<p>As mentioned earlier, each input character is treated by the <b>StreamTokenizer</b>
+as though it were one of the following: </p>
+
+<ul>
+    <li>A whitespace character that separates tokens in the input
+        stream.</li>
+    <li>A character that is used to surround a quoted string.</li>
+    <li>An ordinary character that is not a delimiter, doesn't
+        surround a quoted string, and is neither of the
+        following.</li>
+    <li>A character that is part of a word.</li>
+    <li>A character that is part of a number.</li>
+</ul>
+
+<p>As mentioned in the description of the methods, there are also
+some special capabilities having to do with the (/) character and
+the (*) as used in Java comments.&nbsp; However, those
+capabilities are not illustrated by this program. </p>
+
+<p>One of the methods of the class was used to cause the (/)
+character to be treated as an ordinary character.&nbsp; Another
+method was used to cause the <i>s</i>, <i>j</i>, <i>k</i>, and <i>l</i>
+characters to be treated as whitespace characters.&nbsp; Still
+another method was used to cause the semicolon, left angle
+bracket, and equal sign characters (<b>;&lt;=</b>) to be treated
+as word characters. </p>
+
+<p>The value returned by the <b>nextToken()</b> method indicates
+how a character is being interpreted according to the
+possibilities listed above.&nbsp; A <b>switch</b> statement was
+used to analyze the return value and take the appropriate action
+based on that return value. </p>
+
+<p>The file was read and parsed by an object of the <b>StreamTokenizer</b>
+class.&nbsp; By using a combination of the return value from the <b>nextToken()</b>
+method and the value of the <b>ttype</b> instance variable, a
+display was produced showing how the file was parsed. </p>
+
+<p>Finally, the file was read again in a simple sequential mode
+and displayed as numeric and character data to confirm its
+contents and make it&nbsp; possible to compare those contents
+with the behavior of the parser. </p>
+
+<p>The output from running the program is shown in the comments
+in the program listing in a later section.&nbsp; I will comment
+on some of the output as I discuss the interesting code
+fragments. </p>
+
+<p align="left">The program was tested using JDK 1.1.6 under
+Win95. &nbsp; </p>
+
+<h3 align="center"><a name="Interesting Code Fragments"></a><font
+color="#FF0000">Interesting Code Fragments</font></h3>
+
+<p>The entire program is contained in the <b>main()</b> method,
+the beginning of which is shown in the next fragment.&nbsp; This
+fragment instantiates and initializes an output file stream
+object. <br>
+&nbsp; </p>
+
+<table border="1" bgcolor="#FFFF80">
+    <tr>
+        <td><pre>&nbsp; public static void <b>main</b>(String[] args)
+&nbsp; {
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &quot;Start the program and write a file&quot;);
+&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp; FileOutputStream outFile =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new <b>FileOutputStream</b>(&quot;junk.txt&quot;);</pre>
+        </td>
+    </tr>
+</table>
+
+<p>The next fragment shows the beginning of a <b>for</b> loop
+that writes the character values from 32 to 126 inclusive in the
+file. &nbsp; </p>
+
+<table border="1" bgcolor="#FFFF80">
+    <tr>
+        <td><pre>&nbsp;&nbsp;&nbsp; for(int cnt = 32; cnt &lt; 127; cnt++){</pre>
+        </td>
+    </tr>
+</table>
+
+<p>The next fragment shows the insertion of a space character
+every seventh character.&nbsp; This resulted in the following
+type of output where the input stream was parsed into groups of
+seven characters per group.&nbsp; The reason that the first group
+doesn't contain seven characters is that the characters
+immediately ahead of the upper case &quot;A&quot; were treated as
+ordinary characters and were not being controlled by the
+whitespace character. </p>
+
+<p><font size="2" face="Courier New,Courier"><b>returnValue=62
+ttype=62 char = &gt;</b></font> <br>
+<font size="2" face="Courier New,Courier"><b>returnValue=63
+ttype=63 char = ?</b></font> <br>
+<font size="2" face="Courier New,Courier"><b>returnValue=64
+ttype=64 char = @</b></font> <br>
+<font size="2" face="Courier New,Courier"><b>TT_WORD ABCDE
+ttype=-3</b></font> <br>
+<font size="2" face="Courier New,Courier"><b>TT_WORD FGHIJKL
+ttype=-3</b></font> <br>
+<font size="2" face="Courier New,Courier"><b>TT_WORD MNOPQRS
+ttype=-3</b></font> <br>
+<font size="2" face="Courier New,Courier"><b>TT_WORD TUVWXYZ
+ttype=-3</b></font> &nbsp; </p>
+
+<table border="1" bgcolor="#FFFF80">
+    <tr>
+        <td><pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(cnt%7 == 0){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; outFile.write(' ');//every seventh char is space
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end if</pre>
+        </td>
+    </tr>
+</table>
+
+<p>Because the file contains the entire ASCII sequence, it will
+contain a the value of the double quote character (&quot;).&nbsp;
+If left completely alone, the parser would consider that
+character to be the beginning of a quoted string and continue
+searching for the matching quote character until the end of file
+is encountered.&nbsp; To avoid this problem, and also to
+illustrate the use of a quoted string, a second quote character
+was inserted immediately ahead of the ampersand character
+(&amp;).&nbsp; This caused the characters between the two double
+quotes to be treated as a quoted string, providing the following
+output: </p>
+
+<p><font size="2" face="Courier New,Courier"><b>Quoted string=
+#$% ttype=34 char = &quot;</b></font> &nbsp; </p>
+
+<table border="1" bgcolor="#FFFF80">
+    <tr>
+        <td><pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(cnt == '&amp;') outFile.write('\&quot;');</pre>
+        </td>
+    </tr>
+</table>
+
+<p>The apostrophe or single quote is also a default delimiter for
+quoted strings.&nbsp; For the same reason given above, a single
+quote was inserted into the file immediately ahead of the
+asterisk character.&nbsp; This produced the following output: </p>
+
+<p><font size="2" face="Courier New,Courier"><b>Quoted
+string=()&nbsp; ttype=39 char = '</b></font> &nbsp; </p>
+
+<table border="1" bgcolor="#FFFF80">
+    <tr>
+        <td><pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(cnt == '*') outFile.write('\'');</pre>
+        </td>
+    </tr>
+</table>
+
+<p>Finally, we see the completion of the <b>for</b> loop and the
+writing of the sequential byte value into the file. This fragment
+also closes the output file stream. &nbsp; </p>
+
+<table border="1" bgcolor="#FFFF80">
+    <tr>
+        <td><pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; outFile.write((char)cnt);//write the byte
+&nbsp;&nbsp;&nbsp; }//end for loop
+&nbsp;&nbsp;&nbsp; outFile.close();</pre>
+        </td>
+    </tr>
+</table>
+
+<p>The next fragment instantiates a <b>FileInputStream</b> object
+linked to the test file and wraps that input stream object in a <b>Reader</b>
+object.&nbsp; Then it instantiates the <b>StreamTokenizer</b>
+object and wraps it around the <b>Reader</b> object. At this
+point, we can invoke the <b>nextToken()</b> method on the <b>StreamTokenizer</b>
+object to get the next token from the <b>FileInputStream</b>.
+&nbsp; </p>
+
+<table border="1" bgcolor="#FFFF80">
+    <tr>
+        <td><pre>&nbsp;&nbsp;&nbsp; FileInputStream inFile =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new <b>FileInputStream</b>(&quot;junk.txt&quot;);
+&nbsp;&nbsp;&nbsp; Reader rdr = new BufferedReader(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new <b>InputStreamReader</b>(inFile));
+&nbsp;&nbsp;&nbsp; StreamTokenizer strTok = new <b>StreamTokenizer</b>(rdr);</pre>
+        </td>
+    </tr>
+</table>
+
+<p>The next few fragments modify the parsing table relative to
+its default values.&nbsp; First I caused the slash (/) character
+to be treated as an ordinary character which is not the case with
+the default.&nbsp; This produces the following output which is
+typical output for an ordinary character. </p>
+
+<p><font size="2" face="Courier New,Courier"><b>returnValue=47
+ttype=47 char = /</b></font> &nbsp; </p>
+
+<table border="1" bgcolor="#FFFF80">
+    <tr>
+        <td><pre>&nbsp;&nbsp;&nbsp; strTok.<b>ordinaryChar</b>('/');//forward slash</pre>
+        </td>
+    </tr>
+</table>
+
+<p>The next fragment uses two different calls to the same method
+to cause the <i>s</i>, <i>j</i>, <i>k</i>, and <i>l</i>
+characters to be treated as whitespace characters.&nbsp; This
+produces the following output where the normal sequence of
+characters in the stream is broken into tokens due to these
+characters being there.&nbsp; Note the break between the <i>i</i>
+and the <i>m </i>(jkl missing), and also between the <i>r</i> and
+the <i>t </i>(s missing). </p>
+
+<p><font size="2" face="Courier New,Courier"><b>TT_WORD a
+ttype=-3</b></font> <br>
+<font size="2" face="Courier New,Courier"><b>TT_WORD bcdefgh
+ttype=-3</b></font> <br>
+<font size="2" face="Courier New,Courier"><b>TT_WORD i ttype=-3</b></font>
+<br>
+<font size="2" face="Courier New,Courier"><b>TT_WORD mno ttype=-3</b></font>
+<br>
+<font size="2" face="Courier New,Courier"><b>TT_WORD pqr ttype=-3</b></font>
+<br>
+<font size="2" face="Courier New,Courier"><b>TT_WORD tuv ttype=-3</b></font>
+&nbsp; </p>
+
+<table border="1" bgcolor="#FFFF80">
+    <tr>
+        <td><pre>&nbsp;&nbsp;&nbsp; strTok.<b>whitespaceChars</b>('s','s');
+&nbsp;&nbsp;&nbsp; strTok.<b>whitespaceChars</b>('j','l');</pre>
+        </td>
+    </tr>
+</table>
+
+<p>By default, the characters ; &lt; = (semicolon, left angle
+bracket, and equal) are ordinary characters.&nbsp; The following
+fragment causes them to be treated as word characters producing
+the following output where these three characters group together
+to form a word. </p>
+
+<p><font size="2" face="Courier New,Courier"><b>returnValue=58
+ttype=58 char = :</b></font> <br>
+<font size="2" face="Courier New,Courier"><b>TT_WORD ;&lt;=
+ttype=-3</b></font> <br>
+<font size="2" face="Courier New,Courier"><b>returnValue=62
+ttype=62 char = &gt;</b></font> &nbsp; </p>
+
+<table border="1" bgcolor="#FFFF80">
+    <tr>
+        <td><pre>&nbsp;&nbsp;&nbsp; strTok.<b>wordChars</b>(';','=');</pre>
+        </td>
+    </tr>
+</table>
+
+<p>That completes the modifications to the parsing table.&nbsp;
+All that remains is to </p>
+
+<ul>
+    <li>enter a loop,</li>
+    <li>invoke <b>nextToken()</b> once during each iteration of
+        the loop, and</li>
+    <li>continue looping until end of file.</li>
+</ul>
+
+<p>The following fragment shows the loop, along with a <b>switch</b>
+statement that analyzes the return value from <b>nextToken()</b>
+to decide the type of token, and to display information about the
+token based on that decision.&nbsp; The <b>switch</b> statement
+is followed by a couple of additional statements that use the
+value of <b>ttype</b> to display more information about the
+token. </p>
+
+<p>Note that because of the conditional expression in the <b>while</b>
+loop, it should never be possible to match the value of <b>TT_EOF</b>
+in the <b>switch</b> statement.&nbsp; I put the case there anyway
+for the sake of completeness.&nbsp; Rather than to break this
+code into smaller fragments, I decided to keep it intact and to
+highlight some of the interesting aspects of the code with
+boldface. </p>
+
+<p>If the return value from the method matches any of the class
+constants of the <b>StreamTokenizer</b> class, it is not an
+ordinary character.&nbsp; In one of those cases, the value of <b>sval</b>
+containing a word is displayed, an in another of those cases, the
+value of <b>nval</b> containing a number is displayed. </p>
+
+<p>In addition, two of the cases test for single and double
+quotes, and display the value of <b>sval</b> which contains the
+body of the quoted string in this case. </p>
+
+<p>The default clause of the <b>switch</b> statement is executed
+when the return value is an ordinary character. </p>
+
+<p>The code following the <b>switch</b> statement is used to
+illustrate that the value of <b>ttype</b> can be used for
+essentially the same purpose. &nbsp; </p>
+
+<table border="1" bgcolor="#FFFF80">
+    <tr>
+        <td><pre>&nbsp;&nbsp;&nbsp; int returnValue = strTok.<b>nextToken()</b>;//priming read
+&nbsp;&nbsp;&nbsp; <b>while</b>(returnValue != StreamTokenizer.TT_EOF){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Terminate the loop on end of file
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>switch</b>(returnValue){//determine the type of token
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; case StreamTokenizer.<b>TT_EOF</b> ://shouldn't be here&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.print(&quot;TT_EOF &quot;);break;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; case StreamTokenizer.<b>TT_EOL</b> ://end of line
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.print(&quot;TT_EOL &quot;);break;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; case StreamTokenizer.<b>TT_NUMBER</b> ://a number&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.print(&quot;TT_NUMBER &quot; + strTok.<b>nval</b>);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; break;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; case StreamTokenizer.<b>TT_WORD</b> ://a word
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.print(&quot;TT_WORD &quot; + strTok.<b>sval</b>);break;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; case <b>'\&quot;'</b> ://a double quote
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.print(&quot;Quoted string=&quot; + strTok.<b>sval</b>);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; break;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; case <b>'\''</b> ://a single quote
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.print(&quot;Quoted string=&quot; + strTok.<b>sval</b>);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; break;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; default:System.out.print(//<b>none</b> of the above
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &quot;returnValue=&quot; + returnValue);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end switch
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Use ttype variable to display additional info.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.print(&quot; ttype=&quot; + strTok.<b>ttype</b> + &quot; &quot;);&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(strTok.<b>ttype &gt;= 0</b>)//neg is eof, eol, number, word&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //display the character
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(&quot;char = &quot; + <b>(char)strTok.ttype</b>);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; else System.out.println();//new line on eol, etc.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; returnValue = strTok.<b>nextToken()</b>;//get next token
+&nbsp;&nbsp;&nbsp; }//end while loop
+&nbsp;&nbsp;&nbsp; inFile.close();//close the file
+&nbsp;&nbsp;&nbsp; System.out.println(); //new line</pre>
+        </td>
+    </tr>
+</table>
+
+<p>Part of the output produced by this fragment is shown
+below.&nbsp; Portions of this output were also shown earlier
+along with the code that prepared the parsing table to produce a
+specific kind of behavior.&nbsp; The remaining output can be
+viewed in the complete program listing later in the lesson. </p>
+
+<p><font size="2" face="Courier New,Courier"><b>returnValue=33
+ttype=33 char = !</b></font> <br>
+<font size="2" face="Courier New,Courier"><b>Quoted string= #$%
+ttype=34 char = &quot;</b></font> <br>
+<font size="2" face="Courier New,Courier"><b>returnValue=38
+ttype=38 char = &amp;</b></font> <br>
+<font size="2" face="Courier New,Courier"><b>Quoted
+string=()&nbsp; ttype=39 char = '</b></font> <br>
+<font size="2" face="Courier New,Courier"><b>returnValue=42
+ttype=42 char = *</b></font> <br>
+<font size="2" face="Courier New,Courier"><b>returnValue=43
+ttype=43 char = +</b></font> <br>
+<font size="2" face="Courier New,Courier"><b>returnValue=44
+ttype=44 char = ,</b></font> <br>
+<font size="2" face="Courier New,Courier"><b>TT_NUMBER -0.0
+ttype=-2</b></font> <br>
+<font size="2" face="Courier New,Courier"><b>returnValue=47
+ttype=47 char = /</b></font> <br>
+<font size="2" face="Courier New,Courier"><b>TT_NUMBER 0.0
+ttype=-2</b></font> <br>
+<font size="2" face="Courier New,Courier"><b>TT_NUMBER 1234567.0
+ttype=-2</b></font> <br>
+<font size="2" face="Courier New,Courier"><b>TT_NUMBER 89.0
+ttype=-2</b></font> <br>
+<font size="2" face="Courier New,Courier"><b>returnValue=58
+ttype=58 char = :</b></font> <br>
+<font size="2" face="Courier New,Courier"><b>TT_WORD ;&lt;=
+ttype=-3</b></font> <br>
+<font size="2" face="Courier New,Courier"><b>returnValue=62
+ttype=62 char = &gt;</b></font> <br>
+<font size="2" face="Courier New,Courier"><b>returnValue=63
+ttype=63 char = ?</b></font> <br>
+<font size="2" face="Courier New,Courier"><b>returnValue=64
+ttype=64 char = @</b></font> <br>
+<font size="2" face="Courier New,Courier"><b>TT_WORD ABCDE
+ttype=-3</b></font> <br>
+<font size="2" face="Courier New,Courier"><b>TT_WORD FGHIJKL
+ttype=-3</b></font> <br>
+<font size="2" face="Courier New,Courier"><b>TT_WORD MNOPQRS
+ttype=-3</b></font> <br>
+<font size="2" face="Courier New,Courier"><b>TT_WORD TUVWXYZ
+ttype=-3</b></font> <br>
+<font size="2" face="Courier New,Courier"><b>returnValue=91
+ttype=91 char = [</b></font> <br>
+<font size="2" face="Courier New,Courier"><b>returnValue=92
+ttype=92 char = \</b></font> </p>
+
+<p>The final fragment simply reads and displays the file again in
+sequential fashion in case you have any questions about the
+actual contents of the file.&nbsp; You can view the output
+produced by this fragment in the next section. &nbsp; </p>
+
+<table border="1" bgcolor="#FFFF80">
+    <tr>
+        <td><pre>&nbsp;&nbsp;&nbsp; System.out.println(&quot;Display file data&quot;);
+&nbsp;&nbsp;&nbsp; //Open the file again for simple read and display
+&nbsp;&nbsp;&nbsp; inFile = new FileInputStream(&quot;junk.txt&quot;);
+&nbsp;&nbsp;&nbsp; int data;
+&nbsp;&nbsp;&nbsp; int cnt = 0;
+&nbsp;&nbsp;&nbsp; while( (data = inFile.read()) != -1){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.print(&quot;&quot; + data + &quot; &quot;);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.print((char)data + &quot;&nbsp;&nbsp; &quot;);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(cnt++ == 4){//<b>new line every fifth read
+</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println();//new line
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cnt = 0;//reinitialize the counter
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end if
+&nbsp;&nbsp;&nbsp; }//end while
+&nbsp;&nbsp;&nbsp; inFile.close();//close file again</pre>
+        </td>
+    </tr>
+</table>
+
+<p align="left">The code that was not highlighted in the
+fragments above can be viewed in the complete listing of the
+program that follows in the next section. &nbsp; </p>
+
+<h3 align="center"><a name="Program Listing"></a><font
+color="#FF0000">Program Listing</font></h3>
+
+<table border="1" bgcolor="#FFFF80">
+    <tr>
+        <td><pre>/* File StreamTok02.java Copyright 1998, R.G.Baldwin
+Revised 9/24/98
+
+The program begins by creating a file containing the
+sequence of ASCII character values from 32 to 126&nbsp;
+inclusive.&nbsp; In addition, several extra characters are&nbsp;
+inserted in the sequence to illustrate special behavior of
+the StreamTokenizer class.
+
+For example, a space character is inserted every seventh
+character.&nbsp; A space character is a default word delimiter
+of the StreamTokenizer class.
+
+A double quote character is inserted several character
+positions beyond the normal position of the double quote&nbsp;
+character in the ASCII sequence to cause the characters in&nbsp;
+between to be treated as a quoted string.&nbsp; The double quote
+is a default delimiter for a quoted string for the&nbsp;
+StreamTokenizer.
+
+Likewise, a single quote character is inserted several
+character positions beyond the normal position of the&nbsp;
+single quote character in the ASCII sequence to cause the
+characters in between to be treated as a quoted string.
+The single quote is a default delimiter for a quoted
+string for the StreamTokenizer.
+
+Each input character is treated by the StreamTokenizer
+to be one of the following:
+1.&nbsp; A whitespace character that delimits a word.
+2.&nbsp; An ordinary character that is not a delimiter and is
+&nbsp;&nbsp;&nbsp; not part of either of the following.
+3.&nbsp; A character that is part of a word.
+4.&nbsp; A character that is part of a number.
+
+There are also some special capabilities having to do with
+the &quot;/&quot; character and the &quot;*&quot; as used in Java comments.
+
+A method of the class was used to cause the &quot;/&quot; character
+to be treated as an ordinary character.
+
+A method of the class was used to cause the s, j, k, and l
+characters to be treated as whitespace characters to&nbsp;
+delimit words.
+&nbsp;&nbsp;&nbsp;&nbsp;
+A method of the class was used to cause the &quot;;&quot; and &quot;=&quot;
+character to be treated a word characters.
+
+The value returned by the nextToken() method indicates&nbsp;
+how a character is being interpreted according to the
+possibilities listed above.&nbsp; A switch statement was used
+to analyze the return value and take the appropriate
+action based on that return value.
+
+A public instance variable of the class contains the same
+information and can be used for similar purposes.
+
+The file was read and parsed by an object of the&nbsp;
+StreamTokenizer class.&nbsp; By using a combination of the&nbsp;
+return value from the nextToken() method and the
+instance variable, a printout was produced showing how the
+file was parsed by the object.
+
+Finally, the file was read again and displayed as numeric
+and character data to confirm its contents and make it&nbsp;
+possible to compare those contents with the behavior of the
+parser.
+
+Program output:
+&nbsp;&nbsp;
+<b>Start the program and write a file
+returnValue=33 ttype=33 char = !
+Quoted string= #$% ttype=34 char = &quot;
+returnValue=38 ttype=38 char = &amp;
+Quoted string=()&nbsp; ttype=39 char = '
+returnValue=42 ttype=42 char = *
+returnValue=43 ttype=43 char = +
+returnValue=44 ttype=44 char = ,
+TT_NUMBER -0.0 ttype=-2&nbsp;
+returnValue=47 ttype=47 char = /
+TT_NUMBER 0.0 ttype=-2&nbsp;
+TT_NUMBER 1234567.0 ttype=-2&nbsp;
+TT_NUMBER 89.0 ttype=-2&nbsp;
+returnValue=58 ttype=58 char = :
+TT_WORD ;&lt;= ttype=-3&nbsp;
+returnValue=62 ttype=62 char = &gt;
+returnValue=63 ttype=63 char = ?
+returnValue=64 ttype=64 char = @
+TT_WORD ABCDE ttype=-3&nbsp;
+TT_WORD FGHIJKL ttype=-3&nbsp;
+TT_WORD MNOPQRS ttype=-3&nbsp;
+TT_WORD TUVWXYZ ttype=-3&nbsp;
+returnValue=91 ttype=91 char = [
+returnValue=92 ttype=92 char = \
+returnValue=93 ttype=93 char = ]
+returnValue=94 ttype=94 char = ^
+returnValue=95 ttype=95 char = _
+returnValue=96 ttype=96 char = `
+TT_WORD a ttype=-3&nbsp;
+TT_WORD bcdefgh ttype=-3&nbsp;
+TT_WORD i ttype=-3&nbsp;
+TT_WORD mno ttype=-3&nbsp;
+TT_WORD pqr ttype=-3&nbsp;
+TT_WORD tuv ttype=-3&nbsp;
+TT_WORD wxyz ttype=-3&nbsp;
+returnValue=123 ttype=123 char = {
+returnValue=124 ttype=124 char = |
+returnValue=125 ttype=125 char = }
+returnValue=126 ttype=126 char = ~
+
+Display file data
+32&nbsp;&nbsp;&nbsp;&nbsp; 33 !&nbsp;&nbsp; 34 &quot;&nbsp;&nbsp; 32&nbsp;&nbsp;&nbsp;&nbsp; 35 #&nbsp;&nbsp;&nbsp;
+36 $&nbsp;&nbsp; 37 %&nbsp;&nbsp; 34 &quot;&nbsp;&nbsp; 38 &amp;&nbsp;&nbsp; 39 '&nbsp;&nbsp;&nbsp;
+40 (&nbsp;&nbsp; 41 )&nbsp;&nbsp; 32&nbsp;&nbsp;&nbsp;&nbsp; 39 '&nbsp;&nbsp; 42 *&nbsp;&nbsp;&nbsp;
+43 +&nbsp;&nbsp; 44 ,&nbsp;&nbsp; 45 -&nbsp;&nbsp; 46 .&nbsp;&nbsp; 47 /&nbsp;&nbsp;&nbsp;
+48 0&nbsp;&nbsp; 32&nbsp;&nbsp;&nbsp;&nbsp; 49 1&nbsp;&nbsp; 50 2&nbsp;&nbsp; 51 3&nbsp;&nbsp;&nbsp;
+52 4&nbsp;&nbsp; 53 5&nbsp;&nbsp; 54 6&nbsp;&nbsp; 55 7&nbsp;&nbsp; 32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+56 8&nbsp;&nbsp; 57 9&nbsp;&nbsp; 58 :&nbsp;&nbsp; 59 ;&nbsp;&nbsp; 60 &lt;&nbsp;&nbsp;&nbsp;
+61 =&nbsp;&nbsp; 62 &gt;&nbsp;&nbsp; 32&nbsp;&nbsp;&nbsp;&nbsp; 63 ?&nbsp;&nbsp; 64 @&nbsp;&nbsp;&nbsp;
+65 A&nbsp;&nbsp; 66 B&nbsp;&nbsp; 67 C&nbsp;&nbsp; 68 D&nbsp;&nbsp; 69 E&nbsp;&nbsp;&nbsp;
+32&nbsp;&nbsp;&nbsp;&nbsp; 70 F&nbsp;&nbsp; 71 G&nbsp;&nbsp; 72 H&nbsp;&nbsp; 73 I&nbsp;&nbsp;&nbsp;
+74 J&nbsp;&nbsp; 75 K&nbsp;&nbsp; 76 L&nbsp;&nbsp; 32&nbsp;&nbsp;&nbsp;&nbsp; 77 M&nbsp;&nbsp;&nbsp;
+78 N&nbsp;&nbsp; 79 O&nbsp;&nbsp; 80 P&nbsp;&nbsp; 81 Q&nbsp;&nbsp; 82 R&nbsp;&nbsp;&nbsp;
+83 S&nbsp;&nbsp; 32&nbsp;&nbsp;&nbsp;&nbsp; 84 T&nbsp;&nbsp; 85 U&nbsp;&nbsp; 86 V&nbsp;&nbsp;&nbsp;
+87 W&nbsp;&nbsp; 88 X&nbsp;&nbsp; 89 Y&nbsp;&nbsp; 90 Z&nbsp;&nbsp; 32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+91 [&nbsp;&nbsp; 92 \&nbsp;&nbsp; 93 ]&nbsp;&nbsp; 94 ^&nbsp;&nbsp; 95 _&nbsp;&nbsp;&nbsp;
+96 `&nbsp;&nbsp; 97 a&nbsp;&nbsp; 32&nbsp;&nbsp;&nbsp;&nbsp; 98 b&nbsp;&nbsp; 99 c&nbsp;&nbsp;&nbsp;
+100 d&nbsp;&nbsp; 101 e&nbsp;&nbsp; 102 f&nbsp;&nbsp; 103 g&nbsp;&nbsp; 104 h&nbsp;&nbsp;&nbsp;
+32&nbsp;&nbsp;&nbsp;&nbsp; 105 i&nbsp;&nbsp; 106 j&nbsp;&nbsp; 107 k&nbsp;&nbsp; 108 l&nbsp;&nbsp;&nbsp;
+109 m&nbsp;&nbsp; 110 n&nbsp;&nbsp; 111 o&nbsp;&nbsp; 32&nbsp;&nbsp;&nbsp;&nbsp; 112 p&nbsp;&nbsp;&nbsp;
+113 q&nbsp;&nbsp; 114 r&nbsp;&nbsp; 115 s&nbsp;&nbsp; 116 t&nbsp;&nbsp; 117 u&nbsp;&nbsp;&nbsp;
+118 v&nbsp;&nbsp; 32&nbsp;&nbsp;&nbsp;&nbsp; 119 w&nbsp;&nbsp; 120 x&nbsp;&nbsp; 121 y&nbsp;&nbsp;&nbsp;
+122 z&nbsp;&nbsp; 123 {&nbsp;&nbsp; 124 |&nbsp;&nbsp; 125 }&nbsp;&nbsp; 32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+126 ~&nbsp;&nbsp; End of program
+
+</b>Tested using JDK 1.1.6 under Win95.
+**********************************************************/
+
+import java.io.*;
+
+class StreamTok02{
+&nbsp; public static void main(String[] args)
+&nbsp; {
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &quot;Start the program and write a file&quot;);
+&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp; //Instantiate and initialize an output file stream&nbsp;
+&nbsp;&nbsp;&nbsp; // object.
+&nbsp;&nbsp;&nbsp; FileOutputStream outFile =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new FileOutputStream(&quot;junk.txt&quot;);
+&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Write a series of bytes to the file and close it
+&nbsp;&nbsp;&nbsp; for(int cnt = 32; cnt &lt; 127; cnt++){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(cnt%7 == 0){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; outFile.write(' ');//every seventh char is space
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end if
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Force double quotes around several char following
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // the double quote in the ASCII sequence
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(cnt == '&amp;') outFile.write('\&quot;');
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Force single quotes around several char following
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // the single quote in the ASCII sequence
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(cnt == '*') outFile.write('\'');
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; outFile.write((char)cnt);//write the byte
+&nbsp;&nbsp;&nbsp; }//end for loop
+&nbsp;&nbsp;&nbsp; outFile.close();
+
+&nbsp;&nbsp;&nbsp; //Instantiate and initialize an input stream
+&nbsp;&nbsp;&nbsp; FileInputStream inFile =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new FileInputStream(&quot;junk.txt&quot;);
+&nbsp;&nbsp;&nbsp; Reader rdr = new BufferedReader(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new InputStreamReader(inFile));
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Instantiate a StreamTokenizer object
+&nbsp;&nbsp;&nbsp; StreamTokenizer strTok = new StreamTokenizer(rdr);
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Convert the &quot;/&quot; character to an ordinary char
+&nbsp;&nbsp;&nbsp; strTok.ordinaryChar('/');//forward slash
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Make the lower-case s, j, k, and l, whitespace char.
+&nbsp;&nbsp;&nbsp; // They will function as word delimiters in the parsed
+&nbsp;&nbsp;&nbsp; // data stream.
+&nbsp;&nbsp;&nbsp; strTok.whitespaceChars('s','s');
+&nbsp;&nbsp;&nbsp; strTok.whitespaceChars('j','l');
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Make the ;&lt;= characters to be word characters
+&nbsp;&nbsp;&nbsp; strTok.wordChars(';','=');
+
+&nbsp;&nbsp;&nbsp; //Loop getting sequential tokens from the file,
+&nbsp;&nbsp;&nbsp; // interpreting, and displaying those tokens
+&nbsp;&nbsp;&nbsp; int returnValue = strTok.nextToken();//priming read
+&nbsp;&nbsp;&nbsp; while(returnValue != StreamTokenizer.TT_EOF){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Terminate the loop on end of file
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; switch(returnValue){//determine the type of token
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; case StreamTokenizer.TT_EOF ://shouldn't be here&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.print(&quot;TT_EOF &quot;);break;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; case StreamTokenizer.TT_EOL ://end of line
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.print(&quot;TT_EOL &quot;);break;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; case StreamTokenizer.TT_NUMBER ://a number&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.print(&quot;TT_NUMBER &quot; + strTok.nval);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; break;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; case StreamTokenizer.TT_WORD ://a word
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.print(&quot;TT_WORD &quot; + strTok.sval);break;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; case '\&quot;' ://a double quote
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.print(&quot;Quoted string=&quot; + strTok.sval);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; break;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; case '\'' ://a single quote
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.print(&quot;Quoted string=&quot; + strTok.sval);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; break;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; default:System.out.print(//none of the above
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &quot;returnValue=&quot; + returnValue);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end switch
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Use ttype variable to display additional info.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.print(&quot; ttype=&quot; + strTok.ttype + &quot; &quot;);&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(strTok.ttype &gt;= 0)//neg is eof, eol, number, word&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //display the character
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(&quot;char = &quot; + (char)strTok.ttype);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; else System.out.println();//new line on eol, etc.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; returnValue = strTok.nextToken();//get next token
+&nbsp;&nbsp;&nbsp; }//end while loop
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; inFile.close();//close the file
+&nbsp;&nbsp;&nbsp; System.out.println(); //new line
+
+&nbsp;&nbsp;&nbsp; System.out.println(&quot;Display file data&quot;);
+&nbsp;&nbsp;&nbsp; //Open the file again for simple read and display
+&nbsp;&nbsp;&nbsp; inFile = new FileInputStream(&quot;junk.txt&quot;);
+&nbsp;&nbsp;&nbsp; int data;
+&nbsp;&nbsp;&nbsp; int cnt = 0;
+&nbsp;&nbsp;&nbsp; while( (data = inFile.read()) != -1){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.print(&quot;&quot; + data + &quot; &quot;);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.print((char)data + &quot;&nbsp;&nbsp; &quot;);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(cnt++ == 4){//new line every fifth read
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println();//new line
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cnt = 0;//reinitialize the counter
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end if
+&nbsp;&nbsp;&nbsp; }//end while
+&nbsp;&nbsp;&nbsp; inFile.close();//close file again
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp; }catch(IOException e){System.out.println(e);}
+&nbsp; System.out.println(&quot;End of program&quot;);
+&nbsp; }// end main
+}//end class StreamTok02 definition</pre>
+        </td>
+    </tr>
+</table>
+
+<p>-end- <!--end--> </p>
+</body>
+</html>

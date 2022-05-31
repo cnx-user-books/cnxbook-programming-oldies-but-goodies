@@ -1,0 +1,783 @@
+<!doctype html public "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+   <meta name="GENERATOR" content="Microsoft FrontPage 5.0">
+   <title>... in Java by Richard G Baldwin</title>
+</head>
+<body link="#DD0000" vlink="#0000FF" alink="#FF0000" lang="EN-US">
+<h2>
+FileChannel Objects in Java,  ByteBuffer Type</h2>
+<i>Baldwin  walks you 
+through a sample program that uses FileChannel objects in conjunction 
+with ByteBuffer<b> </b>objects to perform 
+read/write file IO for primitive data of type byte.</i><p><b>Published:</b>&nbsp; 
+October 15, 2002
+<br><b>By <a href="mailto:Baldwin@DickBaldwin.com">Richard G. Baldwin</a></b>
+<p>Java Programming Notes # 1788<ul >
+<li>
+<a href="#Preface">Preface</a></li>
+
+<li>
+<a href="#Discussion and Sample Programs">Discussion and Sample Code</a></li>
+
+<li>
+<a href="#Run the program">Run the Program</a></li>
+
+<li>
+<a href="#Summary">Summary</a></li>
+
+<li>
+<a href="#Whats Next">What's Next?</a></li>
+
+<li>
+<a href="#Complete Program Listings">Complete Program Listing</a></li>
+</ul>
+
+<hr size=3 width="100%" align=center>
+<center>
+<h2>
+<a NAME="Preface"></a>Preface</h2></center>
+<b><font color="#FF0000">New features in SDK Version 1.4.0</font></b>
+<p>The recently released Java<sup>TM</sup> 2 SDK, Standard Edition Version 1.4 contains a 
+large number of new features.
+<p>Among the features which are completely new to version 1.4 is the concept
+of an IO <i>channel.&nbsp; </i>The previous lesson, entitled
+<a href="http://softwaredev.earthweb.com/java/article/0,,12082_1473151,00.html">
+FileChannel Objects in Java, Background Information</a>, introduced you to the concept of channels from a read/write IO viewpoint. 
+<p><b><font color="#FF0000">Data of type byte</font></b><p>This lesson will walk you 
+through a sample program that uses <b>FileChannel</b> objects in conjunction 
+with <b>ByteBuffer </b>objects to perform 
+read/write file IO for data of the primitive type <b>byte</b>.<p>
+<font color="#FF0000"><b>Mixed primitive types</b></font><p>In the next lesson, I will show you how to use the new I/O classes to transfer data of type
+<b>double</b> and data of type <b>short </b>between the computer's memory and a physical file.&nbsp; You will 
+learn how to extend the concept to any primitive data type other than <b>boolean.&nbsp;
+</b></p>
+<p>In a future lesson, I will show you how to use the new I/O classes to create records 
+consisting of sequences of data values of different primitive types, and how to 
+transfer those records between the computer's memory and a physical file.</p>
+<p><b><font color="#FF0000">Memory-mapped IO</font></b><p>Future lessons will teach you how to do <i>memory-mapped</i> IO using channels.<p>
+<b><font color="#FF0000">A channel is not a stream</font></b></p>
+<p>Note 
+that a channel is not the same as a <i>stream, </i>but a channel may be based on 
+a stream<i>.</i> Streams have been supported 
+by Java since the earliest days of Java.&nbsp; Channels were not 
+introduced until version 1.4.</p>
+<p><b><font color="#FF0000">The java.nio.channels package</font></b>
+<p>Much of the support for channels is provided in the package named <b>java.nio.channels</b>.&nbsp; 
+This package defines more than a dozen new classes, and about seven new 
+interfaces, not counting the new exception classes. <i>(In addition,
+there are four more new packages that begin with the name <b>java.nio</b>.)</i><p>
+<b><font color="#FF0000">Viewing tip</font></b>
+<p>You may find it useful to open another copy of this lesson in a separate
+browser window.&nbsp; That will make it easier for you to scroll back and
+forth among the different listings and figures while you are reading about
+them.
+<p><b><font color="#FF0000">Supplementary material</font></b>
+<p>I recommend that you also study the other lessons in my extensive collection
+of online Java tutorials.&nbsp; You will find those lessons published at
+<a href="http://softwaredev.earthweb.com/java">Gamelan.com</a>.&nbsp;
+However, as of the date of this writing, Gamelan doesn't maintain a consolidated
+index of my Java tutorial lessons, and sometimes they are difficult to
+locate there.&nbsp; You will find a consolidated index at <font color="#000000">
+<a href="http://www.DickBaldwin.com">www.DickBaldwin.com</a>.</font>
+<center>
+<h2>
+<a NAME="Discussion and Sample Programs"></a><font color="#000000">Discussion
+and Sample Code</font></h2></center>
+<b><font color="#FF0000">The Buffer and ByteBuffer classes</font></b>
+<p>Before getting into the details of <b>FileChannel</b> objects, I need
+to tell you that much of what you will see in this lesson will involve
+objects of the <b>ByteBuffer</b> class.&nbsp; The <b>ByteBuffer</b> class
+extends the <b>Buffer</b> class, and as such inherits a number of methods
+from the <b>Buffer</b> class.
+<p>It will be much easier for you to understand this discussion of <b>FileChannel</b>
+objects if you are already familiar with the features of <b>Buffer</b>
+and <b>ByteBuffer</b>.&nbsp; I have previously published lessons on these
+topics entitled
+<a href="http://softwaredev.earthweb.com/java/sdjjavase/article/0,,12395_1367031,00.html">Understanding
+the Buffer class in Java</a> and
+<a href="http://softwaredev.earthweb.com/java/article/0,,12082_1449271,00.html">The
+ByteBuffer Class in Java</a>.&nbsp; You may find it useful to review those
+two lessons in preparation for your study of this lesson.
+<p><b><font color="#FF0000">What is a FileChannel?</font></b>
+<p>Sun describes an object of the <b>FileChannel</b> class simply as <i>"A
+channel for reading, writing, mapping, and manipulating a file."</i>&nbsp;
+In this lesson, I will show you how to use <b>FileChannel</b> objects for
+reading files and writing files.&nbsp; In a future lesson, I will show you how 
+to use <b>FileChannel</b> objects for mapping files into memory.
+<p><b><font color="#FF0000">Enough  talk, let's see some code!</font></b><p>
+I will illustrate the <b>FileChannel</b> class using<b> </b>the sample program named <b>Channel01</b>.&nbsp; 
+ 
+You will find a complete listing 
+of the program in Listing 16 near the end of the lesson.&nbsp; As is my normal 
+approach, I will discuss this program in fragments.<p>This program, which 
+was tested using Java SDK version 1.4.0 under Win2000, first writes, and then reads a 
+file using <b>FileChannel</b> objects.&nbsp; The data written to and read from 
+the file is of the primitive type <b>byte</b>.<p><b><font color="#FF0000">Import 
+directives</font></b><p>
+The first fragment, shown in Listing 1, shows the beginning of the class named
+<b>Channel01</b>.&nbsp; The primary purpose of showing this listing at this 
+point is to emphasize the use of the new <b>java.nio</b> packages, as 
+illustrated by the import directives.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>import java.io.*;
+import java.nio.channels.*;
+import java.nio.*;
+
+class <b>Channel01</b>{
+
+<b><font face="Courier New,Courier">Listing 1</font></b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>The showBufferData method</b></font></p>
+<p>Listing 2 shows the signature of a static convenience method of my own 
+design named <b>showBufferData</b>.&nbsp; As you might guess from the name and 
+the incoming parameter type, the 
+purpose of this method is to display the contents of a <b>ByteBuffer</b> object.&nbsp; 
+This method will be used later in the program, so you need to understand how it 
+behaves.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp; static void <b>showBufferData</b>(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ByteBuffer buf, String name){
+
+<b><font face="Courier New,Courier">Listing 2</font></b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>A ByteBuffer parameter</b></font></p>
+<p>As you can see, this method receives a reference to a <b>ByteBuffer</b> 
+object as an incoming parameter.&nbsp; The method displays the <b>byte </b>data 
+encapsulated by that 
+object.</p>
+<p><font color="#FF0000"><b>A String parameter</b></font></p>
+<p>The method also receives a reference to a <b>String</b> object as an incoming 
+parameter.&nbsp; This string is included in the display to make it easier to 
+associate the output with the program code.</p>
+<p><font color="#FF0000"><b>Saving the position property</b></font></p>
+<p>When the <b>ByteBuffer</b> object is passed to the method, its <b>position</b> 
+property may or may not be zero.&nbsp; This method needs to be careful to avoid 
+modifying the value of the <b>position</b> property.&nbsp; Therefore, the method 
+saves the value of the <b>position</b> property upon entry and restores that 
+value upon exit.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp; int pos = <b>buf.position()</b>;
+
+&nbsp;&nbsp;&nbsp; buf.<b>position(0)</b>;
+
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;        "Data for " + <b>name</b>);
+
+<b><font face="Courier New,Courier">Listing 3</font></b></pre>
+</td>
+</tr>
+</table>
+<p>The code in Listing 3  begins by invoking one of the overloaded versions of 
+the<b> position</b> method<b> </b>to get and save the value of the <b>position</b> 
+property.&nbsp; </p>
+<p><font color="#FF0000"><b>Set position property to zero</b></font></p>
+<p>Having saved the value of the <b>position</b> property, the code in Listing 3 
+invokes the other overloaded version of the <b>position</b> method to set the 
+value of the <b>position </b>property to zero.</p>
+<blockquote>
+<p><i>(Those of you who are familiar with JavaBeans design patterns will 
+recognize that these overloaded versions of the <b>position</b> property do not 
+adhere to the design pattern for property getter and setter methods.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Display a header</b></font></p>
+<p>Finally, the code in Listing 3 displays a header for the data that will 
+follow, and identifies that data by including the value of the incoming string 
+named <b>name</b>.</p>
+<p><font color="#FF0000"><b>Iterating on a ByteBuffer object</b></font></p>
+<p>The <b>ByteBuffer</b> class provides  methods named <b>hasRemaining</b> 
+and <b>get</b>, which make it easy to iterate on the buffer.&nbsp; The code in 
+Listing 4 uses these two methods in a <b>while</b> loop to read and display the 
+byte at the buffer's current position, and then to automatically increment the position.&nbsp;
+</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp; while(buf.<b>hasRemaining</b>()){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.print(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; buf.<b>get</b>() + " ");
+&nbsp;&nbsp;&nbsp; }//end while loop
+
+<b><font face="Courier New,Courier">Listing 4</font></b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>The hasRemaining method</b></font></p>
+<p>The <b>hasRemaining</b> method in the conditional clause of the <b>while</b> 
+loop returns a <b>boolean</b>, which tells whether there are any elements 
+between the current position and the limit.&nbsp; When the limit is reached, the
+<b>hasRemaining</b> method returns false, and control exits the <b>while</b> 
+loop.</p>
+<p><font color="#FF0000"><b>The relative get method</b></font></p>
+<p>The <b>get</b> method used in Listing 4 gets and returns the byte at the 
+current position and automatically increments the value of the position 
+property.</p>
+<p><font color="#FF0000"><b>Restoring the value of the position property</b></font></p>
+<p>The code in Listing 5 displays a blank line to separate the blocks of output 
+data.&nbsp; Then it restores the value of the <b>position</b> property, and 
+returns, ending the<b> showBufferData</b> method.<b> </b></p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp; System.out.println();//new line
+
+&nbsp;&nbsp;&nbsp; buf.position(pos);
+&nbsp; }//end showBufferData
+
+<b><font face="Courier New,Courier">Listing 5</font></b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>The
+clearBufferData method</b></font></p>
+<p>Listing 6 shows the signature for a static convenience method named <b>
+clearBufferData </b>whose purpose is to store a zero value in each element of a
+<b>ByteBuffer</b> object received as an incoming parameter.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp; static void <b>clearBufferData</b>(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ByteBuffer buf, String name){
+&nbsp;&nbsp;&nbsp;&nbsp;
+<b><font face="Courier New,Courier">Listing 6</font></b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>The get and put methods of a ByteBuffer</b></font></p>
+<p>In addition to the <b>get</b> method discussed above, the <b>ByteBuffer</b> 
+class also provides a method named <b>put</b>, which writes a given <b>byte</b> 
+value into the 
+buffer at the current position, and then increments the position.</p>
+<p><font color="#FF0000"><b>Very similar to previous code</b></font></p>
+<p>If you understood the behavior of the <b>showBufferData</b> method discussed 
+above, you should have no difficulty understanding the behavior of the <b>
+clearBufferData </b>method.&nbsp; The body of that method is shown in its 
+entirety in Listing 7.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp; //Set position to zero
+&nbsp;&nbsp;&nbsp; buf.<b>position(0)</b>;
+
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;           "Clear " + name);
+
+&nbsp;&nbsp;&nbsp; while(buf.<b>hasRemaining()</b>){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; buf.<b>put((byte)0)</b>;
+&nbsp;&nbsp;&nbsp; }//end while loop
+
+&nbsp;&nbsp;&nbsp; //Set position to zero and return
+&nbsp;&nbsp;&nbsp; buf.<b>position(0)</b>;
+&nbsp; }//end method
+
+<b><font face="Courier New,Courier">Listing 7</font></b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>Now let's talk about channels!</b></font></p>
+<p>That covers the preliminaries.&nbsp; We now have a convenient and easy way to 
+clear and/or display the contents of a <b>ByteBuffer</b> object, so we can get 
+down to the main topic of this lesson - channels.</p>
+<p>For simplicity, the remaining code in this program is contained in the <b>
+main</b> method, which begins in Listing 8.</p>
+<p><font color="#FF0000"><b>Create some raw data</b></font></p>
+<p>After printing a text header on the screen, the <b>main</b> method in Listing 
+8 creates and populates a six-element <b>byte[]</b> array object.&nbsp; This 
+will be the raw data for the operations that follow.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp; public static void <b>main</b>(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; String[] args){
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Demo write/read on channel");
+
+&nbsp;&nbsp;&nbsp; byte[] array = {65,66,67,68,69,70};
+
+<b><font face="Courier New,Courier">Listing 8</font></b></pre>
+</td>
+</tr>
+</table>
+<p>Hopefully the code in Listing 8 will be familiar to you.&nbsp; If not, you may 
+need to review some of my introductory Java tutorials, such as the one entitled
+<a href="http://softwaredev.earthweb.com/java/sdjcetp/article/0,,12397_1143571,00.htm">
+The Essence of OOP using Java, Array Objects, Part 1</a>.&nbsp; That tutorial is followed by parts 2 
+and 3.</p>
+<p><font color="#FF0000"><b>Creating a ByteBuffer object</b></font></p>
+<p>The code in Listing 9 wraps the array object in a<b> ByteBuffer</b> object.&nbsp; 
+This code illustrates one of the ways to create a <b>ByteBuffer </b>object in 
+Java.</p>
+<blockquote>
+<p><i>(If this code is unfamiliar to you, you  should probably review my tutorial 
+lessons entitled
+<a href="http://softwaredev.earthweb.com/java/sdjjavase/article/0,,12395_1367031,00.html">
+Understanding the Buffer class in Java</a> and
+<a href="http://softwaredev.earthweb.com/java/article/0,,12082_1449271,00.html">
+The ByteBuffer Class in Java</a>.)</i></p>
+</blockquote>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp; ByteBuffer buf =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>ByteBuffer.wrap(array)</b>;
+
+&nbsp;&nbsp;&nbsp; <b>showBufferData</b>(buf,"buf-raw data");
+
+<b><font face="Courier New,Courier">Listing 9</font></b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>Display contents of ByteBuffer object</b></font></p>
+<p>Having created a <b>ByteBuffer</b> object that wraps the array object, the 
+code in Listing 9 displays the contents of the <b>ByteBuffer</b> object by 
+invoking the <b>showBufferData</b> method discussed earlier.&nbsp; The output 
+produced by the code in Listing 9 is shown in Figure 1.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Data for buf-raw data
+65 66 67 68 69 70
+
+<b>Figure 1</b></pre>
+</td>
+</tr>
+</table>
+<p>As you would expect, the values shown in Figure 1 match the values stored in 
+the array object in Listing 8, which was wrapped in the <b>ByteBuffer</b> object 
+in Listing 9.</p>
+<p><font color="#FF0000"><b>Now for the FileChannel class</b></font></p>
+<p>We've finally reached the point where we are prepared to discuss the <b>
+FileChannel</b> class.&nbsp; The code in Listing 10 begins by instantiating a 
+new object of the class <b>FileOutputStream</b>, and linking that object to a 
+physical file named <b>junk.txt</b>.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; FileChannel <b>outCh</b> =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (<b>new FileOutputStream</b>(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "junk.txt")).<b>getChannel()</b>;
+
+<b><font face="Courier New,Courier">Listing 10</font></b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>Get a FileChannel object for output</b></font></p>
+<p>Then the code in Listing 10 invokes the <b>getChannel</b> method on the <b>
+FileOutputStream</b> object's reference to create a <b>FileChannel</b> object 
+linked to the same physical file as the <b>
+FileOutputStream</b>.</p>
+<blockquote>
+<p><i>(This <b>FileChannel</b> object can be 
+used to write data to the physical file.&nbsp; However, it cannot be used to 
+read data from the file because it is derived from an output stream.)</i></p>
+</blockquote>
+<p>The reference to the <b>FileChannel </b>object is stored in a reference 
+variable of type <b>FileChannel</b> named <b>outCh</b>.</p>
+<p><font color="#FF0000"><b>Write the buffer data to the physical file</b></font></p>
+<p>The code in Listing 11 causes the data in the <b>ByteBuffer</b> object to be 
+written into the physical file by invoking the <b>write</b> method of the <b>
+FileChannel</b> class, passing the buffer object's reference as a parameter.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Bytes written = "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + outCh.<b>write(buf)</b>);
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; outCh.<b>close()</b>;
+
+<b><font face="Courier New,Courier">Listing 11</font></b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>The number of bytes written</b></font></p>
+<p>The <b>write</b> method returns the number of bytes written to the physical 
+file, which is displayed by the code in Listing 11.</p>
+<p>The output produced by the code in Listing 11 is shown in Figure 2.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Bytes written = 6
+
+<b>Figure 2</b></pre>
+</td>
+</tr>
+</table>
+<p>As you would expect, the number of bytes written to the physical file matches 
+the number of bytes originally stored in the array object and later wrapped in 
+the <b>ByteBuffer</b> object.</p>
+<p><font color="#FF0000"><b>Close the channel</b></font></p>
+<p>Then the code in Listing 11 invokes the <b>close</b> method to close the <b>
+FileChannel</b> object.</p>
+<p><font color="#FF0000"><b>Clear the buffer</b></font></p>
+<p>The code in Listing 12  invokes the <b>clearBufferData</b> method 
+discussed earlier to store a zero value in each of the elements of the <b>
+ByteBuffer</b> object.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>clearBufferData</b>(buf,"buf");
+
+<b><font face="Courier New,Courier">Listing 12</font></b></pre>
+</td>
+</tr>
+</table>
+<p>Note that when the <b>clearBufferData</b> method returns, the <b>position</b> 
+property of the buffer has been set to zero.</p>
+<p>Invocation of the <b>clearBufferData</b> method produces the output shown in Figure 3.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Clear buf
+
+<b>Figure 3</b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>Get a FileChannel object for input</b></font></p>
+<p>The code in Listing 13 uses an instance of the <b>FileInputStream</b> class 
+as an intermediary to get a <b>FileChannel</b> object that is suitable for 
+reading data from the physical file named <b>junk.txt</b>.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; FileChannel <b>inCh</b> =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (new FileInputStream(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "junk.txt")).<b>getChannel()</b>;
+
+<b><font face="Courier New,Courier">Listing 13</font></b></pre>
+</td>
+</tr>
+</table>
+<blockquote>
+<p><i>(Note that this object cannot be used for output because it was derived from 
+an input stream.)</i></p>
+</blockquote>
+<p>The <b>FileChannel</b> object's reference is stored in the reference variable 
+named <b>inCh.</b></p>
+<p><font color="#FF0000"><b>Read data from physical file into the buffer</b></font></p>
+<p>The code in Listing 14 invokes the <b>read</b> method on the <b>FileChannel</b> 
+object's reference to read the data from the physical file into the <b>
+ByteBuffer</b> object, whose reference is passed as a parameter to the <b>read</b> 
+method.</p>
+<blockquote>
+<p><i>(Recall that the elements of the ByteBuffer object were previously cleared 
+to all zero values.)</i></p>
+</blockquote>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Bytes read = "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + inCh.<b>read(buf)</b>);
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; inCh.close();
+
+<b><font face="Courier New,Courier">Listing 14</font></b></pre>
+</td>
+</tr>
+</table>
+<p>The read method returns the number of bytes actually read, producing the 
+output shown in Figure 4.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Bytes read = 6
+
+<b>Figure 4</b></pre>
+</td>
+</tr>
+</table>
+<p>As you would probably expect, the number of bytes read matches the number of 
+bytes in the physical file, which matches the number of elements in the original 
+array object.</p>
+<p><font color="#FF0000"><b>Recap</b></font></p>
+<p>To recap, the <b>ByteBuffer</b> object was originally created and populated by wrapping 
+an array object of type <b>byte[]</b> having a <b>length</b> of six elements. An 
+output
+<b>FileChannel</b> object was used to cause the contents of the <b>ByteBuffer</b> 
+object to be written into a physical file named <b>junk.txt</b>.</p>
+<p>Then each of the elements in the <b>ByteBuffer</b> object was set to a value 
+of zero, and the <b>position </b>property for the <b>ByteBuffer </b>object was 
+set to zero.</p>
+<p>Following this, an input <b>FileChannel</b> object was used to cause the 
+contents of the physical file named <b>junk.txt</b> to be read into the <b>
+ByteBuffer</b> object.</p>
+<p><font color="#FF0000"><b>Display data in the ByteBuffer object</b></font></p>
+<p>The code in Listing 15 causes the new contents of the <b>ByteBuffer</b> 
+object to be displayed on the computer screen.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>showBufferData</b>(buf,"buf");
+
+<b><font face="Courier New,Courier">Listing 15</font></b></pre>
+</td>
+</tr>
+</table>
+<p>The output produced by the code in Listing 15 is shown in Figure 5.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Data for buf
+65 66 67 68 69 70
+<b>
+Figure 5</b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>Data matches the original array object</b></font></p>
+<p>Since nothing was done to modify any of the data  anywhere along the 
+way, the values of the 
+elements in the <b>ByteBuffer</b> object match the values of the elements in the 
+original array object, which was the starting point for this series of operations.</p>
+<p><b><font color="#FF0000">What have you learned?</font></b></p>
+<p>You have learned how to use the <b>write</b> and <b>read</b> methods of the
+<b>FileChannel</b> class to cause data of type <b>byte</b> to be transferred between a <b>ByteBuffer</b> 
+object and a physical file.&nbsp; You have seen a simple example of why Sun says: </p>
+<blockquote>
+  <p><i>&quot;A channel represents an open connection to an entity such as a hardware 
+  device, a file, a network socket, or a program component that is capable of 
+  performing one or more distinct I/O operations, ...&quot;</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>So what!</b></font></p>
+<p>By now, you may be saying <i>&quot;So what!&nbsp; There are other, possibly easier 
+ways to transfer data of type <b>byte</b> between the computer's memory and a 
+physical file.&quot;</i></p>
+<p><font color="#FF0000"><b>Good point</b></font></p>
+<p>While this sample program illustrates the basics of using channels, it 
+doesn't do a very good job of showing off the advantages of the new channel 
+capability in Java.&nbsp; However, you need to understand the basics before 
+moving on to more complex topics.&nbsp; </p>
+<p>The sample program that I will discuss in the next lesson will do a little 
+better in terms of showing off the advantages of channels.</p>
+<p>In the next lesson, I will show you how to use the <b>FileChannel</b> class, the <b>
+ByteBuffer</b> class,  the <b>DoubleBuffer</b> class, and the <b>ShortBuffer </b>
+class to transfer data of type
+<b>double</b> and data of type <b>short </b>between the computer's memory and a physical file.&nbsp; You will 
+learn how to extend the concept to any primitive data type other than <b>boolean.&nbsp;
+</b></p>
+<p>In a future lesson, I will show you how to use the <b>FileChannel</b> class along 
+with the <b>ByteBuffer</b> class to create records consisting of sequences of 
+data values of different primitive types, and how to transfer those records 
+between the computer's memory and a physical file.</p>
+<p>The examples in the next lesson will better illustrate some of the advantages of channels.</p>
+<center>
+<h2>
+<a NAME="Run the program"></a>Run the Program</h2></center>
+If you haven't already done so, I encourage you to copy the code from Listing
+16 into your text editor, compile it, and execute it.&nbsp; Experiment
+with it, making changes, and observing the results of your changes.
+<p>Remember, however, that you must be running Java version 1.4.0 or later
+to compile and execute this program.
+<h2 align="center"><a name="Summary">Summary</a></h2>
+<p>Sun describes an object of the <b>FileChannel</b> class simply as <i>&quot;A 
+channel for reading, writing, mapping, and manipulating a file.&quot; </i>
+<p><b>FileChannel</b> objects are tied directly to objects of the <b>ByteBuffer</b> 
+class.<p>One way to create a <b>ByteBuffer</b> object is to wrap an existing 
+array object in a <b>ByteBuffer</b> object.<p>You can get a <b>FileChannel</b> 
+object for output by invoking the <b>getChannel</b> method on a <b>
+FileOutputStream</b> object's reference. The <b>FileChannel</b> object can be 
+used to write data to a physical file. However, it cannot be used to read data 
+from the file.<p>The <b>write</b> method of a <b>FileChannel</b> object actually 
+transfers data from a <b>ByteBuffer</b> object to a physical file.<p>You can get 
+a <b>FileChannel</b> object for input by invoking the <b>getChannel</b> method 
+on a <b>FileInputStream</b> object's reference. The <b>FileChannel</b> object 
+can be used to read data from a physical file. However, it cannot be used to 
+write data to the file.<p>The <b>read</b> method of a <b>FileChannel</b> object 
+actually transfers data into a <b>ByteBuffer</b> object from a physical file.<h2 align="center"><a name="Whats Next">What's Next</a>?</h2>
+<p>In the next lesson, I will show you how to use the new I/O classes to transfer data of type
+<b>double</b> and data of type <b>short </b>between the computer's memory and a physical file.&nbsp; You will 
+learn how to extend the concept to any primitive data type other than <b>boolean.&nbsp;
+</b></p>
+<p>In a future lesson, I will show you how to use the new I/O classes to create records 
+consisting of sequences of data values of different primitive types, and how to 
+transfer those records between the computer's memory and a physical file.</p>
+<p>As time goes on, I plan to publish additional lessons that will help
+you learn to use other new IO features including:
+<ul>
+<li>
+File locks</li>
+
+<li>
+Character-set encoders and decoders</li>
+
+<li>
+Pattern matching on files using regular expressions</li>
+
+<li>
+Socket channels for both clients and servers</li>
+
+<li>
+Non-blocking reads</li>
+
+<li>
+Non-blocking servers</li>
+</ul>
+<center>
+<h2>
+<a NAME="Complete Program Listings"></a>Complete Program Listing</h2></center>
+A complete listing of the program discussed in this lesson is shown in
+Listing 16 below.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>/* File Channel01.java
+Copyright 2002, R.G.Baldwin
+
+Illustrates use of FileChannel objects.
+
+First writes and then reads a file
+using FileChannel objects.
+
+Tested using JDK 1.4.0 under Win2000
+
+The output is:
+
+Demo write/read on channel
+Data for buf-raw data
+65 66 67 68 69 70
+Bytes written = 6
+Clear buf
+Bytes read = 6
+Data for buf
+65 66 67 68 69 70
+
+**************************************/
+
+import java.io.*;
+import java.nio.channels.*;
+import java.nio.*;
+
+class Channel01{
+
+&nbsp; static void showBufferData(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ByteBuffer buf, String name){
+&nbsp;&nbsp;&nbsp; //Displays byte buffer contents
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Save position
+&nbsp;&nbsp;&nbsp; int pos = buf.position();
+&nbsp;&nbsp;&nbsp; //Set position to zero
+&nbsp;&nbsp;&nbsp; buf.position(0);
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Data for " + name);
+&nbsp;&nbsp;&nbsp; while(buf.hasRemaining()){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.print(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; buf.get() + " ");
+&nbsp;&nbsp;&nbsp; }//end while loop
+&nbsp;&nbsp;&nbsp; System.out.println();//new line
+&nbsp;&nbsp;&nbsp; //Restore position and return
+&nbsp;&nbsp;&nbsp; buf.position(pos);
+&nbsp; }//end showBufferData
+&nbsp; //---------------------------------//
+&nbsp;&nbsp;
+&nbsp; static void clearBufferData(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ByteBuffer buf, String name){
+&nbsp;&nbsp;&nbsp; //Stores 0 in each element of a
+&nbsp;&nbsp;&nbsp; // byte buffer.
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Set position to zero
+&nbsp;&nbsp;&nbsp; buf.position(0);
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Clear " + name);
+&nbsp;&nbsp;&nbsp; while(buf.hasRemaining()){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; buf.put((byte)0);
+&nbsp;&nbsp;&nbsp; }//end while loop
+&nbsp;&nbsp;&nbsp; //Set position to zero and return
+&nbsp;&nbsp;&nbsp; buf.position(0);
+&nbsp; }//end clearBufferData
+&nbsp; //---------------------------------//
+&nbsp;&nbsp;
+&nbsp; public static void main(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; String[] args){
+&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Demo write/read on channel");
+&nbsp;&nbsp;&nbsp; //Create and populate array
+&nbsp;&nbsp;&nbsp; byte[] array = {65,66,67,68,69,70};
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Wrap array in a buffer
+&nbsp;&nbsp;&nbsp; ByteBuffer buf =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ByteBuffer.wrap(array);
+&nbsp;&nbsp;&nbsp; showBufferData(buf,"buf-raw data");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Get FileChannel for output
+&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; FileChannel outCh =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (new FileOutputStream(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "junk.txt")).getChannel();
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Write output data
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Bytes written = "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + outCh.write(buf));
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Close channel
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; outCh.close();
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Clear buffer
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; clearBufferData(buf,"buf");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Get FileChannel for input
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; FileChannel inCh =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (new FileInputStream(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "junk.txt")).getChannel();
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Read and display data
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Bytes read = "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + inCh.read(buf));
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Close channel and display data
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; inCh.close();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; showBufferData(buf,"buf");
+
+&nbsp;&nbsp;&nbsp; }catch(Exception e){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(e);}
+&nbsp; }// end main
+
+}//end class Channel01 definition
+
+<b><font face="Courier New,Courier">Listing 16</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>
+<hr size=3 width="100%" align=center>
+<p>Copyright 2002, Richard G. Baldwin.&nbsp; Reproduction in whole or in
+part in any form or medium without express written permission from Richard
+Baldwin is prohibited.
+<h4>
+<a NAME="About the author"></a>About the author</h4>
+<b><a href="mailto:Baldwin@DickBaldwin.com">Richard Baldwin</a></b><i>
+is a college professor (at Austin Community College in Austin, TX) and
+private consultant whose primary focus is a combination of Java, C#, and
+XML. In addition to the many platform and/or language independent benefits
+of Java and C# applications, he believes that a combination of Java, C#,
+and XML will become the primary driving force in the delivery of structured
+information on the Web.</i>
+<p><i>Richard has participated in numerous consulting projects, and he
+frequently provides onsite training at the high-tech companies located
+in and around Austin, Texas.&nbsp; He is the author of Baldwin's Programming
+<a href="http://www.DickBaldwin.com">Tutorials</a>,
+which has gained a worldwide following among experienced and aspiring programmers.
+He has also published articles in JavaPro magazine.</i>
+<p><i>Richard holds an MSEE degree from Southern Methodist University and
+has many years of experience in the application of computer technology
+to real-world problems.</i>
+<p><i><a href="mailto:Baldwin@DickBaldwin.com">Baldwin@DickBaldwin.com</a></i>
+<p>-end-
+<br>&nbsp;
+</body>
+</html>

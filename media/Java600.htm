@@ -1,0 +1,661 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>... in Java by Richard G Baldwin</TITLE>
+<META NAME="Template" CONTENT="C:\PROGRAM FILES\MICROSOFT OFFICE\OFFICE\html.dot">
+</HEAD>
+<BODY LINK="#0000ff" VLINK="#800080" BGCOLOR="#ffffff">
+
+<P><!--start--></P>
+<I><H3 ALIGN="CENTER">Richard G Baldwin (512) 223-4758, </I><A HREF="mailto:baldwin@austin.cc.tx.us"><I>baldwin@austin.cc.tx.us</I></A><I>, </I><A HREF="http://www2.austin.cc.tx.us/baldwin/"><I>http://www2.austin.cc.tx.us/baldwin/</I></A></H3>
+<H2 ALIGN="CENTER"><!--title-->RMI, Introduction to Remote Method Invocation<!--endtitle--></H2>
+<P>Java Programming, Lecture Notes 600, Revised 8/22/99. </P>
+
+<UL>
+<LI><A HREF="#preface">Preface</A> </LI>
+<LI><A HREF="#Jdk12Compatibility">JDK 1.2 Compatibility</A></LI>
+<LI><A HREF="#introduction">Introduction</A> </LI>
+<LI><A HREF="#overview">Overview</A> </LI>
+<LI><A HREF="#sample_program">Sample_Program</A> </LI>
+<LI><A HREF="#the_batch_file">The Batch File</A> </LI>
+<LI><A HREF="#the_interface_file">The_Interface_File</A> </LI>
+<LI><A HREF="#the_remote_object_file">The_Remote_Object_File</A> </LI>
+<LI><A HREF="#the_server_code_file">The_Server_Code_File</A> </LI>
+<LI><A HREF="#the_client_code_file">The_Client_Code_File</A> </LI>
+<LI><A HREF="#program_listing">Program Listings</A> </LI></UL>
+
+<P><HR></P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="preface"></A>Preface</H2>
+</FONT><P>Students in Prof. Baldwin's <B><U>Advanced Java Programming</B></U> classes at ACC will be responsible for knowing and understanding all of the material in this lesson beginning with the spring semester of 1999. </P>
+<P>This lesson was originally written on October 9, 1998, using the JDK 1.1.6 download package. The purpose of this lesson is to illustrate RMI using a very simple example program. </P>
+<P>The sample program in this lesson was successfully tested with the client and the server running in separate processes on the same machine (localhost). It was also successfully tested with the client running on one machine and the server running on a different machine on a TCP/IP network.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Jdk12Compatibility">JDK 1.2 Compatibility</A></H2>
+</FONT><P>Because of the more stringent security requirements of JDK 1.2 relative to JDK 1.1, the sample program in this lesson must be upgraded to comply with the JDK 1.2 Security Manager before this program can be compiled and run under JDK 1.2. </P>
+<P>Briefly, this requires the generation and installation of security policy files that grant permission for the required network socket operations.  The installation and use of the policy files also requires modifications to the batch file that is used to control the overall process.  Although several changes were made to the batch file, the key statements in the revised batch file are of the form:</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=480>
+<TR><TD VALIGN="TOP" BGCOLOR="#c0c0c0">
+<PRE>java <B>-Djava.security.policy=Rmi02Client.policy</B> Rmi02Client</PRE></TD>
+</TR>
+</TABLE>
+
+<P>This statement causes the <B>Rmi02Client</B> application to be executed after first setting a system property that causes the file named <B>Rmi02Client.policy</B> to establish the security policy.</P>
+<P>The two required policy files and the revised batch file are listed at the end of the lesson.  I highlighted some of the important changes in the batch file in boldface.</P>
+<P>I'm not going to explain the rationale for these files in this lesson.  Rather, I am providing them here only to illustrate the mechanics of making the program compatible with JDK 1.2.  I will soon publish lessons on security that address the topic of policy files.  You are referred to those lessons for an explanation of the use of policy files.<BR>
+&nbsp; </P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="introduction"></A>Introduction</H2>
+</FONT><P>Java's Remote Method Invocation (RMI) makes it possible for code in an object running in one Java Virtual Machine (JVM) to invoke methods in an object running in another JVM.&nbsp; The two JVMs may be running as separate processes on the same computer, or may be running on different computers connected by a TCP/IP network. </P>
+<P>Since the Internet is a TCP/IP network, this means that a client machine anywhere in the world has the capability of invoking methods on an object on a server anywhere in the world.&nbsp; The potential benefits of such operation are staggering to the imagination. </P>
+<P>The machine with the object whose methods are invoked remotely is the server, and the machine invoking the methods on the remote object is the client. </P>
+<P>One special line of code is required in the program on the client side to get a reference to the remote object.&nbsp; Once the client code has a reference to the remote object, the invocation of methods on the remote object is no different from the invocation of methods on local objects (except for speed of course). </P>
+<P>As might be expected, the code on the server side must define the class and instantiate the remote object of that class.&nbsp; Beyond this, only a couple of extra lines of code are required on the server side to register the object and expose its methods to client machines so that those methods can be invoked remotely. </P>
+<P>Both the client code and the server code must define or have access to an interface, which declares the methods that can be invoked remotely, and both must set a security manager which requires one line of code. </P>
+<P>The bottom line is that very little extra programming but probably quite a lot of reliable human communication is required to make this capability available. </P>
+<P>When invoking methods on the remote object, the client can pass objects as parameters, and the method on the remote object can return objects.&nbsp; This is accomplished through the object serialization capability of Java. </P>
+<P>Because both the client and the server are written in Java, the only platform compatibility requirement between the client and the server is that they both run compatible versions of the JVM. </P>
+<P>The client code and the server code can be compiled locally at the client and server machines, or can be compiled elsewhere and the compiled code can then be installed on the two machines. </P>
+<P>This lesson attempts to explain <U>how to use</U> RMI, but does not attempt to explain how and why it works.&nbsp; Subsequent lessons will attempt to provide some insight into how it works. <BR>
+&nbsp; </P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="overview"></A>Overview</H2>
+</FONT><P>The implementation of RMI for a minimal application (Hello Network World) requires you to write and compile four short source code files and to execute two different utility programs.&nbsp; This process produces a minimum of six class files that must be installed on the client and the server.&nbsp; Some class files must be installed in both locations.&nbsp; As a result, three class files must be installed on the client and five class files must be installed on the server. </P>
+<P>Of course, your programs could produce many more class files than this minimal number depending on the behavior of the programs, but the same is true for purely local operation as well. </P>
+<P>Execution of one of the utility programs on the server creates and maintains a registry of objects on the server whose methods are exposed to the client. </P>
+<P>Execution of the other utility program produces two special class files known as a <I>stub</I> file and a <I>skeleton</I> file.&nbsp; The stub file must be installed on the client and is the representative of, or a stand-in for the remote object on the client.&nbsp; In effect, the client software communicates with the stub on the client machine, the stub communicates with the skeleton on the server, and the skeleton communicates with the method in the remote object on the server.&nbsp; So the stub is a class file that behaves like the method on one side, and behaves like a communication program on the other. <BR>
+&nbsp; </P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="sample_program"></A>Sample Program</H2>
+</FONT><P>RMI is the Java process that makes it possible for a method in an object running in one virtual machine to invoke a method in an object running under a different virtual machine exactly as if it were a method in a local object.&nbsp; The two virtual machines can be running as different processes on the same hardware platform.&nbsp; Or, they can be running on different machines, of the same or different types, on different parts of the Earth, connected by a TCP/IP network. </P>
+<P>Furthermore, if the promise of platform independence really holds, all of the software can have been compiled at one location, and the compiled class files can have been distributed to the two machines with no requirement to perform any compilation locally. </P>
+<P>The machine that invokes the method on the remote object is viewed as the client machine, and the machine containing the object whose method is invoked is viewed as the server. </P>
+<P>I'm not going to suggest that an operation of this type is free of potential problems.&nbsp; For example, it will require a very cooperative systems administrator at the server end as well as good communications among all the people involved.&nbsp; However, the benefits could certainly outweigh the problems. </P>
+<P>There are a variety of ways to view this situation, each of which leads to a different set of operational procedures.&nbsp; I am going to take the viewpoint that all of the software is compiled at a central location, which is not necessarily the client or the server, and the appropriate compiled class files are then distributed to the client and to the server.&nbsp; This viewpoint is useful in being able to see which class files are required at which location. </P>
+<P>You could just as easily take the viewpoint that all of the compilation is performed at the client and at the server.&nbsp; This would require that one source file exist at both locations to support the compilation. </P>
+<P>This is an RMI version of "hello world", and as such, is a minimal program.&nbsp; It requires four separate source files and two utility programs to compile and execute.&nbsp; The four source files are: </P>
+
+<UL>
+<LI>An interface file that declares the signature of the method on the remote object that can be invoked by the client. </LI>
+<LI>A file that defines the class for the remote object on the server whose method will be invoked by the client. </LI>
+<LI>A file that serves as the server program. </LI>
+<LI>A file that serves as the client program. </LI></UL>
+
+<P>The two utility programs are: </P>
+
+<UL>
+<B><LI>rmic.exe</B> - a program that produces stub and skeleton class files used by the client and the server. </LI>
+<B><LI>rmiregistry.exe</B> - a program that creates and maintains a registry of objects on a server whose methods can be invoked remotely by clients. </LI></UL>
+
+<P>Given so many files and utility programs and a variety of sequencing requirements associated with compiling and executing them, I decided to make the process semi-automatic by encapsulating the overall process in an MS-DOS batch file.&nbsp; If you are not running under Windows or NT, you will need to figure out how to produce an equivalent script file for the platform that you are running on. </P>
+<P>I also find that having this batch file available makes it easier to explain the mechanics of making the whole process work. </P>
+<P>Initially, I am going to discuss the batch file and the sequence of events and explain how you can run this RMI application on a single hardware platform by running the client in one process and the server in a different process.&nbsp; Hopefully you could also run it on two different platforms with minimal changes if you have two platforms readily available connected by TCP/IP. </P>
+<P>I did not define packages for this software.&nbsp; In a real-world situation, you probably would want to put it in packages.&nbsp; However, in my view, putting it in packages at this stage simply makes it more difficult to work with and explain. </P>
+<P>Here is the scenario.&nbsp; I have a folder on my computer named <B>jnk</B>.&nbsp; This folder has two sub folders named <B>Client</B> and <B>Server</B>.&nbsp; The source code for all of the required Java programs resides in the jnk folder.&nbsp; All compilations are performed in the jnk folder producing compiled class files in that folder.&nbsp; Then the class files required by the server are copied into the Server folder, and the class files required by the Client are copied into the Client folder. </P>
+<P>Then the server program is executed in its own MS-DOS process under the Java virtual machine (JVM) as a separate process. </P>
+<P>Then the client program is executed under a different instance of the JVM in its own process. </P>
+<P>At this point, the client program and the server program are each running, but are running under different instances of the JVM in separate processes.&nbsp; Without something like RMI, the programs running in these two processes would not be capable of meaningful communication, particularly if the two processes were on different machines. </P>
+<P>The client program executes a method named <B>helloRemoteObj()</B> in an object running in the server process, passing a <B>String</B> object containing <I>"Dick"</I> as a parameter.&nbsp; The remote method receives the incoming <B>String</B> parameter and returns a <B>String</B> object containing that parameter, <I>"Hello yourself Dick"</I> which is displayed by the client program in the MS-DOS process in which it is running. </P>
+<P>In fact, the client program is executed twice to demonstrate that the remote object and its method continue to be available even after the client program terminates. </P>
+<P>It is necessary to manually terminate the remote object when it is no longer needed. </P>
+<P>The names of the four files mentioned above are listed below. </P>
+
+<UL>
+<B><LI>Rmi02RemoteIntfc.java</B> - the interface </LI>
+<B><LI>Rmi02RemoteObj.java</B> - the object </LI>
+<B><LI>Rmi02Server.java</B> - the server </LI>
+<B><LI>Rmi02Client.java</B> - the client </LI></UL>
+
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="the_batch_file"></A>The Batch file</H2>
+</FONT><P>The name of the batch file is <B>Rmi02.bat</B>.&nbsp; A complete listing of the file is provided near the end of this lesson.&nbsp; I will show and discuss only the most important parts in this section and you can refer to the entire file later. </P>
+<P>(See the revised version for JDK 1.2 compatibility.)</P>
+<P>The first fragment causes all of the programs required by the server and the client to be compiled. </P>
+<P>It is important to note that both of these compilation processes share the interface file named <B>Rmi02RemoteIntfc.java</B>.&nbsp; If the compilations were performed at different locations, then identical copies of the interface source file would be required at both locations.&nbsp; (I will discuss the purpose of the interface file later.) </P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>javac Rmi02Server.java
+javac Rmi02Client.java</PRE></TD>
+</TR>
+</TABLE>
+
+<P>Once this compilation is completed, all but two of the required class files are available.&nbsp; The missing files are not produced by compiling Java source code.&nbsp; Rather, they are produced by executing the utility program named <B>rmic.exe</B> with the class file for the remote object as a command line parameter.&nbsp; This produces two additional class files with names that end with <B>_Stub</B> and <B>_Skel</B>.&nbsp; (I will also discuss the purpose of these class files later as well.) </P>
+<P>This operation is shown in the next fragment. </P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE><B>rmic</B> Rmi02RemoteObj</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The next fragment copies all of the class files required by the server into the folder named Server.&nbsp; As you can see, the server requires the class file for the main server program named <B>Rmi02Server.class</B>.&nbsp; In addition, it requires the class file for the remote object, the class file for the interface, the class file for the stub, and the class file for the skeleton. </P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>copy Rmi02RemoteObj_Stub.class Server
+copy Rmi02RemoteObj_Skel.class Server
+copy Rmi02RemoteObj.class Server
+copy Rmi02Server.class Server
+copy rmi02RemoteIntfc.class Server</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The next fragment copies the three files required by the client into the folder named Client.&nbsp; The client requires the class file for the client named <B>Rmi02Client.class</B>.&nbsp; In addition, it needs two of the same files required by the server:&nbsp; the stub file and the interface file.&nbsp; However, it doesn't need the skeleton file. </P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>copy Rmi02Client.class Client
+copy Rmi02RemoteObj_Stub.class Client
+copy rmi02RemoteIntfc.class Client</PRE></TD>
+</TR>
+</TABLE>
+
+<P>Later, we will discuss the need to run the <B>rmiregistry.exe</B> program on the server that provides a capability to create and maintain a registry of objects whose methods can be invoked remotely. </P>
+<P>Normally under a Win95 system, you should be able to invoke the following command: </P>
+<B><BLOCKQUOTE>start rmiregistry</BLOCKQUOTE>
+</B><P>This causes the program to be executed in its own MS-DOS process.&nbsp; However, my Win95 system running JDK 1.1.6 gives a fatal error whenever I try to do this. </P>
+<P>Another way to create the registry is with program code, and that is how I did it in this program.&nbsp; I will point that out when we get to that code.&nbsp; However, that is probably not a very good way to do it in the real world due to the possibility of two or more programs attempting to create multiple registries.&nbsp; This is a system administrator function. It should occur only once no matter how many different server programs are running that use the registry. </P>
+<P>The next fragment starts the server program running.&nbsp; We will see that this program launches the remote object on a separate thread that continues to run and service remote requests until you manually terminate it. </P>
+<P>(Note that at this point, you may or may not be able to use the remaining portion of the batch file, depending on how your system is set up. If your system doesn't properly execute the following batch command, you will need to create a separate process window and manually start the server running in that process window. Then you will need to manually start the client running in its own process window as well.)</P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>cd Server
+start java Rmi02Server
+cd ..</PRE></TD>
+</TR>
+</TABLE>
+
+<P>At this point, my semiautomatic process running under control of the batch file requires some human intervention to help it along.&nbsp; In particular, when the new thread is launched in its own MS-DOS process, that box gains the focus.&nbsp; I have to click on the main MS-DOS box to cause the next fragment to execute and start the client software running. </P>
+<P>As mentioned earlier, this batch file executes the client program twice in succession to demonstrate that the remote object remains alive and available to have its methods invoked even after the client program terminates. </P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>cd Client
+java Rmi02Client
+java Rmi02Client</PRE></TD>
+</TR>
+</TABLE>
+
+<P>In a real system, involving computers some distance apart, it would probably be necessary for a person at one end to start the server program running and a person at the other end to start the client program running.&nbsp; It might even be necessary to have different people at each end install the class files in the appropriate folders.&nbsp; However, it should not be necessary to perform compilations at both ends.&nbsp; It should be possible to compile and test the software at a central location and then ship compiled class files to the client and server ends of the connection. </P>
+<P>Now that we have seen the glue that ties the process together, let's begin discussing the process in some more detail. <BR>
+&nbsp; </P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="the_interface_file"></A>The Interface File</H2>
+</FONT><P>For this sample program, this is a small file, but it is a key file. <BR>
+&nbsp; </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>//File <B>Rmi02RemoteIntfc</B>.java
+
+import java.rmi.*;
+
+public interface Rmi02RemoteIntfc <B>extends Remote</B>{
+&nbsp; String <B>helloRemoteObj(String client)</B>&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; throws <B>RemoteException</B>;
+}//end Rmi02RemoteIntfc definition</PRE></TD>
+</TR>
+</TABLE>
+
+<P>Let's begin by identifying a few interesting characteristics of this interface definition.&nbsp; First, it extends the <B>Remote</B> interface that is described below: </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#00ffff">
+<P>The <B>Remote</B> interface serves to identify all remote objects. Any remote object must directly or indirectly implement this interface. Only those methods specified in a remote interface are available remotely.&nbsp; </P>
+<P>Implementation classes can implement any number of remote interfaces and can extend other remote implementation classes.&nbsp;</TD>
+</TR>
+</TABLE>
+
+<P>The <B>Remote</B> interface doesn't declare any methods, but any object that is treated as a remote object must be of a class that implements the <B>Remote</B> interface either directly or indirectly.&nbsp; In this program, the remote object will implement <B>Rmi02RemoteIntfc</B> and therefore will implement <B>Remote</B> indirectly through inheritance. </P>
+<P>If the class from which the remote object is instantiated defines methods that are not declared in the extended <B>Remote</B> interface that it implements, then those methods cannot be invoked remotely.&nbsp; The client has access only to the methods of the remote object that are declared in the interface.&nbsp; In this case, there is only one method declared in the interface: <B>helloRemoteObj(String client)</B>.&nbsp; However, there could be many methods declared in the interface, defined in the class, and available to be invoked remotely. </P>
+<P>You will also note that the method that is declared in the interface throws <B>RemoteException</B>.&nbsp; <U>This is a requirement</U>.&nbsp; You will see that even the constructor for the object is required to throw this exception. </P>
+<P>This exception class is the superclass of about 15 different types of actual exceptions that can be thrown when problems arise in RMI.&nbsp; However, those exceptions are treated as the superclass type for transport back to the client where the actual identification of the exception type is provided to the client program. <BR>
+&nbsp; </P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="the_remote_object_file"></A>The Remote Object File</H2>
+</FONT><P>The next source file that I want to discuss is the one containing the definition of the class from which the remote object is instantiated.&nbsp; I will break this code up and discuss it in pieces.&nbsp; A complete listing is provided near the end of the lesson. </P>
+<P>The first thing to notice is that this class implements <B>Rmi02RemoteIntfc. </B>This is the interface that I just finished discussing.&nbsp; As such, it implements the <B>Remote</B> interface indirectly through inheritance.&nbsp; This satisfies one of the requirements for it to be treated as a remote object whose methods can be invoked remotely. </P>
+<P>A second requirement is that it extends <B>UnicastRemoteObject,</B> which extends a class named <B>RemoteServer</B>.&nbsp; The name <B>RemoteServer</B> should be a clue as to why this requirement exists. </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Rmi02RemoteObj.java
+**********************************************************/
+
+import java.rmi.*;
+import java.rmi.server.*;
+
+public class Rmi02RemoteObj extends <B>UnicastRemoteObject
+</B>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <B>implements Rmi02RemoteIntfc</B>{</PRE></TD>
+</TR>
+</TABLE>
+
+<P>A description of the <B>RemoteServer</B> class follows: </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#00ffff">
+<P>The <B>RemoteServer</B> class is the common superclass to all server implementations and provides the framework to support a wide range of remote reference semantics. Specifically, the functions needed to create and export remote objects (i.e. to make them remotely available) are provided abstractly by RemoteServer and concretely by its subclass(es).&nbsp; </P>
+<P>The subclass selected identifies the semantics of the remote reference, for example whether the server is a single object or is a replicated object requiring communications with multiple locations. At present only UnicastRemoteObject is supported.&nbsp;</TD>
+</TR>
+</TABLE>
+
+<P>So what we see is that <B>RemoteServer</B> provides general communication support for the RMI process and delegates specifics to a subclass, only one type of which is currently available. </P>
+<P>A description of the <B>UnicastRemoteObject</B> class follows: </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#00ffff">
+<P>The <B>UnicastRemoteObject</B> class defines a non-replicated remote object whose references are valid only while the server process is alive. The UnicastRemoteObject class provides support for point-to-point active object references (invocations, parameters, and results) using TCP streams.&nbsp; </P>
+<P>Objects that require remote behavior should extend RemoteObject, typically via UnicastRemoteObject. If UnicastRemoteObject is not extended, the implementation class must then assume the responsibility for the correct semantics of the <B>hashCode</B>, <B>equals</B>, and <B>toString</B> methods inherited from the <B>Object</B> class, so that they behave appropriately for remote objects.&nbsp;</TD>
+</TR>
+</TABLE>
+
+<P>I won't attempt to comment on this further. You can read it as well as I can. Suffice it to say that by extending this class, the class from which our remote object is instantiated inherits the ability to behave as one end of a communication circuit for purpose of making its methods available. </P>
+<P>You must be connected to a TCP/IP network for any of this to work properly, even when you are running the server and the client as separate processes in the same machine.&nbsp; At least I don't know of any straightforward way to avoid that requirement. </P>
+<P>Even when everything seems to be working well, if you are testing both ends in separate processes under Win95 like I am, you should still be prepared for an occasional system hang-up. </P>
+<P>The next fragment shows the constructor for the remote object, which is also required to throw <B>RemoteException</B>.&nbsp; (The call to <B>super()</B> inside the constructor is pretty much window dressing because this happens by default if you don't purposely invoke a parameterized constructor of the superclass.).&nbsp; If it weren't for the requirement to throw the exception, it wouldn't be necessary to provide this <I>noarg</I> constructor. </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>&nbsp; public Rmi02RemoteObj() throws <B>RemoteException</B>{
+&nbsp;&nbsp;&nbsp; super();
+&nbsp; }//end constructor</PRE></TD>
+</TR>
+</TABLE>
+
+<P>Finally, we come to the definition of the method that is declared in the above interface.&nbsp; This is the method that can be invoked remotely by clients running in a different instance of the JVM. </P>
+<P>As you can see, the method receives a <B>String</B> object as a parameter and returns a <B>String</B> object that contains the incoming object. </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>&nbsp; public String <B>helloRemoteObj</B>(String client)&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; throws <B>RemoteException</B>{
+&nbsp;&nbsp;&nbsp; return "Hello yourself " + client;
+&nbsp; }//end method()
+}//end class Rmi02RemoteObj</PRE></TD>
+</TR>
+</TABLE>
+
+<P>Think about what I just said.&nbsp; I said that the client and this method are carrying on a two-way communication in which objects are being passed in both directions.&nbsp; Of course, <B>String</B> objects are fairly simple objects and it's no great challenge to move the characters that comprise strings from one computer to another.&nbsp; However, even though this simple program deals only with strings, remote methods can, in general, receive and return objects of any type, no matter how complex. </P>
+<P>This is accomplished using object serialization.&nbsp; Object serialization is used to decompose an object at one end into a consistent stream of bytes that can be transported via an IP network, and to reconstruct the object from those bytes at the other end.&nbsp; This is no small feat, because objects may contain objects, which may contain objects, which may contain other objects, etc., etc., etc.&nbsp; However, object serialization is the topic of a different lesson, so I won't have much more to say about it in this lesson. </P>
+<P>Now we know how to define the class for objects whose methods can be invoked remotely, but there is quite a bit more required to make the whole thing work. <BR>
+&nbsp; </P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="the_server_code_file"></A>The Server Code File</H2>
+</FONT><P>The next source code file that I want to discuss is the file containing the actual server software.&nbsp; It is partially shown in the next fragment and is repeated in total near the end of the lesson. </P>
+<P>This class begins by setting a new security manager in <B>main()</B>.&nbsp; Normally, we don't think too much about security managers for applications, but this is one place where you do need to think about them. </P>
+<P>The <B>RMISecurityManager </B>class provides a default security policy for <B>RMI</B> applications (not applets).&nbsp; This security manager disables all functions except class definition and access for code loaded from a class loader. </P>
+<P>This class may be subclassed to implement a different policy. I showed how to set policy in a security manager in an earlier lesson on networking </P>
+<P>The potential security issues here are so significant that if no security manager has been set, RMI will only load classes from local system files as defined by CLASSPATH. </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Rmi02Server.java
+**********************************************************/
+
+import java.rmi.*;
+import java.rmi.server.*;
+import sun.applet.*;
+import java.rmi.registry.LocateRegistry;
+
+public class <B>Rmi02Server</B>{
+&nbsp;&nbsp;
+&nbsp; public static void <B>main</B>(String args[]){
+&nbsp;&nbsp;&nbsp; System.<B>setSecurityManager</B>(new <B>RMISecurityManager</B>());</PRE></TD>
+</TR>
+</TABLE>
+
+<P>As you can see, the requirement to set a security manager is very easy to satisfy by including one statement in <B>Main()</B>. </P>
+<P>The next fragment tries to instantiate the remote object inside a <B>try</B> block.&nbsp; Remember that the constructor for the remote object class throws <B>RemoteException,</B> which is a checked exception and must be dealt with in order to get your program to compile. </P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Rmi02RemoteObj theRemoteObj&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = new <B>Rmi02RemoteObj</B>();</PRE></TD>
+</TR>
+</TABLE>
+
+<P>Earlier I mentioned that when I attempt to run <B>rmiregistry.exe</B> at the MS-DOS command line under Win95 and JDK 1.1.6, I get a fatal error and the program won't run.&nbsp; I also mentioned that there is a workaround that can be used, at least for testing the RMI programs using multiple processes on the same machine.&nbsp; The code to accomplish that is shown in the next fragment.&nbsp; If you can run <B>rmiregistry.exe</B> at the command line, that is a better way to do it and you can omit the statement that follows. </P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; LocateRegistry.createRegistry(1099);</PRE></TD>
+</TR>
+</TABLE>
+
+<P>Since this is a workaround for a problem that is (hopefully) peculiar to my system, I'm not going to discuss any of the technical details.&nbsp; You will find some information in the RMI documentation if you are further interested. </P>
+<P>That brings us to a very critical statement in the <B>main()</B> method of the server class, which you see in the following fragment.&nbsp; In a nutshell, this statement places the remote object in the registry and exposes it to client code that wants to invoke its methods. </P>
+<B><P>rebind()</B> is a static method of the <B>Naming</B> class. </P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Naming.<B>rebind</B>("helloObj", theRemoteObj);</PRE></TD>
+</TR>
+</TABLE>
+
+<P>This is generally what the documentation has to say about the <B>Naming</B> class: </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#00ffff">
+<P>The bootstrap mechanism for obtaining references to remote objects based on&nbsp; (URL) syntax. The URL for a remote object is specified using host, port and name with <B>rmi</B> in the protocol position:&nbsp; </P>
+<BLOCKQUOTE>rmi://host:port/name </BLOCKQUOTE>
+<BLOCKQUOTE>where <BR>
+host = host name of registry (defaults to current host)&nbsp; <BR>
+port = port number of registry (defaults to the registry port number)&nbsp; <BR>
+name = name for remote object&nbsp;</BLOCKQUOTE></TD>
+</TR>
+</TABLE>
+
+<P>I believe that the default registry port number is 1099. </P>
+<P>Note that this syntax has the name of the remote object in the position where an HTTP URL normally has a file name.&nbsp; The class has other methods as well.&nbsp; Let's look at some of them and compare the arguments with my statement above. </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#00ffff">
+
+<UL>
+<LI><B>bind</B>(String, Remote) - Binds the name to the specified remote object.&nbsp; </LI>
+<B><LI>list</B>(String) -&nbsp; Returns an array of strings of the URLs in the registry.&nbsp; </LI>
+<B><LI>lookup</B>(String) -&nbsp; Returns the remote object for the URL.&nbsp; </LI>
+<B><LI>rebind</B>(String, Remote) -&nbsp; Rebind the name to a new object; replaces any existing binding.&nbsp; </LI>
+<B><LI>unbind</B>(String) - Unbind the name.&nbsp; </UL>
+</TD>
+</TR>
+</TABLE>
+
+<P>In my <B>rebind()</B> statement above, the object referred to by the reference variable <B>theRemoteObj</B> was bound to the string name <B>helloObj</B>.&nbsp; We will get a better idea what this all means when we examine the client code that invokes the method on the remote object. </P>
+<P>As you can see, there are also a couple of methods available to obtain information about the URLs and the registered objects.&nbsp; We will use the <B>lookup()</B> method in the client code to get a reference to the remote object. </P>
+<P>The remaining server code simply displays a message indicating that the object is ready for business, and catches exceptions if they are thrown.&nbsp; I will omit that code from this discussion, but you can view it later in the complete listing of the program. <BR>
+&nbsp; </P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="the_client_code_file"></A>The Client Code File</H2>
+</FONT><P>The next source code file that I want to discuss is the file containing the source code for the client, which begins with the next fragment. </P>
+<P>As with the server, this code begins by setting a new security manager making use of the same default <B>RMISecurityManager</B> class. </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Rmi02Client.java
+Rev 10/09/98.
+This program is the client for an RMI hello world program.
+**********************************************************/
+
+import java.rmi.*;
+import java.rmi.server.*;
+
+public class Rmi02Client{
+&nbsp;&nbsp;
+&nbsp; public static void main(String[] args){
+&nbsp;&nbsp;&nbsp; System.<B>setSecurityManager</B>(new <B>RMISecurityManager</B>());</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The next fragment invokes the desired method on the remote object, passing a <B>String</B> as a parameter, and displaying the <B>String</B> that is returned from the object. </P>
+<P>Simply for convenience, the fragment begins by instantiating and initializing a <B>String</B> object that contains all of the URL but the name of the remote object.&nbsp; This string is later concatenated with the name of the remote object to construct the entire URL.&nbsp; This is an economical syntax when methods on more than one object are to be invoked but is probably overkill for this simple example. </P>
+<P>The code then gets a reference to the remote object by invoking the static <B>lookup()</B> method of the <B>Naming</B> class, passing the URL as a parameter.&nbsp; Of course, if it doesn't succeed, an exception will be thrown.&nbsp; You either have to know, or have to be able to find out the name by which the object is known to the registry on the server. </P>
+<P>If the lookup is successful, the reference can be used to invoke the methods of the object from that point forward just as though it were a reference to a local object running in the same virtual machine as the client code. </P>
+<P>The <B>Naming.lookup()</B> method returns a reference to an object of type <B>Remote</B>, so if you want to be able to invoke methods of the object, you must downcast it to the type of interface implemented by the class of the object.&nbsp; That means that you also must have, or be able to obtain, that information as well.&nbsp; Remember I said earlier that a lot of good communication is probably required to effectively use RMI. </P>
+<P>After obtaining a reference to the remote object, this code fragment invokes the <B>helloRemoteObj()</B> method on the remote object, passing a <B>String</B> object as a parameter, and displaying the <B>String</B> returned by the method. </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>&nbsp;&nbsp;&nbsp; String partOfUrl = "<B>rmi://localhost/</B>";&nbsp;
+&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Rmi02RemoteIntfc c1 =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (Rmi02RemoteIntfc)<B>Naming.lookup</B>(partOfUrl&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + "helloObj");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(c1.<B>helloRemoteObj</B>("Dick"));</PRE></TD>
+</TR>
+</TABLE>
+
+<P>.</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=9 WIDTH=480>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<P><I>In case you want to try this program using one computer for the client and another computer for the server, change the URL in the above code to "rmi://www.theserver.com/" where&nbsp; www.theserver.com is the name of your server machine. It will also work with an IP address as in "rmi://nnn.nnn.nnn.nnn/"</I></TD>
+</TR>
+</TABLE>
+
+<P>The remaining code simply catches exceptions and terminates the program. </P>
+<P>Complete listings for the batch file and all four of the source code files are provided in the next section. <BR>
+&nbsp; </P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="program_listing"></A>Program Listings</H2></FONT>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>rem File Rmi02.bat
+rem Rev 10/09/98
+echo off
+echo Make certain that you have a Client folder and
+echo&nbsp; a Server folder immediately below this one.
+
+echo Delete residue from previous run
+del Rmi02*.class
+del Client.class
+del Server.class
+
+echo Compile files required by Server
+javac Rmi02Server.java
+
+echo Compile files required by Client
+javac Rmi02Client.java
+
+echo Run rmic utility to create skeleton and stub classes
+rmic Rmi02RemoteObj
+
+echo Put a copy of the stub class in the Serverfolder
+copy Rmi02RemoteObj_Stub.class Server
+echo Put a copy of the skeleton class in the Server folder
+copy Rmi02RemoteObj_Skel.class Server
+echo Put a copy of the remote obj class file in Server
+copy Rmi02RemoteObj.class Server
+echo Put a copy of the remote server class file in Server
+copy Rmi02Server.class Server
+echo Put copy of remote interface class file in Server
+copy rmi02RemoteIntfc.class Server
+
+echo Put copy of client class file in Client folder
+copy Rmi02Client.class Client
+echo Put a copy of the stub class in the Client folder
+copy Rmi02RemoteObj_Stub.class Client
+echo Put copy of remote interface class file in Client
+copy rmi02RemoteIntfc.class Client
+
+echo Should be able to start rmiregistry here, but it gives
+echo&nbsp; fatal error on my Win95 with jdk1.1.6.&nbsp; Start it
+echo&nbsp; in server program instead.
+
+echo Wait for remote object to become ready.&nbsp; Then click&nbsp;
+echo&nbsp; main window to keep things moving.
+
+echo Start the server running in a different MSDOS window
+cd Server
+start java Rmi02Server
+cd ..
+
+
+
+echo Run client program twice to demo that remote object
+echo&nbsp; stays alive.
+cd Client
+java Rmi02Client
+java Rmi02Client
+cd..
+
+echo Manually terminate the remote object.</PRE></TD>
+</TR>
+</TABLE>
+
+
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>//File Rmi02RemoteIntfc.java
+
+import java.rmi.*;
+
+public interface Rmi02RemoteIntfc <B>extends Remote</B>{
+&nbsp; String <B>helloRemoteObj(String client)</B>&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; throws <B>RemoteException</B>;
+}//end Rmi02RemoteIntfc definition</PRE></TD>
+</TR>
+</TABLE>
+
+<P>. </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Rmi02RemoteObj.java
+Rev 10/09/98.
+This is the remote object for an RMI hello world program.
+**********************************************************/
+
+import java.rmi.*;
+import java.rmi.server.*;
+
+public class Rmi02RemoteObj extends UnicastRemoteObject
+implements Rmi02RemoteIntfc{
+
+public Rmi02RemoteObj() throws RemoteException{
+super();
+}//end constructor
+
+public String helloRemoteObj(String client)
+throws RemoteException{
+return "Hello yourself " + client;
+}//end method()
+}//end class Rmi02RemoteObj</PRE></TD>
+</TR>
+</TABLE>
+
+<P>.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Rmi02Server.java
+Rev 10/09/98.
+This program is the remote server for an RMI version of
+hello world.
+**********************************************************/
+
+import java.rmi.*;
+import java.rmi.server.*;
+import sun.applet.*;
+import java.rmi.registry.LocateRegistry;
+
+public class Rmi02Server{
+&nbsp;&nbsp;
+&nbsp; public static void main(String args[]){
+&nbsp;&nbsp;&nbsp; System.setSecurityManager(new RMISecurityManager());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Rmi02RemoteObj theRemoteObj&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = new Rmi02RemoteObj();
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Had to register it this way to avoid Win95 error
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; LocateRegistry.createRegistry(1099);
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Naming.rebind("helloObj", theRemoteObj);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Remote obj ready to use");
+&nbsp;&nbsp;&nbsp; }catch(Exception e){System.out.println("Error: " + e);}
+&nbsp; }//end main
+}//end class Rmi02Server</PRE></TD>
+</TR>
+</TABLE>
+
+<P>. </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Rmi02Client.java
+Rev 10/09/98.
+This program is the client for an RMI hello world program.
+**********************************************************/
+
+import java.rmi.*;
+import java.rmi.server.*;
+
+public class Rmi02Client{
+&nbsp;&nbsp;
+&nbsp; public static void main(String[] args){
+&nbsp;&nbsp;&nbsp; System.setSecurityManager(new RMISecurityManager());&nbsp;
+&nbsp;&nbsp;&nbsp; String partOfUrl = "rmi://localhost/";&nbsp;
+&nbsp;&nbsp;&nbsp; // Change to "rmi://www.theserver.com/" when server runs
+&nbsp;&nbsp;&nbsp; // on remote machine at www.theserver.com
+&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Rmi02RemoteIntfc c1 =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (Rmi02RemoteIntfc)Naming.lookup(partOfUrl&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + "helloObj");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(c1.helloRemoteObj("Dick"));
+&nbsp;&nbsp;&nbsp; }catch(Exception e){System.out.println("Error " + e);}
+&nbsp;&nbsp;&nbsp; System.exit(0);
+&nbsp; }//end main
+}//end class Rmi02Client</PRE></TD>
+</TR>
+</TABLE>
+
+<P>.</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=480>
+<TR><TD VALIGN="TOP" BGCOLOR="#c0c0c0">
+<PRE>rem File Rmi02.bat
+rem Rev 4/9/99 to satisfy JDK1.2 security requirements
+echo off
+echo Make certain that you have a Client folder and
+echo  a Server folder immediately below this one.
+
+echo Delete residue from previous run
+del Rmi02*.class
+del Client\*.class
+del Server\*.class
+del Client\*.policy
+del Server\*.policy
+
+echo Compile files required by Server
+javac Rmi02Server.java
+
+echo Compile files required by Client
+javac Rmi02Client.java
+
+echo Run rmic utility to create skeleton and stub classes
+rmic Rmi02RemoteObj
+
+echo Put a copy of the stub class in the Serverfolder
+copy Rmi02RemoteObj_Stub.class Server
+echo Put a copy of the skeleton class in the Server folder
+copy Rmi02RemoteObj_Skel.class Server
+echo Put a copy of the remote obj class file in Server
+copy Rmi02RemoteObj.class Server
+echo Put a copy of the remote server class file in Server
+copy Rmi02Server.class Server
+echo Put copy of remote interface class file in Server
+copy rmi02RemoteIntfc.class Server
+
+echo Put copy of client class file in Client folder
+copy Rmi02Client.class Client
+echo Put a copy of the stub class in the Client folder
+copy Rmi02RemoteObj_Stub.class Client
+echo Put copy of remote interface class file in Client
+copy rmi02RemoteIntfc.class Client
+
+echo Should be able to start rmiregistry here, but it gives
+echo  fatal error on my Win95 with jdk1.1.6.  Start it
+echo  in server program instead.
+
+echo Copy security policy files into Server and Client
+echo  directories
+<B>copy Rmi02Server.policy Server
+copy Rmi02Client.policy Client
+</B>
+echo Start the server running in a different MSDOS window
+cd Server
+start java <B>-Djava.security.policy=Rmi02Server.policy</B> Rmi02Server
+
+cd ..
+echo Pause to wait for server to get ready
+pause
+
+echo Run client program twice to demo that remote object
+echo  stays alive.
+cd Client
+java <B>-Djava.security.policy=Rmi02Client.policy</B> Rmi02Client
+java <B>-Djava.security.policy=Rmi02Client.policy</B> Rmi02Client
+cd..
+
+echo Manually terminate the remote object.</PRE></TD>
+</TR>
+</TABLE>
+
+<P>.</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=480>
+<TR><TD VALIGN="TOP" BGCOLOR="#c0c0c0">
+<PRE>/* File Rmi02Client.policy, rev 4/10/98, R.G.Baldwin*/
+
+grant codeBase 
+"file:/G:/Baldwin/AA-School/JavaProg/Combined/Java/Client/" {
+  permission java.net.SocketPermission 
+    "127.0.0.1", "accept, connect, listen, resolve";
+};</PRE></TD>
+</TR>
+</TABLE>
+
+<P>.</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=480>
+<TR><TD VALIGN="TOP" BGCOLOR="#c0c0c0">
+<PRE>/* File Rmi02Server.policy, rev 4/10/98, R.G.Baldwin*/
+
+grant codeBase 
+"file:/G:/Baldwin/AA-School/JavaProg/Combined/Java/Server/" {
+  permission java.net.SocketPermission 
+    "127.0.0.1", "accept, connect, listen, resolve";
+};</PRE></TD>
+</TR>
+</TABLE>
+
+<P>-end- </P>
+<P><!--end--></P></BODY>
+</HTML>

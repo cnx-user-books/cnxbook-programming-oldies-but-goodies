@@ -1,0 +1,2463 @@
+<!DOCTYPE doctype PUBLIC "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+                
+  <meta http-equiv="Content-Type"
+ content="text/html; charset=iso-8859-1">
+                
+  <meta name="GENERATOR" content="Microsoft FrontPage 6.0">
+  <title>... JAVA and DSP by Richard G Baldwin</title>
+</head>
+<body link="#0000ff" vlink="#666666" alink="#ff0000" lang="EN-US">
+ 
+
+       
+<h2>Spectrum Analysis using Java, Frequency Resolution versus Data Length</h2>
+    <i>Baldwin provides the code and explains the requirements for using 
+spectral analysis to resolve spectral peaks for pulses containing closely spaced 
+truncated sinusoids.</i><p><b>Published:</b>&nbsp; August 10, 2004</p>
+<p><b>By <a href="#About_the_author">Richard G. Baldwin</a></b> </p>
+     
+<p>Java Programming, Notes # 1483</p>
+     
+<ul>
+  <li><a href="#Preface">Preface</a></li>
+  <li><a href="#Preview">Preview</a></li>
+  <li><a href="#Discussion_and_Sample_Code">Discussion and Sample Code</a>
+  <li><a href="#Run_the_Programs">Run the Programs</a></li>
+  <li><a href="#Summary">Summary</a></li>
+  <li><a href="#Whats_Next">What's Next?</a></li>
+  <li><a href="#Complete_Program_Listings">Complete Program Listings</a>
+  </li>
+</ul>
+        
+<hr size="3" width="100%" align="center">    
+<center>    
+<h2> <a name="Preface">Preface</a></h2>
+   </center>
+  <p><font color="#FF0000"><b>The how and the why of spectral analysis</b></font></p>
+<p>A previous lesson entitled 
+<a href="http://www.developer.com/java/other/article.php/3374611">Fun with Java, 
+How and Why Spectral Analysis Works</a> explained some of the fundamentals 
+regarding spectral 
+analysis.&nbsp; An understanding of that lesson is a prerequisite to 
+	an understanding of this lesson.</p>
+<p>Another previous lesson entitled 
+<a href="http://www.developer.com/java/other/article.php/3380031">Spectrum 
+Analysis using Java, Sampling Frequency, Folding Frequency, and the FFT 
+Algorithm</a> presented and explained several Java 
+programs for doing spectral analysis.&nbsp; In that lesson, I used a DFT program to illustrate 
+several aspects of 
+spectral analysis that center around the sampling frequency and the Nyquist 
+folding frequency.</p>
+<p>I also used and briefly explained two different plotting programs that were originally explained in 
+the earlier lesson entitled
+<a href="http://www.developer.com/java/other/article.php/10936_1554511_1">
+Plotting Engineering and Scientific Data using Java</a>.</p>
+<p>An understanding of the lesson entitled 
+<a href="http://www.developer.com/java/other/article.php/3380031">Spectrum 
+Analysis using Java, Sampling Frequency, Folding Frequency, and the FFT 
+Algorithm</a> is also a prerequisite to 
+an understanding of this lesson.</p>
+<p><font color="#FF0000"><b>Frequency resolution versus data length</b></font></p>
+<p>In this lesson I will use similar programs to explain and illustrate the manner in which spectral frequency 
+resolution behaves with respect to data length.</p>
+<p><font color="#FF0000"><b><a name="A_hypothetical_situation">A hypothetical situation</a></b></font></p>
+<p>Consider a hypothetical situation in which you are performing spectral 
+analysis on underwater acoustic signals in an attempt to identify enemy 
+submarines.</p>
+<p>You are aware that the enemy submarine contains a device that operates 
+occasionally in short bursts.&nbsp; You are also aware that this device contains 
+two rotating machines that rotate at almost but not quite the same speed.</p>
+<p>During an operating burst of the device, each of the two machines contained in the device will 
+emit acoustic energy that may appear as a peak in your spectral analysis 
+output.&nbsp; <i>(Note that I said, &quot;may appear&quot; and did not say, &quot;will 
+appear.&quot;)</i>&nbsp; If you can identify the two peaks, you can conclusively identify 
+the acoustic source as an enemy submarine.</p>
+<p><font color="#FF0000"><b>The big question</b></font></p>
+<p>How long must the operating bursts of this device be in 
+order for you to resolve the peaks and identify the enemy submarine under ideal 
+conditions?&nbsp; That is the question that I will attempt to answer in this 
+lesson by teaching you about the relationship between frequency resolution and 
+data length.</p>
+<p><b><font color="#ff0000">Viewing tip</font></b> </p>
+ 
+<p>You may find it useful to open another copy of this lesson in a separate
+ browser window.&nbsp; That will make it easier for you to scroll back and
+ forth among the different figures and listings while you are reading about
+ them. </p>
+ 
+<p><b><font color="#ff0000">Supplementary material</font></b> </p>
+ 
+<p>I recommend that you also study the other lessons in my extensive collection
+ of online Java tutorials.&nbsp; You will find those lessons published at
+<a href="http://softwaredev.earthweb.com/java">Gamelan.com</a>.&nbsp; However, 
+as of the date of this writing, Gamelan doesn't maintain a consolidated index 
+of my Java tutorial lessons, and sometimes they are difficult to locate there.&nbsp; 
+You will find a consolidated index at <a
+ href="http://www.dickbaldwin.com">www.DickBaldwin.com</a><font
+ color="#000000">.</font></p>
+<h2 align="center"><a name="Preview">Preview</a></h2>
+<p>Before I get into the technical details, here is a preview of the programs 
+and their purposes that I will present and explain in this lesson:</p>
+<ul>
+	<li><b>Dsp031</b> - Illustrates frequency resolution versus pulse length for 
+	pulses consisting of a truncated single sinusoid.</li>
+	<li><b>Dsp031a</b> - Displays the pulses analyzed by Dsp031.</li>
+	<li><b>Dsp032</b> - Illustrates frequency resolution versus pulse length for 
+	pulses consisting of the sum of two truncated sinusoids with closely spaced 
+	frequencies.</li>
+	<li><b>Dsp032a</b> - Displays the pulses analyzed by Dsp032.</li>
+	<li><b>Dsp033</b> - Illustrates frequency resolution versus pulse length for 
+	pulses consisting of the sum of two truncated sinusoids whose frequencies 
+	are barely resolvable.</li>
+	<li><b>Dsp033a</b> - Displays the pulses analyzed by Dsp033.</li>
+</ul>
+<p>In addition, I will use the following programs that I explained in the lesson 
+entitled <a href="http://www.developer.com/java/other/article.php/3380031">
+Spectrum Analysis using Java, Sampling Frequency, Folding Frequency, and the FFT 
+Algorithm</a>.</p>
+<ul>
+	<li><b>ForwardRealToComplex01</b> - Class that implements the DFT algorithm 
+	for spectral analysis.</li>
+	<li><b>Graph03</b> - Used to display various types of data. <i>(The concepts were explained in an earlier lesson.)</i></li>
+	<li><b>Graph06</b> - Also used to display various types of data in a 
+	somewhat different format. <i>(The concepts were also explained in an earlier lesson.)</i></li>
+</ul>
+<h2 align="center"><a name="Discussion_and_Sample_Code">Discussion and Sample 
+Code</a></h2>
+<p>Let's begin by looking at the time series data that will be used as input to the first spectral 
+analysis experiment.&nbsp; Figure 1 shows 
+five pulses in the time domain.&nbsp; Figure 2 and Figure 3 show the result of performing a 
+spectral analysis on each of these pulses.</p>
+<blockquote>
+	<p><i>(The display in Figure 1 was produced by the program named <b>Dsp031a</b>, 
+	which I will explain later.)</i></p>
+</blockquote>
+
+<p>
+<table border="1" cols="1" width="400" bgcolor="#99FFCC">
+<tbody>
+<tr>
+<td>                     
+<pre>
+<img border="0" src="java1483A01.jpg" width="409" height="431">
+
+<b>Figure 1 Five pulses in the time domain.</b>
+</pre>
+</td>
+</tr>
+</tbody>                                
+</table>
+</p>
+<p><font color="#FF0000"><b>The length of the pulses</b></font></p>
+<p>If you examine Figure 1 carefully, you will see that each pulse is twice as 
+long as the pulse above it.&nbsp; <i>(There is a tick mark on the horizontal 
+axes every twenty-five samples.)</i>&nbsp; The bottom pulse is 400 samples long 
+while the top pulse is 25 samples long.</p>
+<p><font color="#FF0000"><b>Truncated sinusoids</b></font></p>
+<p>Each pulse consists of a cosine wave that has been truncated at a different 
+length.&nbsp; The frequency of the 
+cosine wave is the same for every pulse.&nbsp; As you will see when we examine 
+the code, the frequency of the cosine wave is 0.0625 times the sampling 
+frequency.&nbsp; If you do the arithmetic, you will conclude that this 
+results in 16 samples per cycle of the cosine wave.</p>
+<p>In all five cases, the length of the time series upon which spectral analysis 
+will be performed is 400 samples.&nbsp; For those four cases where the length of the 
+pulse is less than 400 samples, the remaining samples in the time series have a 
+value of zero.</p>
+<p><font color="#FF0000"><b>Will compute at 400 frequencies</b></font></p>
+<p>When the spectral analysis is performed later, the number of individual 
+frequencies at which the amplitude of the spectral energy will be computed will 
+be equal to the total data length.&nbsp; Therefore, the amplitude of the 
+spectral energy will be computed at the same 400 frequencies for each of the five time 
+series.&nbsp; That makes it convenient for us to stack the spectral plots up 
+vertically and compare them <i>(as in Figure 2).</i>&nbsp; This makes it easy for us to compare the 
+distribution of energy across the frequency spectrum for pulses of different 
+lengths.</p>
+<p><font color="#FF0000"><b>Graph03 and Graph06</b></font></p>
+<p>The plots in Figure 1 were produced using the program named <b>Graph03</b>.&nbsp; 
+Other plots in this lesson will be produced using the program named <b>Graph06</b>.&nbsp; 
+I explained those programs in earlier lessons, and I provided the source code 
+for both programs in the previous lesson entitled 
+<a href="http://www.developer.com/java/other/article.php/3380031">Spectrum 
+Analysis using Java, Sampling Frequency, Folding Frequency, and the FFT 
+Algorithm</a>.&nbsp; Therefore, I 
+won't repeat those explanations or provide the source code for those programs in 
+this lesson.</p>
+<p><font color="#FF0000"><b>The program named Dsp031a</b></font></p>
+<p>A complete listing of the program named <b>Dsp031a</b> is provided in Listing 
+9 near the end of the lesson.</p>
+<p>This program displays sinusoidal pulses identical to those 
+processed by the program named <b>Dsp031</b>, which will be discussed later.</p>
+<p><font color="#FF0000"><b>Time series containing sinusoidal pulses</b></font></p>
+<p>The program named <b>Dsp031a</b> creates and displays five separate time series, 
+each 400 samples in length.&nbsp; 
+Each time series contains a pulse and the pulses 
+are different lengths.</p>
+<p>Each pulse consists of a truncated sinusoid.&nbsp; The frequency of the 
+sinusoid for each of the pulses is the 
+same.</p>
+<p>Frequency values are specified as type <b>double</b> as a fraction of the sampling frequency.&nbsp; 
+The frequency of each sinusoid is 0.0625 times 
+the sampling frequency.</p>
+<p><font color="#FF0000"><b>The pulse lengths</b></font></p>
+<p>The lengths of the five pulses are:</p>
+<ul>
+	<li>25 samples</li>
+	<li>50 samples</li>
+	<li>100 samples</li>
+	<li>200 samples</li>
+	<li>400 samples</li>
+</ul>
+<p><font color="#FF0000"><b>Will discuss in fragments</b></font></p>
+<p>This program is very similar to programs that I explained in previous lessons 
+in this series, so my explanation will be very brief.&nbsp; As usual, I will 
+discuss the program in fragments.</p>
+<p>The beginning of the class, along with the declaration and initialization of 
+several variables is shown in Listing 1.&nbsp; The names of the variables along 
+with the embedded comments should make the code self explanatory.</p>
+
+
+<p>
+<table border="1" cols="1" width="400" bgcolor="#FFFF00">
+<tbody>
+<tr>
+<td>                     
+<pre>
+class Dsp031a implements GraphIntfc01{
+  final double pi = Math.PI;
+
+  int len = 400;//data length
+  int numberPulses = 5;
+  //Frequency of the sinusoids
+  double freq = 0.0625;
+  //Amplitude of the sinusoids
+  double amp = 160;
+
+  //Following arrays will contain sinusoidal data
+  double[] data1 = new double[len];
+  double[] data2 = new double[len];
+  double[] data3 = new double[len];
+  double[] data4 = new double[len];
+  double[] data5 = new double[len];
+
+<b>Listing 1</b>
+</pre>
+</td>
+</tr>
+</tbody>                                
+</table>
+</p>
+
+<p><font color="#FF0000"><b>The constructor</b></font></p>
+<p>Listing 2 shows the constructor, which creates the raw sinusoidal data and 
+stores that data in the array objects created in Listing 1.</p>
+<blockquote>
+	<p><i>(Recall that all element values in the array objects are initialized 
+	with a value of zero.&nbsp; Therefore, the code in Listing 2 only needs to 
+	store the non-zero values in the array objects.)</i></p>
+</blockquote>
+<p>
+<table border="1" cols="1" width="400" bgcolor="#FFFF00">
+<tbody>
+<tr>
+<td>                     
+<pre>
+ public Dsp031a(){//constructor
+
+    //Create the raw data
+    for(int x = 0;x < len/16;x++){
+      data1[x] = amp*Math.cos(2*pi*x*freq);
+    }//end for loop
+
+    for(int x = 0;x < len/8;x++){
+      data2[x] = amp*Math.cos(2*pi*x*freq);
+    }//end for loop
+
+    for(int x = 0;x < len/4;x++){
+      data3[x] = amp*Math.cos(2*pi*x*freq);
+    }//end for loop
+
+    for(int x = 0;x < len/2;x++){
+      data4[x] = amp*Math.cos(2*pi*x*freq);
+    }//end for loop
+
+    for(int x = 0;x < len;x++){
+      data5[x] = amp*Math.cos(2*pi*x*freq);
+    }//end for loop
+
+  }//end constructor
+
+<b>Listing 2</b>
+</pre>
+</td>
+</tr>
+</tbody>                                
+</table>
+</p>
+
+<p>The code in the conditional clause of each of the <b>for</b> loops in Listing 
+2 controls the length of each of the sinusoidal pulses.</p>
+<p><font color="#FF0000"><b>The interface methods</b></font></p>
+<p>As you can see in Listing 1, the class implements the interface named <b>
+GraphIntfc01</b>.&nbsp; I introduced this interface in the earlier lesson 
+entitled
+<a href="http://www.developer.com/java/other/article.php/10936_1554511_1">
+Plotting Engineering and Scientific Data using Java</a> and also discussed it in 
+the previous lesson entitled 
+<a href="http://www.developer.com/java/other/article.php/3380031">Spectrum 
+Analysis using Java, Sampling Frequency, Folding Frequency, and the FFT 
+Algorithm</a>.</p>
+<p>The remaining code for the class named <b>Dsp031a</b> consists of the methods 
+necessary to satisfy the interface.&nbsp; These methods are invoked by the 
+plotting programs named <b>Graph03</b> and <b>Graph06</b> to obtain and plot the 
+data returned by the methods.&nbsp; As implemented in <b>Dsp031a</b>, these 
+interface methods return the values stored in the array objects referred to by
+<b>data1</b> through <b>data5</b>.&nbsp; Thus, the values stored in those array 
+objects are plotted in Figure 1.</p>
+<p><font color="#FF0000"><b>Spectral analysis results</b></font></p>
+<p>Figure 2 shows the result of using the program named <b>Dsp031</b> to perform 
+a spectral analysis on each of the five pulses shown in Figure 1.&nbsp; These 
+results were plotted using the program named <b>Graph06</b>.&nbsp; With this 
+plotting program, each data value is plotted as a vertical bar.&nbsp; However, 
+in this case, the sides of each of the bars are so close together that the area 
+under the spectral curve appears to be solid black.</p>
+<blockquote>
+	<p><i>(When you run this program, you can expand the display to full screen 
+	and see the individual vertical bars.&nbsp; However, I can't to that and 
+	maintain the narrow publication format required for this lesson.)</i></p>
+</blockquote>
+
+
+<p>
+<table border="1" cols="1" width="400" bgcolor="#99FFCC">
+<tbody>
+<tr>
+<td>                     
+<pre>
+<img border="0" src="java1483a02.jpg" width="409" height="431">
+
+<b>Figure 2 Spectral analyses of five pulses.</b>
+</pre>
+</td>
+</tr>
+</tbody>                                
+</table>
+</p>
+<p><font color="#FF0000"><b>Interpretation of the results</b></font></p>
+<p>Before I get into the interpretation, I need to point out that I normalized 
+the data plotted in Figure 2 to cause each spectral peak to have approximately 
+the same value.&nbsp; Otherwise, the spectral analysis result values for the 
+short pulses would have been too small to be visible in this plotting format.</p>
+<p>Therefore, the fact that the area under the curve in 
+the top plot is greater than the area under the curve in the bottom plot doesn't 
+indicate that the first pulse contains more energy than the last pulse.&nbsp; It 
+simply means that I normalized the data for best results in plotting.</p>
+<p><font color="#FF0000"><b>Spectrum of an ideal sinusoid</b></font></p>
+<p>That having been said, different people will probably interpret these results 
+in different ways.&nbsp; Let's begin by stating that the theoretical spectrum 
+for a sinusoid of infinite length in the absence of noise is a single vertical 
+line having zero width and infinite height.</p>
+<p>In the real world of measurements, however, there is no such thing as a 
+sinusoid of infinite length.&nbsp; Rather, every measurement that we make must 
+truncate the sinusoid at some point in time.&nbsp; For a theoretical signal of 
+infinite length, every spectral analysis that we can perform is an imperfect 
+estimate of the spectrum.</p>
+<p><font color="#FF0000"><b>Two viewpoints</b></font></p>
+<p>There are at least two ways to think of the pulses shown in Figure 1. </p>
+<ol>
+	<li>Each pulse is a truncated section of an ideal sinusoid of infinite 
+	length.</li>
+	<li>Each pulse is a signal having a definite <i><b>planned</b></i> start and stop time.</li>
+</ol>
+<p>The way that you interpret the results shown in Figure 2 depends on your viewpoint 
+regarding the pulses.</p>
+<p><font color="#FF0000"><b>The first viewpoint</b></font></p>
+<p>If your viewpoint is that each pulse is a truncated section of an ideal 
+sinusoid of infinite length, then the width of each of the peaks <i>(beyond zero 
+width)</i> is the result of measurement error introduced by the truncation 
+process.</p>
+<p><font color="#FF0000"><b>The second viewpoint</b></font></p>
+<p>If your viewpoint is that each pulse is a signal having a definite planned 
+start and stop time, then the widths and the shape of each of the peaks 
+describes the full range of frequency components required to physically generate 
+such a pulse.&nbsp; This is the viewpoint that is consistent with the
+<a href="#A_hypothetical_situation">hypothetical situation</a> involving a 
+device on a submarine that I described earlier in this lesson.</p>
+<p><font color="#FF0000"><b>A simplified hypothetical situation</b></font></p>
+
+
+<p>Assume for the moment that the hypothetical device on the submarine contains 
+only one rotating machine and that this device is turned on and off occasionally 
+in short bursts.&nbsp; Because of the rotating machine, when the device is 
+turned on, it will emit acoustic energy whose frequency matches the rotating 
+speed of the machine.</p>
+<blockquote>
+	<p><i>(In reality, it will probably also emit acoustic energy at other 
+	frequencies as well, but we will consider it to be a very ideal machine.&nbsp; 
+	We will also assume the complete absence of any other acoustic noise in the 
+	environment.)</i></p>
+</blockquote>
+<p>Assume that you have a recording window of 400 samples, and that you are able 
+to record five such bursts within each of five separate recording windows.&nbsp; 
+Further assume that the lengths of the individual bursts match the time periods 
+indicated by the pulses in Figure 1.</p>
+<p><font color="#FF0000"><b>The spectrum of the bursts</b></font></p>
+<p>If you perform spectral analysis on each of the five individual 400-sample 
+windows containing the bursts, and if you normalize the peak values for plotting 
+purposes, you should get results similar to those shown in Figure 2.</p>
+<p><font color="#FF0000"><b>The spectral bandwidth of the signal</b></font></p>
+<p>The frequency range over which energy is distributed is referred to as the 
+bandwidth of the signal.&nbsp; As you can see in Figure 2, shorter pulses 
+require wider bandwidth.</p>
+<p>For example, considerably more bandwidth is required of a communication 
+system that is required to reliably transmit a series of short truncated 
+sinusoids than one that is only required to reliably transmit a continuous tone 
+at a single frequency.</p>
+<p>At the same time, it is very difficult to convey very much information with a 
+signal consisting of a continuous tone at a single frequency <i>(other than the 
+fact that the tone exists).</i>&nbsp; Communication systems designed to convey 
+information usually encode that information by either turning the tone on and 
+off or by causing it to shift among a set of previously defined frequencies.&nbsp; 
+The tone is often referred to as the carrier and the encoding of the information 
+is often referred to as modulating the carrier.</p>
+<p>Thus, you need greater bandwidth to reliably convey more information.</p>
+<p><font color="#FF0000"><b>The relationship between pulse length and bandwidth</b></font></p>
+<p>So far, we can draw one important conclusion from our experiment.</p>
+<blockquote>
+	<p><b>Shorter pulses require greater bandwidth.</b>&nbsp; </p>
+</blockquote>
+<p>This leads to an important 
+question.&nbsp; What is the numerical relationship between pulse length and 
+bandwidth?&nbsp; Although we can draw the above general conclusion from Figure 
+2, it is hard to draw any quantitative conclusions from Figure 2.&nbsp; That 
+brings us to the expanded plot of the spectral data shown in Figure 3.</p>
+<p><font color="#FF0000"><b>An expanded plot of the spectral results</b></font></p>
+<p>Figure 3 shown the left one-fourth of the spectral results from Figure 2 
+plotted in the same horizontal space.&nbsp; In other words, Figure 3 discards 
+the upper three-fourths of the spectral results from Figure 2 and shows only the 
+lower one-fourth of the spectral results on an expanded scale.&nbsp; Figure 3 
+also provides tick marks that make it convenient to perform measurements on the 
+plots.</p>
+<p>Also, whereas Figure 2 was plotted using the program named <b>Graph06</b>,<b> </b>
+Figure 3 was plotted using the program named <b>Graph03</b>.&nbsp; Thus, Figure 
+3 uses a different plotting format than Figure 2</p>
+
+
+<p>
+<table border="1" cols="1" width="400" bgcolor="#99FFCC">
+<tbody>
+<tr>
+<td>                     
+<pre>
+<img border="0" src="java1483a03.jpg" width="409" height="431">
+
+<b>Figure 3 Expanded spectral analyses of five pulses.</b>
+</pre>
+</td>
+</tr>
+</tbody>                                
+</table>
+</p>
+<p><font color="#FF0000"><b>Picking numeric values</b></font></p>
+<p>The curves in Figure 3 are spread out to the point that we can pick some 
+approximate numeric values off the plot, and from this, we can draw a very 
+significant conclusion.</p>
+<p>For purposes of our approximation, consider the bandwidth to be the distance 
+along the frequency axis between the points where the curves hit zero on either 
+side of the peak.&nbsp; Using this approximation, the bandwidth indicated by the 
+spectral analyses in Figure 3 shows the bandwidth of each spectrum to be twice 
+as wide as the one below it.</p>
+<p>Referring back to Figure 1, recall that the length of each pulse was half 
+that of the one below it.&nbsp; The conclusion is:</p>
+<blockquote>
+	<p><b>The bandwidth of a 
+truncated sinusoidal pulse is inversely proportional to the length of the pulse.</b></p>
+</blockquote>
+<p>If you reduce the length of the pulse by a factor of two, you must double the 
+bandwidth of a transmission system designed to reliably transmit a pulse of that 
+length.</p>
+<p>This will also be an important conclusion regarding our ability to separate and identify the two spectral peaks in the burst of acoustic energy 
+described in our original <a href="#A_hypothetical_situation">hypothetical 
+situation</a>.</p>
+<p><font color="#FF0000"><b>Let's see some code</b></font></p>
+<p>The generation of the signals and the spectral analysis for the results 
+presented in Figure 2 and Figure 3 were performed using the program named <b>
+Dsp031</b>.&nbsp; A complete listing of the program is shown in Listing 10 near 
+the end of the lesson.</p>
+<p><font color="#FF0000"><b>Description of the program named Dsp031</b></font></p>
+<p>This program performs spectral analyses on five separate time 
+series, each 400 samples in length.</p>
+<p>Each time series contains a pulse and the pulses 
+are different lengths.&nbsp; <i>(The lengths of the individual pulses match 
+that shown in Figure 1.)&nbsp; </i>Each pulse consists of a truncated sinusoid.&nbsp; The 
+frequency of the sinusoid for each pulse is the 
+same.</p>
+<p>All frequency values are specified as type <b>double</b> as a fraction of the sampling frequency.&nbsp; The frequency of all five sinusoids is 0.0625 times 
+the sampling frequency.</p>
+<p>The lengths of the pulses are:</p>
+<ul>
+	<li>25 samples</li>
+	<li>50 samples</li>
+	<li>100 samples</li>
+	<li>200 samples</li>
+	<li>400 samples</li>
+</ul>
+<p>If this sounds familiar, it is because the pulses are identical to those 
+displayed in Figure 1 and discussed under <b>Dsp031a</b> above.</p>
+<p><font color="#FF0000"><b>Uses a DFT algorithm</b></font></p>
+<p>The spectral analysis process uses a DFT algorithm and computes the amplitude 
+of the spectral 
+energy at 
+400 equally spaced frequ4encies between zero and the 
+folding frequency.</p>
+<blockquote>
+	<p><i>(Recall from the previous lesson entitled </i>
+	<a href="http://www.developer.com/java/other/article.php/3380031">Spectrum 
+	Analysis using Java, Sampling Frequency, Folding Frequency, and the FFT 
+	Algorithm</a><i> that 
+the folding frequency is one-half the sampling frequency.)</i></p>
+</blockquote>
+<p>This program 
+computes and displays the amplitude spectrum at frequency intervals that are 
+one-half of the frequency intervals for a typical FFT algorithm.</p>
+<p><font color="#FF0000"><b>Normalize the results</b></font></p>
+<p>The results of the spectral analysis are 
+multiplied by the reciprocal of the lengths of 
+the individual pulses to normalize all five 
+plots to the same peak value.&nbsp; Otherwise, the 
+results for the short pulses would be too 
+small to see on the plots.</p>
+<p><font color="#FF0000"><b>Will discuss in fragments</b></font></p>
+<p>Once again, this program is very similar to programs explained in the 
+previous lesson entitled 
+<a href="http://www.developer.com/java/other/article.php/3380031">Spectrum 
+Analysis using Java, Sampling Frequency, Folding Frequency, and the FFT 
+Algorithm</a>.&nbsp; Therefore, this discussion will be very brief.</p>
+<p>The code in Listing 3 declares and initializes some variables and creates the 
+array objects that will contain the sinusoidal pulses.</p>
+<p>In addition, the 
+code in Listing 3 declares reference variables that will be used to refer to 
+array objects containing results of the spectral analysis process that are not used in this program.</p>
+<p>Finally, Listing 3 declares reference variables that will be used to refer to 
+array objects containing the results plotted in Figure 2 and Figure 3.</p>
+<p>Given the names of 
+the variables, the comments, and what you learned in the previous lesson, the 
+code in Listing 3 should be self explanatory.</p>
+<p>
+<table border="1" cols="1" width="400" bgcolor="#FFFF00">
+<tbody>
+<tr>
+<td>                     
+<pre>
+class Dsp031 implements GraphIntfc01{
+  final double pi = Math.PI;
+
+  int len = 400;//data length
+  //Sample that represents zero time.
+  int zeroTime = 0;
+  //Low and high frequency limits for the
+  // spectral analysis.
+  double lowF = 0.0;
+  double highF = 0.5;
+  int numberSpectra = 5;
+  //Frequency of the sinusoids
+  double freq = 0.0625;
+  //Amplitude of the sinusoids
+  double amp = 160;
+
+  //Following arrays will contain data that is
+  // input to the spectral analysis process.
+  double[] data1 = new double[len];
+  double[] data2 = new double[len];
+  double[] data3 = new double[len];
+  double[] data4 = new double[len];
+  double[] data5 = new double[len];
+  
+  //Following arrays receive information back
+  // from the spectral analysis that is not used
+  // in this program.
+  double[] real;
+  double[] imag;
+  double[] angle;
+  
+  //Following arrays receive the magnitude
+  // spectral information back from the spectral
+  // analysis process.
+  double[] mag1;
+  double[] mag2;
+  double[] mag3;
+  double[] mag4;
+  double[] mag5;
+
+<b>Listing 3</b>
+</pre>
+</td>
+</tr>
+</tbody>                                
+</table>
+</p>
+
+<p><font color="#FF0000"><b>The constructor</b></font></p>
+<p>The constructor begins in Listing 4.&nbsp; The code in Listing 4 is identical 
+to that shown earlier in Listing 2.&nbsp; This code generates the five 
+sinusoidal pulses and stores the data representing those pulses in the arrays 
+referred to by <b>data1</b> through <b>data5</b>.&nbsp; So far, except for the 
+declaration of some extra variables, this program isn't much different from the 
+program named <b>Dsp031a</b> discussed earlier in this lesson.&nbsp; </p>
+<p>
+<table border="1" cols="1" width="400" bgcolor="#FFFF00">
+<tbody>
+<tr>
+<td>                     
+<pre>
+  public Dsp031(){//constructor
+
+    //Create the raw data
+    for(int x = 0;x < len/16;x++){
+      data1[x] = amp*Math.cos(2*pi*x*freq);
+    }//end for loop
+
+    for(int x = 0;x < len/8;x++){
+      data2[x] = amp*Math.cos(2*pi*x*freq);
+    }//end for loop
+
+    for(int x = 0;x < len/4;x++){
+      data3[x] = amp*Math.cos(2*pi*x*freq);
+    }//end for loop
+
+    for(int x = 0;x < len/2;x++){
+      data4[x] = amp*Math.cos(2*pi*x*freq);
+    }//end for loop
+
+    for(int x = 0;x < len;x++){
+      data5[x] = amp*Math.cos(2*pi*x*freq);
+    }//end for loop
+
+<b>Listing 4</b>
+</pre>
+</td>
+</tr>
+</tbody>                                
+</table>
+</p>
+
+<p><font color="#FF0000"><b>Perform the spectral analysis</b></font></p>
+
+
+<p>The remainder of the constructor is shown in Listing 5.&nbsp; This code 
+invokes the <b>transform</b> method of the <b>ForwardRealToComplex01</b> class 
+five times in succession to perform the spectral analysis on each of the five 
+pulses shown in Figure 1.</p>
+<blockquote>
+	<p><i>(I explained the <b>transform</b> method in 
+detail in the previous lesson entitled </i>
+	<a href="http://www.developer.com/java/other/article.php/3380031">Spectrum 
+	Analysis using Java, Sampling Frequency, Folding Frequency, and the FFT 
+	Algorithm</a><i>.)</i></p>
+</blockquote>
+<p>
+<table border="1" cols="1" width="400" bgcolor="#FFFF00">
+<tbody>
+<tr>
+<td>                     
+<pre>
+    mag1 = new double[len];
+    real = new double[len];
+    imag = new double[len];
+    angle = new double[len];
+    <b>ForwardRealToComplex01.transform</b>(data1,real,
+      imag,angle,mag1,zeroTime,lowF,highF);
+
+    mag2 = new double[len];
+    real = new double[len];
+    imag = new double[len];
+    angle = new double[len];
+    ForwardRealToComplex01.transform(data2,real,
+      imag,angle,mag2,zeroTime,lowF,highF);
+
+    mag3 = new double[len];
+    real = new double[len];
+    imag = new double[len];
+    angle = new double[len];
+    ForwardRealToComplex01.transform(data3,real,
+      imag,angle,mag3,zeroTime,lowF,highF);
+
+    mag4 = new double[len];
+    real = new double[len];
+    imag = new double[len];
+    angle = new double[len];
+    ForwardRealToComplex01.transform(data4,real,
+      imag,angle,mag4,zeroTime,lowF,highF);
+
+    mag5 = new double[len];
+    real = new double[len];
+    imag = new double[len];
+    angle = new double[len];
+    ForwardRealToComplex01.transform(data5,real,
+      imag,angle,mag5,zeroTime,lowF,highF);
+
+  }//end constructor
+
+<b>Listing 5</b>
+</pre>
+</td>
+</tr>
+</tbody>                                
+</table>
+</p>
+
+<p>Each time the <b>transform</b> method is invoked, it computes the magnitude 
+spectra for the incoming data and saves it in the output array.</p>
+<blockquote>
+	<p><i>(Note that the <b>real</b>, <b>imag</b>, and <b>angle</b> arrays are not used later, so they are discarded each time a new 
+spectral analysis is performed.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>The interface methods</b></font></p>
+<p>The <b>Dsp031</b> class also implements the interface named <b>GraphIntfc01</b>.&nbsp; 
+The remaining code in the program consists of the methods required to satisfy 
+that interface.&nbsp; Except for the identification of the arrays from which the 
+methods extract data to be returned for plotting, these methods are identical to 
+those defined in the earlier class named <b>Dsp031a</b>.&nbsp; Therefore, I 
+won't discuss them further.</p>
+<p><font color="#FF0000"><b>What we have learned so far</b></font></p>
+<p>So far, the main things that we have learned is that shorter pulses require 
+greater bandwidth, and the bandwidth required to 
+faithfully represent a truncated sinusoidal pulse is the reciprocal of the 
+length of the pulse.</p>
+<p><font color="#FF0000"><b>Where do we go from here?</b></font></p>
+<p>Now we will look at the issues involved in using spectral analysis to 
+separate and identify the frequencies of two closely-spaced spectral peaks for a 
+pulse composed of the sum of two sinusoids.&nbsp; Once again, we will begin by 
+looking at some results and then discuss the code that produced those results.</p>
+<p><font color="#FF0000"><b>The five pulses</b></font></p>
+<p>The five pulses that we will be working with in this example are shown in Figure 4.&nbsp; 
+As you can see, these pulses are a little more ugly than the pulses shown in Figure 
+1.&nbsp; As you can also see, as was the case in Figure 1, each pulse appears to 
+be a shorter or longer version of the other pulses in terms of its waveform.</p>
+
+
+<p>
+<table border="1" cols="1" width="400" bgcolor="#99FFCC">
+<tbody>
+<tr>
+<td>                     
+<pre>
+<img border="0" src="java1483a04.jpg" width="409" height="431">
+
+<b>Figure 4 Five pulses with two sinusoids each.</b>
+</pre>
+</td>
+</tr>
+</tbody>                                
+</table>
+<p><font color="#FF0000"><b>Produced by Dsp032a</b></font></p>
+<p>The plots in Figure 4 were produced by the program named <b>Dsp032a</b>, 
+which I will briefly discuss later.&nbsp; <i>(A complete listing of the program 
+is shown in Listing 11 near the end of the lesson.)</i>&nbsp; This program 
+creates and displays pulses identical to those processed by the program named <b>
+Dsp032</b>, which I will also briefly discuss later.&nbsp; <i>(A complete 
+listing of the program named <b>Dsp32</b> is presented in Listing 12.)</i></p>
+<p><font color="#FF0000"><b>Five time series containing pulses</b></font></p>
+<p>The program creates and displays five separate time series, each 400 samples in length.&nbsp; Each time series contains a pulse and the pulses are different lengths.&nbsp; 
+As before, each of the pulses shown in Figure 4 is half the length below the 
+pulse below it.</p>
+<p><font color="#FF0000"><b>The sum of two sinusoids</b></font></p>
+<p>Each pulse consists of the sum of two sinusoids at closely spaced frequencies.&nbsp; The frequencies of the two sinusoids for all pulses are the same.</p>
+<p>All frequency values are specified as type <b>double</b> as a fraction of the 
+sampling frequency.&nbsp; The frequencies of the two sinusoids are equidistant 
+from a center frequency of 0.0625 times the sampling frequency.</p>
+<blockquote>
+	<p><i>(Recall that 
+	0.0625 was the frequency of the only sinusoid contained in the pulses shown in 
+Figure 1 and processed by the program named <b>Dsp031</b>.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>The frequencies and pulse lengths</b></font></p>
+<p>The frequency of one sinusoid is (0.0625 - 2.0/len) times the sampling frequency, 
+where <b>len </b>is the length of the time series containing the pulse.&nbsp; <i>
+(The value for <b>len </b>is 400 samples in this program.)</i>&nbsp; The frequency of the other sinusoid is (0.0625 + 
+2.0/len) times the sampling frequency.</p>
+<p>The lengths of the five pulses are:</p>
+<ul>
+	<li>25 samples</li>
+	<li>50 samples</li>
+	<li>100 samples</li>
+	<li>200 samples</li>
+	<li>400 samples</li>
+</ul>
+<p> <i>(Note that Figure 4 has tick marks 
+every 25 samples.)</i></p>
+<p><font color="#FF0000"><b>The program named Dsp032a</b></font></p>
+<p>The only new code in this program is the code in the constructor that creates 
+the pulses and stores them in the data arrays.&nbsp; This code consists of five 
+separate <b>for</b> loops, one for each pulse.&nbsp; The code for the first <b>
+for</b> loop, which is typical of the five, is shown in Listing 6.</p>
+<p>
+<table border="1" cols="1" width="400" bgcolor="#FFFF00">
+<tbody>
+<tr>
+<td>                     
+<pre>
+  public Dsp032a(){//constructor
+
+    //Create the raw data
+    for(int x = 0;x < len/16;x++){
+      data1[x] = amp*Math.cos(2*pi*x*<b>freq1</b>)
+                    + amp*Math.cos(2*pi*x*<b>freq2</b>);
+    }//end for loop
+
+//... code removed for brevity
+
+  }//end constructor
+
+<b>Listing 6</b>
+</pre>
+</td>
+</tr>
+</tbody>                                
+</table>
+</p>
+
+<p>As you can see from Listing 6, the values that make up the pulse are produced 
+by adding together the values of two different cosine functions having different 
+frequencies.&nbsp; The values for <b>freq1</b> and <b>freq2</b> are as described 
+above.</p>
+<p>You can view the remainder of this program in Listing 11.</p>
+<p><font color="#FF0000"><b>Spectral analysis output</b></font></p>
+<p>The results of running the program named <b>Dsp032</b> and displaying the 
+results with the program named <b>Graph03</b> are shown in Figure 5.</p>
+
+
+<p>
+<table border="1" cols="1" width="400" bgcolor="#99FFCC">
+<tbody>
+<tr>
+<td>                     
+<pre>
+<img border="0" src="java1483a05.jpg" width="409" height="431">
+
+<b>Figure 5 Spectral analyses of five pulses.</b>
+</pre>
+</td>
+</tr>
+</tbody>                                
+</table>
+</p>
+<p>Each of the peaks in the third, fourth, and fifth plots in Figure 5 
+corresponds to the frequency of one of the two sinusoids that were added 
+together to produce the pulses shown in Figure 4.</p>
+<p><font color="#FF0000"><b>Can we answer the original question now?</b></font></p>
+<p>The question posed in the original <a href="#A_hypothetical_situation">
+hypothetical situation</a> was <i>&quot;how long must the operating bursts of this 
+device be in order for you to resolve the peaks and identify the enemy submarine 
+under ideal conditions?&quot;</i></p>
+<p>We are looking at very ideal conditions in Figure 4 and Figure 5.&nbsp; In 
+particular, the pulses exist completely in the absence of noise.</p>
+<blockquote>
+	<p><i>(The 
+existence of wide-band noise added to the pulses in Figure 4 would cause a 
+change in the spectral results in Figure 5.&nbsp; That change might be described as 
+	having the appearance of grass and 
+weeds growing on the baseline across the entire spectrum.&nbsp; The stronger the 
+wide-band noise, the taller would be the weeds.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Cannot resolve two peaks for first two pulses</b></font></p>
+<p>Clearly for the ideal condition of recording the bursts in the total absence 
+of noise, you cannot resolve the peaks from the top two plots in Figure 5.&nbsp; 
+For those two pulses, the spectral peaks simply merge together to form a single 
+broad peak.&nbsp; Therefore, for this amount of separation between the 
+frequencies of the two sinusoids, the lengths of the first two pulses in Figure 
+4 are insufficient to allow for separation and identification of the separate 
+peaks.</p>
+<p><font color="#FF0000"><b>We must be in luck</b></font></p>
+<p>We seem to have the problem bracketed.&nbsp; <i>
+(Were we really lucky, or did I plan it this way?)</i>&nbsp; Under the ideal 
+conditions of this experiment, the peaks are separable in the middle plot of 
+Figure 5.&nbsp; Thus, for the amount of separation between the frequencies of 
+the two sinusoids, the length of the third pulse is Figure 4 is sufficient to 
+allow for separation and identification of the separate peaks.</p>
+<p><font color="#FF0000"><b>A qualified answer to the question</b></font></p>
+<p>The peaks are even better separated in the bottom two plots in Figure 5.&nbsp; 
+For the five pulses used in this experiment and the amount of separation between 
+the frequencies of the two sinusoids, any pulse as long or longer than the 
+length of the third pulse is Figure 4 is sufficient to allow for separation and 
+identification of the separate peaks.</p>
+<p><font color="#FF0000"><b>What about the effects of noise?</b></font></p>
+<p>If you were to add a nominal amount of wide-band noise to the mix, it would 
+become more difficult to resolve the peaks for the bottom three plots in Figure 
+5 because 
+the peaks would be growing out of a bed of weeds.</p>
+<blockquote>
+	<p><i>(If you add enough wide-band noise, you couldn't resolve the peaks 
+	using any of the plots, because the peaks would be completely &quot;lost in the 
+	noise.&quot;)</i> </p>
+</blockquote>
+<p><font color="#FF0000"><b>What can we learn from this?</b></font></p>
+<p>Since we have concluded that the middle pulse in Figure 4 is sufficiently 
+long to allow us to resolve the two peaks, let's see what we can learn from the 
+parameters that describe that pulse.</p>
+<p><font color="#FF0000"><b>Pulse length and frequency separation</b></font></p>
+<p>To begin with, the length of the pulse is 100 samples.</p>
+<p>What about the frequency separation of the two sinusoids?&nbsp; Recall that 
+the frequency of one sinusoid is (0.0625 - 2.0/len) times the sampling 
+frequency, where <b>len </b>is the length of the time series containing the 
+pulse.&nbsp; The frequency of the other sinusoid is (0.0625 + 2.0/len) times the 
+sampling frequency.</p>
+<p>Thus, total separation between the two frequencies is 
+4/len, or 4/400.&nbsp; Dividing through by 4 we see that the separation between 
+the two frequencies is 1/100.</p>
+<p><font color="#FF0000"><b>Eureka, we have found it</b></font></p>
+<p>For the third pulse, the frequency separation is the reciprocal of the length 
+of the pulse.&nbsp; Also, the length of the third pulse is barely sufficient to 
+allow for separation and identification of the two peaks in the spectrum.&nbsp; 
+Thus, the two spectral peaks are separable in the absence of noise if the 
+frequency separation is the reciprocal of the pulse length.</p>
+<blockquote>
+	<p><i>(That is too good to be a coincidence.&nbsp; I must have planned 
+that way.)</i></p>
+</blockquote>
+<p>Thus, we have reached another conclusion.</p>
+<blockquote>
+	<p><b>Under ideal conditions, the 
+two peaks in the spectrum can be resolved when the separation between the 
+frequencies of the two sinusoids is equal to the reciprocal of the pulse length.</b></p>
+</blockquote>
+<p><font color="#FF0000"><b>The general answer</b></font></p>
+<p>There is no single answer to the <a href="#A_hypothetical_situation">question</a>
+<i>&quot;how long must the operating bursts of this device be in order for you to 
+resolve the peaks and identify the enemy submarine under ideal conditions?&quot;</i></p>
+<p>The answer depends on the frequency separation.&nbsp; The general answer is that the length of the bursts must be at least as long as 
+the reciprocal of the frequency separation for the two sinusoids.&nbsp; If the 
+separation is large, the pulse length may be short.&nbsp; If the 
+separation is small, the pulse length must be long.</p>
+<p><font color="#FF0000"><b>The program named Dsp032</b></font></p>
+<p>As I indicated earlier, the plots shown in Figure 5 were the result of 
+running the program named <b>Dsp032</b> and displaying the data with the program 
+named <b>Graph03</b>.</p>
+<p>The only thing that is new in this program is the code that generates the 
+five pulses and saves them in their respective data arrays.&nbsp; Even that code 
+is not really new, because it is identical to the code shown in Listing 6.&nbsp; 
+Therefore, I won't discuss this program further in this lesson.</p>
+<p><font color="#FF0000"><b>One more experiment</b></font></p>
+<p>As you can surmise from the conclusions reached above, in order to be able to 
+resolve the two peaks in the spectrum, you can either keep the pulse length the 
+same and increase the frequency separation, or you can keep the frequency 
+separation the same and increase the pulse length.</p>
+<p>Let's examine an 
+example where we keep the pulse lengths the same as before and adjust the 
+frequency separation between the two sinusoids to make it barely possible to 
+resolve the peaks for each of the five pulses.</p>
+<p>We will need to increase the 
+frequency separation for the first two pulses, and we can decrease the frequency 
+separation for the fourth and fifth pulses.&nbsp; We will leave the frequency 
+separation the same as before for the third pulse since it already seems to have 
+the optimum relationship between pulse length and frequency separation.</p>
+<p><font color="#FF0000"><b>The five pulses</b></font></p>
+<p>The five pulses used in this experiment are shown in Figure 6.</p>
+
+
+<p>
+<table border="1" cols="1" width="400" bgcolor="#99FFCC">
+<tbody>
+<tr>
+<td>                     
+<pre>
+<img border="0" src="java1483a06.jpg" width="409" height="431">
+
+<b>Figure 6 Five pulses with additive sinusoids.</b>
+</pre>
+</td>
+</tr>
+</tbody>                                
+</table>
+</p>
+<p>Unlike in the previous two cases shown in Figure 1 and Figure 4, each of 
+these pulses has a different shape from the others.&nbsp; In other words, in the 
+previous two cases, each pulse simply looked like a longer or shorter version of 
+the other pulses.&nbsp; That is not the case in this example.</p>
+<blockquote>
+	<p><i>(Note however that the third pulse in Figure 6 looks just like the 
+	third pulse in Figure 4.&nbsp; They were created using the same parameters.&nbsp; 
+	However, none of the other pulses in Figure 6 look like the corresponding 
+	pulses in Figure 4, and none of the pulses in Figure 6 look like the pulses 
+	in Figure 1.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Spectral analysis results</b></font></p>
+<p>Figure 7 shows the result of performing spectral analysis on the five time 
+series containing the pulses shown in Figure 6.</p>
+
+
+<p>
+<table border="1" cols="1" width="400" bgcolor="#99FFCC">
+<tbody>
+<tr>
+<td>                     
+<pre>
+<img border="0" src="java1483a07.jpg" width="409" height="431">
+
+<b>Figure 7 Spectral analyses of five pulses.</b>
+</pre>
+</td>
+</tr>
+</tbody>                                
+</table>
+</p>
+<p><font color="#FF0000"><b>Peaks for first two pulses are now resolvable</b></font></p>
+<p>When we examine the code, you will see that the frequency separation for the 
+first two pulses has been increased to the reciprocal of the pulse length in 
+each case.&nbsp; 
+This results in the two peaks in the spectrum for each of the first two pulses 
+being resolvable in Figure 7.</p>
+<p><font color="#FF0000"><b>Third pulse hasn't changed</b></font></p>
+<p>The spectrum for the third pulse shown in Figure 7 is almost identical to the 
+spectrum for the third pulse shown in Figure 5.&nbsp; The only difference is 
+that I had to decrease the vertical scaling on all of the plots in Figure 5 to 
+keep the peak in the top plot within the bounds of the plot.</p>
+<p><font color="#FF0000"><b>Spectral peaks for last two pulses are closer</b></font></p>
+<p>When we examine the code, you will also see that the frequency separation for the 
+last two pulses has been decreased to the reciprocal of the pulse length in each 
+case.&nbsp; 
+This results in the two peaks in the spectrum for each of the last two pulses 
+being closer than before in Figure 7.</p>
+<p>The peaks in the bottom two plots in Figure 7 appear to be resolvable, 
+but we can't be absolutely certain because they are so close together, 
+particularly for the last plot.&nbsp; </p>
+<blockquote>
+	<p><i>(If you expand the Frame to full screen when you run this program, you 
+	will see that the two peaks are resolvable, but I can't do that and stay 
+	within this narrow publication format.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Expand the horizontal plotting scale</b></font></p>
+<p>Figure 8 adjusts the plotting parameters to cause the left-most one-fourth of 
+the data in Figure 7 to be plotted in the full width of the <b>Frame</b> in 
+Figure 8.</p>
+
+
+<p>
+<table border="1" cols="1" width="400" bgcolor="#99FFCC">
+<tbody>
+<tr>
+<td>                     
+<pre>
+<img border="0" src="java1483a08.jpg" width="409" height="431">
+
+<b>Figure 8 Expanded spectral analyses of five pulses.</b>
+</pre>
+</td>
+</tr>
+</tbody>                                
+</table>
+</p>
+<p><font color="#FF0000"><b>The peaks are barely resolvable</b></font></p>
+<p>Figure 8 shows that the two peaks are barely resolvable for all five of the pulses 
+shown in Figure 6.</p>
+<blockquote>
+	<p><i>(There is no space between the peaks at the baseline in Figure 8, but 
+	the plots do go almost down to the baseline half way between the two peaks.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>The program named Dsp033</b></font></p>
+<p>The plots in Figure 7 and Figure 8 were produced by running the program named
+<b>Dsp033</b> and plotting the results with the program named <b>Graph03</b>.</p>
+<p>A complete listing of the program named <b>Dsp033</b> is shown in Listing 14 
+near the end of the lesson.</p>
+<p>This program is the same as <b>Dsp032</b> except that the separation between the frequencies of the two sinusoids is the reciprocal of the length of the pulse 
+in each case.</p>
+<p>The program performs spectral analysis on five separate time series, each 400 samples in length.&nbsp; Each time series contains a pulse and the pulses are different lengths.</p>
+<p>Each pulse consists of the sum of two sinusoids at closely spaced frequencies.&nbsp; The frequencies of the two sinusoids are equidistant from 
+a center frequency of&nbsp;0.0625 times the sampling frequency.&nbsp; The total separation between the frequencies of the two sinusoids is the reciprocal of the length of the pulse.</p>
+<p>All frequency values are specified as type <b>double</b> as a fraction of the sampling frequency.</p>
+<p>The lengths of the pulses are:</p>
+<ul>
+	<li>25 samples</li>
+	<li>50 samples</li>
+	<li>100 samples</li>
+	<li>200 samples</li>
+	<li>400 samples</li>
+</ul>
+<p><font color="#FF0000"><b>The spectral analysis</b></font></p>
+<p>The spectral analysis computes the spectra at 400 equally spaced frequencies between zero and the folding frequency
+<i>(one-half the sampling frequency).</i></p>
+<p>The results of the spectral analysis are multiplied by the reciprocal of the lengths of the individual pulses to normalize the five plots.&nbsp; Otherwise, the results for the short pulses would be too small to see on the plots.</p>
+<p>Because of the similarity of this program to the previous programs, my 
+discussion of the code will be very brief.</p>
+
+<p><font color="#FF0000"><b>Computation of the frequencies</b></font></p>
+<p>The code in Listing 7 shows the computation of the frequencies of the 
+sinusoids that will be added together to form each of the five pulses.</p>
+<p>
+<table border="1" cols="1" width="400" bgcolor="#FFFF00">
+<tbody>
+<tr>
+<td>                     
+<pre>
+  //Frequencies of the sinusoids
+  double freq1a = 0.0625 - 8.0/len;
+  double freq2a = 0.0625 + 8.0/len;
+
+  double freq1b = 0.0625 - 4.0/len;
+  double freq2b = 0.0625 + 4.0/len;
+
+  double freq1c = 0.0625 - 2.0/len;
+  double freq2c = 0.0625 + 2.0/len;
+
+  double freq1d = 0.0625 - 1.0/len;
+  double freq2d = 0.0625 + 1.0/len;
+
+  double freq1e = 0.0625 - 0.5/len;
+  double freq2e = 0.0625 + 0.5/len;
+
+<b>Listing 7</b>
+</pre>
+</td>
+</tr>
+</tbody>                                
+</table>
+</p>
+
+<p><font color="#FF0000"><b>Create the pulses</b></font></p>
+<p>The code in Listing 8 uses those frequency values to create the data for the 
+pulses and to store that data in the arrays used to hold the pulses.</p>
+
+<p>
+<table border="1" cols="1" width="400" bgcolor="#FFFF00">
+<tbody>
+<tr>
+<td>                     
+<pre>
+    //Create the raw data
+    for(int x = 0;x < len/16;x++){
+      data1[x] = amp*Math.cos(2*pi*x*freq1a)
+                    + amp*Math.cos(2*pi*x*freq2a);
+    }//end for loop
+
+    for(int x = 0;x < len/8;x++){
+      data2[x] = amp*Math.cos(2*pi*x*freq1b)
+                    + amp*Math.cos(2*pi*x*freq2b);
+    }//end for loop
+
+    for(int x = 0;x < len/4;x++){
+      data3[x] = amp*Math.cos(2*pi*x*freq1c)
+                    + amp*Math.cos(2*pi*x*freq2c);
+    }//end for loop
+
+    for(int x = 0;x < len/2;x++){
+      data4[x] = amp*Math.cos(2*pi*x*freq1d)
+                    + amp*Math.cos(2*pi*x*freq2d);
+    }//end for loop
+
+    for(int x = 0;x < len;x++){
+      data5[x] = amp*Math.cos(2*pi*x*freq1e)
+                   + amp*Math.cos(2*pi*x*freq2e);
+    }//end for loop
+
+<b>Listing 8</b>
+</pre>
+</td>
+</tr>
+</tbody>                                
+</table>
+</p>
+
+<p>Other than the code shown in Listing 7 and Listing 8, the program named <b>
+Dsp033</b> is the same as the programs that were previously explained, and I 
+won't discuss it further.</p>
+<h2 align="center"><a name="Run_the_Programs">Run the Programs</a></h2>
+<p>I encourage you to copy, compile, and run the programs provided in this 
+lesson.&nbsp; Experiment with them, making changes and observing the results of your 
+changes.</p>
+<p>Create more complex experiments.&nbsp; For example, you could create pulses 
+containing three or more sinusoids at closely spaced frequencies, and you could 
+cause the amplitudes of the sinusoids to be different.&nbsp; See what it takes 
+to cause the peaks in the spectra of those pulses to be separable and 
+identifiable.</p>
+<p>If you really want to get fancy, you could create a pulse consisting of a 
+sinusoid whose frequency changes with time from the beginning to the end of the 
+pulse.&nbsp; <i>(A pulse of this type is often referred to as a frequency 
+modulated sweep signal.)</i>&nbsp; See what you can conclude from doing spectral 
+analysis on a pulse of this type.</p>
+<p>Try using the random number generator of the <b>Math</b> class to add some 
+random noise to every value in the 400-sample time series.&nbsp; See what this 
+does to your spectral analysis results.</p>
+<p>Move the center frequency up and down the frequency axis.&nbsp; See if you 
+can explain what happens as the center frequency approaches zero and as the 
+center frequency approaches the folding frequency.</p>
+<p>Most of all, enjoy yourself and learn something in the process.</p>
+<h2 align="center"><a name="Summary">Summary</a></h2>
+<p>This program provides the code for three spectral analysis experiments of 
+increasing complexity.</p>
+<p><font color="#FF0000"><b>Bandwidth versus pulse length</b></font></p>
+<p>The first experiment performs spectral analyses on five simple pulses consisting of 
+truncated sinusoids.&nbsp; This experiment shows:</p>
+<ul>
+	<li>Shorter pulses require greater bandwidth.</li>
+	<li>The bandwidth of a 
+truncated sinusoidal pulse is inversely proportional to the length of the pulse.</li>
+</ul>
+<p><font color="#FF0000"><b>Peak resolution versus pulse length and frequency 
+separation</b></font></p>
+<p>The second experiment performs spectral analyses on five more complex pulses consisting of the 
+sum of two truncated sinusoids having closely spaced frequencies.&nbsp; The 
+purpose is to determine the required length of the pulse in order to use 
+spectral analysis to resolve spectral peaks attributable to the two sinusoids.&nbsp; 
+The experiment shows that the peaks are barely resolvable when the length of the pulse 
+is the reciprocal of the frequency separation between the two sinusoids.</p>
+<p><font color="#FF0000"><b>Five pulses with barely resolvable spectral peaks</b></font></p>
+<p>The third experiment also performs spectral analyses on five pulses consisting of 
+the sum of two truncated sinusoids having closely spaced frequencies.&nbsp; In 
+this case, the frequency separation for each pulse is the reciprocal of the 
+length of the pulse.&nbsp; The results of the spectral analysis reinforce the 
+conclusions drawn in the second experiment.</p>
+<h2 align="center"><a name="Whats_Next">What's Next?</a></h2>
+<p>So far, the lessons in this series have ignored the complex nature of the 
+results of spectral analysis.&nbsp; The complex results have been converted into 
+real results by computing the square root of the sum of the squares of the real 
+and imaginary parts.</p>
+<p>The next lesson in the series will meet the issue of complex spectral results 
+head on and will explain the concept of phase angle.&nbsp; In addition, the lesson 
+will explain the behavior of the phase angle with respect to time shifts in 
+the input time series.</p>
+<h2 align="center"><a name="Complete_Program_Listings">Complete Program Listings</a></h2><p>
+Complete listings of all the programs discussed in this lesson are provided in 
+this section.</p>
+<p>
+<table border="1" cols="1" width="400" bgcolor="#FFFF00">
+<tbody>
+<tr>
+<td>                     
+<pre>
+/* File Dsp031a.java
+Copyright 2004, R.G.Baldwin
+Revised 5/17/2004
+
+Displays sinusoidal pulses identical to those
+processed by Dsp031.
+
+Creates and displays five separate time series,
+each 400 samples in length.
+
+Each time series contains a pulse and the pulses
+are different lengths.
+
+Each pulse consists of a truncated sinusoid.  The
+frequency of the sinusoid for all pulses is the
+same.
+
+All frequency values are specified as type
+double as a fraction of the sampling frequency.
+
+The frequency of all sinusoids is 0.0625 times
+the sampling frequency.
+
+The lengths of the pulses are:
+
+25 samples
+50 samples
+100 samples
+200 samples
+400 samples
+
+Tested using J2SEE 1.4.2 under WinXP.
+************************************************/
+import java.util.*;
+
+class Dsp031a implements GraphIntfc01{
+  final double pi = Math.PI;
+
+  int len = 400;//data length
+  int numberPulses = 5;
+  //Frequency of the sinusoids
+  double freq = 0.0625;
+  //Amplitude of the sinusoids
+  double amp = 160;
+
+  //Following arrays will contain sinusoidal data
+  double[] data1 = new double[len];
+  double[] data2 = new double[len];
+  double[] data3 = new double[len];
+  double[] data4 = new double[len];
+  double[] data5 = new double[len];
+
+  public Dsp031a(){//constructor
+
+    //Create the raw data
+    for(int x = 0;x < len/16;x++){
+      data1[x] = amp*Math.cos(2*pi*x*freq);
+    }//end for loop
+
+    for(int x = 0;x < len/8;x++){
+      data2[x] = amp*Math.cos(2*pi*x*freq);
+    }//end for loop
+
+    for(int x = 0;x < len/4;x++){
+      data3[x] = amp*Math.cos(2*pi*x*freq);
+    }//end for loop
+
+    for(int x = 0;x < len/2;x++){
+      data4[x] = amp*Math.cos(2*pi*x*freq);
+    }//end for loop
+
+    for(int x = 0;x < len;x++){
+      data5[x] = amp*Math.cos(2*pi*x*freq);
+    }//end for loop
+
+  }//end constructor
+
+  //-------------------------------------------//
+  //The following six methods are required by the
+  // interface named GraphIntfc01.
+  public int getNmbr(){
+    //Return number of functions to process.
+    // Must not exceed 5.
+    return 5;
+  }//end getNmbr
+  //-------------------------------------------//
+  public double f1(double x){
+    int index = (int)Math.round(x);
+    if(index < 0 || index > data1.length-1){
+      return 0;
+    }else{
+      //Scale the amplitude of the pulses to make
+      // them compatible with the default
+      // plotting amplitude of 100.0.
+      return data1[index]*90.0/amp;
+    }//end else
+  }//end function
+  //-------------------------------------------//
+  public double f2(double x){
+    int index = (int)Math.round(x);
+    if(index < 0 || index > data2.length-1){
+      return 0;
+    }else{
+      return data2[index]*90.0/amp;
+    }//end else
+  }//end function
+  //-------------------------------------------//
+  public double f3(double x){
+    int index = (int)Math.round(x);
+    if(index < 0 || index > data3.length-1){
+      return 0;
+    }else{
+      return data3[index]*90.0/amp;
+    }//end else
+  }//end function
+  //-------------------------------------------//
+  public double f4(double x){
+    int index = (int)Math.round(x);
+    if(index < 0 || index > data4.length-1){
+      return 0;
+    }else{
+      return data4[index]*90.0/amp;
+    }//end else
+  }//end function
+  //-------------------------------------------//
+  public double f5(double x){
+    int index = (int)Math.round(x);
+    if(index < 0 || index > data5.length-1){
+      return 0;
+    }else{
+      return data5[index]*90.0/amp;
+    }//end else
+  }//end function
+
+}//end sample class Dsp031a
+
+<b>Listing 9</b>
+</pre>
+</td>
+</tr>
+</tbody>                                
+</table>
+</p>
+
+<p>&nbsp;</p>
+
+<table border="1" cols="1" width="400" bgcolor="#FFFF00">
+<tbody>
+<tr>
+<td>                     
+<pre>
+/* File Dsp031.java
+Copyright 2004, R.G.Baldwin
+Revised 5/17/2004
+
+Performs spectral analysis on five separate time
+series, each 400 samples in length.
+
+Each time series contains a pulse and the pulses
+are different lengths.
+
+Each pulse consists of a truncated sinusoid.  The
+frequency of the sinusoid for all pulses is the
+same.
+
+All frequency values are specified as type
+double as a fraction of the sampling frequency.
+
+The frequency of all sinusoids is 0.0625 times
+the sampling frequency.
+
+The lengths of the pulses are:
+
+25 samples
+50 samples
+100 samples
+200 samples
+400 samples
+
+The spectral analyis computes the spectra at
+400 equally spaced points between zero and the
+folding frequency (one-half the sampling
+frequency).
+
+The results of the spectral analysis are
+multiplied by the reciprocal of the lengths of
+the individual pulses to normalize all five
+plots to the same peak value.  Otherwise, the
+results for the short pulses would be too
+small to see on the plots.
+
+Tested using J2SEE 1.4.2 under WinXP.
+************************************************/
+import java.util.*;
+
+class Dsp031 implements GraphIntfc01{
+  final double pi = Math.PI;
+
+  int len = 400;//data length
+  //Sample that represents zero time.
+  int zeroTime = 0;
+  //Low and high frequency limits for the
+  // spectral analysis.
+  double lowF = 0.0;
+  double highF = 0.5;
+  int numberSpectra = 5;
+  //Frequency of the sinusoids
+  double freq = 0.0625;
+  //Amplitude of the sinusoids
+  double amp = 160;
+
+  //Following arrays will contain data that is
+  // input to the spectral analysis process.
+  double[] data1 = new double[len];
+  double[] data2 = new double[len];
+  double[] data3 = new double[len];
+  double[] data4 = new double[len];
+  double[] data5 = new double[len];
+
+  //Following arrays receive information back
+  // from the spectral analysis that is not used
+  // in this program.
+  double[] real;
+  double[] imag;
+  double[] angle;
+
+  //Following arrays receive the magnitude
+  // spectral information back from the spectral
+  // analysis process.
+  double[] mag1;
+  double[] mag2;
+  double[] mag3;
+  double[] mag4;
+  double[] mag5;
+
+  public Dsp031(){//constructor
+
+    //Create the raw data
+    for(int x = 0;x < len/16;x++){
+      data1[x] = amp*Math.cos(2*pi*x*freq);
+    }//end for loop
+
+    for(int x = 0;x < len/8;x++){
+      data2[x] = amp*Math.cos(2*pi*x*freq);
+    }//end for loop
+
+    for(int x = 0;x < len/4;x++){
+      data3[x] = amp*Math.cos(2*pi*x*freq);
+    }//end for loop
+
+    for(int x = 0;x < len/2;x++){
+      data4[x] = amp*Math.cos(2*pi*x*freq);
+    }//end for loop
+
+    for(int x = 0;x < len;x++){
+      data5[x] = amp*Math.cos(2*pi*x*freq);
+    }//end for loop
+
+
+    //Compute magnitude spectra of the raw data
+    // and save it in output arrays.  Note that
+    // the real, imag, and angle arrays are not
+    // used later, so they are discarded each
+    // time a new spectral analysis is performed.
+    mag1 = new double[len];
+    real = new double[len];
+    imag = new double[len];
+    angle = new double[len];
+    ForwardRealToComplex01.transform(data1,real,
+      imag,angle,mag1,zeroTime,lowF,highF);
+
+    mag2 = new double[len];
+    real = new double[len];
+    imag = new double[len];
+    angle = new double[len];
+    ForwardRealToComplex01.transform(data2,real,
+      imag,angle,mag2,zeroTime,lowF,highF);
+
+    mag3 = new double[len];
+    real = new double[len];
+    imag = new double[len];
+    angle = new double[len];
+    ForwardRealToComplex01.transform(data3,real,
+      imag,angle,mag3,zeroTime,lowF,highF);
+
+    mag4 = new double[len];
+    real = new double[len];
+    imag = new double[len];
+    angle = new double[len];
+    ForwardRealToComplex01.transform(data4,real,
+      imag,angle,mag4,zeroTime,lowF,highF);
+
+    mag5 = new double[len];
+    real = new double[len];
+    imag = new double[len];
+    angle = new double[len];
+    ForwardRealToComplex01.transform(data5,real,
+      imag,angle,mag5,zeroTime,lowF,highF);
+
+  }//end constructor
+
+  //-------------------------------------------//
+  //The following six methods are required by the
+  // interface named GraphIntfc01.
+  public int getNmbr(){
+    //Return number of functions to process.
+    // Must not exceed 5.
+    return 5;
+  }//end getNmbr
+  //-------------------------------------------//
+  public double f1(double x){
+    int index = (int)Math.round(x);
+    if(index < 0 || index > mag1.length-1){
+      return 0;
+    }else{
+      //Scale the magnitude data by the
+      // reciprocal of the length of the sinusoid
+      // to normalize the five plots to the same
+      // peak value.
+      return mag1[index]*16.0;
+    }//end else
+  }//end function
+  //-------------------------------------------//
+  public double f2(double x){
+    int index = (int)Math.round(x);
+    if(index < 0 || index > mag2.length-1){
+      return 0;
+    }else{
+      return mag2[index]*8.0;
+    }//end else
+  }//end function
+  //-------------------------------------------//
+  public double f3(double x){
+    int index = (int)Math.round(x);
+    if(index < 0 || index > mag3.length-1){
+      return 0;
+    }else{
+      return mag3[index]*4.0;
+    }//end else
+  }//end function
+  //-------------------------------------------//
+  public double f4(double x){
+    int index = (int)Math.round(x);
+    if(index < 0 || index > mag4.length-1){
+      return 0;
+    }else{
+      return mag4[index]*2.0;
+    }//end else
+  }//end function
+  //-------------------------------------------//
+  public double f5(double x){
+    int index = (int)Math.round(x);
+    if(index < 0 || index > mag5.length-1){
+      return 0;
+    }else{
+      return mag5[index]*1.0;
+    }//end else
+  }//end function
+
+}//end sample class Dsp031
+
+<b>Listing 10</b>
+</pre>
+</td>
+</tr>
+</tbody>                                
+</table>
+</p>
+
+<p>&nbsp;</p>
+
+<p>
+<table border="1" cols="1" width="400" bgcolor="#FFFF00">
+<tbody>
+<tr>
+<td>                     
+<pre>
+/* File Dsp032a.java
+Copyright 2004, R.G.Baldwin
+Revised 5/17/2004
+
+Displays sinusoidal pulses identical to those
+processed by Dsp032.
+
+Creates and displays five separate time series,
+each 400 samples in length.
+
+Each time series contains a pulse and the pulses
+are different lengths.
+
+Each pulse consists of the sum of two sinusoids
+at closely spaced frequencies.  The frequencies
+of the two sinusoids for all pulses are the same.
+
+All frequency values are specified as type
+double as a fraction of the sampling frequency.
+
+The frequencies of the two sinusoids are
+equidistant from 0.0625 times the sampling
+frequency.
+
+The frequency of one sinusoid is
+(0.0625 - 2.0/len) times the sampling frequency.
+
+The frequency of the other sinusoid is
+(0.0625 + 2.0/len) times the sampling frequency.
+
+The lengths of the pulses are:
+
+25 samples
+50 samples
+100 samples
+200 samples
+400 samples
+
+Tested using J2SEE 1.4.2 under WinXP.
+************************************************/
+import java.util.*;
+
+class Dsp032a implements GraphIntfc01{
+  final double pi = Math.PI;
+
+  int len = 400;//data length
+  int numberPulses = 5;
+  //Frequencies of the sinusoids
+  double freq1 = 0.0625 - 2.0/len;
+  double freq2 = 0.0625 + 2.0/len;
+
+  //Amplitude of the sinusoids
+  double amp = 160;
+
+  //Following arrays will contain sinusoidal data
+  double[] data1 = new double[len];
+  double[] data2 = new double[len];
+  double[] data3 = new double[len];
+  double[] data4 = new double[len];
+  double[] data5 = new double[len];
+
+  public Dsp032a(){//constructor
+
+    //Create the raw data
+    for(int x = 0;x < len/16;x++){
+      data1[x] = amp*Math.cos(2*pi*x*freq1)
+                    + amp*Math.cos(2*pi*x*freq2);
+    }//end for loop
+
+    for(int x = 0;x < len/8;x++){
+      data2[x] = amp*Math.cos(2*pi*x*freq1)
+                    + amp*Math.cos(2*pi*x*freq2);
+    }//end for loop
+
+    for(int x = 0;x < len/4;x++){
+      data3[x] = amp*Math.cos(2*pi*x*freq1)
+                    + amp*Math.cos(2*pi*x*freq2);
+    }//end for loop
+
+    for(int x = 0;x < len/2;x++){
+      data4[x] = amp*Math.cos(2*pi*x*freq1)
+                    + amp*Math.cos(2*pi*x*freq2);
+    }//end for loop
+
+    for(int x = 0;x < len;x++){
+      data5[x] = amp*Math.cos(2*pi*x*freq1)
+                    + amp*Math.cos(2*pi*x*freq2);
+    }//end for loop
+
+  }//end constructor
+
+  //-------------------------------------------//
+  //The following six methods are required by the
+  // interface named GraphIntfc01.
+  public int getNmbr(){
+    //Return number of functions to process.
+    // Must not exceed 5.
+    return 5;
+  }//end getNmbr
+  //-------------------------------------------//
+  public double f1(double x){
+    int index = (int)Math.round(x);
+    if(index < 0 || index > data1.length-1){
+      return 0;
+    }else{
+      //Scale the amplitude of the pulses to make
+      // them compatible with the default
+      // plotting amplitude of 100.0.
+      return data1[index]*40.0/amp;
+    }//end else
+  }//end function
+  //-------------------------------------------//
+  public double f2(double x){
+    int index = (int)Math.round(x);
+    if(index < 0 || index > data2.length-1){
+      return 0;
+    }else{
+      return data2[index]*40.0/amp;
+    }//end else
+  }//end function
+  //-------------------------------------------//
+  public double f3(double x){
+    int index = (int)Math.round(x);
+    if(index < 0 || index > data3.length-1){
+      return 0;
+    }else{
+      return data3[index]*40.0/amp;
+    }//end else
+  }//end function
+  //-------------------------------------------//
+  public double f4(double x){
+    int index = (int)Math.round(x);
+    if(index < 0 || index > data4.length-1){
+      return 0;
+    }else{
+      return data4[index]*40.0/amp;
+    }//end else
+  }//end function
+  //-------------------------------------------//
+  public double f5(double x){
+    int index = (int)Math.round(x);
+    if(index < 0 || index > data5.length-1){
+      return 0;
+    }else{
+      return data5[index]*40.0/amp;
+    }//end else
+  }//end function
+
+}//end sample class Dsp032a
+
+<b>Listing 11</b>
+</pre>
+</td>
+</tr>
+</tbody>                                
+</table>
+</p>
+
+<p>&nbsp;</p>
+
+<p>
+<table border="1" cols="1" width="400" bgcolor="#FFFF00">
+<tbody>
+<tr>
+<td>                     
+<pre>
+/* File Dsp032.java
+Copyright 2004, R.G.Baldwin
+Revised 5/17/2004
+
+Performs spectral analysis on five separate time
+series, each 400 samples in length.
+
+Each time series contains a pulse and the pulses
+are different lengths.
+
+Each pulse consists of the sum of two sinusoids
+at closely spaced frequencies.  The frequencies
+of the two sinusoids for all pulses are the same.
+
+All frequency values are specified as type
+double as a fraction of the sampling frequency.
+
+The frequencies of the two sinusoids are
+equidistant from 0.0625 times the sampling
+frequency.
+
+The frequency of one sinusoid is
+(0.0625 - 2.0/len) times the sampling frequency.
+
+The frequency of the other sinusoid is
+(0.0625 + 2.0/len) times the sampling frequency.
+
+The lengths of the pulses are:
+
+25 samples
+50 samples
+100 samples
+200 samples
+400 samples
+
+The spectral analyis computes the spectra at
+400 equally spaced points between zero and the
+folding frequency (one-half the sampling
+frequency).
+
+The results of the spectral analysis are
+multiplied by the reciprocal of the lengths of
+the individual pulses to normalize the five
+plots.  Otherwise, the results for the short
+pulses would be too small to see on the plots.
+
+Tested using J2SEE 1.4.2 under WinXP.
+************************************************/
+import java.util.*;
+
+class Dsp032 implements GraphIntfc01{
+  final double pi = Math.PI;
+
+  int len = 400;//data length
+  //Sample that represents zero time.
+  int zeroTime = 0;
+  //Low and high frequency limits for the
+  // spectral analysis.
+  double lowF = 0.0;
+  double highF = 0.5;
+  int numberSpectra = 5;
+  //Frequencies of the sinusoids
+  double freq1 = 0.0625 - 2.0/len;
+  double freq2 = 0.0625 + 2.0/len;
+
+  //Amplitude of the sinusoids
+  double amp = 160;
+
+  //Following arrays will contain data that is
+  // input to the spectral analysis process.
+  double[] data1 = new double[len];
+  double[] data2 = new double[len];
+  double[] data3 = new double[len];
+  double[] data4 = new double[len];
+  double[] data5 = new double[len];
+
+  //Following arrays receive information back
+  // from the spectral analysis that is not used
+  // in this program.
+  double[] real;
+  double[] imag;
+  double[] angle;
+
+  //Following arrays receive the magnitude
+  // spectral information back from the spectral
+  // analysis process.
+  double[] mag1;
+  double[] mag2;
+  double[] mag3;
+  double[] mag4;
+  double[] mag5;
+
+  public Dsp032(){//constructor
+
+    //Create the raw data
+    for(int x = 0;x < len/16;x++){
+      data1[x] = amp*Math.cos(2*pi*x*freq1)
+                    + amp*Math.cos(2*pi*x*freq2);
+    }//end for loop
+
+    for(int x = 0;x < len/8;x++){
+      data2[x] = amp*Math.cos(2*pi*x*freq1)
+                    + amp*Math.cos(2*pi*x*freq2);
+    }//end for loop
+
+    for(int x = 0;x < len/4;x++){
+      data3[x] = amp*Math.cos(2*pi*x*freq1)
+                    + amp*Math.cos(2*pi*x*freq2);
+    }//end for loop
+
+    for(int x = 0;x < len/2;x++){
+      data4[x] = amp*Math.cos(2*pi*x*freq1)
+                    + amp*Math.cos(2*pi*x*freq2);
+    }//end for loop
+
+    for(int x = 0;x < len;x++){
+      data5[x] = amp*Math.cos(2*pi*x*freq1)
+                    + amp*Math.cos(2*pi*x*freq2);
+    }//end for loop
+
+
+    //Compute magnitude spectra of the raw data
+    // and save it in output arrays.  Note that
+    // the real, imag, and angle arrays are not
+    // used later, so they are discarded each
+    // time a new spectral analysis is performed.
+    mag1 = new double[len];
+    real = new double[len];
+    imag = new double[len];
+    angle = new double[len];
+    ForwardRealToComplex01.transform(data1,real,
+      imag,angle,mag1,zeroTime,lowF,highF);
+
+    mag2 = new double[len];
+    real = new double[len];
+    imag = new double[len];
+    angle = new double[len];
+    ForwardRealToComplex01.transform(data2,real,
+      imag,angle,mag2,zeroTime,lowF,highF);
+
+    mag3 = new double[len];
+    real = new double[len];
+    imag = new double[len];
+    angle = new double[len];
+    ForwardRealToComplex01.transform(data3,real,
+      imag,angle,mag3,zeroTime,lowF,highF);
+
+    mag4 = new double[len];
+    real = new double[len];
+    imag = new double[len];
+    angle = new double[len];
+    ForwardRealToComplex01.transform(data4,real,
+      imag,angle,mag4,zeroTime,lowF,highF);
+
+    mag5 = new double[len];
+    real = new double[len];
+    imag = new double[len];
+    angle = new double[len];
+    ForwardRealToComplex01.transform(data5,real,
+      imag,angle,mag5,zeroTime,lowF,highF);
+
+  }//end constructor
+
+  //-------------------------------------------//
+  //The following six methods are required by the
+  // interface named GraphIntfc01.
+  public int getNmbr(){
+    //Return number of functions to process.
+    // Must not exceed 5.
+    return 5;
+  }//end getNmbr
+  //-------------------------------------------//
+  public double f1(double x){
+    int index = (int)Math.round(x);
+    if(index < 0 || index > mag1.length-1){
+      return 0;
+    }else{
+      //Scale the magnitude data by the
+      // reciprocal of the length of the sinusoid
+      // to normalize the five plots to the same
+      // peak value.
+      return mag1[index]*16.0;
+    }//end else
+  }//end function
+  //-------------------------------------------//
+  public double f2(double x){
+    int index = (int)Math.round(x);
+    if(index < 0 || index > mag2.length-1){
+      return 0;
+    }else{
+      return mag2[index]*8.0;
+    }//end else
+  }//end function
+  //-------------------------------------------//
+  public double f3(double x){
+    int index = (int)Math.round(x);
+    if(index < 0 || index > mag3.length-1){
+      return 0;
+    }else{
+      return mag3[index]*4.0;
+    }//end else
+  }//end function
+  //-------------------------------------------//
+  public double f4(double x){
+    int index = (int)Math.round(x);
+    if(index < 0 || index > mag4.length-1){
+      return 0;
+    }else{
+      return mag4[index]*2.0;
+    }//end else
+  }//end function
+  //-------------------------------------------//
+  public double f5(double x){
+    int index = (int)Math.round(x);
+    if(index < 0 || index > mag5.length-1){
+      return 0;
+    }else{
+      return mag5[index]*1.0;
+    }//end else
+  }//end function
+
+}//end sample class Dsp032
+
+<b>Listing 12</b>
+</pre>
+</td>
+</tr>
+</tbody>                                
+</table>
+</p>
+
+<p>&nbsp;</p>
+
+<p>
+<table border="1" cols="1" width="400" bgcolor="#FFFF00">
+<tbody>
+<tr>
+<td>                     
+<pre>
+/* File Dsp033a.java
+Copyright 2004, R.G.Baldwin
+Revised 5/17/2004
+
+Displays sinusoidal pulses identical to those
+processed by Dsp033.
+
+Creates and displays five separate time series,
+each 400 samples in length.
+
+Each time series contains a pulse and the pulses
+are different lengths.
+
+Each pulse consists of the sum of two sinusoids
+at closely spaced frequencies.  The frequencies
+of the two sinusoids are equidistant from 0.0625
+times the sampling frequency.  The total
+separation between the frequencies of the two
+sinusoids is the reciprocal of the length of the
+pulse.
+
+All frequency values are specified as type
+double as a fraction of the sampling frequency.
+
+The lengths of the pulses are:
+
+25 samples
+50 samples
+100 samples
+200 samples
+400 samples
+
+Tested using J2SEE 1.4.2 under WinXP.
+************************************************/
+import java.util.*;
+
+class Dsp033a implements GraphIntfc01{
+  final double pi = Math.PI;
+
+  int len = 400;//data length
+  int numberPulses = 5;
+  //Frequencies of the sinusoids
+  double freq1a = 0.0625 - 8.0/len;
+  double freq2a = 0.0625 + 8.0/len;
+
+  double freq1b = 0.0625 - 4.0/len;
+  double freq2b = 0.0625 + 4.0/len;
+
+  double freq1c = 0.0625 - 2.0/len;
+  double freq2c = 0.0625 + 2.0/len;
+
+  double freq1d = 0.0625 - 1.0/len;
+  double freq2d = 0.0625 + 1.0/len;
+
+  double freq1e = 0.0625 - 0.5/len;
+  double freq2e = 0.0625 + 0.5/len;
+
+  //Amplitude of the sinusoids
+  double amp = 160;
+
+  //Following arrays will contain sinusoidal data
+  double[] data1 = new double[len];
+  double[] data2 = new double[len];
+  double[] data3 = new double[len];
+  double[] data4 = new double[len];
+  double[] data5 = new double[len];
+
+  public Dsp033a(){//constructor
+
+    //Create the raw data
+    for(int x = 0;x < len/16;x++){
+      data1[x] = amp*Math.cos(2*pi*x*freq1a)
+                    + amp*Math.cos(2*pi*x*freq2a);
+    }//end for loop
+
+    for(int x = 0;x < len/8;x++){
+      data2[x] = amp*Math.cos(2*pi*x*freq1b)
+                    + amp*Math.cos(2*pi*x*freq2b);
+    }//end for loop
+
+    for(int x = 0;x < len/4;x++){
+      data3[x] = amp*Math.cos(2*pi*x*freq1c)
+                    + amp*Math.cos(2*pi*x*freq2c);
+    }//end for loop
+
+    for(int x = 0;x < len/2;x++){
+      data4[x] = amp*Math.cos(2*pi*x*freq1d)
+                    + amp*Math.cos(2*pi*x*freq2d);
+    }//end for loop
+
+    for(int x = 0;x < len;x++){
+      data5[x] = amp*Math.cos(2*pi*x*freq1e)
+                   + amp*Math.cos(2*pi*x*freq2e);
+    }//end for loop
+
+  }//end constructor
+
+  //-------------------------------------------//
+  //The following six methods are required by the
+  // interface named GraphIntfc01.
+  public int getNmbr(){
+    //Return number of functions to process.
+    // Must not exceed 5.
+    return 5;
+  }//end getNmbr
+  //-------------------------------------------//
+  public double f1(double x){
+    int index = (int)Math.round(x);
+    if(index < 0 || index > data1.length-1){
+      return 0;
+    }else{
+      //Scale the amplitude of the pulses to make
+      // them compatible with the default
+      // plotting amplitude of 100.0.
+      return data1[index]*40.0/amp;
+    }//end else
+  }//end function
+  //-------------------------------------------//
+  public double f2(double x){
+    int index = (int)Math.round(x);
+    if(index < 0 || index > data2.length-1){
+      return 0;
+    }else{
+      return data2[index]*40.0/amp;
+    }//end else
+  }//end function
+  //-------------------------------------------//
+  public double f3(double x){
+    int index = (int)Math.round(x);
+    if(index < 0 || index > data3.length-1){
+      return 0;
+    }else{
+      return data3[index]*40.0/amp;
+    }//end else
+  }//end function
+  //-------------------------------------------//
+  public double f4(double x){
+    int index = (int)Math.round(x);
+    if(index < 0 || index > data4.length-1){
+      return 0;
+    }else{
+      return data4[index]*40.0/amp;
+    }//end else
+  }//end function
+  //-------------------------------------------//
+  public double f5(double x){
+    int index = (int)Math.round(x);
+    if(index < 0 || index > data5.length-1){
+      return 0;
+    }else{
+      return data5[index]*40.0/amp;
+    }//end else
+  }//end function
+
+}//end sample class Dsp033a
+
+<b>Listing 13</b>
+</pre>
+</td>
+</tr>
+</tbody>                                
+</table>
+</p>
+
+<p>&nbsp;</p>
+
+<p>
+<table border="1" cols="1" width="400" bgcolor="#FFFF00">
+<tbody>
+<tr>
+<td>                     
+<pre>
+/* File Dsp033.java
+Copyright 2004, R.G.Baldwin
+Revised 5/17/2004
+
+Same as Dsp032 except that the separation between
+the frequencies of the two sinusoids is the
+reciprocal of the length of the pulse.
+
+Performs spectral analysis on five separate time
+series, each 400 samples in length.
+
+Each time series contains a pulse and the pulses
+are different lengths.
+
+Each pulse consists of the sum of two sinusoids
+at closely spaced frequencies.  The frequencies
+of the two sinusoids are equidistant from 0.0625
+times the sampling frequency.  The total
+separation between the frequencies of the two
+sinusoids is the reciprocal of the length of the
+pulse.
+
+All frequency values are specified as type
+double as a fraction of the sampling frequency.
+
+The lengths of the pulses are:
+
+25 samples
+50 samples
+100 samples
+200 samples
+400 samples
+
+The spectral analyis computes the spectra at
+400 equally spaced points between zero and the
+folding frequency (one-half the sampling
+frequency).
+
+The results of the spectral analysis are
+multiplied by the reciprocal of the lengths of
+the individual pulses to normalize the five
+plots.  Otherwise, the results for the short
+pulses would be too small to see on the plots.
+
+Tested using J2SEE 1.4.2 under WinXP.
+************************************************/
+import java.util.*;
+
+class Dsp033 implements GraphIntfc01{
+  final double pi = Math.PI;
+
+  int len = 400;//data length
+  //Sample that represents zero time.
+  int zeroTime = 0;
+  //Low and high frequency limits for the
+  // spectral analysis.
+  double lowF = 0.0;
+  double highF = 0.5;
+  int numberSpectra = 5;
+  //Frequencies of the sinusoids
+  double freq1a = 0.0625 - 8.0/len;
+  double freq2a = 0.0625 + 8.0/len;
+
+  double freq1b = 0.0625 - 4.0/len;
+  double freq2b = 0.0625 + 4.0/len;
+
+  double freq1c = 0.0625 - 2.0/len;
+  double freq2c = 0.0625 + 2.0/len;
+
+  double freq1d = 0.0625 - 1.0/len;
+  double freq2d = 0.0625 + 1.0/len;
+
+  double freq1e = 0.0625 - 0.5/len;
+  double freq2e = 0.0625 + 0.5/len;
+
+
+  //Amplitude of the sinusoids
+  double amp = 160;
+
+  //Following arrays will contain data that is
+  // input to the spectral analysis process.
+  double[] data1 = new double[len];
+  double[] data2 = new double[len];
+  double[] data3 = new double[len];
+  double[] data4 = new double[len];
+  double[] data5 = new double[len];
+
+  //Following arrays receive information back
+  // from the spectral analysis that is not used
+  // in this program.
+  double[] real;
+  double[] imag;
+  double[] angle;
+
+  //Following arrays receive the magnitude
+  // spectral information back from the spectral
+  // analysis process.
+  double[] mag1;
+  double[] mag2;
+  double[] mag3;
+  double[] mag4;
+  double[] mag5;
+
+  public Dsp033(){//constructor
+
+    //Create the raw data
+    for(int x = 0;x < len/16;x++){
+      data1[x] = amp*Math.cos(2*pi*x*freq1a)
+                    + amp*Math.cos(2*pi*x*freq2a);
+    }//end for loop
+
+    for(int x = 0;x < len/8;x++){
+      data2[x] = amp*Math.cos(2*pi*x*freq1b)
+                    + amp*Math.cos(2*pi*x*freq2b);
+    }//end for loop
+
+    for(int x = 0;x < len/4;x++){
+      data3[x] = amp*Math.cos(2*pi*x*freq1c)
+                    + amp*Math.cos(2*pi*x*freq2c);
+    }//end for loop
+
+    for(int x = 0;x < len/2;x++){
+      data4[x] = amp*Math.cos(2*pi*x*freq1d)
+                    + amp*Math.cos(2*pi*x*freq2d);
+    }//end for loop
+
+    for(int x = 0;x < len;x++){
+      data5[x] = amp*Math.cos(2*pi*x*freq1e)
+                   + amp*Math.cos(2*pi*x*freq2e);
+    }//end for loop
+
+
+    //Compute magnitude spectra of the raw data
+    // and save it in output arrays.  Note that
+    // the real, imag, and angle arrays are not
+    // used later, so they are discarded each
+    // time a new spectral analysis is performed.
+    mag1 = new double[len];
+    real = new double[len];
+    imag = new double[len];
+    angle = new double[len];
+    ForwardRealToComplex01.transform(data1,real,
+      imag,angle,mag1,zeroTime,lowF,highF);
+
+    mag2 = new double[len];
+    real = new double[len];
+    imag = new double[len];
+    angle = new double[len];
+    ForwardRealToComplex01.transform(data2,real,
+      imag,angle,mag2,zeroTime,lowF,highF);
+
+    mag3 = new double[len];
+    real = new double[len];
+    imag = new double[len];
+    angle = new double[len];
+    ForwardRealToComplex01.transform(data3,real,
+      imag,angle,mag3,zeroTime,lowF,highF);
+
+    mag4 = new double[len];
+    real = new double[len];
+    imag = new double[len];
+    angle = new double[len];
+    ForwardRealToComplex01.transform(data4,real,
+      imag,angle,mag4,zeroTime,lowF,highF);
+
+    mag5 = new double[len];
+    real = new double[len];
+    imag = new double[len];
+    angle = new double[len];
+    ForwardRealToComplex01.transform(data5,real,
+      imag,angle,mag5,zeroTime,lowF,highF);
+
+  }//end constructor
+
+  //-------------------------------------------//
+  //The following six methods are required by the
+  // interface named GraphIntfc01.
+  public int getNmbr(){
+    //Return number of functions to process.
+    // Must not exceed 5.
+    return 5;
+  }//end getNmbr
+  //-------------------------------------------//
+  public double f1(double x){
+    int index = (int)Math.round(x);
+    if(index < 0 || index > mag1.length-1){
+      return 0;
+    }else{
+      //Scale the magnitude data by the
+      // reciprocal of the length of the sinusoid
+      // to normalize the five plots to the same
+      // peak value.
+      return mag1[index]*16.0;
+    }//end else
+  }//end function
+  //-------------------------------------------//
+  public double f2(double x){
+    int index = (int)Math.round(x);
+    if(index < 0 || index > mag2.length-1){
+      return 0;
+    }else{
+      return mag2[index]*8.0;
+    }//end else
+  }//end function
+  //-------------------------------------------//
+  public double f3(double x){
+    int index = (int)Math.round(x);
+    if(index < 0 || index > mag3.length-1){
+      return 0;
+    }else{
+      return mag3[index]*4.0;
+    }//end else
+  }//end function
+  //-------------------------------------------//
+  public double f4(double x){
+    int index = (int)Math.round(x);
+    if(index < 0 || index > mag4.length-1){
+      return 0;
+    }else{
+      return mag4[index]*2.0;
+    }//end else
+  }//end function
+  //-------------------------------------------//
+  public double f5(double x){
+    int index = (int)Math.round(x);
+    if(index < 0 || index > mag5.length-1){
+      return 0;
+    }else{
+      return mag5[index]*1.0;
+    }//end else
+  }//end function
+
+}//end sample class Dsp033
+
+<b>Listing 14</b>
+</pre>
+</td>
+</tr>
+</tbody>                                
+</table>
+</p>
+
+<p>
+     
+<hr size="3" width="100%" align="center">    
+<p>Copyright 2004, Richard G. Baldwin.&nbsp; Reproduction in whole or in
+part in any form or medium without express written permission from Richard
+Baldwin is prohibited. </p>
+     
+<h4> <a name="About_the_author">About the author</a></h4><b>
+<a href="mailto:baldwin@dickbaldwin.com">Richard Baldwin</a></b><i>
+  is a college professor (at Austin Community College in Austin, TX) and
+private  consultant whose primary focus is a combination of Java, C#, and
+XML. In addition to the many platform and/or language independent benefits
+of Java and C# applications, he believes that a combination of Java, C#,
+and XML will become the primary driving force in the delivery of structured
+information on the Web.</i>    
+<p><i>Richard has participated in numerous consulting projects, and he frequently 
+ provides onsite training at the high-tech companies located in and around 
+ Austin, Texas.&nbsp; He is the author of Baldwin's Programming <a
+ href="http://www.geocities.com/Athens/7077/scoop/onjava.html">Tutorials</a>,
+  which has gained a worldwide following among experienced and aspiring programmers.
+  He has also published articles in JavaPro magazine.</i> </p>
+     
+<p><i>In addition to his programming expertise, Richard has many years of 
+ practical experience in Digital Signal Processing (DSP).&nbsp; His first
+ job after he earned his Bachelor's degree was doing DSP in the Seismic Research 
+ Department of Texas Instruments.&nbsp; (TI is still a world leader in DSP.)&nbsp; 
+ In the following years, he applied his programming and DSP expertise to other
+ interesting areas including sonar and underwater acoustics.</i> </p>
+     
+<p><i>Richard holds an MSEE degree from Southern Methodist University and
+  has many years of experience in the application of computer technology
+to  real-world problems.</i> </p>
+     
+<p><i><a href="mailto:baldwin@dickbaldwin.com">Baldwin@DickBaldwin.com</a></i>
+  </p>
+     
+<p>-end- </p>
+   </body>
+</html>

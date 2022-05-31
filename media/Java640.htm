@@ -1,0 +1,586 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>... in Java by Richard G Baldwin</TITLE>
+<META NAME="Template" CONTENT="C:\PROGRAM FILES\MSOFFICE\OFFICE\html.dot">
+</HEAD>
+<BODY LINK="#0000ff" VLINK="#800080" BGCOLOR="#ffffff">
+
+<P><!--start--></P>
+<I><H3 ALIGN="CENTER">Richard G Baldwin (512) 223-4758, </I><A HREF="mailto:baldwin@austin.cc.tx.us"><I>baldwin@austin.cc.tx.us</I></A><I>, </I><A HREF="http://www2.austin.cc.tx.us/baldwin/"><I>http://www2.austin.cc.tx.us/baldwin/</I></A></H3>
+<H2 ALIGN="CENTER"><!--title-->CORBA, Stringified Object References and FTP Servers<!--endTitle--></H2>
+<P>Java Programming, Lecture Notes 640, Revised 03/24/99. </P>
+
+<UL>
+<LI><A HREF="#Preface">Preface</A> </LI>
+<LI><A HREF="#Introduction">Introduction</A> </LI>
+<LI><A HREF="#Sample_Program">Sample Program</A> </LI>
+<LI><A HREF="#The_Interface_Definition_Language__IDL__">The Interface Definition Language (IDL) File</A> </LI>
+<LI><A HREF="#The_Batch_file">The Batch File</A> </LI>
+<LI><A HREF="#The_Server_File">The Server File</A> </LI>
+<LI><A HREF="#The_Client_File">The Client File</A> </LI>
+<LI><A HREF="#Program_Listings">Program Listings</A> </LI></UL>
+
+<P><HR></P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Preface">Preface</A></H2>
+</FONT><P>Students in Prof. Baldwin's <B><U>Advanced Java Programming</B></U> classes at ACC will be responsible for knowing and understanding all of the material in this lesson beginning with the spring semester of 1999. </P>
+<P>This lesson was originally written on October 31, 1998. The sample program was tested using the JDK 1.2beta4 download package. The purpose of this lesson is to illustrate the use of an FTP file server as a mechanism for passing stringified object references from the server to the client.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Introduction">Introduction</A></H2>
+</FONT><P>Before embarking on this lesson, you need to study and understand all of the previous lessons on CORBA and Java. This lesson builds directly upon those lessons. Unless you understand the material in those lessons, you probably won't understand what is going on here. </P>
+<P>Also, before embarking on this lesson, you need to study and understand all of the lessons on network programming. All of the network programming information that you will need to understand the sample program in this lesson is provided in the network programming lessons.</P>
+<P>Finally, in order to understand and improve on the sample program in this lesson, you will need to know quite a lot about the FTP protocol. There are numerous sites on the web where you can learn about the FTP protocol, which you can easily, find using your favorite search engine.</P>
+<P>Using CORBA, a client machine anywhere in the world has the capability of invoking methods on a servant object on a cooperating server anywhere in the world, and the programs at the two ends can be developed using different programming languages. One of those programming languages is Java.</P>
+<P>Once the client code has a reference to the remote object, the invocation of methods on the remote object is very similar to the invocation of methods on local objects. </P>
+<P>Both the client code and the server code must have access to an IDL file that declares the methods that can be invoked remotely. This is the key to the whole process and the glue that holds it all together. The client and the server must also agree on how the server will provide an object reference to the client.</P>
+<P>I have discussed several ways by which a reference to a servant object can be made available to the code in the client. One of the ways is to use stringified object references. Once an object reference is stringified, it can be passed to the client using any reliable means of communicating string data from the server to the client. One possible method of accomplishing this communication is by having the server deposit a file containing the object reference on an FTP server where the client can retrieve it. However, the code to accomplish this is not trivial. The purpose of this lesson is to start you down the path of developing your own code to accomplish this.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Sample_Program">Sample Program</A></H2>
+</FONT><P>The application requires three separate source files and one utility program.&nbsp; The source files are: </P>
+
+<UL>
+<LI>An IDL file that declares the signature of a method on a servant object on the server that can be invoked by the client. </LI>
+<LI>A file that serves as the server program. </LI>
+<LI>A file that serves as the client program. </LI></UL>
+
+<P>The utility program is: </P>
+<B><BLOCKQUOTE>idltojava.exe</B> - a program that converts the IDL file to several Java files, producing stub and skeleton source files and some other source files used by the client and the server.</BLOCKQUOTE>
+<P>I have a folder on my computer that contains the following four source files:</P>
+
+<UL>
+<LI>Corba07.bat </LI>
+<LI>Corba07.idl </LI>
+<LI>Corba07Server.java </LI>
+<LI>Corba07Client.java </LI></UL>
+
+<P>Only the last three files are required. The batch file is optional, but is useful for managing the whole process.</P>
+<P>Initially, this folder doesn't have any sub folders. However, execution of the program <STRONG>idltojava</STRONG> creates a package to contain the source files that it generates. I forced the package to be in a tree that begins with a folder named <STRONG>junk</STRONG>. As a result, a <STRONG>junk</STRONG> folder is automatically generated which contains another folder named <STRONG>TheDateApp</STRONG>, which is the actual package name.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="The_Interface_Definition_Language__IDL__">The Interface Definition Language (IDL) File</A></H2>
+</FONT><P>The IDL file is the glue that holds the system of programs together and makes it possible for code in a client to invoke methods in a remote object on a basis that is both platform and language independent. This was discussed in some detail in the earlier lessons.</P>
+<P>The IDL for this sample program is named <STRONG>Corba07.idl</STRONG>. Because the purpose of this lesson is to illustrate the use of a common FTP server for exchange of a stringified object reference, I made the IDL file very simple. The servant object contains one method that simply returns the current date and time when it is invoked by a method on the client.</P>
+<P>A complete listing of all four files is provided near the end of this lesson.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="The_Batch_file">The Batch file</A></H2>
+</FONT><P>The batch file for this application is named <STRONG>Corba07.bat</STRONG>. There is nothing new or significant about it. You will find a listing for the batch file near the end of this lesson.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="The_Server_File">The Server File</A></H2>
+</FONT><P>The name of the file containing the server code is <STRONG>Corba07Server.java</STRONG>. A listing of the file is provided near the end of this lesson.</P>
+<P>This is a long and complex file, not due to CORBA in particular, but due to the fact that the file partially implements the FTP protocol for the purpose of storing a file containing a stringified object reference on an FTP server where it can be accessed by clients.</P>
+<P>I am not going to discuss the code in this file to any depth. With the exception of the details of the FTP protocol, everything that you need to know to understand this file is either provided in earlier lessons on CORBA, or is provided in the lessons on network programming.</P>
+<P>Regarding the details of the FTP protocol, comments are included in the code that should suffice in telling you what is going on, at least to the limited extent that I have implemented the protocol. Beyond this, you will need to find and study another source on the FTP protocol.</P>
+<P>This is a Java/CORBA server that illustrates the use of stringified object references stored in a file on a server that is different from the machine on which either the CORBA server or the CORBA client are located. I have tested this program using three machines on an IP network, and it worked satisfactorily so long as FTP errors were not encountered. However, the code contains nothing to deal with FTP errors, so when an FTP error did occur, the program simply didn't work.</P>
+<P>An abbreviated, <U>unreliable</U>, non-robust version of an FTP client is used by the server and the client to store the stringified object reference on an FTP server and to retrieve that reference from the FTP server. A great deal more programming effort will be required to turn this into a reliable robust program.</P>
+<P>The FTP client has no error handling capability and basically assumes that everything works as planned. If any problem arises in the FTP process, the program won't work properly. This program is provided simply to get you started in programming your own version. Before using the program for any serious purpose, you will need to study the FTP protocol that can be obtained from numerous sources on the web, and upgrade your version of the program to make it reliable and robust.</P>
+<P>This server provides a servant object that returns the date and time as a string. The program was tested using JDK 1.2beta4 under Win95.</P>
+<P>The program writes the stringified object reference into a file named <STRONG>junk.txt</STRONG> on a specific FTP server. You will need to change the code to specify your FTP server instead of my FTP server.</P>
+<P>The FTP protocol requires two different duplex data streams between the FTP client and the FTP server. One stream is used to exchange commands and the results of executing those commands. The other stream is used to transfer the data used to write a file on the server, or to read a file on the server. All of the code that is used to accomplish this is explained in earlier lessons on network programming.</P>
+<P>My version of the program is very specific to my FTP server. For example, when the initial connection is made, exactly seven lines of text are sent from the FTP server to the FTP client. My version of the program is hard-coded to discard those seven lines of text. Your program will probably be different in this regard.</P>
+<P>A good way to determine the behavior of your FTP server is to download the program named <STRONG>WS_FTP</STRONG> from some shareware repository on the web, transfer some files back and forth using that program, and observe the output in the log window while the program is running. The <STRONG>WS_FTP</STRONG> program provides a step-by-step display of the connection and data transfer process.</P>
+<P>My version of the program is also hard coded to establish me as the user when a connection is made to the FTP server. Obviously, you will need to change that as well.</P>
+<P>FTP servers that allow you to write files frequently require a password. My version of the program solicits the password from the user and passes it on to the FTP server. </P>
+<FONT COLOR="#ff0000"><P>CAUTION: my program does not hide the password. It will remain on your screen after you enter it. If you plan to use the program around other people, you will need to modify the program to hide the password.</P>
+</FONT><P>My version of the program displays various responses received from the FTP server after commands are sent to the server. However, there is no code provided to evaluate those responses and take appropriate action on the basis of the response. Once you know the specifics of the protocol, you should be able to parse those responses and write code that will cause the next operation to be based on the response to the previous command.</P>
+<P>A very important factor, and one that required many hours for me to discover and properly accommodate, is the fact that the FTP protocol apparently requires the IP address elements to be separated by commas instead of periods which is more normal. I run my Java editor with a very small font in order to be able to view a large amount of code on the screen at one time. At the reduced font size, periods and commas look very much alike, so it took me a long time to discover the source of the problem. Be sure to take this into account when upgrading this program to meet your requirements.</P>
+<P>Pay particular attention to how I specify the port for data transfer. My version of the program uses port 4097. The port specification is shown below:</P>
+<FONT FACE="Courier New"><STRONG><P>String sendPort = ",16,1";</STRONG>//4097</P>
+</FONT><P>If you will manually convert my port specification to a binary representation, you should be able to see how the port number is encoded into the required syntax.</P>
+<P>The FTP commands are reasonable abbreviations of a word that indicates the desired operation. For example, the <STRONG>STOR</STRONG> command is used to store a file on the FTP server, and the <STRONG>QUIT</STRONG> command is used to terminate the operation.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="The_Client_File">The Client File</A></H2>
+</FONT><P>The file containing the client code is named <STRONG>Corba07Client.java</STRONG>.</P>
+<P>The abbreviated FTP protocol for this file is very similar to the protocol for the server except that this file attempts to retrieve rather than to store a file on the FTP server. Beyond the FTP protocol, all the information that you need to understand this code is provided in earlier lessons on CORBA or lessons on network programming, so I won't discuss it further.</P>
+<P>A complete listing of the file is provided later.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Program_Listings">Program Listings</A></H2>
+</FONT><P>Complete listings for the IDL file, the batch file and the source code files that you must create are provided in this section. Listings are not provided for the Java source code files that are automatically generated by the <STRONG>idltojava</STRONG> program.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Corba07.idl
+See Corba07Server.java for information on this program.
+**********************************************************/
+module TheDateApp{
+  interface TheDateInterface{
+    string getTheDateMethod();
+  };//end interface TheDateInterface
+};//end module TheDateApp</PRE></TD>
+</TR>
+</TABLE>
+
+<FONT COLOR="#ff0000"><P>.</P></FONT>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>rem File Corba07.bat
+echo off
+rem See Corba07Server.java for description of program
+rem This program does not use a name service. Instead it
+rem  uses stringified reference.
+
+echo off
+
+echo Convert the idl file to the required set of java files
+idltojava -fno-cpp -p junk Corba07.idl
+
+echo Compile all of the java files
+javac Corba07*.java
+
+echo Start the server as a new process. 
+start java Corba07Server
+
+echo Start the client manually to avoid race condition</PRE></TD>
+</TR>
+</TABLE>
+
+<P>. </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Corba07Server.java
+Revised 10/31/98
+
+This is a Java/CORBA server that illustrates the use 
+of stringified object references stored in a file on
+a server that is different from the machine on which
+either the CORBA server or the CORBA client are located.
+
+An abbreviated, unreliable, non-robust version of an FTP 
+client is used by the server and the client to store the 
+stringified object reference on an FTP server and retrieve
+that reference from the FTP server.
+
+Note that the FTP client has no error handling capability
+and basically assumes that everything works as planned.  
+If any problem arises in the FTP process, the program
+won't work properly.  This program is provided simply to
+get you started in programming your own version.  You will
+need to study the FTP protocol that can be obtained from
+sources on the WWW, and upgrade your version of the 
+program to make it reliable and robust.
+
+This server provides a servant object that returns the
+date and time as a string. 
+
+Tested using JDK 1.2beta4 under Win95.
+**********************************************************/
+import junk.TheDateApp.*;
+import org.omg.CORBA.*;
+import java.util.Date;
+import java.io.*;
+import java.net.*;
+ 
+class TheDateInterfaceServant 
+                         extends _TheDateInterfaceImplBase{
+  public String getTheDateMethod(){
+    return new Date().toString();
+  }//end getTheDateMethod()
+}//end TheDateInterfaceservant class
+//=======================================================//
+ 
+public class Corba07Server   {
+&#9;static String stringifiedObjectReference;
+&#9;static Corba07Server thisObj = new Corba07Server();
+ 
+  public static void main(String args[]){
+    try{      
+      //Create and initialize the ORB
+      ORB orb = ORB.init(args, null);
+ 
+      //Create servant and register it with the ORB
+      TheDateInterfaceServant theObjectReference = 
+                             new TheDateInterfaceServant();
+      orb.connect(theObjectReference);
+
+      //Convert the object reference to a string and store
+      // it in a common file for access by the client.
+      setStringifiedObjectRef(
+                 orb.object_to_string(theObjectReference));
+
+      System.out.println("Server is running");
+ 
+      // wait for invocations from clients
+      java.lang.Object sync = new java.lang.Object();
+      synchronized (sync) {
+        sync.wait();
+      }//end synchronized block
+ 
+    }catch (Exception e) {
+       System.err.println("ERROR: " + e);
+       e.printStackTrace(System.out);
+    }//end catch block
+  }//end main()
+  //-----------------------------------------------------//
+  
+  static void setStringifiedObjectRef(String stringObjRef){
+  &#9;stringifiedObjectReference = stringObjRef;
+  &#9;
+    //Write the stringified object ref to a file named
+    // junk.txt on a specific FTP server. You will need to
+    // change this to your FTP server in your version of
+    // the program.
+    String server = "www2.austin.cc.tx.us";
+    int port = 21; //ftp port
+    
+    try{
+      //Establish a server to support the data connection
+      // with the site for sending a one-line file. Do it
+      // early to make certain that it is ready when
+      // needed later.
+      SendFileServer sendFileServerThread = 
+                              thisObj.new SendFileServer();
+    &#9;
+      //Get a socket, connected to the specified FTP server
+      // on the specified port.
+      Socket socket = new Socket(server,port);
+      
+      //Get an input stream from the socket.  This stream
+      // is used for receiving status information from the
+      // FTP server.
+      BufferedReader inputStream = 
+                 new BufferedReader(new InputStreamReader(
+                                 socket.getInputStream()));
+
+      //Get  an output stream to the socket.  This stream
+      // is used for sending commands to the FTP server.
+      //  Note that this stream will autoflush.
+      PrintWriter outputStream = 
+                   new PrintWriter(new OutputStreamWriter(
+                           socket.getOutputStream()),true);
+
+      //Flush header received from text from FTP site.
+      // This code is very specific to a particular site
+      // that sends 7 lines of header text.  Your FTP site
+      // will probably be different.
+      for(int cnt = 0; cnt &lt; 7; cnt++){
+        System.out.println(inputStream.readLine());
+      }//end for loop
+
+      //Notify the FTP site of the user.
+      outputStream.println("USER baldwin");
+      //Get a line of text from FTP site and display it.
+      System.out.println(inputStream.readLine());
+
+      //Get password from user.  
+      //CAUTION:  This code does not hide the password.
+      StringBuffer password = new StringBuffer();
+      int ch1 = '0';
+      System.out.println(
+                  "Enter password, terminate with Ctrl-z");
+      while( (ch1 = System.in.read() ) != -1){
+        password.append((char)ch1);
+      }//end while loop
+      String passWord = new String(password);
+
+      //Send password to FTP site
+      outputStream.println("PASS " + passWord);
+      System.out.println(inputStream.readLine());
+
+      //Change to correct directory.  This is very
+      // specific to my site.  Yours will be different.
+      outputStream.println("CWD public_html");
+      System.out.println(inputStream.readLine());
+
+      //Establish IP adr of localhost for getting
+      // and sending file data      
+      String address = 
+                     InetAddress.getLocalHost().toString();
+      //Remove the name from the string
+      int temp = address.indexOf('/');
+      address = address.substring(temp+1);
+      //Replace periods by commas
+      StringBuffer mutableAdr = new StringBuffer(address);
+      for(int cnt = 0; cnt &lt; mutableAdr.length();cnt++){
+        if(mutableAdr.charAt(cnt) == '.'){
+          mutableAdr.setCharAt(cnt,',');
+        }//end if
+      }//end for loop
+      //Convert it back to a String object
+      address = new String(mutableAdr);
+
+      //Choose your port for data transfer.
+      String sendPort = ",16,1";//4097
+
+      //Tell FTP server IP address and port for sending
+      outputStream.println("PORT " + address + sendPort);
+      System.out.println(inputStream.readLine());
+      
+      //Send a store command to the FTP server to store
+      // a file there.
+      outputStream.println("STOR junk.txt");
+      System.out.println(inputStream.readLine());
+      System.out.println(inputStream.readLine());     
+
+      //Send a quit command to the FTP server
+      outputStream.println("QUIT");
+      System.out.println(inputStream.readLine());
+        
+      //Close the socket
+      socket.close();
+    }//end try
+    catch(UnknownHostException e){
+      System.out.println(e);
+      System.out.println(
+                       "Must be online to run properly.");
+    }//end catch UnknownHostException
+    catch(Exception e){System.out.println(e);}
+    
+  }//end setStringifiedObjectRef()
+  //=====================================================//
+  //The following are inner classes
+  
+  //This class is used to instantiate a server thread that
+  // listens on port 4097 to send a one-line file.
+  class SendFileServer extends Thread{
+   
+    SendFileServer(){//constructor
+      start();//start thread and invoke the run() method
+    }//end constructor
+    //---------------------------------------------------//
+   
+    public void run(){
+      boolean done = false;
+      try{
+      //Instantiate a serverSocket on port 4097
+      ServerSocket serverSocket = new ServerSocket(4097);
+      System.out.println(
+                  "SendFileServer Listening on port 4097");
+      //Loop and listen to port 4097.  If a call is
+      // received, spawn a SendFileConnection thread to
+      // send one line of text data.
+      while(!done){
+        //This statement blocks on the accept() method
+        // and returns a socket if a call is received.
+        // The socket is passed as a parameter to the
+        // new thread that is spawned.
+        new SendFileConnection(serverSocket.accept());
+        done = true;//this is a one-shot server
+      }//end while
+      }catch(IOException e){System.out.println(e);}
+    }//end run
+   
+  }//end class SendFileServer
+  //=====================================================//
+
+  //This inner class is used to spawn a thread to deal with
+  // a call that is received on port 4097
+  class SendFileConnection extends Thread{
+    Socket socket;
+
+    SendFileConnection(Socket socket){//constructor
+      System.out.println(
+            "Received a SendFileServer call on port 4097");
+      this.socket = socket;
+      //Operate at a priority that is below the threads
+      // listening on the ports.
+      setPriority( NORM_PRIORITY-1 );
+      start();//start this thread and invoke the run method
+    }//end constructor
+    //---------------------------------------------------//
+   
+    public void run(){
+      System.out.println(
+                  "Running SendFile thread for port 4097");
+      PrintWriter outputStream = null;
+     
+      try{
+        //Get  an output stream to the socket.  Note
+        // that this stream will autoflush.
+        outputStream = 
+                    new PrintWriter(new OutputStreamWriter(
+                           socket.getOutputStream()),true);
+
+        //Send one line of text data for the one-line file
+        outputStream.println(stringifiedObjectReference);
+        socket.close();
+      }//end 
+      catch( IOException e)
+        {System.out.println( "I/O error " + e );}
+    }//end run method
+  }//end class SendFileConnection
+  //=====================================================//
+  &#9;
+}//end Corba07Server class</PRE></TD>
+</TR>
+</TABLE>
+
+<P>. </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Corba07Client.java
+See Corba07Server.java for information on this program.
+**********************************************************/
+import junk.TheDateApp.*;
+import org.omg.CORBA.*;
+import java.io.*;
+import java.net.*;
+
+public class Corba07Client{
+&#9;static String stringifiedObjectReference;
+&#9;static Corba07Client thisObj = new Corba07Client();
+&#9;
+  public static void main(String args[]){
+    try{
+      // create and initialize the ORB
+      ORB orb = ORB.init(args, null);
+      
+      //Get and convert the stringified object reference 
+      // to a generic CORBA object reference
+      org.omg.CORBA.Object theGenericObjRef = 
+              orb.string_to_object(getStringifiedObjRef());
+
+      //Cast, or narrow the generic object reference to a 
+      // true object reference.
+      TheDateInterface theRemoteObjRef = 
+           TheDateInterfaceHelper.narrow(theGenericObjRef);
+ 
+      //Call the TheDateInterface server object and 
+      // print results
+      String theDate = 
+              theRemoteObjRef.getTheDateMethod();
+      System.out.println(theDate);
+      
+      //Delay program termination so that the console
+      // won't disappear from the screen when running
+      // under control of a batch file.
+      int ch1 = '0';
+      System.out.println("Press Ctrl-z to terminate");
+      while( (ch1 = System.in.read() ) != -1);      
+    }catch (Exception e) {
+      System.out.println("ERROR : " + e) ;
+      e.printStackTrace(System.out);
+    }//end catch block
+  }//end main() method
+  //-----------------------------------------------------//
+  
+  //See the program named Corba07Server for explanatory
+  // comments about how the following code works.
+  //This method gets a stringified object reference 
+  // provided by the server according to a specific
+  // agreement as to how the reference will be delivered.
+  static String getStringifiedObjRef(){
+    String server = "www2.austin.cc.tx.us";
+    int port = 21; //ftp port
+    
+    try{
+      GetFileServer getFileServerThread = 
+                               thisObj.new GetFileServer();
+      Socket socket = new Socket(server,port);
+      BufferedReader inputStream = 
+                 new BufferedReader(new InputStreamReader(
+                                 socket.getInputStream()));
+      PrintWriter outputStream = 
+                   new PrintWriter(new OutputStreamWriter(
+                           socket.getOutputStream()),true);
+      for(int cnt = 0; cnt &lt; 7; cnt++){
+        System.out.println(inputStream.readLine());
+      }//end for loop
+      outputStream.println("USER baldwin");
+      System.out.println(inputStream.readLine());
+
+      //CAUTION:  This code does not hide the password.
+      StringBuffer password = new StringBuffer();
+      int ch1 = '0';
+      System.out.println(
+                  "Enter password, terminate with Ctrl-z");
+      while( (ch1 = System.in.read() ) != -1){
+        password.append((char)ch1);
+      }//end while loop
+      String passWord = new String(password);
+
+      outputStream.println("PASS " + passWord);
+      System.out.println(inputStream.readLine());
+
+      outputStream.println("CWD public_html");
+      System.out.println(inputStream.readLine());
+
+      String address = 
+                     InetAddress.getLocalHost().toString();
+      int temp = address.indexOf('/');
+      address = address.substring(temp+1);
+      StringBuffer mutableAdr = new StringBuffer(address);
+      for(int cnt = 0; cnt &lt; mutableAdr.length();cnt++){
+        if(mutableAdr.charAt(cnt) == '.'){
+          mutableAdr.setCharAt(cnt,',');
+        }//end if
+      }//end for loop
+      address = new String(mutableAdr);
+
+      String rcvrPort = ",16,0";//4096
+
+      outputStream.println("PORT " + address + rcvrPort);
+      System.out.println(inputStream.readLine());
+
+      outputStream.println("RETR junk.txt");//retrieve file
+      System.out.println(inputStream.readLine());
+      System.out.println(inputStream.readLine());     
+
+      outputStream.println("QUIT");
+      System.out.println(inputStream.readLine());
+        
+      socket.close();
+    }//end try
+    catch(UnknownHostException e){
+      System.out.println(e);
+      System.out.println(
+                        "Must be online to run properly.");
+    }//end catch UnknownHostException
+    catch(Exception e){System.out.println(e);}
+
+    return stringifiedObjectReference;
+  }//end getStringifiedObjRef()
+  //=====================================================//
+  // The following are inner classes.
+  class GetFileServer extends Thread{
+    GetFileServer(){//constructor
+      start(); //start thread and invoke the run() method
+    }//end constructor
+    //---------------------------------------------------//
+   
+    public void run(){
+      boolean done = false;
+      try{
+      ServerSocket serverSocket = new ServerSocket(4096);
+      System.out.println(
+                   "GetFileServer Listening on port 4096");
+      while(!done){
+       new GetFileConnection(serverSocket.accept());
+       done = true;//this is a one-shot server
+     }//end while
+
+     }catch(IOException e){System.out.println(e);}
+   }//end run
+   
+  }//end class GetFileServer
+  //=====================================================//
+
+  class GetFileConnection extends Thread{
+    Socket socket;
+
+    GetFileConnection(Socket socket){//constructor
+      System.out.println(
+             "Received a GetFileServer call on port 4096");
+      this.socket = socket;
+      setPriority( NORM_PRIORITY-1 );
+      start();//start  thread and invoke the run method
+    }//end constructor
+    //---------------------------------------------------//
+   
+    public void run(){
+      System.out.println(
+                   "Running GetFile thread for port 4096");
+      BufferedReader inputStream = null;
+     
+      try{
+        inputStream = 
+                  new BufferedReader(new InputStreamReader(
+                                 socket.getInputStream()));
+        String input = inputStream.readLine();
+        System.out.println("Got Input: "+ input);
+        stringifiedObjectReference = input;
+        socket.close();
+      }//end 
+      catch( IOException e)
+        {System.out.println( "I/O error " + e );}
+    }//end run method
+  }//end class GetFileConnection
+  //=====================================================//
+
+}//end Corba07Client class</PRE></TD>
+</TR>
+</TABLE>
+
+<P>-end- </P>
+<P><!--end--></P></BODY>
+</HTML>

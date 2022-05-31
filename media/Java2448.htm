@@ -1,0 +1,3103 @@
+<!DOCTYPE doctype PUBLIC "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+  <meta http-equiv="Content-Type"
+ content="text/html; charset=iso-8859-1">
+  <title>... in Java by Richard G Baldwin</title>
+</head>
+<body link="#0000ff" vlink="#666666" alink="#ff0000" lang="EN-US">
+<h2>Understanding the 2D Discrete Cosine Transform in Java, Part 2</h2>
+<i>Learn how to sub-divide an image before applying a forward and 
+inverse 2D-Discrete Cosine Transform similar to the way it is done 
+in the JPEG image compression algorithm.&nbsp; Also learn some of the theory 
+behind and some of the reasons for sub-dividing images, such as improved speed.</i><p><b>Published:</b>&nbsp; 
+October 3, 2006<br>
+<b>By <a href="mailto:Baldwin@DickBaldwin.com">Richard G. Baldwin</a></b>
+</p>
+<p>Java Programming Notes # 2448</p>
+<ul>
+  <li> <a href="#Preface">Preface</a></li>
+  <li> <a href="#General%20Background%20Information">General
+Background Information</a></li>
+  <li> <a href="#Preview">Preview</a></li>
+	<li> <a href="#Discussion">Discussion</a></li>
+  <li> <a href="#Discussion%20and%20Sample%20Programs">Sample Code</a></li><ul>
+	<li> <a href="#The_Program_Named_ImgMod35a_">The Program Named ImgMod35a</a></li>
+	<li> <a href="#The_Class_Named_ForwardDCT02">The Class Named ForwardDCT02</a></li>
+	<li> <a href="#The_Program_Named_ImgMod35">The Program Named ImgMod35</a></li></ul>
+  <li> <a href="#Run%20the%20program">Run the Program</a></li>
+  <li> <a href="#Summary">Summary</a></li>
+  <li> <a href="#Whats%20Next">What's Next?</a></li>
+	<li> <a href="#References">References</a></li>
+  <li> <a href="#Complete%20Program%20Listings">Complete Program
+Listings</a></li>
+</ul>
+<hr size="3" width="100%" align="center">
+<center>
+<h2> <a name="Preface"></a>Preface</h2>
+</center>
+<p>This lesson is part of a series designed to teach you about the inner 
+workings of data and image compression.&nbsp; The first lesson in the series was 
+lesson number 2440 entitled
+<a href="http://www.developer.com/java/data/article.php/3586396">Understanding the Lempel-Ziv Data Compression Algorithm in Java</a>.</p>
+<p>An earlier lesson entitled 
+<a href="http://www.developer.com/java/other/article.php/3619081">Understanding the Discrete Cosine Transform</a> 
+in Java taught you about the one-dimensional Discrete Cosine Transform.&nbsp; 
+The previous lesson,
+<a href="http://www.developer.com/java/data/article.php/3634156">Part 1</a> of this two-part lesson, deals with 
+the two-dimensional Discrete Cosine Transforms <i>(2D-DCT)</i>.</p>
+<p><font color="#ff0000"><b>JPEG image compression</b></font></p>
+<p>One of the objectives of this series is to teach you about the inner workings 
+of JPEG image compression.&nbsp; According to
+<a href="http://en.wikipedia.org/wiki/JPEG">Wikipedia</a>, </p>
+<blockquote>
+	<p><i>&quot;... <b>JPEG</b> ... is a commonly used standard method of
+	<a title="Lossy compression" href="http://en.wikipedia.org/wiki/Lossy_compression">
+	lossy compression</a> for photographic images. ... JPEG/JFIF is the most 
+	common format used for storing and transmitting photographs on the
+	<a title="World Wide Web" href="http://en.wikipedia.org/wiki/World_Wide_Web">
+	World Wide Web</a>.&quot;</i></p>
+</blockquote>
+<p><font color="#ff0000"><b>Central components</b></font></p>
+<p>One of the central components of JPEG image compression is
+<a href="http://en.wikipedia.org/wiki/Entropy_coding">entropy encoding</a>.&nbsp; 
+Huffman encoding, which was the primary topic of the earlier lesson entitled 
+<a href="http://www.developer.com/java/other/article.php/3603066">Understanding the Huffman Data Compression Algorithm in Java</a>, is a common 
+form of entropy encoding.</p>
+<p>Another central component of JPEG compression is the two-dimensional
+<a href="http://www.cmlab.csie.ntu.edu.tw/cml/dsp/training/coding/transform/dct.html">
+Discrete Cosine Transform</a> <i>(2D-DCT)</i>.&nbsp; This is the primary topic of this lesson.&nbsp; 
+In Part 1 of this lesson, I taught you how to use the <i>forward</i> 2D-DCT to 
+compute and display the frequency spectrum of an image.&nbsp; I also taught you how 
+to apply the <i>inverse</i> 2D-DCT to the spectral data to reconstruct a replica 
+of the original image.</p>
+<p>In this part of the lesson, I will teach you how to sub-divide the image before 
+applying the 2D-DCT in a manner similar to the way it is done in the JPEG 
+image compression algorithm.&nbsp; I will also discuss some of the theory behind 
+and some of the reasons for such sub division</p>
+<p>A third central component of the JPEG image compression algorithm is 
+selective spectral re-quantization.&nbsp; This will be the primary topic of a future 
+lesson.</p>
+<p><font color="#ff0000"><b>In order to understand JPEG ...</b></font></p>
+<p>In order to understand JPEG image compression, you must understand Huffman 
+encoding, the 2D-DCT, image sub-division, 
+selective spectral re-quantization, and perhaps some other topics as well.&nbsp; I 
+plan to teach you about the different components of JPEG in separate lessons, 
+and then to provide a lesson that teaches you how they work together to produce 
+&quot;<i><a href="http://en.wikipedia.org/wiki/JPEG">the most common format</a> used 
+for storing and transmitting photographs on the World Wide Web.</i>&quot;</p>
+<p> <b><font color="#ff0000">Viewing tip</font></b> </p>
+<p>You may find it useful to open another copy of this lesson in a
+separate browser window.&nbsp; That will make it easier for you to
+scroll back
+and forth among the different listings and figures while you are
+reading
+about them.</p>
+<p><b><font color="#ff0000">Supplementary material</font></b> </p>
+<p>I recommend that you also study the other lessons in my extensive
+collection of online Java tutorials.&nbsp; You will find those lessons
+published
+at <a href="http://softwaredev.earthweb.com/java">Gamelan.com</a>.&nbsp;
+However, as of the date of this writing, Gamelan doesn't maintain a
+consolidated index of my Java tutorial lessons, and sometimes they are
+difficult to locate there.&nbsp; You will find a consolidated index at <font
+ color="#000000"> <a href="http://www.dickbaldwin.com/">www.DickBaldwin.com</a>.</font></p>
+<p>In preparation for understanding the material in this lesson, I recommend that you also study the lessons referred to in the
+<a href="Java2444.htm#References">References</a> section. </p>
+<h2 align="center"><font color="#000000"> <a
+ name="General Background Information">General Background Information</a></font></h2>
+<p>In earlier lessons, I have explained that the JPEG image compression 
+algorithm transforms the original image into the frequency domain using a 
+2D-DCT.&nbsp; The primary purpose of the transformation is to transform the 
+information into a form that is more amenable to compression than is the form of 
+the original image.</p>
+<p>In <a href="http://www.developer.com/java/data/article.php/3634156">Part 1</a> of this lesson, I explained that rather than to perform the 
+2D-DCT on the entire image, the JPEG image compression algorithm sub-divides the 
+image into 8x8 blocks of pixels and performs the 2D-DCT on each block 
+independently.&nbsp; However, I didn't tell you why that is done.</p>
+<p>I can't tell you all of the reasons that the members of the
+<a href="http://www.jpeg.org/committee.html">Joint Photographic Experts Group</a> 
+decided to do that, but I can tell you that one of the primary reasons probably 
+had to do with speed.&nbsp; Sub-dividing the image into a set of smaller 
+contiguous images and processing them independently can improve the processing 
+speed significantly in two different ways:</p>
+<ul>
+	<li>Reducing the total number of multiply-add operations <i>(MADs)</i> 
+	required to perform the transform.</li>
+	<li>Eliminating the requirement to evaluate the cosine of many different 
+	arguments.</li>
+</ul>
+<p><font color="#FF0000"><b>Reducing the total number of MADs</b></font></p>
+<p>If an image is sub-divided into a contiguous set of smaller images and the 
+2D-DCT is performed on each of the smaller images independently of the others, a 
+significant reduction in the total number of MADs can be achieved relative to 
+the number of MADs required to transform the original image.</p>
+<p><font color="#FF0000"><b>Reduction by the square root of the ratio</b></font></p>
+<p>For example, if the dimensions of the larger image are an even multiple of 
+the dimensions of the smaller image, the total number of MADs required to 
+sub-divide and then transform is reduced by the square root of the ratio of the 
+number of pixels in the large image to the number of pixels in the small image.</p>
+<blockquote>
+	<p><i>(If the dimensions of the large image are not an even multiple of the 
+	dimensions of small image, it is necessary to expand the dimensions of the 
+	large image to force it to be an even multiple.&nbsp; This can reduce the 
+	gain slightly, but the gain can still be significant.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>A numeric example</b></font></p>
+<p>For example, if a square image having 320 pixels on each side is sub-divided 
+into 1600 small images having 8 pixels on each side, the total number of MADs 
+required to transform the 1600 small images will be a factor of 40 less than the 
+total number of MADs required to transform the large image.</p>
+<blockquote>
+	<p><i>(According to my calculations, 196,608,000 MADs are required to 
+	transform all three color planes for a square image that is 320 pixels on 
+	each side.&nbsp; By contrast, if that image is sub-divided into square 
+	images that are 8 pixels on each side, only 4,915,200 MADs are required to 
+	transform all of the small images.&nbsp; This reduces the computational 
+	effort by a factor of 40, which is very significant.&nbsp; Furthermore, the 
+	gain increases as the ratio of the size of the large image to the small 
+	image becomes even larger.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Eliminating the requirement to evaluate the cosine 
+function</b></font></p>
+<p>If you write a program to perform a 2D-DCT on an image of any arbitrary size, 
+you must repetitively evaluate the cosine function millions of times for many 
+different arguments.&nbsp; The actual arguments that must be used in the 
+evaluation of the cosine function depend on the dimensions of the image.</p>
+<p>On the other hand, if you write a program to perform a 2D-DCT on an 
+image of a fixed size, you can determine in advance the arguments that must be 
+used in the evaluation of the cosine function.&nbsp; This makes it possible to 
+evaluate the cosine function for that set of arguments in advance, and to code 
+the cosine values for that set of arguments directly into a lookup table in the 
+program.&nbsp; This makes it possible to eliminate the requirement to repeatedly 
+evaluate the cosine function, substituting a table-lookup operation instead.</p>
+<p>The 8x8-pixel image size used by the JPEG image compression algorithm 
+requires a cosine table containing only 64 values.&nbsp; The use of a 
+table-lookup operation as an alternative to actually evaluating a cosine 
+function should also provide a significant speed improvement.</p>
+<blockquote>
+	<p><i>(The programs that you will see later use table lookup when the size 
+	of the image is 8x8 and evaluates the cosine function for other image 
+	sizes.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Sub-dividing an image</b></font></p>
+<p>Consider the pair of images shown in <a name="Figure_1" href="#Figure_1">Figure 1</a>.</p>
+
+
+
+
+
+
+<p>
+<table border="1" cols="1" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><img border="0" src="java2448a01.jpg" width="334" height="714"><br></pre>
+      <pre><b><a href="#Figure_1">Figure 1</a></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The image in the bottom panel of <a href="#Figure_1">Figure 1</a> was originally the same as the 
+image in the top panel.&nbsp; However, I sub-divided the image in the bottom 
+panel into 8x8 blocks of pixels and purposely modified the color of every pixel 
+in each block so as to cause the blocks to be visually distinguishable from one 
+another.&nbsp; The idea was to enforce the concept that any image can be 
+sub-divided into smaller images.</p>
+<p><font color="#FF0000"><b>Disassembly and reassembly</b></font></p>
+<p>For example, I could sub-divide a large image into 
+blocks of pixels of a uniform size and send each block to you as an attachment 
+to a separate email message.&nbsp; You could then reassemble the blocks into a replica of the original image provided you 
+knew the correct location for each block.</p>
+<p>The point is that it doesn't do any harm to sub-divide an image into blocks 
+of pixels and then to reassemble them later into a replica of the original 
+image.&nbsp; If it serves a useful purpose, that is a perfectly good 
+operation.</p>
+<p><font color="#FF0000"><b>Similar to JPEG compression algorithm</b></font></p>
+<p>This is similar to part of what the JPEG image compression algorithm does.&nbsp; 
+It sub-divides the original image into a set of 8x8-pixel blocks and transforms 
+each block independently of all the other blocks.&nbsp; Then it modifies each 
+block of spectral data using <i>selective re-quantization</i> to make it more suitable 
+for compression.&nbsp; The transformed and modified spectral data is then 
+compressed.</p>
+<p><font color="#FF0000"><b>A <i>lossy</i> algorithm</b></font></p>
+<p>Later, the data is uncompressed.&nbsp; An inverse transform is performed on 
+each uncompressed spectral block, creating a <i>lossy</i> replica of the original image 
+block.&nbsp; The replicas of each image block are then reassembled into a lossy 
+replica of the original image.&nbsp; The lossy nature of the algorithm 
+apparently occurs mainly at the stage where the spectral data blocks are 
+modified through selective re-quantization to make them more suitable for 
+compression.</p>
+<p><font color="#FF0000"><b>Two different programs</b></font></p>
+<p>I will present and explain two different programs in this lesson.&nbsp; The 
+first program, named <b>ImgMod35A</b> makes it possible for a user to sub-divide 
+an image into blocks of a user-specified size, and to perform a forward 2D-DCT 
+on each block.&nbsp; The frequency spectra of the blocks are then normalized 
+to make them suitable for being displayed as ordinary images, and the normalized 
+spectra are displayed in an image format.</p>
+<p>The bottom panel in <a href="#Figure_2">Figure 2</a> shows the individual 8x8 
+normalized frequency spectra that represent the top image in 
+<a name="Figure_2" href="#Figure_2">Figure 2</a>.</p>
+<p>
+<table border="1" cols="1" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><img border="0" src="java2448a03.jpg" width="334" height="714"><br></pre>
+      <pre><b><a href="#Figure_2">Figure 2</a></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><a href="#Figure_6">Figure 6</a> shows another example where the image was processed in square blocks 
+where each block was twenty pixels on each side.</p>
+<p><font color="#FF0000"><b>The second program</b></font></p>
+<p>The second program, named <b>ImgMod35</b> subdivides an image into a set of 
+8x8-pixel blocks.&nbsp; It performs a forward 2D-DCT on each individual block 
+producing a set of 8x8 spectral blocks.&nbsp; Then it performs an inverse 2D-DCT 
+on each spectral block producing a replica of each of the original image blocks.&nbsp; 
+The replicas are then reassembled into a replica of the original image, which is 
+displayed in the format shown in <a href="#Figure_3">Figure 3</a>.</p>
+<blockquote>
+	<p><i>(An option is provided to mark the individual blocks as shown in
+	<a href="#Figure_1">Figure 1</a> so as to identify the individual blocks.&nbsp; 
+This option requires the user to modify and recompile the source code for the 
+program.&nbsp; This option obviously corrupts the image and should be used for 
+illustration purposes only.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Example output from ImgMod35</b></font></p>
+<p><a href="#Figure_3">Figure 3</a> shows the result of running this program on the same image as shown 
+in the top panels of <a href="#Figure_1">Figure 1</a> and <a href="#Figure_2">
+Figure 2</a> without exercising the option to mark the individual 
+<a name="Figure_3">blocks</a>.</p>
+
+<p>
+<table border="1" cols="1" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><img border="0" src="java2448a02.jpg" width="334" height="714"><br></pre>
+      <pre><b><a href="#Figure_3">Figure 3</a></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The image in the bottom panel of <a href="#Figure_3">Figure 3</a> was produced 
+by performing an inverse 2D-DCT on the 8x8 spectral blocks shown in the bottom 
+panel of <a href="#Figure_2">Figure 2</a> and reassembling the resulting 
+8x8-pixel image blocks into the full image.&nbsp; As you can see, the result is a very good 
+replica of the original image shown in the top panel of <a href="#Figure_3">Figure 3</a>.</p>
+<blockquote>
+	<p><i>(Note, however, that the individual 8x8 spectral blocks were not 
+	modified through selective re-quantization as is the case with JPEG 
+	compression.&nbsp; Selective re-quantization of the spectral data will be 
+	the subject of a future lesson.)</i></p>
+</blockquote>
+<h2 align="center"><font color="#000000"><a name="Preview">Preview</a></font></h2>
+<p><font color="#FF0000"><b>ImgMod35a</b></font></p>
+<p>The first program that I will present and explain in this lesson is named <b>
+ImgMod35a</b>.&nbsp; This program sub-divides an image into square blocks of pixels and performs a 
+forward DCT on each block producing and displaying square blocks of spectral 
+data.&nbsp; The size of the blocks is specified by entering the block size 
+into the text field shown in <a href="#Figure_4">Figure 4</a> and pressing the <b>Replot</b> button 
+shown at the bottom of <a href="#Figure_5">Figure 5</a>.</p>
+<p><font color="#FF0000"><b>Processing the color planes</b></font></p>
+<p>Each color plane is individually processed.&nbsp; The program performs a 
+forward 2D-DCT on each color plane converting each of the three color planes 
+into spectral planes.&nbsp; The three spectral planes are normalized so as to 
+make them suitable for being displayed as standard image data.&nbsp; The 
+normalization includes transformation of the spectral data to log base 10 <i>
+(scaled decibels)</i> and 
+scaling to cause the values to fall between 0 and 255 inclusive.</p>
+<p><font color="#FF0000"><b>Optimized for 8x8 block size</b></font></p>
+<p>This program can handle any block size from one pixel per block up to the size of the original image.&nbsp; 
+However, it is optimized for block sizes of 8x8 pixels.&nbsp; When the block 
+size is 8x8 pixels, the program uses an 8x8 cosine lookup table instead of 
+computing the cosine value every time it is needed.&nbsp; This should cause the 
+program to run faster than would otherwise be the case if it were necessary to 
+compute the cosine value every time that it is needed.</p>
+<p><font color="#FF0000"><b>Instructions for <a name="run_this_program35a">
+running the program</a></b></font></p>
+<p>This program class is designed to be driven by the class named <b>ImgMod02a</b>.&nbsp; 
+Enter the following at the command line to run this program:</p>
+<p><pre><b><font size="3">java ImgMod02a ImgMod35a ImageFileName</font></b></pre></p>
+<p>where <i>ImageFileName</i> is the name of a .gif or .jpg file, including the 
+extension.</p>
+<p>When the user presses the <b>Replot</b> button, the process is repeated using 
+the value in the text field of <a href="#Figure_4">Figure 4</a> for the block size.&nbsp; The new results are displayed 
+in the format shown in <a href="#Figure_5">Figure 5</a>.</p>
+<p><font color="#FF0000"><b>Class files required</b></font></p>
+<p>This 
+program requires access to the following class files plus some inner classes 
+that are defined inside these classes:</p>
+<ul>
+	<li>ImgIntfc02.class</li>
+	<li>ImgMod02a.class</li>
+	<li>ImgMod35a.class</li>
+	<li>ForwardDCT02.class</li>
+</ul>
+<p>The source code for <b>ImgMod02a</b> and <b>ImgIntfc02</b> can be found in 
+the earlier lessons entitled
+<a href="http://www.developer.com/java/other/article.php/3441391">Processing 
+Image Pixels Using Java: Controlling Contrast and Brightness</a> and
+<a href="http://developer.com/java/other/article.php/3403921">Processing Image 
+Pixels using Java, Getting Started</a>.</p>
+<p>The source code for <b>ImgMod35a</b> is provided in <a href="#Listing_17">Listing 17</a>.&nbsp; The 
+source code for <b>ForwardDct02</b> is provided in <a href="#Listing_18">Listing 18</a>.</p>
+<p><font color="#FF0000"><b><a name="ImgMod35">ImgMod35</a></b></font></p>
+<p>The second program that I will present and explain in this lesson is named <b>
+ImgMod35</b>. This program performs a forward 2D-DCT on an image converting the 
+three color planes into spectral planes.&nbsp; Then it performs an inverse 
+2D-DCT on the three spectral planes converting them back into image color 
+planes.&nbsp; Then the original image and the reconstructed image are both 
+displayed in the format shown in <a href="#Figure_3">Figure 3</a>.</p>
+<p><font color="#FF0000"><b>No modification to the spectral data</b></font></p>
+<p>Nothing is done to the spectral planes following the forward DCT and before 
+the inverse DCT as is the case in JPEG compression.&nbsp; However, additional processing, such as re-quantization 
+and compression, followed by decompression could be inserted at that point.</p>
+<p><font color="#FF0000"><b>Update to an earlier program</b></font></p>
+<p>This is an update to the program named <b>ImgMod34</b> that was explained in 
+<a href="http://www.developer.com/java/data/article.php/3634156">Part 
+1</a> of this lesson.&nbsp; This update sub-divides the image into blocks of 
+8x8-pixels and performs the forward 2D-DCT on each block producing 8x8 blocks of 
+spectral coefficient data.&nbsp; Then it performs an inverse 2D-DCT on each of 
+the 8x8 spectral blocks, producing replicas of the original the 8x8 pixel 
+blocks.</p>
+<p>A composite of all the reconstructed 8x8-pixel blocks is created to produce a 
+replica of the original image.</p>
+<p><font color="#FF0000"><b>Zero padding at the edges</b></font></p>
+<p>Zero padding is applied to the right and bottom edges of the image to force 
+each dimension of the image to be a multiple of 8 pixels.&nbsp; This padding is 
+trimmed from the resulting composite image before the processed composite image 
+is returned to the calling method.&nbsp; This process doesn't appear to have a 
+detrimental impact on the quality of the image at the edges.</p>
+<p><font color="#FF0000"><b>Block structure can be shown</b></font></p>
+<p>For illustration purposes only, the method named <b>inverseXform8x8Plane</b> 
+contains a statement that can be activated to cause the 8x8 block structure of 
+the entire process to become visible in the final image as shown in
+<a href="#Figure_1">Figure 1</a>.&nbsp; This feature should be disabled by 
+default because it badly corrupts the visual quality of the image when it is 
+enabled.</p>
+<p><font color="#FF0000"><b>Improved speed</b></font></p>
+<p>This program is significantly faster than the program named <b>
+ImgMod034</b> that was presented and explained in 
+<a href="http://www.developer.com/java/data/article.php/3634156">Part 1</a> of this lesson.&nbsp; 
+The program named <b>ImgMod034</b> does not sub-divide the image into 8x8-pixel 
+blocks, but rather does the forward and inverse transforms on the entire image.&nbsp; 
+This program named <b>ImgMod035</b> does sub-divide the image into 8x8-pixel 
+blocks before performing the forward and inverse transforms.&nbsp; In addition, 
+it uses an 8x8 cosine lookup table instead of 
+computing the cosine value every time the cosine value is needed.</p>
+<p>The use of a lookup table is probably one factor in the speed improvement.&nbsp; 
+Another factor is the fact that less arithmetic is required to perform the 
+transform when the image is sub-divided into blocks and the transforms are 
+performed on the individual blocks instead of transforming the entire image as a 
+whole.</p>
+<p><font color="#FF0000"><b>Instructions for <a name="run_this_program35">
+running the program</a></b></font></p>
+<p>The class named <b>ImgMod035</b> is designed to be driven by the class named
+<b>ImgMod02a</b>.&nbsp; Enter the following at the command line to 
+run this 
+program:</p>
+<p><pre><b><font size="3">java ImgMod02a ImgMod35 ImageFileName</font></b></pre></p>
+<p>where <i>ImageFileName</i> is the name of a .gif or .jpg file, including the 
+extension.</p>
+<p>When you click the <b>Replot</b> button shown in <a href="#Figure_3">Figure 3</a>, the process will be repeated and the 
+results will be re-displayed.&nbsp; However, because there is no opportunity for user input after 
+the program is started, the <b>Replot</b> button is of little value to this program.</p>
+<p><font color="#FF0000"><b>Class files required</b></font></p>
+<p>This 
+program requires access to the following class files plus some inner classes 
+that are defined inside these classes:</p>
+<ul>
+	<li>ImgIntfc02.class</li>
+	<li>ImgMod02a.class</li>
+	<li>ImgMod35.class</li>
+	<li>ForwardDCT02.class</li>
+	<li>InverseDCT02.class</li>
+</ul>
+<p>The source code for <b>ImgMod02a</b> and <b>ImgIntfc02</b> can be found in 
+the earlier lessons entitled
+<a href="http://www.developer.com/java/other/article.php/3441391">Processing 
+Image Pixels Using Java: Controlling Contrast and Brightness</a> and
+<a href="http://developer.com/java/other/article.php/3403921">Processing Image 
+Pixels using Java, Getting Started</a>.</p>
+<p>The source code for <b>ImgMod35</b> is provided in <a href="#Listing_19">Listing 19</a>.&nbsp; The source 
+code for <b>ForwardDct02</b> is provided in <a href="#Listing_18">Listing 18</a>, and the source code for
+<b>InverseDCT02</b> is provided in <a href="#Listing_20">Listing 20</a>.</p>
+<p><font color="#FF0000"><b>Program testing</b></font></p>
+<p>All of the programs discussed in this document were tested 
+using J2SE 5.0 and WinXP.</p>
+<h2 align="center"><a name="Discussion">Discussion</a></h2>
+<p><font color="#FF0000"><b>Experimental results for ImgMod35a</b></font></p>
+<p>Before getting into the details of the code, I want to show you some 
+experimental results.&nbsp; I will begin with experimental results for the 
+program named <b>ImgMod35a</b>.</p>
+<p><font color="#FF0000"><b>The display format</b></font></p>
+<p>The program named <b>ImgMod35a</b> displays results in the format shown in
+<a href="#Figure_2">Figure 2</a>.&nbsp; The top panel in <a href="#Figure_2">
+Figure 2</a> shows the original image.&nbsp; The bottom panel in
+<a href="#Figure_2">Figure 2</a> shows the set of contiguous two-dimensional 
+spectra produced by applying the 2D-DCT individually to contiguous 8x8-pixel 
+blocks from the original image, <i>(as identified by the blocks in the bottom panel in
+<a href="#Figure_1">Figure 1</a>)</i>.</p>
+<p><font color="#FF0000"><b>The spectral origin</b></font></p>
+<p>The value of the spectrum at a frequency of zero appears at the upper-left 
+corner of each two-dimensional spectral block with higher-frequency components 
+appearing to the right and down from that corner.&nbsp; The energy at a 
+frequency of zero is often the highest point in 
+the spectrum <i>(represented by a bright color in the display)</i>.&nbsp; Therefore, most of the bright dots in <a href="#Figure_2">
+Figure 2</a> correspond to the upper-left corners of individual 2D-DCT spectral 
+blocks.</p>
+<p><font color="#FF0000"><b>The user interface</b></font></p>
+<p><a name="Figure_4" href="#Figure_4">Figure 4</a> shows the user interface panel that is 
+produced by the program named <b>ImgMod35a</b>.</p>
+
+<p>
+<table border="1" cols="1" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><img border="0" src="java2448a04.jpg" width="251" height="76"><br></pre>
+      <pre><b><a href="#Figure_4">Figure 4</a></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>The initial block size</b></font></p>
+<p>When the program first starts running, the text field shown in <a href="#Figure_4">Figure 4</a> is initialized with a value of 8.&nbsp; This causes the program to sub-divide the image into 
+8x8-pixel blocks <i>(as indicated by the bottom panel in <a href="#Figure_1">
+Figure 1</a>)</i> and to compute and display the 2D-DCT for each of the 
+8x8-pixel blocks as shown in <a href="#Figure_2">Figure 2</a> and <a name="Figure_5" href="#Figure_5">Figure 5</a>.</p>
+<p>
+<table border="1" cols="1" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><img border="0" src="java2448a05.jpg" width="242" height="522"><br></pre>
+      <pre><b><a href="#Figure_5">Figure 5</a></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>As mentioned earlier, most of the bright dots in the bottom panel of <a href="#Figure_5">Figure 5</a> 
+indicate the upper-left corners of individual 8x8 2D-DCT spectral blocks.</p>
+<p><font color="#FF0000"><b>Re-running with a different block size</b></font></p>
+<p>After startup, whenever the <b>Replot</b> button in <a href="#Figure_5">Figure 5</a> is pressed, the 
+process is rerun using the current value in the text field of <a href="#Figure_4">Figure 4</a> to 
+specify the size of the blocks.&nbsp; For example, changing the value in the 
+text field to 20 and pressing the <b>Replot</b> button produces the output shown 
+in <a name="Figure_6" href="#Figure_6">Figure 6</a>.</p>
+
+<p>
+<table border="1" cols="1" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><img border="0" src="java2448a06.jpg" width="242" height="522"><br></pre>
+      <pre><b><a href="#Figure_6">Figure 6</a></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>If you compare <a href="#Figure_6">Figure 6</a> with <a href="#Figure_5">Figure 5</a>, you will see that each individual 
+spectrum in the bottom panel of <a href="#Figure_6">Figure 6</a> is 2.5 times larger than the size of 
+the individual spectra in <a href="#Figure_5">Figure 5</a>.</p>
+<p><font color="#FF0000"><b>Nothing magic about an 8x8 block size</b></font></p>
+<p>As near as I have been able to determine, there was nothing magic about the 
+selection of a block size of 8x8 pixels for the JPEG image compression 
+algorithm.&nbsp; The process would probably work for just about any block size 
+as long as it is large enough to satisfy the data compression objectives.</p>
+<p><font color="#FF0000"><b>Smaller blocks mean more speed</b></font></p>
+<p>However, 
+as I explained earlier, the speed of the process can be improved by reducing the 
+block size.&nbsp;&nbsp;&nbsp; Therefore, the members of the JPEG design 
+committee were probably looking for the smallest block size that would 
+do the job insofar as compression and quality of results is concerned, and they settled on a block size of 
+8x8 to meet that criterion.</p>
+<blockquote>
+	<p><i>(The compression algorithm that is used depends on being able to 
+	identify and to modify high-frequency components in the 2D-DCT spectrum.&nbsp; 
+	Therefore, the spectral block must be large enough to distinguish between 
+	low-frequency and high-frequency components.&nbsp; An 8x8 spectral block 
+	provides eight spectral samples between zero and the
+	<a href="http://en.wikipedia.org/wiki/Nyquist_frequency">Nyquist</a> folding 
+	frequency.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>What are we seeing in Figure 6?</b></font></p>
+<p>It is good to remember what we are actually seeing in <a href="#Figure_6">Figure 6</a>.&nbsp; Each individual 
+20x20 spectral block in <a href="#Figure_6">Figure 6</a> does not represent the true wave-number spectrum of 
+the corresponding block of 20x20 pixels.&nbsp; Rather, each 20x20 spectral block represents 
+the true wave-number spectrum of a modified version of the 20x20 block of 
+pixels.&nbsp; As I explained in 
+<a href="http://www.developer.com/java/data/article.php/3634156">Part 1</a> of this lesson, each 20x20 block of pixels is implicitly extended 
+to the left and above the origin <i>(at the upper-left corner of the block)</i> producing 
+a new image that is symmetrical about the origin and four times as large.</p>
+<blockquote>
+	<p><i>(This symmetrical extension eliminates the requirement to perform 
+	complex arithmetic when computing the transform.&nbsp; It also modifies the 
+	results relative to the true wave-number spectrum of the block.&nbsp; In 
+	other words, the spectral blocks shown in <a href="#Figure_6">Figure 6</a> are not true wave-number 
+	spectra of the original blocks of pixels.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>A true wave-number spectrum is not needed</b></font></p>
+<p>However, the members of the JPEG committee weren't necessarily looking to 
+compute the true wave-number spectrum of the block of image pixels.&nbsp; Rather, they were 
+simply looking for a transformation that would accomplish their purpose and one 
+that is economical to compute.&nbsp; They 
+apparently concluded that the Discrete Cosine Transform meets that criterion.</p>
+<blockquote>
+	<p><i>(If they had wanted the true wave number spectrum of the block, they 
+	would probably have used the Fourier transform instead of the Discrete 
+	Cosine Transform.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Why choose the Discrete Cosine Transform?</b></font></p>
+<p>The 2D-DCT is simple and easy to compute.&nbsp; That was probably an important 
+consideration in the original design of the JPEG image compression algorithm.</p>
+<p>The 2D-DCT is reversible, meaning that computing the forward and inverse 2D-DCT 
+on a block of pixels produces a very good replica of the original block of 
+pixels.&nbsp; That is an absolute requirement of the algorithm.</p>
+<p>And probably most important, the results of the 2D-DCT contribute greatly to 
+the compressibility of the image data.</p>
+<p><font color="#FF0000"><b>How does it contribute to compressibility?</b></font></p>
+<p>Somewhere along the way, someone determined that you can significantly corrupt 
+the values of the higher-frequency spectral components resulting from the 2D-DCT 
+of an image block and the image that results from performing an inverse 2D-DCT 
+on the corrupted spectral data will still produce an acceptable, but not perfect 
+replica of the original image block.</p>
+<p>The JPEG committee determined that corrupting the higher-frequency spectral 
+components through <i>selective re-quantization</i> would make the data more 
+compressible while still producing acceptable results when an inverse 2D-DCT is 
+performed on the corrupted spectral data.</p>
+<blockquote>
+	<p><i>(As mentioned earlier, selective re-quantization will be the topic of a future lesson.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>The bottom line is that the 2D-DCT serves the 
+purpose well</b></font></p>
+<p>Although the 2D-DCT does not produce the true wave-number spectrum of 
+the original image block, it does a very good job of satisfying the need to 
+compress the image for transport and storage while still producing acceptable 
+results when the image is reconstructed from the compressed spectral data.</p>
+<p><font color="#FF0000"><b>An extreme case</b></font></p>
+
+<p>I want to show you the results of two more experimental cases using <b>
+ImgMod35a</b> to help you better 
+understand what's going on here.&nbsp; <a href="#Figure_7">Figure 7</a> shows the result of setting the 
+block size to 1 and re-computing and displaying the spectral results in the 
+bottom <a name="Figure_7">panel</a>.</p>
+<p>
+<table border="1" cols="1" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><img border="0" src="java2448a07.jpg" width="242" height="522"><br></pre>
+      <pre><b><a href="#Figure_7">Figure 7</a></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Not a reconstructed image</b></font></p>
+<p>The bottom panel in <a href="#Figure_7">Figure 7</a> does not show a reconstructed version of the 
+original image produced by performing an inverse 2D-DCT on the spectral data as 
+was the case in <a href="#Figure_3">Figure 3</a>.&nbsp; Rather, the bottom panel of <a href="#Figure_7">Figure 7</a> shows the 
+spectral data just like <a href="#Figure_6">Figure 6</a>, <a href="#Figure_5">Figure 5</a>, and <a href="#Figure_2">Figure 2</a>.</p>
+<p><font color="#FF0000"><b>Why does the spectral data look so much like the original image?</b></font></p>
+<p>When the original 
+image is sub-divided into 1x1-pixel blocks, each 2D-DCT is performed on a single 
+image pixel producing a 1x1 spectral block.&nbsp; When only one spectral value 
+is computed, it is the value at a frequency of zero.</p>
+<p>Whenever the spectral value at a frequency of zero is computed, <i>(regardless of the 
+size of the image block)</i>, the result is simply the <i>(possibly scaled)</i> average of all the pixel 
+values.&nbsp; When there is only one pixel value involved, the average is simply 
+the <i>(possibly scaled)</i> value of the pixel.</p>
+<p><font color="#FF0000"><b>A scaled version of the pixel value</b></font></p>
+<p>Thus, each of the 1x1 spectral values in <a href="#Figure_7">Figure 7</a> is simply a scaled version of the corresponding pixel in the 1x1 pixel block.&nbsp; 
+Displaying those spectral values reproduces the original image.</p>
+<blockquote>
+	<p><i>(However, 
+the scaling that has been applied to the spectral values through the 
+normalization process causes the colors to be washed out as shown in 
+the bottom image of <a href="#Figure_7">Figure 7</a>.&nbsp; The normalization process includes a log 
+	base 10 transformation that tends to flatten the spectral surface.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Including the entire image in the block</b></font></p>
+<p>In contrast, <a href="#Figure_8">Figure 8</a> shows the result of setting the block size to the 
+height of the image, causing the entire image to be included in one block of 
+<a name="Figure_8">pixels</a>.</p>
+
+<p>
+<table border="1" cols="1" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><img border="0" src="java2448a08.jpg" width="242" height="522"><br></pre>
+      <pre><b><a href="#Figure_8">Figure 8</a></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>As a result, the bottom panel in <a href="#Figure_8">Figure 8</a> shows the 2D-DCT spectrum for the 
+entire image taken as a whole.</p>
+<p><font color="#FF0000"><b>Spectral energy near the origin</b></font></p>
+<p>Most of the spectral energy is concentrated in the lighter portions of the 
+spectrum near the origin in the upper-left corner.&nbsp; Although it isn't 
+obvious, <i>(due to the adjacent white background)</i>, there is probably a very bright 
+dot at the origin of the spectrum in <a href="#Figure_8">Figure 8</a>.</p>
+<blockquote>
+	<p><i>(Each of the individual spectra shown in <a href="#Figure_7">Figure 7</a>, <a href="#Figure_6">Figure 6</a>, <a href="#Figure_5">Figure 5</a>, 
+	and <a href="#Figure_2">Figure 2</a> are simply smaller versions of <a href="#Figure_8">Figure 8</a> where each of the 
+	individual spectra represent the information in a small block 
+	of corresponding image pixels.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Resemblance to the original image</b></font></p>
+<p>The bottom panel in <a href="#Figure_8">Figure 8</a> doesn't look anything like the original image 
+because it represents the information for the entire image in a different form.&nbsp; </p>
+<p><a href="#Figure_7">Figure 7</a>, on the other hand, consisting of more than 50,000 individual 
+single-point spectra looks a lot like the original image because each of the 
+spectra in the bottom panel of <a href="#Figure_7">Figure 7</a> corresponds to a single pixel in the 
+original image.</p>
+<p>The spectra in the bottom panels of <a href="#Figure_2">Figure 2</a> and <a href="#Figure_5">Figure 5</a> bear some 
+resemblance to a grayscale version of the original image because each of the 
+spectra represents the information in the corresponding small 8x8-pixel block of 
+the image.</p>
+<p>The spectra in the bottom panel of <a href="#Figure_6">Figure 6</a> looks less like the image than 
+<a href="#Figure_5">Figure 5</a>, but more like the image than <a href="#Figure_8">Figure 8</a>.&nbsp; Each of the individual 
+spectra in <a href="#Figure_6">Figure 6</a> represents the information in the corresponding 20x20-pixel 
+block of the original image.</p>
+<p><font color="#FF0000"><b>Individual spectra don't resemble corresponding 
+image blocks</b></font></p>
+<p>Except for the unique case of the single-point spectra shown in <a href="#Figure_7">Figure 7</a>, 
+none of the individual spectra look much like the image blocks that they 
+represent, and this is to be expected.&nbsp; In general, the frequency spectrum 
+doesn't look like the image that it represents.</p>
+<blockquote>
+	<p><i>(Recall the section entitled <b>An analogy</b> in&nbsp; 
+	<a href="http://www.developer.com/java/data/article.php/3634156">Part 1</a> of this lesson.&nbsp; Ice and liquid 
+	water both represent water, and it is relatively easy to transform the 
+	material back and forth between those two states.&nbsp; However, they don't 
+	look much alike.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>The spatial organization</b></font></p>
+<p>However, the spatial organization of the spectra listed above, particularly 
+<a href="#Figure_2">Figure 2</a> and <a href="#Figure_5">Figure 5</a>, provides a strong hint as to the organization of the 
+information in the image.</p>
+<p><font color="#FF0000"><b>Very little high-frequency energy</b></font></p>
+<p>For example, the spectra that correspond to the large blank areas of the 
+image in <a href="#Figure_5">Figure 5</a> 
+consist mainly of a peak at the origin with very little in the way of 
+high-frequency energy.&nbsp; <i>(There are blank areas both inside and outside 
+the coin.)</i>&nbsp; This causes those spectra to be mainly black.</p>
+<p><font color="#FF0000"><b>Lots of high-frequency energy</b></font></p>
+<p>On the other hand, the spectra for those areas of the image containing lots 
+of detail, such as President Lincoln's hair and beard in <a href="#Figure_5">Figure 5</a>, exhibit 
+considerably more high-frequency energy.&nbsp; This causes those spectra to have 
+a much whiter appearance.</p>
+<p><font color="#FF0000"><b>The spectral format</b></font></p>
+<p>Once again, each of these spectra is a miniature version of the spectral 
+format shown in the bottom panel of <a href="#Figure_8">Figure 8</a>.&nbsp; The energy at a frequency of 
+zero is shown at the origin, which is at the upper-left corner of the spectral 
+block.&nbsp; <i>(There is typically a bright dot at that point.)</i>&nbsp; The 
+higher-frequency energy is shown to the right and below the origin.</p>
+<blockquote>
+	<p><i>(For example, the tip of President Lincoln's nose in <a href="#Figure_5">Figure 5</a> and 
+	<a href="#Figure_6">Figure 6</a> has a strong 
+	component at zero frequency and considerable energy in the low-frequency 
+	triangular area that makes up the upper-left portion of the spectral block.&nbsp; 
+	The high-frequency triangular area that makes up the bottom-right portion of 
+	the spectral block is largely black.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Experimental results for ImgMod35</b></font></p>
+<p>As explained earlier, the program, named <b>ImgMod35</b> subdivides an image 
+into a set of 8x8-pixel blocks.&nbsp; <i>(The block size for this program is not 
+an input parameter.&nbsp; It is fixed at 8x8 pixels.)</i>&nbsp; The program performs a forward 2D-DCT on each individual 
+block producing a set of 8x8 spectral blocks.&nbsp; Then it performs an inverse 
+2D-DCT on each spectral block producing a replica of each of the original image 
+blocks.&nbsp; The replicas of the small image blocks are then reassembled into a replica of the original image, 
+which is displayed in the format shown in <a href="#Figure_3">Figure 3</a>.</p>
+<p><a href="#Figure_3">Figure 3</a> shows the result of running <b>ImgMod35 </b>
+on the same image shown in the top panels of <a href="#Figure_1">Figure 1</a> 
+and <a href="#Figure_2">Figure 2</a> without exercising the option to mark the 
+individual blocks as was done in <a href="#Figure_1">Figure 1</a>.</p>
+<p>As another example, <a href="#Figure_9">Figure 9</a> shows result of applying <b>ImgMod35</b> to the 
+same image shown in the top panel <a name="Figure_9">of</a> <a href="#Figure_5">Figure 5</a>.</p>
+
+<p>
+<table border="1" cols="1" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><img border="0" src="java2448a09.jpg" width="242" height="522"><br></pre>
+      <pre><b><a href="#Figure_9">Figure 9</a></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Whereas the bottom panel of <a href="#Figure_5">Figure 5</a> shows the individual 8x8 spectral 
+blocks, the bottom panel of <a href="#Figure_9">Figure 9</a> shows the results of performing an inverse 
+2D-DCT on each of the 8x8 spectral blocks and using the resulting 8x8 image 
+blocks to reconstruct the original image.&nbsp; As you can see, the 
+reconstructed image is a very good replica of the original image.</p>
+<center>
+<h2> <a name="Discussion and Sample Programs"></a><font color="#000000">Sample Code</font></h2>
+</center>
+<h3><a name="The_Program_Named_ImgMod35a_">The Program Named ImgMod35a</a></h3>
+<p>I will discuss this program in fragments.&nbsp; The first fragment, shown in 
+<a href="#Listing_1">Listing 1</a>, shows the beginning of the class definition along with the 
+declaration and initialization of a couple of instance <a name="Listing_1">variables</a>.</p><p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>class ImgMod35a extends Frame implements ImgIntfc02{
+  
+  TextField subSizeField = new TextField("8");
+  Label instructions = new Label(
+                  "Enter sub-image size and click Replot");<br><br><b><font face="Courier New,Courier"><a href="#Listing_1">Listing 1</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The two instance variables provide the label and the text field shown in 
+<a href="#Figure_4">Figure 4</a>.</p>
+<p><font color="#FF0000"><b>The TextField variable</b></font></p>
+<p>This text field supports the interactive nature of the program.&nbsp; The user can enter a value into the 
+text field and then click the <b>Replot</b> button shown at the bottom of 
+<a href="#Figure_5">Figure 
+5</a>.&nbsp; This causes the image to be broken down into square blocks of pixels where the number of pixels on each side 
+of the block matches the value entered into the text field by the user.&nbsp; Then the image 
+is processed one block at a time producing spectral results as shown 
+in <a href="#Figure_6">Figure 6</a>.</p>
+<p><font color="#FF0000"><b>The interface named ImgIntfc02</b></font></p>
+<p>Note that the class implements the interface named <b>ImgIntfc02</b>. This is 
+necessary to support the graphic display aspects of the program as explained in 
+the earlier lesson entitled
+<a href="http://www.developer.com/java/other/article.php/3403921">Processing 
+Image Pixels using Java, Getting Started</a>.</p>
+<p><font color="#FF0000"><b>The constructor</b></font></p>
+<p>The constructor for the class is shown in its entirety in 
+<a name="Listing_2" href="#Listing_2">Listing 2</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  ImgMod35a(){//constructor
+    add(instructions,BorderLayout.CENTER);
+    add(subSizeField,BorderLayout.SOUTH);
+    setTitle("Copyright 2006, R.G.Baldwin");
+    setBounds(400,0,250,75);
+    setVisible(true);
+  }//end constructor<br><br><b><font face="Courier New,Courier"><a href="#Listing_2">Listing 2</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The code in <a href="#Listing_2">Listing 2</a> is straightforward and shouldn't require further 
+explanation.</p>
+<p><font color="#FF0000"><b>The processImg method</b></font></p>
+<p>Because this class implements the <b>ImgIntfc02</b> interface, and because 
+that interface declares the <b>processImg</b> method, this class must define the 
+method named <b>processImg</b>.</p>
+<p>The signature for the method named <b>processImg</b> is shown in 
+<a name="Listing_3" href="#Listing_3">Listing 3</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  public int[][][] processImg(int[][][] threeDPix,
+                              int imgRows,
+                              int imgCols){<br><br><b><font face="Courier New,Courier"><a href="#Listing_3">Listing 3</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>As mentioned above, this method is required by <b>ImgIntfc02</b>.&nbsp; As explained in the 
+earlier lesson entitled
+<a href="http://www.developer.com/java/other/article.php/3403921">Processing 
+Image Pixels using Java, Getting Started</a>, the method is called at the beginning of 
+the run and each time thereafter that the user clicks the <b>Replot</b> button shown at 
+the bottom of <a href="#Figure_6">Figure 6</a>.</p>
+<p><font color="#FF0000"><b>The block size</b></font></p>
+<p>Also as explained earlier, the image is broken down into square blocks for 
+processing.&nbsp; The 
+dimensions of the blocks are specified by the value stored in the variable named<b> 
+imgSubSize</b> shown in <a name="Listing_4" href="#Listing_4">Listing 4</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    int imgSubSize = Integer.parseInt(
+                                   subSizeField.getText());<br><br><b><font face="Courier New,Courier"><a href="#Listing_4">Listing 4</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Straightforward code from an earlier lesson</b></font></p>
+<p>The comments in <a href="#Listing_5">Listing 5</a>, in conjunction with information provided in the
+<a href="http://www.developer.com/java/other/article.php/3403921">earlier</a> 
+lesson, should suffice to explain the code in 
+<a name="Listing_5" href="#Listing_5">Listing 5</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    //Create an empty output array of the same size as the
+    // incoming array.
+    int[][][] output = new int[imgRows][imgCols][4];
+
+    //Make a working copy of the 3D pixel array as type
+    // double to avoid making permanent changes to the
+    // original image data.  Also, all processing will be
+    // performed as type double.
+    double[][][] working3D = copyToDouble(threeDPix);
+    
+    //The following code can be enabled to set any of the
+    // three colors to black, thus removing them from the
+    // output.
+    for(int row = 0;row &lt; imgRows;row++){
+      for(int col = 0;col &lt; imgCols;col++){
+//        working3D[row][col][1] = 0;//Red
+//        working3D[row][col][2] = 0;//Green
+//        working3D[row][col][3] = 0;//Blue
+      }//end inner loop
+    }//end outer loop<br><br><b><font face="Courier New,Courier"><a href="#Listing_5">Listing 5</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Performing a forward DCT</b></font></p>
+<p><a href="#Listing_6">Listing 6</a> begins the process of extracting and performing a forward DCT on the red color plane 
+of the image, one block at a <a name="Listing_6">time</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    double[][] redPlane = extractPlane(working3D,1);<br><br><b><font face="Courier New,Courier"><a href="#Listing_6">Listing 6</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>The extractPlane method</b></font></p>
+<p><a href="#Listing_6">Listing 6</a> invokes the method named <b>extractPlane</b> to extract the red 
+color plane from the image.&nbsp; The purpose of the <b>extractPlane</b> method is to extract a color plane from the
+<b>double</b> version of an image and to return it as a 2D array of type <b>double</b>.&nbsp; 
+The method is straightforward and shouldn't require further explanation.&nbsp; 
+It can be viewed in its entirety in <a href="#Listing_17">Listing 17</a> near the end of the lesson.</p>
+<p><font color="#FF0000"><b>The expandPlane method</b></font></p>
+<p><a href="#Listing_7">Listing 7</a> invokes the <b>expandPlane</b> method to expand the plane such that both dimensions are a multiple of
+<b><a name="Listing_7">imgSubSize</a></b>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    redPlane = expandPlane(redPlane,imgSubSize);<br><br><b><font face="Courier New,Courier"><a href="#Listing_7">Listing 7</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The extra rows and columns of pixel data <i>(if any)</i> that are required to 
+cause the dimensions of the plane to be a multiple of <b>imgSubSize</b> are 
+filled with pixel values of zero.&nbsp; Otherwise, the <b>expandPlane</b> method 
+is straightforward and shouldn't require further explanation.&nbsp; The method 
+can be viewed in its entirety in <a href="#Listing_17">Listing 17</a> near the end of the lesson.</p>
+<p><font color="#FF0000"><b>The forwardXformPlane method</b></font></p>
+<p><a href="#Listing_8">Listing 8</a> invokes the <b>forwardXformPlane</b> method to perform the forward 
+DCT on the red plane turning it into a spectral plane where each individual 
+spectrum stored in the plane is a square block with dimensions of <b>
+<a name="Listing_8">imgSubSize</a></b>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    forwardXformPlane(redPlane,imgSubSize);<br><br><b><font face="Courier New,Courier"><a href="#Listing_8">Listing 8</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Ultimately, the spectra for all three color planes are combined and displayed 
+in an image format as shown in <a href="#Figure_6">Figure 6</a>.&nbsp; To see the spectra for the 
+individual color planes, you can disable all but one color plane as instructed 
+by the comments in <a href="#Listing_5">Listing 5</a>.</p>
+<p>At this point, I will set the <b>processImg</b> method aside for awhile and 
+discuss the <b>forwardXformPlane</b> method.&nbsp; Before doing that, however, I 
+want to review some of the concepts that you learned about in 
+<a href="http://www.developer.com/java/data/article.php/3634156">Part 1</a> of this 
+lesson.</p>
+<p><font color="#FF0000"><b>A separable transform</b></font></p>
+<p>As was explained in 
+<a href="http://www.developer.com/java/data/article.php/3634156">Part 1</a> of this lesson, one of the significant attributes 
+of the two-dimensional Discrete Cosine Transform <i>(2D-DCT)</i> is that it is
+<a href="http://documents.wolfram.com/applications/digitalimage/UsersGuide/ImageTransforms/ImageProcessing8.4.html">
+separable</a>.&nbsp; What this means in practice is that to compute the DCT for a 
+block in a color plane of a 2D image, you can begin by performing a <i>
+one-dimensional</i> DCT on each row of the block, creating a new 2D structure 
+where each row of the new structure contains the DCT of the corresponding row of 
+the block of pixel data.&nbsp; Then you can perform a one-dimensional DCT on each column of the new 
+2D structure creating a third 2D structure containing the 2D-DCT of the original 
+block.</p>
+<p><font color="#ff0000"><b>An in-place transform</b></font></p>
+<p>Also important, at least from a memory utilization viewpoint, is the fact 
+that you can perform the transforms <i>&quot;in-place&quot;</i> using the original color 
+plane for intermediate and final data storage without a requirement to allocate 
+memory for the new structures.</p>
+<p><font color="#ff0000"><b>Don't need a new DCT program</b></font></p>
+<p>What this means for me is that I don't need to develop a new DCT program to 
+handle the 2D case.&nbsp; Rather, I could perform all the necessary DCT 
+transforms that I need using the static one-dimensional forward DCT method named
+<b>transform</b> 
+belonging to the class named <b>ForwardDCT01</b>.&nbsp; I developed and explained 
+that class in the earlier lesson entitled 
+<a href="http://www.developer.com/java/other/article.php/3619081">Understanding the Discrete 
+Cosine Transform in Java</a>.</p>
+<p><font color="#FF0000"><b>New version for optimization</b></font></p>
+<p>Note however that I did develop an optimized version 
+of the <b>transform</b> method that is optimized for speed for the case where 
+the image is divided into 8x8 blocks of pixels prior to performing the 
+transform.</p>
+<p><font color="#FF0000"><b>The forwardXformPlane method</b></font></p>
+<p>The <b>forwardXformPlane</b> method is shown in its entirety in 
+<a name="Listing_9" href="#Listing_9">Listing 9</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  void <b>forwardXformPlane</b>(double[][] plane,int imgSubSize){
+    int pixRows = plane.length;
+    int pixCols = plane[0].length;
+    //Loop on rows of blocks
+    for(int segRow = 0;segRow &lt; pixRows/imgSubSize;
+                                                 segRow++){
+      //Loop on cols of blocks
+      for(int segCol = 0;segCol &lt; pixCols/imgSubSize;
+                                                 segCol++){
+        double[][] theSubPlane = 
+               <b>getSubPlane</b>(plane,segRow,segCol,imgSubSize);
+        <b>forwardXformSubPlane</b>(theSubPlane,imgSubSize);
+        
+        <b>insertSubPlane</b>(plane,
+                       theSubPlane,
+                       segRow,
+                       segCol,
+                       imgSubSize);
+      }//end inner loop
+    }//end outer loop
+  }//end forwardXformPlane<br><br><b><font face="Courier New,Courier"><a href="#Listing_9">Listing 9</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The <b>forwardXformPlane</b> method breaks a <b>double</b> color plane down 
+into square blocks of size <b>imgSubSize</b> and performs a forward DCT on each 
+block.&nbsp; Then it assembles the resulting spectral data blocks into a 
+spectral plane.</p>
+<blockquote>
+	<p><i>(The method assumes that the dimensions of the color plane 
+are multiples of <b>imgSubSize</b>.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Invokes three methods in succession</b></font></p>
+<p>The code in <a href="#Listing_9">Listing 9</a> does its job by invoking the following three methods in 
+succession inside a nested <b>for</b> loop:</p>
+<ul>
+	<li><b>getSubPlane</b> - Extracts and returns a square block of size <b>
+	imgSubSize</b> from a <b>double</b> 2D plane</li>
+	<li><b>forwardXformSubPlane</b> - performs a forward DCT on a square block 
+	of pixels of size <b>imgSubSize</b> received as an incoming parameter.</li>
+	<li><b>insertSubPlane</b> - Inserts a square block of size <b>imgSubSize</b> 
+	into a double 2D plane</li>
+</ul>
+<p>The first and third methods in the above list are completely straightforward 
+and shouldn't require any explanation beyond the comments contained in the code.&nbsp; 
+You can view the code for those methods in <a href="#Listing_17">Listing 17</a> near the end of the 
+lesson.</p>
+<p><font color="#FF0000"><b>The method named forwardXformSubPlane</b></font></p>
+<p>The method named <b>forwardXformSubPlane</b>, which performs a forward DCT on a square block of pixels of size imgSubSize, is shown in its entirety in 
+<a name="Listing_10" href="#Listing_10">Listing 10</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  void forwardXformSubPlane(double[][] theSubPlane,
+                            int imgSubSize){
+    
+    int imgRows = imgSubSize;
+    int imgCols = imgSubSize;
+    
+    //Extract each row from the block and perform
+    // a forward DCT on the row. Then insert the
+    // transformed row back into the block.  At that point,
+    // the row no longer contains color pixel data, but
+    // has been transformed into a row of spectral data.
+    for(int row = 0;row &lt; imgRows;row++){
+      double[] theRow = extractRow(theSubPlane,row);
+      
+      double[] theXform = new double[theRow.length];
+      //Perform the forward transform.
+      <b>ForwardDCT02.transform(theRow,theXform);</b>
+      
+      //Insert the transformed row back into the block.
+      insertRow(theSubPlane,theXform,row);
+    }//end for loop
+    
+    //The block now contains the results of doing the
+    // horizontal DCT one row at a time.  The block no
+    // longer contains color pixel data.  Rather, it
+    // contains spectral data for the horizontal dimension
+    // only.
+    
+    //Extract each column from the block and perform a
+    // forward DCT on the column. Then insert the
+    // transformed column back into the block.
+    for(int col = 0;col &lt; imgCols;col++){
+      double[] theCol = extractCol(theSubPlane,col);
+
+      double[] theXform = new double[theCol.length];
+      ForwardDCT02.transform(theCol,theXform);
+
+      insertCol(theSubPlane,theXform,col);
+    }//end for loop
+    
+    //The square block of size imgSubSize has now been
+    // converted into a square block of spectral
+    // coefficient data of the same size.
+
+  }//end forwardXformSubPlane<br><br><b><font face="Courier New,Courier"><a href="#Listing_10">Listing 10</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Very similar to a method from Part 1</b></font></p>
+<p>The method named <b>forwardXformSubPlane</b> is very similar to the method named
+<b>processPlane</b> that I explained in 
+<a href="http://www.developer.com/java/data/article.php/3634156">Part 1</a> of this lesson.&nbsp; 
+Therefore, an explanation should not be required in this lesson.</p>
+<p><font color="#FF0000"><b>The main difference</b></font></p>
+<p>The main difference between the method named <b>forwardXformSubPlane</b> in 
+<a href="#Listing_10">Listing 10</a> and the method named
+<b>processPlane</b> in 
+<a href="http://www.developer.com/java/data/article.php/3634156">Part 1</a> of this lesson has to do with the method that is 
+called to perform the actual DCT.</p>
+<p><font color="#FF0000"><b>Optimized for speed</b></font></p>
+<p>The method in the 
+earlier lesson calls the <b>transform</b> method in the class named <b>
+ForwardDCT01</b>, whereas the method in <a href="#Listing_10">Listing 10</a> calls the <b>transform</b> 
+method in the class named <b>ForwardDCT02</b>.&nbsp; I will explain the 
+difference between the two later.&nbsp; For now, suffice it to say that the 
+latter method was optimized for speed for the case where the block size is 8x8 
+pixels.</p>
+<p><font color="#FF0000"><b>Back to the processImg method</b></font></p>
+<p>Returning once again to the explanation of the <b>processImg</b> method, and 
+picking up where <a href="#Listing_8">Listing 8</a> left off, <a href="#Listing_11">Listing 11</a> invokes the <b>normalize</b> 
+method to normalize the data in the 2D double plane to make it compatible with 
+being displayed as an image <a name="Listing_11">plane</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    normalize(redPlane);<br><br><b><font face="Courier New,Courier"><a href="#Listing_11">Listing 11</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>The normalize method</b></font></p>
+<p>Normalizing data for display purposes is almost always problematic.&nbsp; The 
+display will often look very different depending on how you perform the 
+normalization.&nbsp; The approach to normalization used in the <b>normalize</b> 
+method performs the following 
+steps in order:</p>
+<ol>
+	<li>All negative values are converted to positive values.&nbsp; This is 
+	equivalent to the computation of the magnitude of the spectrum for purely 
+	real data.</li>
+	<li>All values are converted to log base 10 <i>(scaled decibels)</i> 
+	to preserve the dynamic range of the plotting system.&nbsp; All negative 
+	results <i>(if any)</i> are set to 0.</li>
+	<li>All values that are below X-percent of the maximum value are 
+	set to X-percent of the maximum value producing a floor for the values where 
+	the value of X is determined by a hard-coded scale factor.</li>
+	<li>All values are biased <i>(slid toward 0)</i> so that the minimum 
+	value <i>(the floor)</i> becomes 0.</li>
+	<li>All values are scaled so that the maximum value becomes 255.&nbsp; As a 
+	result, all values range from 0 as a minimum to 255 as a maximum.</li>
+</ol>
+<p>Once the normalizing rationale has been established, the code to establish 
+the normalization is relatively straightforward.&nbsp; You can view the <b>
+normalize</b> method in its entirety in <a href="#Listing_17">Listing 17</a>.</p>
+<p><font color="#FF0000"><b>The insertPlane method</b></font></p>
+<p><a href="#Listing_12">Listing 12</a> invokes the <b>insertPlane</b> method to insert the spectral plane 
+back into the 3D <a name="Listing_12">array</a>.&nbsp; </p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    insertPlane(working3D,redPlane,1);<br><br><b><font face="Courier New,Courier"><a href="#Listing_12">Listing 12</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The <b>insertPlane</b> method also trims off any extra rows and columns 
+created by expanding the dimensions to a multiple of <b>imgSubSize</b> earlier 
+in <a href="#Listing_7">Listing 7</a>.&nbsp; The code in the <b>insertPlane</b> method is 
+straightforward.&nbsp; The method can be viewed in its entirety in <a href="#Listing_17">Listing 17</a>.</p>
+<p><font color="#FF0000"><b>Process green and blue color planes</b></font></p>
+<p><a href="#Listing_13">Listing 13</a> executes essentially the same code as that explained above to 
+extract and perform forward Discrete Cosine Transforms on the green and blue 
+color <a name="Listing_13">planes</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    double[][] greenPlane = extractPlane(working3D,2);
+    greenPlane = expandPlane(greenPlane,imgSubSize);
+    forwardXformPlane(greenPlane,imgSubSize);
+    normalize(greenPlane);
+    insertPlane(working3D,greenPlane,2);
+
+    double[][] bluePlane = extractPlane(working3D,3);
+    bluePlane = expandPlane(bluePlane,imgSubSize);
+    forwardXformPlane(bluePlane,imgSubSize);
+    normalize(bluePlane);
+    insertPlane(working3D,bluePlane,3);<br><br><b><font face="Courier New,Courier"><a href="#Listing_13">Listing 13</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>All three color planes have been transformed</b></font></p>
+<p>At this point, all three color planes have now been transformed into spectral 
+planes where each spectral plane is composed of a potentially large number of 
+contiguous square spectral data blocks of size <b>imgSubSize</b>.</p>
+<p><font color="#FF0000"><b>Convert to type int and return</b></font></p>
+<p><a href="#Listing_14">Listing 14</a> invokes the <b>copyToInt</b> method to convert the image color 
+planes to type <b>int</b>.&nbsp; Then <a href="#Listing_14">Listing 14</a> returns the array of pixel data 
+to the calling method where it is displayed as shown in the bottom panel 
+<a name="Listing_14">of</a> <a href="#Figure_5">Figure 5</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    output = copyToInt(working3D);
+    return output;
+  }//end processImg method<br><br><b><font face="Courier New,Courier"><a href="#Listing_14">Listing 14</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>You can view the <b>copyToInt</b> method, along with a few other utility 
+methods not discussed above in <a href="#Listing_17">Listing 17</a>.</p>
+<h3><a name="The_Class_Named_ForwardDCT02">The Class Named ForwardDCT02</a></h3>
+<p>As mentioned earlier, whereas the program in 
+<a href="http://www.developer.com/java/data/article.php/3634156">Part 1</a> of this lesson used the<b> 
+transform</b> method in the class<b> </b>named <b>ForwardDCT01</b> to perform 
+the DCT, this program uses the <b>transform</b> method of 
+the class named <b>ForwardDCT02</b> to perform the DCT.</p>
+<p>The static method named <b>transform</b> performs a forward DCT on an incoming series and returns the DCT spectrum.</p>
+<p><font color="#FF0000"><b>Optimized for 8x8 blocks</b></font></p>
+<p>The <b>transform</b> method of the <b>ForwardDCT01</b> class is a general 
+purpose version that works for images of different sizes.&nbsp; The <b>transform</b> 
+method of the <b>ForwardDCT02</b> class will also work with images of any size, 
+but it is optimized for use with images with a size of 8x8 pixels.</p>
+<p><font color="#FF0000"><b>Uses a cosine lookup table</b></font></p>
+<p>When transforming an 8x8-pixel image, the <b>transform</b> method of the <b>
+ForwardDCT02</b> class uses an 8x8 cosine lookup table instead of calling the 
+cos function.&nbsp; If the image size is anything other than 8x8 pixels, the 
+method simply calls the cosine function during each 
+iteration.</p>
+<p>It is probably faster to use the lookup table than it is to call the cosine 
+function every time a cosine value is needed.</p>
+<p>The class named <b>ForwardDCT02</b> is shown in its entirety in 
+<a href="#Listing_18">Listing 
+18</a> near the end of this lesson.&nbsp; The manner in which the cosine table is 
+created and then used is well documented.&nbsp; If you understood the <b>
+transform</b> method of the <b>ForwardDCT01</b> class in 
+<a href="http://www.developer.com/java/data/article.php/3634156">Part 1</a> of this 
+lesson, you should have no difficulty understanding the <b>transform</b> method 
+of the class named <b>ForwardDCT02</b>.</p>
+<h3><a name="The_Program_Named_ImgMod35">The Program Named ImgMod35</a></h3><p>
+<p>This program performs a forward DCT on an image converting the three color 
+planes into spectral planes.&nbsp; Then it performs an inverse DCT on the three 
+spectral planes converting them back into image color planes.</p>
+<p>A rather detailed description of the program was provided earlier in this 
+lesson.&nbsp; I will refer you back to that <a href="#ImgMod35">description</a> 
+and will not repeat that description here.</p>
+<p>Note that this version of the program is significantly faster than the 
+version named <b>ImgMod034</b> from 
+<a href="http://www.developer.com/java/data/article.php/3634156">Part 1</a> of this lesson.&nbsp; The reasons for the 
+improvement in speed were also explained <a href="#ImgMod35">earlier</a>.</p>
+<p><font color="#FF0000"><b>Experimental results</b></font></p>
+<p><a href="#Figure_3">Figure 3</a> and <a href="#Figure_9">Figure 9</a> show examples of the results produced by this program.</p>
+<p><font color="#FF0000"><b>Similar code</b></font></p>
+<p>Much of the code in this program is the same as, or very similar to the code 
+in the program named <b>ImgMod35a</b>, which I explained earlier.&nbsp; Therefore, 
+I won't repeat the explanation for that code.&nbsp; I will only explain the code 
+that is significantly different.&nbsp; The code that I will explain 
+will be explained in fragments.&nbsp; You can view a listing of the entire 
+program in <a href="#Listing_19">Listing 19</a> near the end of the lesson.</p>
+
+<p>The first interesting code fragment begins in <a href="#Listing_15">Listing 15</a>, which extracts the 
+red color plane and performs a forward DCT on that <a name="Listing_15">plane</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    double[][] redPlane = extractPlane(working3D,1);
+    redPlane = expandPlane(redPlane);
+    forwardXformPlane(redPlane);
+    insertPlane(working3D,redPlane,1);<br><br><b><font face="Courier New,Courier"><a href="#Listing_15">Listing 15</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>The expandPlane method</b></font></p>
+<p>Having extracted the red color plane, <a href="#Listing_15">Listing 15</a> invokes the <b>expandPlane</b> 
+method to expand the plane such that both dimensions are an even multiple of 8 
+pixels.</p>
+<blockquote>
+	<p><i>(Unlike the <b>expandPlane</b> method in the previous program named <b>
+	ImgMod35a</b>, the<b> expandPlane</b> method in this program does not accept 
+	an incoming parameter that specifies the block size.&nbsp; Rather, the block 
+	size is fixed at 8x8 pixels in this program.<b> </b>)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>The forwardXformPlane method</b></font></p>
+<p>Then Figure 15 invokes the <b>forwardXformPlane</b> method to perform a 
+forward DCT on the red plane turning it into a spectral plane where each individual spectrum stored in the plane is an 8x8 square.</p>
+<p>The method named <b>forwardXformPlane </b>breaks a double color plane down into 
+8x8-pixel blocks and performs a forward DCT on each block.&nbsp; Then it 
+assembles the resulting spectral data blocks into a spectral plane. The method 
+is hard-coded to assume that the dimensions of the color plane are multiples of 
+8.</p>
+<p><font color="#FF0000"><b>The insertPlane method</b></font></p>
+<p>Finally, <a href="#Listing_15">Listing 15</a> invokes the <b>insertPlane</b> method to insert the spectral plane back into the 3D array.&nbsp; This method also trims off any extra rows and columns 
+that may have been created by expanding the dimensions to a multiple of 8.</p>
+<p><font color="#FF0000"><b>Process the green and blue color planes</b></font></p>
+<p>Then the program performs essentially the same operations on the green and 
+blue color planes.&nbsp; Once that is completed, all three color planes have been transformed into spectral planes where each spectral plane is composed of a 
+potentially large number of contiguous 8x8 spectral data blocks.</p>
+<blockquote>
+	<p><i>(Note that because there is no requirement to display the spectral 
+	planes, they are not normalized to values between 0 and 255 as is the case 
+	with the program named <b>ImgMod035a</b>.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Transform back into image color planes</b></font></p>
+<p>Following this, the program transforms the spectral planes back into image color planes.&nbsp; 
+The inverse transform on the red spectral plane consists of the four method 
+calls shown in <a name="Listing_16" href="#Listing_16">Listing 16</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    redPlane = extractPlane(working3D,1);
+    redPlane = expandPlane(redPlane);
+    inverseXformPlane(redPlane);
+    insertPlane(working3D,redPlane,1);<br><br><b><font face="Courier New,Courier"><a href="#Listing_16">Listing 16</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The process begins by invoking the <b>extractPlane</b> method to extract the 
+red spectral plane from the 3D array.&nbsp; This method has been used in 
+numerous previous lessons and can be found in <a href="#Listing_19">Listing 19</a>.</p>
+<p>Then <a href="#Listing_16">Listing 16</a> invokes the <b>expandPlane</b> method to expand the plane 
+such that both dimensions are an even multiple of 8.&nbsp; There is nothing new 
+here.</p>
+<p>Then <a href="#Listing_16">Listing 16</a> invokes the <b>inverseXformPlane</b> method to perform the 
+inverse DCT on the red plane.&nbsp; The only thing new here is that the <b>
+inverseXformPlane</b> method calls a method named <b>inverseXform8x8Plane</b>, 
+which uses the <b>transform</b> method of the <b>InverseDCT02</b> class to 
+perform the inverse transform.</p>
+<p><font color="#FF0000"><b>Optimized for 8x8 spectral blocks</b></font></p>
+<p>This <b>transform</b> method is essentially the same as the <b>transform</b> 
+method of the class named <b>InverseDCT01</b>, which was explained in 
+<a href="http://www.developer.com/java/data/article.php/3634156">Part 1</a> of 
+this lesson, except that the&nbsp; <b>transform</b> method of the <b>
+InverseDCT02</b> class is optimized for speed when applied to spectra having a 
+size of 8x8 spectral coefficient values.&nbsp; Basically, it uses a cosine 
+lookup table rather than invoking the <b>cos</b> method each time a cosine value 
+is needed.</p>
+<p>A complete listing of the class named <b>InverseDCT02</b> is provided in 
+<a href="#Listing_20">Listing 20</a> near the end of the lesson.</p>
+<p>Finally, <a href="#Listing_16">Listing 16</a> invokes the <b>insertPlane</b> method to insert the new 
+red image plane back into the working 3D array.</p>
+<p><font color="#FF0000"><b>Process the green and blue spectral planes</b></font></p>
+<p>Following this, the program performs essentially the same inverse transform 
+operations on the green and blue spectral planes to produce the green and blue 
+image planes.</p>
+<p>Then the new image color planes are converted to type <b>int</b> 
+and returned to the calling method for display as shown in the bottom panel of 
+<a href="#Figure_3">Figure 3</a> and <a href="#Figure_9">Figure 9</a>.<br>
+</p>
+<center>
+<h2><a name="Run the program"></a>Run the Program</h2>
+</center>
+<p>I encourage you to copy the code from the listings in the section entitled
+<a href="#Complete Program Listings">Complete Program Listings</a>.&nbsp; 
+Compile the code and run it.&nbsp; Experiment with the code, making
+changes, and observing the results of your changes.</p>
+<p>For example, you might want to make modifications to the image data prior to 
+performing the forward transforms and observe the impact of those modifications 
+on the spectral data.</p>
+<p>Similarly, you might want to make modifications to the spectral data prior to 
+performing the inverse transform, and observe the impact of those modifications 
+on the resulting images.</p>
+<p>See instructions <a href="#run_this_program35a">here</a> and
+<a href="#run_this_program35">here</a> on how to run the programs.</p>
+<p>Whatever you do, have fun and learn as much as you can about the use of the 
+2D-DCT with image data.</p>
+<h2 align="center"><a name="Summary">Summary</a></h2>
+<p>In <a href="http://www.developer.com/java/data/article.php/3634156">Part 1</a> of this lesson I taught you how to use the forward 
+two-dimensional Discrete Cosine Transform <i>(2D-DCT)</i> to compute and display 
+the wave-number spectrum of an image.&nbsp; I also taught you how to apply the 
+inverse 2D-DCT to the spectral data to reconstruct and display a replica of the 
+original image.</p>
+<p>In this document <i>(Part 2)</i>, I taught you how to sub-divide the image 
+before applying the forward and inverse 2D-DCTs in a manner similar to the way 
+it is done in the JPEG image compression algorithm.</p>
+<p>I showed that sub-dividing 
+the image can result in a significant improvement in transform speed while still 
+preserving the visual quality of the original image.</p>
+<p>I also explained some 
+of the theory behind and some of the reasons for sub-dividing images in that 
+manner.</p>
+<h2 align="center"><a name="Whats Next">What's Next?</a></h2>
+<p>Future lessons in this series will explain the inner workings behind several 
+data and image compression schemes, including the following:</p>
+<ul>
+	<li>Run-length data encoding</li>
+	<li>GIF image compression</li>
+	<li>JPEG image compression</li>
+</ul>
+<p>Along the way, I will probably also branch off and show you how to use the 2D-DCT to create 
+hidden watermarks on images.</p>
+<h2 align="center"><a name="References">References</a></h2>
+<p><font color="#ff0000"><b>General</b></font></p>
+<p><a href="http://www.developer.com/java/data/article.php/3586396">2440</a> Understanding the Lempel-Ziv Data Compression Algorithm in Java<br>
+<a href="http://www.developer.com/java/other/article.php/3603066">2442</a> Understanding the Huffman Data Compression Algorithm in Java<br>
+<a href="http://www.developer.com/java/other/article.php/3619081">2444</a> Understanding the Discrete Cosine Transform in Java<br>
+<a href="http://www.developer.com/java/data/article.php/3634156">2446</a> Understanding the 2D Discrete Cosine Transform in Java, Part 1<br>
+<a href="http://www.developer.com/java/other/article.php/10936_1554511_1">1468</a> 
+Plotting Engineering and Scientific Data using Java<br>
+<a href="http://www.developer.com/java/other/article.php/3374611">1478</a> Fun 
+with Java, How and Why Spectral Analysis Works <br>
+<a href="http://www.developer.com/java/other/article.php/3380031">1482</a> 
+Spectrum Analysis using Java, Sampling Frequency, Folding Frequency, and the FFT 
+Algorithm <br>
+<a href="http://www.developer.com/java/other/article.php/3392871">1483</a> 
+Spectrum Analysis using Java, Frequency Resolution versus Data Length <br>
+<a href="http://www.developer.com/java/other/article.php/3411041">1484</a> 
+Spectrum Analysis using Java, Complex Spectrum and Phase Angle <br>
+<a href="http://www.developer.com/java/other/article.php/3436341">1485</a> 
+Spectrum Analysis using Java, Forward and Inverse Transforms, Filtering in the 
+Frequency Domain <br>
+<a href="http://www.developer.com/java/other/article.php/3457251">1486</a> Fun 
+with Java, Understanding the Fast Fourier Transform (FFT) Algorithm<br>
+<a href="http://www.developer.com/java/other/article.php/3508706">1489</a> 
+Plotting 3D Surfaces using Java <br>
+<a href="http://www.developer.com/java/other/article.php/3519441">1490</a> 2D 
+Fourier Transforms using Java <br>
+<a href="http://www.developer.com/java/other/article.php/3526241">1491</a> 2D 
+Fourier Transforms using Java, Part 2</p>
+<p><font color="#ff0000"><b>Discrete Cosine Transform equations</b></font></p>
+<p><a href="http://en.wikipedia.org/wiki/Discrete_cosine_transform#DCT-II">
+Discrete cosine transform</a> - Wikipedia, the free encyclopedia<br>
+The Data Analysis Briefbook -
+<a href="http://rkb.home.cern.ch/rkb/AN16pp/node61.html">Discrete Cosine 
+Transform</a><br>
+<a href="http://www.ntu.edu.tw/">National Taiwan University</a> -
+<a href="http://www.cmlab.csie.ntu.edu.tw/cml/dsp/">DSP Group</a> -
+<a href="http://www.cmlab.csie.ntu.edu.tw/cml/dsp/training/coding/transform/dct.html">
+Discrete Cosine Transform</a></p>
+<center>
+<h2> <a name="Complete Program Listings"></a>Complete Program Listings</h2>
+</center>
+Complete listings of the programs discussed in this lesson are shown in 
+<a href="#Listing_17">Listing 
+17</a> through <a href="#Listing_20">Listing 20</a> <a name="Listing_17">below</a>. <br>
+&nbsp;
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>/*File ImgMod35a.java
+Copyright 2005, R.G.Baldwin
+
+This is a modification of ImgMod35 to normalize and display
+wave-number spectra instead of constructing a replica of
+the original image.  In addition, whereas ImgMod35 uses a
+fixed block size of 8x8 pixels, this program allows the 
+user to specify the block size.
+
+This program performs a forward DCT on an image converting 
+the three color planes into spectral planes.  The three
+spectral planes are normalized so as to make them suitable
+for being displayed as standard image data.  The 
+normalization includes transformation of the spectral data
+to log base 10 and scaling to cause the values to fall 
+between 0 and 255 inclusive.
+
+This program breaks the image down into square blocks of 
+pixels and performs a forward DCT on each block producing 
+and displaying square blocks of spectral data.  The size of
+the blocks is specified by the user by entering the size 
+into a text field and pressing the Replot button.
+
+Each color plane is individually processed.
+
+Note that for small block sizes, this version of the 
+program is significantly faster than the version named 
+ImgMod034a, which does not break the image down into 
+blocks, but rather does the forward DCT on the entire 
+image.
+
+This program can handle any block size up to the size of 
+the original image.  However, it is optimized for block 
+sizes of 8x8 pixels.  When the block size is 8x8 pixels, 
+the program uses an 8x8 cosine lookup table instead of 
+computing the cosine value every time it is needed.  This 
+should cause the program to run faster.
+
+The class is designed to be driven by the class named 
+ImgMod02a.  
+
+Enter the following at the command line to run this 
+program:
+
+java ImgMod02a ImgMod35a ImageFileName
+
+where ImageFileName is the name of a .gif or .jpg file, 
+including the extension.
+
+When the user clicks the Replot button, the process is 
+repeated using the potentially new value for block size
+and the new results are displayed.
+
+This program requires access to the following class files 
+plus some inner classes that are defined inside the
+following classes:
+
+ImgIntfc02.class
+ImgMod02a.class
+ImgMod35a.class
+ForwardDCT02.class
+
+Tested using J2SE 5.0 and WinXP.  J2SE 5.0 or later is 
+required due to the use of static imports.
+**********************************************************/
+import java.awt.*;
+import java.io.*;
+import static java.lang.Math.*;
+
+class ImgMod35a extends Frame implements ImgIntfc02{
+  
+  //The user can enter a value into the following field and
+  // then click the Replot button.  The image will be
+  // broken down into square blocks of pixels where the
+  // number of pixels on each side matches the value
+  // entered by the user.  Then the image will be 
+  // processed one block at a time.
+  TextField subSizeField = new TextField("8");
+  Label instructions = new Label(
+                  "Enter sub-image size and click Replot");
+  //-----------------------------------------------------//
+  ImgMod35a(){//constructor
+    add(instructions,BorderLayout.CENTER);
+    add(subSizeField,BorderLayout.SOUTH);
+    setTitle("Copyright 2006, R.G.Baldwin");
+    setBounds(400,0,250,75);
+    setVisible(true);
+  }//end constructor
+  //-----------------------------------------------------//
+                                        
+  //This method is required by ImgIntfc02.  It is called at
+  // the beginning of the run and each time thereafter that
+  // the user clicks the Replot button on the Frame
+  // containing the images.
+  public int[][][] processImg(int[][][] threeDPix,
+                              int imgRows,
+                              int imgCols){
+
+    //The image is broken down into square blocks where the
+    // following value specifies the dimensions of the
+    // blocks.
+    int imgSubSize = Integer.parseInt(
+                                   subSizeField.getText());
+
+    //Create an empty output array of the same size as the
+    // incoming array.
+    int[][][] output = new int[imgRows][imgCols][4];
+
+    //Make a working copy of the 3D pixel array as type
+    // double to avoid making permanent changes to the
+    // original image data.  Also, all processing will be
+    // performed as type double.
+    double[][][] working3D = copyToDouble(threeDPix);
+    
+    //The following code can be enabled to set any of the
+    // three colors to black, thus removing them from the
+    // output.
+    for(int row = 0;row &lt; imgRows;row++){
+      for(int col = 0;col &lt; imgCols;col++){
+//        working3D[row][col][1] = 0;//Red
+//        working3D[row][col][2] = 0;//Green
+//        working3D[row][col][3] = 0;//Blue
+      }//end inner loop
+    }//end outer loop
+    
+    //Extract and do a forward DCT on the red color plane,
+    // one block at a time.
+    double[][] redPlane = extractPlane(working3D,1);
+    //Expand the plane such that both dimensions are a
+    // multiple of imgSubSize.
+    redPlane = expandPlane(redPlane,imgSubSize);
+    //Do the forward DCT on the redPlane turning it into a
+    // spectral plane where each individual spectrum
+    // stored in the plane is a square block with
+    // dimensions of imgSubSize.
+    //To see the individual spectra, disable all but one
+    // color plane above.
+    forwardXformPlane(redPlane,imgSubSize);
+
+    //Normalize the data in a 2D double plane to make it
+    // compatible with being displayed as an image plane.
+    // See the comments in the normalize method for an
+    // explanation as to how the normalization is
+    // accomplished.
+    normalize(redPlane);
+    
+    //Insert the spectral plane back into the 3D array. 
+    // This method also trims off any extra rows and
+    // columns created by expanding the dimensions to a
+    // multiple of imgSubSize.
+    insertPlane(working3D,redPlane,1);
+
+    //Extract and do a forward DCT on the green color
+    // plane using the same procedure used for the red
+    // plane above.
+    double[][] greenPlane = extractPlane(working3D,2);
+    greenPlane = expandPlane(greenPlane,imgSubSize);
+    forwardXformPlane(greenPlane,imgSubSize);
+    normalize(greenPlane);
+    insertPlane(working3D,greenPlane,2);
+
+    //Extract and do a forward DCT on the blue color plane
+    //  using the same procedure used for the red plane
+    // above..
+    double[][] bluePlane = extractPlane(working3D,3);
+    bluePlane = expandPlane(bluePlane,imgSubSize);
+    forwardXformPlane(bluePlane,imgSubSize);
+    normalize(bluePlane);
+    insertPlane(working3D,bluePlane,3);
+    
+    //All three color planes have now been transformed into
+    // spectral planes where each spectral plane is
+    // composed of a potentially large number of contiguous
+    // square spectral data blocks of size imgSubSize.
+    
+    //Convert the image color planes to type int and return
+    // the array of pixel data to the calling method.
+    output = copyToInt(working3D);
+    //Return a reference to the output array.
+    return output;
+
+  }//end processImg method
+  //-----------------------------------------------------//
+
+  //The purpose of this method is to extract a specified
+  // row from a double 2D plane and to return it as a one-
+  // dimensional array of type double.
+  double[] extractRow(double[][] colorPlane,int row){
+    
+    int numCols = colorPlane[0].length;
+    double[] output = new double[numCols];
+    for(int col = 0;col &lt; numCols;col++){
+      output[col] = colorPlane[row][col];
+    }//end outer loop
+    return output;
+  }//end extractRow
+  //-----------------------------------------------------//
+
+  //The purpose of this method is to insert a specified
+  // row of double data into a double 2D plane.
+  void insertRow(double[][] colorPlane,
+                 double[] theRow,
+                 int row){
+    int numCols = colorPlane[0].length;
+    double[] output = new double[numCols];
+    for(int col = 0;col &lt; numCols;col++){
+      colorPlane[row][col] = theRow[col];
+    }//end outer loop
+  }//end insertRow
+  //-----------------------------------------------------//
+
+  //The purpose of this method is to extract a specified
+  // col from a double 2D plane and to return it as a one-
+  // dimensional array of type double.
+  double[] extractCol(double[][] colorPlane,int col){
+    int numRows = colorPlane.length;
+    double[] output = new double[numRows];
+    for(int row = 0;row &lt; numRows;row++){
+      output[row] = colorPlane[row][col];
+    }//end outer loop
+    return output;
+  }//end extractCol
+  //-----------------------------------------------------//
+
+  //The purpose of this method is to insert a specified
+  // col of double data into a double 2D color plane.
+  void insertCol(double[][] colorPlane,
+                 double[] theCol,
+                 int col){
+    int numRows = colorPlane.length;
+    double[] output = new double[numRows];
+    for(int row = 0;row &lt; numRows;row++){
+      colorPlane[row][col] = theCol[row];
+    }//end outer loop
+  }//end insertCol
+  //-----------------------------------------------------//
+  
+  //The purpose of this method is to extract a color plane
+  // from the double version of an image and to return it
+  // as a 2D array of type double.
+  public double[][] extractPlane(
+                              double[][][] threeDPixDouble,
+                              int plane){
+    
+    int numImgRows = threeDPixDouble.length;
+    int numImgCols = threeDPixDouble[0].length;
+    
+    //Create an empty output array of the same
+    // size as a single plane in the incoming array of
+    // pixels.
+    double[][] output =new double[numImgRows][numImgCols];
+
+    //Copy the values from the specified plane to the
+    // double array.
+    for(int row = 0;row &lt; numImgRows;row++){
+      for(int col = 0;col &lt; numImgCols;col++){
+        output[row][col] =
+                          threeDPixDouble[row][col][plane];
+      }//end loop on col
+    }//end loop on row
+    return output;
+  }//end extractPlane
+  //-----------------------------------------------------//
+  
+  //The purpose of this method is to insert a double 2D
+  // plane into the double 3D array that represents an
+  // image.  This method also trims off any extra rows and
+  // columns in the double 2D plane.
+  public void insertPlane(double[][][] threeDPixDouble,
+                          double[][] colorPlane,
+                          int plane){
+    
+    int numImgRows = threeDPixDouble.length;
+    int numImgCols = threeDPixDouble[0].length;
+    
+    //Copy the values from the incoming color plane to the
+    // specified plane in the 3D array.
+    for(int row = 0;row &lt; numImgRows;row++){
+      for(int col = 0;col &lt; numImgCols;col++){
+        threeDPixDouble[row][col][plane] = 
+                                      colorPlane[row][col];
+      }//end loop on col
+    }//end loop on row
+  }//end insertPlane
+  //-----------------------------------------------------//
+
+  //This method copies an int version of a 3D pixel array
+  // to an new pixel array of type double.
+  double[][][] copyToDouble(int[][][] threeDPix){
+    int imgRows = threeDPix.length;
+    int imgCols = threeDPix[0].length;
+    
+    double[][][] new3D = new double[imgRows][imgCols][4];
+    for(int row = 0;row &lt; imgRows;row++){
+      for(int col = 0;col &lt; imgCols;col++){
+        new3D[row][col][0] = threeDPix[row][col][0];
+        new3D[row][col][1] = threeDPix[row][col][1];
+        new3D[row][col][2] = threeDPix[row][col][2];
+        new3D[row][col][3] = threeDPix[row][col][3];
+      }//end inner loop
+    }//end outer loop
+    return new3D;
+  }//end copyToDouble
+  //-----------------------------------------------------//
+  
+  //This method copies a double version of a 3D pixel array
+  // into a new pixel array of type int.
+  int[][][] copyToInt(double[][][] threeDPixDouble){
+    int imgRows = threeDPixDouble.length;
+    int imgCols = threeDPixDouble[0].length;
+    
+    int[][][] new3D = new int[imgRows][imgCols][4];
+    for(int row = 0;row &lt; imgRows;row++){
+      for(int col = 0;col &lt; imgCols;col++){
+        new3D[row][col][0] = 
+                         (int)threeDPixDouble[row][col][0];
+        new3D[row][col][1] = 
+                         (int)threeDPixDouble[row][col][1];
+        new3D[row][col][2] = 
+                         (int)threeDPixDouble[row][col][2];
+        new3D[row][col][3] = 
+                         (int)threeDPixDouble[row][col][3];
+      }//end inner loop
+    }//end outer loop
+    return new3D;
+  }//end copyToInt
+  //-----------------------------------------------------//
+
+  //Expand a double 2D plane such that both dimensions are
+  // a multiple of imgSubSize.
+  double[][] expandPlane(double[][] plane,int imgSubSize){
+    int rows = plane.length;
+    int cols = plane[0].length;
+    double[][] output;
+    
+    int rowsRem = rows%imgSubSize;
+    int colsRem = cols%imgSubSize;
+    
+    if((rowsRem == 0) && (colsRem == 0)){
+      //No expansion is required.
+      return plane;
+    }else{
+      //An expansion is required.  Copy the data from the
+      // incoming array to a new expanded array, leaving
+      // pad values of 0.0 at the right and bottom edges.
+      output = new double[rows + (imgSubSize - rowsRem)]
+                         [cols + (imgSubSize - colsRem)];
+      for(int row = 0;row &lt; rows;row++){
+        for(int col = 0;col &lt; cols;col++){
+          output[row][col] = plane[row][col];
+        }//end inner loop
+      }//end outer loop
+      return output;
+    }//end else
+  }//end expandPlane
+  //-----------------------------------------------------//
+  
+  //Extracts and returns a square block of size imgSubSize
+  // from a double 2D plane
+  double[][] getSubPlane(double[][] colorPlane,
+                         int segRow,
+                         int segCol,
+                         int imgSubSize){
+    double[][] theSubPlane = 
+                        new double[imgSubSize][imgSubSize];
+    for(int bigRow = segRow * imgSubSize,smallRow = 0;
+               bigRow &lt; (segRow * imgSubSize + imgSubSize);
+                                      bigRow++,smallRow++){
+      for(int bigCol = segCol * imgSubSize,smallCol = 0;
+                 bigCol &lt; segCol * imgSubSize + imgSubSize;
+                                      bigCol++,smallCol++){
+        theSubPlane[smallRow][smallCol] = 
+                                colorPlane[bigRow][bigCol];
+      }//end inner loop
+    }//end outer loop
+    return theSubPlane;
+  }//end getSubPlane
+  //-----------------------------------------------------//
+
+  //Inserts square block of size imgSubSize into a double
+  // 2D plane
+  void insertSubPlane(double[][] colorPlane,
+                      double[][] theSubPlane,
+                      int segRow,
+                      int segCol,
+                      int imgSubSize){
+    for(int bigRow = segRow * imgSubSize,smallRow = 0;
+               bigRow &lt; (segRow * imgSubSize + imgSubSize);
+                                      bigRow++,smallRow++){
+      for(int bigCol = segCol * imgSubSize,smallCol = 0;
+                 bigCol &lt; segCol * imgSubSize + imgSubSize;
+                                      bigCol++,smallCol++){
+        colorPlane[bigRow][bigCol] = 
+                           theSubPlane[smallRow][smallCol];
+      }//end inner loop
+    }//end outer loop
+  }//end insertSubPlane
+  //-----------------------------------------------------//
+  
+  //Breaks a double color plane down into square blocks
+  // of size imgSubSize and does a forward DCT xform on
+  // each block.
+  //Assembles the resulting spectral data blocks into a
+  // spectral plane.
+  //Assumes that the dimensions of the color plane are
+  // multiples of imgSubSize.
+  void forwardXformPlane(double[][] plane,int imgSubSize){
+    int pixRows = plane.length;
+    int pixCols = plane[0].length;
+    //Loop on rows of blocks
+    for(int segRow = 0;segRow &lt; pixRows/imgSubSize;
+                                                 segRow++){
+      //Loop on cols of blocks
+      for(int segCol = 0;segCol &lt; pixCols/imgSubSize;
+                                                 segCol++){
+        double[][] theSubPlane = 
+               getSubPlane(plane,segRow,segCol,imgSubSize);
+        forwardXformSubPlane(theSubPlane,imgSubSize);
+        
+        insertSubPlane(plane,
+                       theSubPlane,
+                       segRow,
+                       segCol,
+                       imgSubSize);
+      }//end inner loop
+    }//end outer loop
+  }//end forwardXformPlane
+  //-----------------------------------------------------//
+  
+  //This method does a forward DCT on a square block of
+  // pixels of size imgSubSize received as an incoming
+  // parameter.
+  void forwardXformSubPlane(double[][] theSubPlane,
+                            int imgSubSize){
+    
+    int imgRows = imgSubSize;
+    int imgCols = imgSubSize;
+    
+    //Extract each row from the block and perform
+    // a forward DCT on the row. Then insert the
+    // transformed row back into the block.  At that point,
+    // the row no longer contains color pixel data, but
+    // has been transformed into a row of spectral data.
+    for(int row = 0;row &lt; imgRows;row++){
+      double[] theRow = extractRow(theSubPlane,row);
+      
+      double[] theXform = new double[theRow.length];
+      //Perform the forward transform.
+      ForwardDCT02.transform(theRow,theXform);
+      
+      //Insert the transformed row back into the block.
+      insertRow(theSubPlane,theXform,row);
+    }//end for loop
+    
+    //The block now contains the results of doing the
+    // horizontal DCT one row at a time.  The block no
+    // longer contains color pixel data.  Rather, it
+    // contains spectral data for the horizontal dimension
+    // only.
+    
+    //Extract each column from the block and perform a
+    // forward DCT on the column. Then insert the
+    // transformed column back into the block.
+    for(int col = 0;col &lt; imgCols;col++){
+      double[] theCol = extractCol(theSubPlane,col);
+
+      double[] theXform = new double[theCol.length];
+      ForwardDCT02.transform(theCol,theXform);
+
+      insertCol(theSubPlane,theXform,col);
+    }//end for loop
+    
+    //The square block of size imgSubSize has now been
+    // converted into a square block of spectral
+    // coefficient data of the same size.
+
+  }//end forwardXformSubPlane
+  //-----------------------------------------------------//
+
+  //Normalizes the data in a 2D double plane to make it
+  // compatible with being displayed as an image plane.
+  //First all negative values are converted to positive
+  // values.
+  //Then all values are converted to log base 10 to
+  // preserve the dynamic range of the plotting system. 
+  // All negative values are set to 0 at this point.
+  //Then all values that are below X-percent of the maximum
+  // value are set to X-percent of the maximum value
+  // producing a floor for the values.
+  //Then all values are biased so that the minimum value
+  // (the floor) becomes 0.
+  //Then all values are scaled so that the maximum value
+  // becomes 255.
+  void normalize(double[][] plane){
+    int rows = plane.length;
+    int cols = plane[0].length;
+    
+    //Begin by converting all negative values to positive
+    // values.  This is equivalent to the computation of
+    // the magnitude for purely real data.
+    for(int row = 0;row &lt; rows;row++){
+      for(int col = 0;col &lt; cols;col++){
+        if(plane[row][col] &lt; 0){
+          plane[row][col] = - plane[row][col];
+        }//end if
+      }//end inner loop
+    }//end outer loop
+    
+    //Convert the values to log base 10 to preserve the
+    // dynamic range of the plotting system.  Set negative
+    // values to 0.
+
+    //First eliminate or change any values that are
+    // incompatible with log10 method.
+    for(int row = 0;row &lt; rows;row++){
+      for(int col = 0;col &lt; cols;col++){
+        if(plane[row][col] == 0.0){
+          plane[row][col] = 0.0000001;
+        }else if(plane[row][col] == Double.NaN){
+          plane[row][col] = 0.0000001;
+        }else if(plane[row][col] == 
+                                 Double.POSITIVE_INFINITY){
+          plane[row][col] = 9999999999.0;
+        }//end else
+      }//end inner loop
+    }//end outer loop
+
+    //Now convert the data to log base 10 setting all
+    // negative results to 0.
+    for(int row = 0;row &lt; rows;row++){
+      for(int col = 0;col &lt; cols;col++){
+        plane[row][col] = log10(plane[row][col]);
+        if(plane[row][col] &lt; 0){
+          plane[row][col] = 0;
+        }//end if
+      }//end inner loop
+    }//end outer loop
+
+    //Now set everything below X-percent of the maximum
+    // value to X-percent of the maximum value where X is
+    // determined by the value of scale.
+    double scale = 1.0/7.0;
+    //First find the maximum value.
+    double max = Double.MIN_VALUE;
+    for(int row = 0;row &lt; rows;row++){
+      for(int col = 0;col &lt; cols;col++){
+        if(plane[row][col] &gt; max){
+          max = plane[row][col];
+        }//end if
+      }//end inner loop
+    }//end outer loop
+
+    //Now set everything below X-percent of the maximum to
+    // X-percent of the maximum value and slide
+    // everything down to cause the new minimum to be
+    // at 0.0
+    for(int row = 0;row &lt; rows;row++){
+      for(int col = 0;col &lt; cols;col++){
+        if(plane[row][col] &lt; scale * max){
+          plane[row][col] = scale * max;
+        }//end if
+        plane[row][col] -= scale * max;
+      }//end inner loop
+    }//end outer loop
+    
+    //Now scale the data so that the maximum value is 255.
+
+    //First find the maximum value
+    max = Double.MIN_VALUE;
+    for(int row = 0;row &lt; rows;row++){
+      for(int col = 0;col &lt; cols;col++){
+        if(plane[row][col] &gt; max){
+          max = plane[row][col];
+        }//end if
+      }//end inner loop
+    }//end outer loop
+    //Now scale the data.
+    for(int row = 0;row &lt; rows;row++){
+      for(int col = 0;col &lt; cols;col++){
+        plane[row][col] = plane[row][col] * 255.0/max;
+      }//end inner loop
+    }//end outer loop
+
+  }//end normalize
+  //-----------------------------------------------------//
+}//end class ImgMod35a<br><br><b><font face="Courier New,Courier"><a href="#Listing_17">Listing 17</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<p> </p>
+<p><a name="Listing_18" href="#Listing_18">Listing 18</a></p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>/*File ForwardDCT02.java
+Copyright 2006, R.G.Baldwin
+Rev 01/19/06
+
+THIS VERSION IS OPTIMIZED FOR USE WITH 8x8 IMAGES.
+
+See ForwardDCT01 for a general purpose version that works
+for images of different sizes.  This version will also 
+work with images of any size, but it is optimized for use
+with 8x8-pixel images.
+
+When transforming an 8x8-pixel image, this version uses an 
+8x8 cosine lookup table instead of calling the cos 
+function.  Otherwise, it calls the cosine function during
+each iteration.  It is probably faster to use the lookup
+table than it is to call the cosine function.
+
+The static method named transform performs a forward 
+Discrete Cosine Transform (DCT) on an incoming series
+and returns the DCT spectrum.
+
+See http://en.wikipedia.org/wiki/Discrete_cosine_transform
+#DCT-II and http://rkb.home.cern.ch/rkb/AN16pp/node61.html
+for background on the DCT.
+
+This formulation is from 
+http://www.cmlab.csie.ntu.edu.tw/cml/dsp/training/
+coding/transform/dct.html
+
+
+Incoming parameters are:
+  double[] x - incoming real data
+  double[] y - outgoing real data
+
+Tested using J2SE 5.0 under WinXP.  Requires J2SE 5.0 or
+later due to the use of static import of Math class.
+**********************************************************/
+import static java.lang.Math.*;
+
+public class ForwardDCT02{
+
+  //Enable the following statement to count and display
+  // the number of computations.
+  //static long callCount = 0;
+  public static void transform(double[] x,double[] y){
+
+  //The following values for the cosine table were obtained
+  // by running the program with the call to the cos
+  // function intact, printing the cosine of the argument,
+  // capturing it, and then inserting the values here.
+  // These are the cosine values used for transforming a
+  // series containing 8 values.
+ 
+  double[][] cosineTable = {
+                            {1.0,
+                            1.0,
+                            1.0,
+                            1.0,
+                            1.0,
+                            1.0,
+                            1.0,
+                            1.0},
+                            
+                            {0.9807852804032304,
+                            0.8314696123025452,
+                            0.5555702330196023,
+                            0.19509032201612833,
+                            -0.1950903220161282,
+                            -0.555570233019602,
+                            -0.8314696123025453,
+                            -0.9807852804032304},
+                            
+                            {0.9238795325112867,
+                            0.38268343236508984,
+                            -0.3826834323650897,
+                            -0.9238795325112867,
+                            -0.9238795325112868,
+                            -0.38268343236509034,
+                            0.38268343236509,
+                            0.9238795325112865},
+                            
+                            {0.8314696123025452,
+                            -0.1950903220161282,
+                            -0.9807852804032304,
+                            -0.5555702330196022,
+                            0.5555702330196018,
+                            0.9807852804032304,
+                            0.19509032201612878,
+                            -0.8314696123025451},
+                            
+                            {0.7071067811865476,
+                            -0.7071067811865475,
+                            -0.7071067811865477,
+                            0.7071067811865474,
+                            0.7071067811865477,
+                            -0.7071067811865467,
+                            -0.7071067811865471,
+                            0.7071067811865466},
+                            
+                            {0.5555702330196023,
+                            -0.9807852804032304,
+                            0.1950903220161283,
+                            0.8314696123025456,
+                            -0.8314696123025451,
+                            -0.19509032201612803,
+                            0.9807852804032307,
+                            -0.5555702330196015},
+                            
+                            {0.38268343236508984,
+                            -0.9238795325112868,
+                            0.9238795325112865,
+                            -0.3826834323650899,
+                            -0.38268343236509056,
+                            0.9238795325112867,
+                            -0.9238795325112864,
+                            0.38268343236508956},
+                            
+                            {0.19509032201612833,
+                            -0.5555702330196022,
+                            0.8314696123025456,
+                            -0.9807852804032307,
+                            0.9807852804032304,
+                            -0.831469612302545,
+                            0.5555702330196015,
+                            -0.19509032201612858}
+                          };
+
+    //Enable the following statement to count and display
+    // the number of computations.
+    //long count = 0;
+    int N = x.length;
+    if(N == 8){
+      //Run optimized version by using cosine lookup table 
+      // instead of computing cosine values for each
+      // iteration.
+      //Outer loop interates on frequency values.
+      for(int k=0; k &lt; N;k++){
+        double sum = 0.0;
+        //Inner loop iterates on time-series values.
+        for(int n=0; n &lt; N; n++){
+          double cosine = cosineTable[k][n];
+          double product = x[n]*cosine;
+          sum += product;
+          //Enable the following statement to count and 
+          //display the number of computations.
+          //count++;
+        }//end inner loop
+  
+        double alpha;
+        if(k == 0){
+          alpha = 1.0/sqrt(2);
+        }else{
+          alpha = 1;
+        }//end else
+        y[k] = sum*alpha*sqrt(2.0/N);
+      }//end outer loop
+    }else{
+      //Run regular version by computing cosine values for
+      // each iteration.
+      //Outer loop interates on frequency values.
+      for(int k=0; k &lt; N;k++){
+        double sum = 0.0;
+        //Inner loop iterates on time-series values.
+        for(int n=0; n &lt; N; n++){
+          double arg = PI*k*(2.0*n+1)/(2*N);
+          double cosine = cos(arg);
+          double product = x[n]*cosine;
+          sum += product;
+          //Enable the following statement to count and 
+          //display the number of computations.
+          //count++;
+        }//end inner loop
+  
+        double alpha;
+        if(k == 0){
+          alpha = 1.0/sqrt(2);
+        }else{
+          alpha = 1;
+        }//end else
+        y[k] = sum*alpha*sqrt(2.0/N);
+      }//end outer loop
+    }//end else
+    //Enable the following two statements to count and 
+    //display the number of computations.
+    //callCount++;
+    //System.out.println(callCount + " " + count + " " 
+    //                   + callCount*count);
+  }//end transform method
+  //-----------------------------------------------------//
+}//end class ForwardDCT02<br><br><b><font face="Courier New,Courier"><a href="#Listing_18">Listing 18</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<p> </p>
+<p><a name="Listing_19" href="#Listing_19">Listing 19</a></p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>/*File ImgMod35.java
+Copyright 2005, R.G.Baldwin
+
+This program performs a forward DCT on an image converting 
+the three color planes into spectral planes.  Then it 
+performs an inverse DCT on the three spectral planes 
+converting them back into image color planes.
+
+Nothing is done to the spectral planes following the 
+forward DCT and before the inverse DCT.  However, 
+additional processing, such as requantization and 
+compression, followed by decompression could be inserted at
+that point.
+
+This is an update to ImgMod34.  This update breaks the 
+image down into blocks of 8x8-pixels and performs the 
+forward DCT on each block producing 8x8 blocks of spectral 
+coefficient data.  Then it performs an inverse DCT on each 
+of the 8x8 spectral blocks, reproducing the 8x8 pixel 
+blocks.  The composite of all the 8x8-pixel blocks 
+constitutes the total image.  Zero padding is applied to 
+the right and bottom of the image to force each
+dimension of the image to be a multiple of 8 pixels.  This 
+padding is trimmed from the resulting spectral planes and 
+the resulting composite image before the processed 
+composite image is returned to the calling method.  This 
+process doesn't appear to have a detrimental impact on the 
+quality of the image at the edges.
+
+For illustration purposes only, the method named 
+inverseXform8x8Plane contains a statement that can be 
+activated to cause the 8x8 block structure of the entire 
+process to become visible in the final image. This feature 
+should be disabled by default because it badly corrupts the
+visual quality of the image when it is enabled.
+
+Note that this version of the program is significantly 
+faster than the version named ImgMod034, which does not 
+break the image down into 8x8-pixel blocks, but rather does
+the forward and inverse DCT on the entire image.
+
+Among other things, this program uses an 8x8 cosine lookup
+table instead of computing the cosine value every time it
+is needed.  This is probably one factor in the speed
+improvement.  Another factor is the simple fact that less
+arithmetic is required to perform the transform when the
+image is sub-divided into blocks and the transforms are
+performed on the individual blocks instead of transforming
+the entire image as a whole.
+
+The class is designed to be driven by the class named 
+ImgMod02a.  
+
+Enter the following at the command line to run this 
+program:
+
+java ImgMod02a ImgMod35 ImageFileName
+
+where ImageFileName is the name of a .gif or .jpg file, 
+including the extension.
+
+When you click the Replot button, the process will be 
+repeated and the results will be re-displayed.  Because
+there is no opportunity for user input after the program is
+started, the Replot button is of little value to this 
+program.
+
+This program requires access to the following class files 
+plus some inner classes that are defined inside the
+following classes:
+
+ImgIntfc02.class
+ImgMod02a.class
+ImgMod35.class
+InverseDCT02.class
+ForwardDCT02.class
+
+Tested using J2SE 5.0 and WinXP.  J2SE 5.0 or later is 
+required due to the use of static imports.
+**********************************************************/
+import java.awt.*;
+import java.io.*;
+import static java.lang.Math.*;
+
+class ImgMod35 implements ImgIntfc02{
+                                        
+  //This method is required by ImgIntfc02.  It is called at
+  // the beginning of the run and each time thereafter that
+  // the user clicks the Replot button on the Frame
+  // contaning the images.
+  public int[][][] processImg(int[][][] threeDPix,
+                              int imgRows,
+                              int imgCols){
+
+    //Create an empty output array of the same size as the
+    // incoming array.
+    int[][][] output = new int[imgRows][imgCols][4];
+
+    //Make a working copy of the 3D pixel array as type
+    // double to avoid making permanent changes to the
+    // original image data.  Also, all processing will be
+    // performed as type double.
+    double[][][] working3D = copyToDouble(threeDPix);
+    
+    //The following code can be enabled to set any of the
+    // three colors to black, thus removing them from the
+    // output.
+    for(int row = 0;row &lt; imgRows;row++){
+      for(int col = 0;col &lt; imgCols;col++){
+//        working3D[row][col][1] = 0;
+//        working3D[row][col][2] = 0;
+//        working3D[row][col][3] = 0;
+      }//end inner loop
+    }//end outer loop
+    
+    //Extract and do a forward DCT on the red color plane
+    double[][] redPlane = extractPlane(working3D,1);
+    //Expand the plane such that both dimensions are a
+    // multiple of 8.
+    redPlane = expandPlane(redPlane);
+    //Do the forward DCT on the redPlane turning it into a
+    // spectral plane where each individual spectrum stored
+    // in the plane is an 8x8 square.  To see the
+    // individual spectra, disable all but one color plane
+    // and disable the inverse transforms that are
+    // performed later.
+    forwardXformPlane(redPlane);
+    //Insert the spectral plane back into the 3D array. 
+    // This method also trims off any extra rows and
+    // columns created by expanding the dimensions to a
+    // multiple of 8.  Since those rows and columns
+    // contain spectral data, the trimming could
+    // conceivably cause problems with the quality of the
+    // image at the right and bottom edges later.  If so, I
+    // will need to save the spectral plane somewhere else
+    // without trimming it.
+    insertPlane(working3D,redPlane,1);
+
+    //Extract and do a forward DCT on the green color
+    // plane.
+    double[][] greenPlane = extractPlane(working3D,2);
+    greenPlane = expandPlane(greenPlane);
+    forwardXformPlane(greenPlane);
+    //Insert the plane back into the 3D array
+    insertPlane(working3D,greenPlane,2);
+
+    //Extract and do a forward DCT on the blue color plane.
+    double[][] bluePlane = extractPlane(working3D,3);
+    bluePlane = expandPlane(bluePlane);
+    forwardXformPlane(bluePlane);
+    //Insert the plane back into the 3D array
+    insertPlane(working3D,bluePlane,3);
+    
+    //All three color planes have now been transformed into
+    // spectral planes where each spectral plane is
+    // composed of a large number of contiguous 8x8
+    // spectral data blocks.
+    
+    //Now transform the spectral planes back into image
+    // color planes.
+    //You can disable this section of code and disable two
+    // of the three colors to get some idea as to what the
+    // spectral planes look like.  If you don't disable two
+    // of the colors, you will see a composite of all three
+    // spectral planes, which may or may not be
+    // informative.  At least, it shows the 8x8 block
+    // structure of the spectral planes even if it is a
+    // composite of three spectral planes.
+    
+    //Extract and do an inverse DCT on the red spectral
+    // plane to produce a color image plane.
+    redPlane = extractPlane(working3D,1);
+    //Expand the plane such that both dimensions are a
+    // multiple of 8.
+    redPlane = expandPlane(redPlane);
+    //Do the inverse DCT on the spectral plane producing a
+    // color image plane.
+    inverseXformPlane(redPlane);
+    //Insert the color plane back into the 3D array. This
+    // also trims off any extra rows and columns created by
+    // expanding to a multiple of 8.
+    insertPlane(working3D,redPlane,1);
+    
+    //Extract and do an inverse DCT on the green spectral
+    // plane to produce a color image plane.
+    greenPlane = extractPlane(working3D,2);
+    greenPlane = expandPlane(greenPlane);
+    inverseXformPlane(greenPlane);
+    insertPlane(working3D,greenPlane,2);
+    
+    //Extract and do an inverse DCT on the blue spectral
+    // plane to produce a color image plane.
+    bluePlane = extractPlane(working3D,3);
+    bluePlane = expandPlane(bluePlane);
+    inverseXformPlane(bluePlane);
+    insertPlane(working3D,bluePlane,3);
+
+    //End of section that does the inverse transforms.
+    
+    //Convert the image color planes to type int and return
+    // the array of pixel data to the calling method.
+    output = copyToInt(working3D);
+    //Return a reference to the output array.
+    return output;
+
+  }//end processImg method
+  //-----------------------------------------------------//
+
+  //The purpose of this method is to extract a specified
+  // row from a double 2D plane and to return it as a one-
+  // dimensional array of type double.
+  double[] extractRow(double[][] colorPlane,int row){
+    
+    int numCols = colorPlane[0].length;
+    double[] output = new double[numCols];
+    for(int col = 0;col &lt; numCols;col++){
+      output[col] = colorPlane[row][col];
+    }//end outer loop
+    return output;
+  }//end extractRow
+  //-----------------------------------------------------//
+
+  //The purpose of this method is to insert a specified
+  // row of double data into a double 2D plane.
+  void insertRow(double[][] colorPlane,
+                 double[] theRow,
+                 int row){
+    int numCols = colorPlane[0].length;
+    double[] output = new double[numCols];
+    for(int col = 0;col &lt; numCols;col++){
+      colorPlane[row][col] = theRow[col];
+    }//end outer loop
+  }//end insertRow
+  //-----------------------------------------------------//
+
+  //The purpose of this method is to extract a specified
+  // col from a double 2D plane and to return it as a one-
+  // dimensional array of type double.
+  double[] extractCol(double[][] colorPlane,int col){
+    int numRows = colorPlane.length;
+    double[] output = new double[numRows];
+    for(int row = 0;row &lt; numRows;row++){
+      output[row] = colorPlane[row][col];
+    }//end outer loop
+    return output;
+  }//end extractCol
+  //-----------------------------------------------------//
+
+  //The purpose of this method is to insert a specified
+  // col of double data into a double 2D color plane.
+  void insertCol(double[][] colorPlane,
+                 double[] theCol,
+                 int col){
+    int numRows = colorPlane.length;
+    double[] output = new double[numRows];
+    for(int row = 0;row &lt; numRows;row++){
+      colorPlane[row][col] = theCol[row];
+    }//end outer loop
+  }//end insertCol
+  //-----------------------------------------------------//
+  
+  //The purpose of this method is to extract a color plane
+  // from the double version of an image and to return it
+  // as a 2D array of type double.
+  public double[][] extractPlane(
+                              double[][][] threeDPixDouble,
+                              int plane){
+    
+    int numImgRows = threeDPixDouble.length;
+    int numImgCols = threeDPixDouble[0].length;
+    
+    //Create an empty output array of the same
+    // size as a single plane in the incoming array of
+    // pixels.
+    double[][] output =new double[numImgRows][numImgCols];
+
+    //Copy the values from the specified plane to the
+    // double array.
+    for(int row = 0;row &lt; numImgRows;row++){
+      for(int col = 0;col &lt; numImgCols;col++){
+        output[row][col] =
+                          threeDPixDouble[row][col][plane];
+      }//end loop on col
+    }//end loop on row
+    return output;
+  }//end extractPlane
+  //-----------------------------------------------------//
+  
+  //The purpose of this method is to insert a double 2D
+  // plane into the double 3D array that represents an
+  // image.  This method also trims off any extra rows and
+  // columns in the double 2D plane.
+  public void insertPlane(double[][][] threeDPixDouble,
+                          double[][] colorPlane,
+                          int plane){
+    
+    int numImgRows = threeDPixDouble.length;
+    int numImgCols = threeDPixDouble[0].length;
+    
+    //Copy the values from the incoming color plane to the
+    // specified plane in the 3D array.
+    for(int row = 0;row &lt; numImgRows;row++){
+      for(int col = 0;col &lt; numImgCols;col++){
+        threeDPixDouble[row][col][plane] = 
+                                      colorPlane[row][col];
+      }//end loop on col
+    }//end loop on row
+  }//end insertPlane
+  //-----------------------------------------------------//
+
+  //This method copies an int version of a 3D pixel array
+  // to an new pixel array of type double.
+  double[][][] copyToDouble(int[][][] threeDPix){
+    int imgRows = threeDPix.length;
+    int imgCols = threeDPix[0].length;
+    
+    double[][][] new3D = new double[imgRows][imgCols][4];
+    for(int row = 0;row &lt; imgRows;row++){
+      for(int col = 0;col &lt; imgCols;col++){
+        new3D[row][col][0] = threeDPix[row][col][0];
+        new3D[row][col][1] = threeDPix[row][col][1];
+        new3D[row][col][2] = threeDPix[row][col][2];
+        new3D[row][col][3] = threeDPix[row][col][3];
+      }//end inner loop
+    }//end outer loop
+    return new3D;
+  }//end copyToDouble
+  //-----------------------------------------------------//
+  
+  //This method copies a double version of a 3D pixel array
+  // into a new pixel array of type int.
+  int[][][] copyToInt(double[][][] threeDPixDouble){
+    int imgRows = threeDPixDouble.length;
+    int imgCols = threeDPixDouble[0].length;
+    
+    int[][][] new3D = new int[imgRows][imgCols][4];
+    for(int row = 0;row &lt; imgRows;row++){
+      for(int col = 0;col &lt; imgCols;col++){
+        new3D[row][col][0] = 
+                         (int)threeDPixDouble[row][col][0];
+        new3D[row][col][1] = 
+                         (int)threeDPixDouble[row][col][1];
+        new3D[row][col][2] = 
+                         (int)threeDPixDouble[row][col][2];
+        new3D[row][col][3] = 
+                         (int)threeDPixDouble[row][col][3];
+      }//end inner loop
+    }//end outer loop
+    return new3D;
+  }//end copyToInt
+  //-----------------------------------------------------//
+  
+  //The purpose of this method is to clip all negative 
+  // color values in a double color plane to a value of 0.
+  void clipToZero(double[][] colorPlane){
+    int numImgRows = colorPlane.length;
+    int numImgCols = colorPlane[0].length;
+    //Do the clip
+    for(int row = 0;row &lt; numImgRows;row++){
+      for(int col = 0;col &lt; numImgCols;col++){
+        if(colorPlane[row][col] &lt; 0){
+          colorPlane[row][col] = 0;
+        }//end if
+      }//end inner loop
+    }//end outer loop
+  }//end clipToZero
+  //-----------------------------------------------------//
+
+  //The purpose of this method is to clip all color values
+  // in a double color plane that are greater than 255 to
+  // a value of 255.
+  void clipTo255(double[][] colorPlane){
+    int numImgRows = colorPlane.length;
+    int numImgCols = colorPlane[0].length;
+    //Do the clip
+    for(int row = 0;row &lt; numImgRows;row++){
+      for(int col = 0;col &lt; numImgCols;col++){
+        if(colorPlane[row][col] &gt; 255){
+          colorPlane[row][col] = 255;
+        }//end if
+      }//end inner loop
+    }//end outer loop
+  }//end clipTo255
+  //-----------------------------------------------------//
+  
+  //Expand a double 2D plane such that both dimensions are
+  // a multiple of 8.
+  double[][] expandPlane(double[][] plane){
+    int rows = plane.length;
+    int cols = plane[0].length;
+    double[][] output;
+    
+    int rowsRem = rows%8;
+    int colsRem = cols%8;
+    
+    if((rowsRem == 0) && (colsRem == 0)){
+      //No expansion is required.
+      return plane;
+    }else{
+      //An expansion is required.  Copy the data from the
+      // incoming array to a new expanded array, leaving
+      // pad values of 0.0 at the right and bottom edges.
+      output = new double
+              [rows + (8 - rowsRem)][cols + (8 - colsRem)];
+      for(int row = 0;row &lt; rows;row++){
+        for(int col = 0;col &lt; cols;col++){
+          output[row][col] = plane[row][col];
+        }//end inner loop
+      }//end outer loop
+      return output;
+    }//end else
+  }//end expandPlane
+  //-----------------------------------------------------//
+  
+  //Extracts and returns an 8x8 block from a double 2D
+  // plane.
+  double[][] get8x8Block(double[][] colorPlane,
+                         int segRow,
+                         int segCol){
+    double[][] the8x8Block = new double[8][8];
+    for(int bigRow = segRow * 8,smallRow = 0;
+                                 bigRow &lt; (segRow * 8 + 8);
+                                      bigRow++,smallRow++){
+      for(int bigCol = segCol * 8,smallCol = 0;
+                                   bigCol &lt; segCol * 8 + 8;
+                                      bigCol++,smallCol++){
+        the8x8Block[smallRow][smallCol] = 
+                                colorPlane[bigRow][bigCol];
+      }//end inner loop
+    }//end outer loop
+    return the8x8Block;
+  }//end get8x8Block
+  //-----------------------------------------------------//
+
+  //Inserts an 8x8 block into a double 2D plane
+  void insert8x8Block(double[][] colorPlane,
+                      double[][] the8x8Plane,
+                      int segRow,
+                      int segCol){
+    for(int bigRow = segRow * 8,smallRow = 0;
+                                 bigRow &lt; (segRow * 8 + 8);
+                                      bigRow++,smallRow++){
+      for(int bigCol = segCol * 8,smallCol = 0;
+                                   bigCol &lt; segCol * 8 + 8;
+                                      bigCol++,smallCol++){
+        colorPlane[bigRow][bigCol] = 
+                           the8x8Plane[smallRow][smallCol];
+      }//end inner loop
+    }//end outer loop
+  }//end insert8x8Block
+  //-----------------------------------------------------//
+  
+  //Breaks a double color plane down into 8x8-pixel blocks
+  // and does a forward DCT xform on each block.  Assembles
+  // the resulting spectral data blocks into a spectral
+  // plane. Assumes that the dimensions of the color plane
+  // are multiples of 8
+  void forwardXformPlane(double[][] plane){
+    int pixRows = plane.length;
+    int pixCols = plane[0].length;
+    //Loop on rows of 8x8 blocks
+    for(int segRow = 0;segRow &lt; pixRows/8;segRow++){
+      //Loop on cols of 8x8 blocks
+      for(int segCol = 0;segCol &lt; pixCols/8;segCol++){
+        double[][] the8x8Plane = 
+                          get8x8Block(plane,segRow,segCol);
+        forwardXform8x8Block(the8x8Plane);
+        insert8x8Block(plane,the8x8Plane,segRow,segCol);
+      }//end inner loop
+    }//end outer loop
+  }//end forwardXformPlane
+  //-----------------------------------------------------//
+  
+  //This method does a forward DCT on an 8x8 block of
+  // pixels from a color plane received as an incoming
+  // parameter.
+  void forwardXform8x8Block(double[][] the8x8Block){
+    
+    int imgRows = 8;
+    int imgCols = 8;
+    
+    //Extract each row from the 8x8-pixel block and perform
+    // a forward DCT on the row. Then insert the
+    // transformed row back into the block.  At that point,
+    // the row no longer contains color pixel data, but
+    // has been transformed into a row of spectral data.
+    for(int row = 0;row &lt; imgRows;row++){
+      double[] theRow = extractRow(the8x8Block,row);
+      
+      double[] theXform = new double[theRow.length];
+      //Perform the forward transform.
+      ForwardDCT02.transform(theRow,theXform);
+      
+      //Insert the transformed row back into the block.
+      insertRow(the8x8Block,theXform,row);
+    }//end for loop
+    
+    //The block now contains the results of doing the
+    // horizontal DCT one row at a time.  The block no
+    // longer contains color pixel data.  Rather, it
+    // contains spectral data for the horizontal dimension
+    // only.
+    
+    //Extract each column from the block and perform a
+    // forward DCT on the column. Then insert the
+    // transformed column back into the block.
+    for(int col = 0;col &lt; imgCols;col++){
+      double[] theCol = extractCol(the8x8Block,col);
+
+      double[] theXform = new double[theCol.length];
+      ForwardDCT02.transform(theCol,theXform);
+
+      insertCol(the8x8Block,theXform,col);
+    }//end for loop
+    
+    //The 8x8 block has now been converted into an 8x8
+    // block of spectral coefficient data.
+
+  }//end forwardXform8x8Block
+  //-----------------------------------------------------//
+  
+  //Breaks a spectral plane down into 8x8 blocks, performs
+  // an inverse DCT on each block, and inserts the
+  // resulting 8x8 image blocks into a color plane. Assumes
+  // that the dimensions of the plane are multiples of 8
+  void inverseXformPlane(double[][] plane){
+    int pixRows = plane.length;
+    int pixCols = plane[0].length;
+    //Loop on rows of 8x8 blocks
+    for(int segRow = 0;segRow &lt; pixRows/8;segRow++){
+      //Loop on cols of 8x8 blocks
+      for(int segCol = 0;segCol &lt; pixCols/8;segCol++){
+        double[][] the8x8Block = 
+                          get8x8Block(plane,segRow,segCol);
+        inverseXform8x8Plane(the8x8Block);
+        insert8x8Block(plane,the8x8Block,segRow,segCol);
+      }//end inner loop
+    }//end outer loop
+  }//end inverseXformPlane
+  //-----------------------------------------------------//
+  
+  //This method performs an inverse DCT on an 8x8 spectral
+  // data block.
+  void inverseXform8x8Plane(double[][] the8x8Block){
+    
+    int imgRows = 8;
+    int imgCols = 8;
+
+    //Extract each col from the spectral data block and
+    // perform an inverse DCT on the column. Then insert it
+    // back into the block, which is being transformed into
+    // a block of color pixel data.
+    for(int col = 0;col &lt; imgCols;col++){
+      double[] theXform = extractCol(the8x8Block,col);
+      
+      double[] theCol = new double[theXform.length];
+      //Now perform the inverse transform.
+      InverseDCT02.transform(theXform,theCol);
+      
+      //Insert it back into the block.
+      insertCol(the8x8Block,theCol,col);
+    }//end for loop
+    
+    //At this point, an inverse DCT has been performed on
+    // each column in the spectral data block, one column
+    // at a time.
+
+    //Extract each row from the block and perform an
+    // inverse DCT on the row. Then insert it back into the
+    // block.  The row now contains color pixel data.
+    for(int row = 0;row &lt; imgRows;row++){
+      double[] theXform = extractRow(the8x8Block,row);
+      
+      double[] theRow = new double[theXform.length];
+      //Now perform the inverse transform.
+      InverseDCT02.transform(theXform,theRow);
+      
+      //Insert it back into the block.
+      insertRow(the8x8Block,theRow,row);
+    }//end for loop
+    
+    //For illustration purposes only, activate the
+    // following statement to cause the 8x8 block
+    // structure of the entire process to become visible
+    // in the displayed image.  This causes each individual
+    // block of pixel data to be a slightly different 
+    // color.
+    //addRandom(the8x8Block);
+    
+    //At this point, the spectral data block has been
+    // converted into an 8x8 block of pixel color data. 
+    // Ultimately it will be necessary to convert it to
+    // 8-bit unsigned pixel color format in order to
+    // display it.  Clip to zero and 255.
+    clipToZero(the8x8Block);
+    clipTo255(the8x8Block);
+  }//end inverseXform8x8Plane
+  //-----------------------------------------------------//
+  
+  //The purpose of this method is to add the same random
+  // color value to all of the values in an 8x8 block of
+  // image color data to cause the block structure of the
+  // process to be visible.  This capability is intended
+  // to be used for illustration purposes only as it
+  // badly corrupts the quality of the image.
+  void addRandom(double[][] colorPlane){
+    double bias = 100.0 * random();
+    int numImgRows = colorPlane.length;
+    int numImgCols = colorPlane[0].length;
+    //Do the clip
+    for(int row = 0;row &lt; numImgRows;row++){
+      for(int col = 0;col &lt; numImgCols;col++){
+          colorPlane[row][col] += bias;
+      }//end inner loop
+    }//end outer loop
+  }//end addRandom
+  //-----------------------------------------------------//
+}//end class ImgMod35<br><br><b><font face="Courier New,Courier"><a href="#Listing_19">Listing 19</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<p> </p>
+<p><a name="Listing_20" href="#Listing_20">Listing 20</a></p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>/*File InverseDCT02.java
+Copyright 2006, R.G.Baldwin
+Rev 01/19/06
+
+THIS VERSION IS OPTIMIZED FOR USE WITH 8x8 IMAGES.
+
+See InverseDCT01 for a general purpose version that works
+for images of different sizes.  This version will also 
+work with images of any size, but it is optimized for use
+with 8x8-pixel images.
+
+When transforming an 8x8-pixel image, this version uses an 
+8x8 cosine lookup table instead of calling the cos 
+function.  Otherwise, it calls the cosine function during
+each iteration.  It is probably faster to use the lookup
+table than it is to call the cosine function.
+
+The static method named transform performs an inverse 
+Discreet Cosine Transform (DCT) on in incoming DCT
+spectrum and returns the DCT time or image series.
+
+See http://en.wikipedia.org/wiki/Discrete_cosine_transform
+#DCT-II and http://rkb.home.cern.ch/rkb/AN16pp/node61.html
+for background on the DCT.
+
+This formulation is from 
+http://www.cmlab.csie.ntu.edu.tw/cml/dsp/training/
+coding/transform/dct.html
+
+Incoming parameters are:
+  double[] y - incoming real data
+  double[] x - outgoing real data
+
+Tested using J2SE 5.0 under WinXP.  Requires J2SE 5.0 or
+later due to the use of static import of Math class.
+**********************************************************/
+import static java.lang.Math.*;
+
+public class InverseDCT02{
+
+  public static void transform(double[] y,double[] x){
+    
+  //The following values for the cosine table were obtained
+  // by running the program with the call to the cos
+  // function intact, printing the cosine of the argument,
+  // capturing it, and then inserting the values here.
+  // These are the cosine values used for transforming a
+  // series containing 8 values.
+                                
+    double[][] cosineTable = {
+                              {1.0,
+                              0.9807852804032304,
+                              0.9238795325112867,
+                              0.8314696123025452,
+                              0.7071067811865476,
+                              0.5555702330196023,
+                              0.38268343236508984,
+                              0.19509032201612833},
+                              
+                              {1.0,
+                              0.8314696123025452,
+                              0.38268343236508984,
+                              -0.1950903220161282,
+                              -0.7071067811865475,
+                              -0.9807852804032304,
+                              -0.9238795325112868,
+                              -0.5555702330196022},
+                              
+                              {1.0,
+                              0.5555702330196023,
+                              -0.3826834323650897,
+                              -0.9807852804032304,
+                              -0.7071067811865477,
+                              0.1950903220161283,
+                              0.9238795325112865,
+                              0.8314696123025456},
+                              
+                              {1.0,
+                              0.19509032201612833,
+                              -0.9238795325112867,
+                              -0.5555702330196022,
+                              0.7071067811865474,
+                              0.8314696123025456,
+                              -0.3826834323650899,
+                              -0.9807852804032307},
+                              
+                              {1.0,
+                              -0.1950903220161282,
+                              -0.9238795325112868,
+                              0.5555702330196018,
+                              0.7071067811865477,
+                              -0.8314696123025451,
+                              -0.38268343236509056,
+                              0.9807852804032304},
+                              
+                              {1.0,
+                              -0.555570233019602,
+                              -0.38268343236509034,
+                              0.9807852804032304,
+                              -0.7071067811865467,
+                              -0.19509032201612803,
+                              0.9238795325112867,
+                              -0.831469612302545},
+                              
+                              {1.0,
+                              -0.8314696123025453,
+                              0.38268343236509,
+                              0.19509032201612878,
+                              -0.7071067811865471,
+                              0.9807852804032307,
+                              -0.9238795325112864,
+                              0.5555702330196015},
+                              
+                              {1.0,
+                              -0.9807852804032304,
+                              0.9238795325112865,
+                              -0.8314696123025451,
+                              0.7071067811865466,
+                              -0.5555702330196015,
+                              0.38268343236508956,
+                              -0.19509032201612858}
+                             };
+
+    int N = y.length;
+    if(N == 8){
+      //Run optimized version by using cosine lookup table 
+      // instead of computing cosine values for each
+      // iteration.
+      //Outer loop interates on time values.
+      for(int n=0; n &lt; N;n++){
+        double sum = 0.0;
+        //Inner loop iterates on frequency values
+        for(int k=0; k &lt; N; k++){
+          double cosine = cosineTable[n][k];
+          double product = y[k]*cosine;
+          double alpha;
+          if(k == 0){
+            alpha = 1.0/sqrt(2);
+          }else{
+            alpha = 1;
+          }//end else
+            
+          sum += alpha * product;
+        }//end inner loop
+  
+        x[n] = sum * sqrt(2.0/N);
+      }//end outer loop
+    }else{
+      //Run regular version by computing cosine values for
+      // each iteration.
+      //Outer loop interates on time values.
+      for(int n=0; n &lt; N;n++){
+        double sum = 0.0;
+        //Inner loop iterates on frequency values
+        for(int k=0; k &lt; N; k++){
+          double arg = PI*k*(2.0*n+1)/(2*N);
+          double cosine = cos(arg);
+          double product = y[k]*cosine;
+          double alpha;
+          if(k == 0){
+            alpha = 1.0/sqrt(2);
+          }else{
+            alpha = 1;
+          }//end else
+            
+          sum += alpha * product;
+  
+        }//end inner loop
+  
+        x[n] = sum * sqrt(2.0/N);
+        
+      }//end outer loop
+    }//end else
+  }//end transform method
+  //-----------------------------------------------------//
+}//end class InverseDCT02<br><br><b><font face="Courier New,Courier"><a href="#Listing_20">Listing 20</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<p> </p>
+<hr align="center" size="3" width="100%">
+<p>Copyright 2006, Richard G. Baldwin.&nbsp; Reproduction in whole or in part in any 
+form or medium without express written permission from Richard Baldwin is 
+prohibited. </p>
+<h4>About the author</h4>
+<b><a href="mailto:Baldwin@DickBaldwin.com">Richard Baldwin</a></b><i> is a 
+college professor (at Austin Community College in Austin, TX) and private 
+consultant whose primary focus is a combination of Java, C#, and XML. In 
+addition to the many platform and/or language independent benefits of Java and 
+C# applications, he believes that a combination of Java, C#, and XML will become 
+the primary driving force in the delivery of structured information on the Web.</i>    
+<p><i>Richard has participated in numerous consulting projects and he 
+frequently provides onsite training at the high-tech companies located in and 
+around Austin, Texas.&nbsp; He is the author of Baldwin's Programming
+<a href="http://www.dickbaldwin.com">Tutorials</a>, which have gained a 
+worldwide following among experienced and aspiring programmers. He has also 
+published articles in JavaPro magazine.</i> </p>
+<p><i>In addition to his programming expertise, Richard has many years of 
+practical experience in Digital Signal Processing (DSP).&nbsp; His first job after he 
+earned his Bachelor's degree was doing DSP in the Seismic Research Department of 
+Texas Instruments.&nbsp; (TI is still a world leader in DSP.)&nbsp; In the following 
+years, he applied his programming and DSP expertise to other interesting areas 
+including sonar and underwater acoustics.</i> </p>
+<p><i>Richard holds an MSEE degree from Southern Methodist University and has 
+many years of experience in the application of computer technology to real-world 
+problems.</i> </p>
+<p><i><a href="mailto:baldwin@dickbaldwin.com">Baldwin@DickBaldwin.com</a></i>
+</p>
+<p><b>Keywords</b><br>
+java data image compression two-dimensional Discrete Cosine Transform, DCT 
+Huffman Lempel Ziv</p>
+<p>-end- </p>
+<p>&nbsp;</p>
+<p> <br>
+&nbsp; </p>
+<br>
+<br>
+<br>
+<br>
+</body>
+</html>

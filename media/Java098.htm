@@ -1,0 +1,683 @@
+<html><head>
+   <meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
+   <meta name="generator" content="mozilla/4.04 [en] (win95; i) [netscape]">
+   <meta name="author" content="richard g. baldwin">
+   <title>... in Java by Richard G Baldwin</title></head><body><!--start-->
+
+<center><h3><b><i>Richard G Baldwin (512) 223-4758, <a href="mailto:baldwin@austin.cc.tx.us">baldwin@austin.cc.tx.us</a>,
+<a href="http://www2.austin.cc.tx.us/baldwin/">http://www2.austin.cc.tx.us/baldwin/</a></i></b></h3></center>
+
+<center><h2><b><!--title-->Event Handling in JDK 1.1, Handling Events in Lightweight Components<!--endtitle--></b></h2></center>
+Java Programming, Lecture Notes # 98, Revised 02/21/98.
+<ul><li><a href="#important note to acc students">Important Note to ACC Students</a></li>
+
+<li><a href="#preface">Preface</a></li>
+
+<li><a href="#introduction">Introduction</a></li>
+
+<li><a href="#lightweight components, a discussion">Lightweight Components,
+A Discussion</a></li>
+
+<ul><li><a href="#the lightweight ui framework">The Lightweight UI Framework</a></li></ul>
+
+<li><a href="#sample program">Sample Program</a></li>
+
+<ul><li><a href="#interesting code fragments">Interesting Code Fragments</a></li>
+
+<li><a href="#program listing">Program Listing</a></li></ul>
+
+<li><a href="#review">Review</a></li></ul>
+
+<hr align=left width="100%"><center><h2><a name="important note to acc students"></a><font color="#ff0000">Important
+Note to ACC Students</font></h2></center>
+For a variety of reasons, including the fact that much of the material
+needed to understand lightweight components hasn't been covered in previous
+lessons, this lesson will <u>not</u> be included in Professor Baldwin's
+<u>Intermediate Java Programming</u> class at ACC.
+
+<p>In December of 1997, this lesson was expanded considerably and rewritten
+as lesson number 176 in the Advanced portion of the curriculum following
+lessons on components, layout managers, graphics, etc.
+<center><h2><a name="preface"></a><b><font color="#ff0000">Preface</font></b></h2></center>
+JDK 1.1 was formally released on February 18, 1997. This lesson was originally
+written on March 23, 1997 using the software and documentation in the JDK
+1.1 download package.
+<center><h2><a name="introduction"></a><font color="#ff0000">Introduction</font></h2></center>
+In a previous lesson on event handling, you learned how to create and service
+program-generated events under JDK 1.1.. That knowledge is critical to
+the handling of events in lightweight components, because lightweight components
+require the generation and servicing of events under program control.
+<center><h2><a name="lightweight components, a discussion"></a><font color="#ff0000">Lightweight
+Components, A Discussion</font></h2></center><font color="#000000">The ability to create lightweight components is a
+new feature of JDK 1.1. This capability was added to deal with some problems
+under JDK 1.0</font>
+
+<p><font color="#000000">Specifically, creating new components in JDK 1.0
+requires subclassing <b>Canvas </b>or <b>Panel</b>. This places each new
+component in its own opaque window based on the native components of the
+platform. Because native windows are opaque, they can't be used to implement
+transparent regions.</font>
+
+<p><font color="#000000">Also, native windows are handled differently across
+different platforms so the view of a user interface may differ from one
+platform to the next.</font>
+
+<p><font color="#000000">The ability to implement lightweight components
+in JDK 1.1 is referred to as the <b>Lightweight UI Framework</b>.</font><center><h3><a name="the lightweight ui framework"></a><font color="#ff0000">The Lightweight
+UI Framework</font></h3></center><font color="#000000">The Lightweight UI Framework makes it possible to
+extend the <b>java.awt.Component</b> class and the <b>java.awt.Container</b>
+class. This in turn makes it possible to create components that are <u>not
+associated</u> with native opaque windows.</font>
+
+<p><font color="#000000">These lightweight components mesh into the different
+AWT models allowing you to do layout, paint, handle events, etc., with
+no additional APIs required.</font>
+
+<p><font color="#000000">Lightweight components can have transparent areas.
+This is accomplished by simply not rendering those areas needing transparency
+in the overridden <b>paint()</b> method.</font>
+
+<p><font color="#000000">The lightweight component requires <u>no native
+data-structures or peer classes</u>. There is no native code required to
+process lightweight components. Thus, the handling of lightweight components
+is <u>completely implemented in java code</u>. This should lead to consistency
+across platforms.</font>
+
+<p><font color="#000000">Note the following except from the JDK 1.1 documentation:</font><ul><li><tt><font color="#000000">"We are using this framework in an upcoming version
+of the toolkit (beyond 1.1) to implement pure-java versions of the base
+UI controls (Button, List, etc.) which implement a common look-and-feel
+across the platforms (and don't use the native peers)."</font></tt></li></ul><font color="#000000">You can mix lightweight components with the existing
+heavyweight components. For example, lightweight components can be made
+children of heavyweight containers or heavyweight components can be made
+children of lightweight containers</font>
+
+<p><font color="#000000">Heavyweight and lightweight components can be
+mixed within containers. Note however, that the heavyweight component will
+<u>always</u> be "on top" if it overlaps a lightweight component.</font>
+
+<p><font color="#000000">Additional useful information regarding the rationale,
+advantages, disadvantages, and cautions regarding lightweight components
+can be found in the JDK 1.1 documentation package.</font>
+
+<p><font color="#000000">With that as an introduction, let's move on to
+our sample program.</font><center><h2><a name="sample program"></a><font color="#ff0000">Sample Program</font></h2></center>
+This program is designed to be compiled and run under JDK 1.1. The purpose
+of this program is to illustrate the creation and use of lightweight components.
+
+<p>There are two major aspects to the creation and use of lightweight components:
+<ul><li>
+Making the components <i>live and work</i> within the system.</li>
+
+<li>
+Making the components <i>look and feel</i> the way that you want them to
+look and feel.</li></ul>
+The first aspect has to do with the <u>non-graphical</u> characteristics
+of the component. In fact, the component could be a completely non-visual
+component (such as a timer component, for example). Here we are concerned
+with issues such as inheritance, event handling, etc. This gets us into
+the realm of the types of objects discussed in an earlier lesson on "Program-Generated
+Events."
+
+<p>The second aspect primarily has to do with the visual (graphic) aspects
+of the component. Since we haven't discussed graphics to any great degree
+up to this point in these lessons, we won't get into the graphic aspects
+of lightweight components in this lesson either. Rather, we will defer
+detailed discussion of the graphic aspects until a subsequent lesson where
+we discuss graphics in general.
+
+<p>This lesson will concentrate on the <u>non-graphical aspects</u> of
+lightweight components. Many of the concepts of this aspect of lightweight
+components were covered in the earlier lesson on "Program-Generated Events".
+It is critical that you understand that information before tackling this
+lesson.
+
+<p>This lesson is primarily an interpretation and discussion of a program
+that is based heavily on the "Round Button" example program in the JDK
+1.1 documentation which is the intellectual property of Sun Microsystems.
+
+<p>In operation, this program creates and manipulates a lightweight visual
+component class named <b>LWButton</b>. A pseudocode overview of the <b>LWButton
+</b>class follows.
+
+<p><hr width="100%"><pre>class LWButton extends Component {
+&nbsp; Declare instance variables:
+&nbsp;&nbsp;&nbsp; label //self-explanatory
+&nbsp;&nbsp;&nbsp; pressed //toggles true or false when LWButton is pressed
+&nbsp;&nbsp;&nbsp; actionListener //refers to a list of registered ActionListener objects
+
+&nbsp; LWButton();//constructs an LWButton with no label
+&nbsp; LWButton(String);//constructs an LWButton with a label
+&nbsp;&nbsp;
+&nbsp; //Add to or remove from a list of registered ActionListener objects
+&nbsp; public void addActionListener(ActionListener listener)
+&nbsp; public void removeActionListener(ActionListener listener)
+
+&nbsp; //Prepare to modify the appearance of the LWButton object and&nbsp;
+&nbsp; // dispatch an ActionEvent object when the LWButton is pressed by&nbsp;
+&nbsp; // the user. Invoke repaint() method.
+&nbsp; public void processMouseEvent(MouseEvent e)
+&nbsp;&nbsp;
+&nbsp; //Set the label after LWButton is instantiated
+&nbsp; public void setLabel(String label)&nbsp;
+&nbsp;&nbsp;
+&nbsp; //Overridden paint method deals with the appearance of the LWButton
+&nbsp; // based on whether it is currently "pressed" or "not pressed".
+&nbsp; public void paint(Graphics g)
+&nbsp;&nbsp;
+&nbsp; //This method is supposed to determine if a mouse event is inside the
+&nbsp; // LWButton component.&nbsp; However, as of 3/21/97, there is a vertical&nbsp;
+&nbsp; // offset error in the Win95 implementation of JDK 1.1 and this method
+&nbsp; // returns true if the mouse is outside but below the object.&nbsp; It
+&nbsp; // returns false if the mouse is inside near the top of the object.
+&nbsp; // Otherwise, it seems to work OK.
+&nbsp; // NOTE: THE PROBLEM DESCRIBED ABOVE SEEMS TO HAVE BEEN RESOLVED IN
+&nbsp; // JDK 1.1.3.
+
+&nbsp; public boolean contains(int x, int y)
+&nbsp;&nbsp;
+&nbsp; //Provide preferred size and minimum size of LWButton
+&nbsp; public Dimension getPreferredSize()
+&nbsp; public Dimension getMinimumSize()&nbsp;
+
+}//end class LWButton</pre>
+You will note that the class definition for <b>LWButton </b>incorporates
+the <u>essential ingredients</u> that were defined for program-generated
+events in an earlier lesson. An abbreviated version of the list of essential
+ingredients is repeated below for convenient reference.
+<ul><li><i>An instance variable</i> that is a reference to a list of registered
+<b>Listener </b>objects. In this program, the <b>Listener </b>objects are
+of type <b>ActionListener</b>.</li>
+
+<li><i>A method</i> for creating the list mentioned above.</li>
+
+<li><i>A method</i> which invokes the appropriate action method of the <b>Listener
+</b>class on the list of registered <b>Listener </b>objects.</li></ul>
+This program creates a <b>Frame </b>object containing two <b>LWButton </b>objects
+and one standard <b>Button </b>object. The background of the <b>Frame </b>object
+is yellow. The transparent nature of the <b>LWButton </b>objects is apparent
+because the yellow background shows through them. The background does not
+show through the opaque standard button.
+
+<p>Various outputs are produced on the screen as the buttons are manipulated
+using the mouse. Typical outputs might be as follows (with line breaks
+added manually to cause the material to fit the page).
+
+<p><hr width="100%"><pre>Mouse entered for illustration only
+Mouse exited for illustration only
+Mouse entered for illustration only
+java.awt.event.ActionEvent[ACTION_PERFORMED,cmd=LW Button A]
+&nbsp;on LWButton[,53,28,106x106]
+Mouse exited for illustration only
+Mouse entered for illustration only
+Mouse exited for illustration only
+java.awt.event.ActionEvent[ACTION_PERFORMED,cmd=Std Button]
+&nbsp;on button0
+Mouse entered for illustration only
+java.awt.event.ActionEvent[ACTION_PERFORMED,cmd=LW Button B]
+&nbsp;on LWButton[,239,28,107x107]
+Mouse exited for illustration only</pre>
+When one of the <b>LWButtons </b>is pressed, the color of the button becomes
+darker to provide visual feedback to the user. Then when the mouse button
+is released, an <b>ActionEvent </b>object is dispatched to all <b>ActionListener
+</b>objects.
+
+<p>This program was tested using JDK 1.1.3 under Win95.
+<center><h3><a name="interesting code fragments"></a><font color="#ff0000">Interesting
+Code Fragments</font></h3></center>
+The interesting code fragments in this program are those that were not
+covered in the previous lesson on program-generated events, and those that
+are not concerned with the graphical appearance of the lightweight components.
+
+<p>The first interesting code fragment instantiates two objects of the
+<b>LWButton </b>type. The label for one of the objects is passed as a string
+to the constructor. The label for the other object is set after the object
+is instantiated.
+
+<p><hr width="100%"><pre>&nbsp;&nbsp;&nbsp; LWButton aLWButton = new LWButton("LW Button A");
+&nbsp;&nbsp;&nbsp; Button myStdButton = new Button("Std Button");&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; LWButton bLWButton = new LWButton("");
+
+&nbsp;&nbsp;&nbsp; bLWButton.setLabel("LW Button B");</pre>
+After the <b>LWButton </b>objects are instantiated, <b>ActionListener </b>objects
+are instantiated and registered on them by invoking the <b>addActionListener()</b>
+method that is defined in the <b>LWButton </b>class.
+
+<p><hr width="100%"><pre>&nbsp;&nbsp;&nbsp; aLWButton.addActionListener(new MyActionListener());
+&nbsp;&nbsp;&nbsp; bLWButton.addActionListener(new MyActionListener());
+&nbsp;&nbsp;&nbsp; myStdButton.addActionListener(new MyActionListener());</pre>
+Then the new <b>LWButton </b>objects are added to a <b>Frame </b>object
+using standard code.
+
+<p><hr width="100%"><pre>&nbsp;&nbsp;&nbsp; myFrame.add(aLWButton);
+&nbsp;&nbsp;&nbsp; myFrame.add(myStdButton);
+&nbsp;&nbsp;&nbsp; myFrame.add(bLWButton);
+</pre>
+Some standard <b>ActionListener </b>classes are defined to provide <b>ActionListener
+</b>objects to be registered on the <b>LWButton </b>objects.
+
+<p>Then we enter the code for the lightweight component class definition.
+The first interesting code fragment in the class is the declaration of
+instance variables.
+
+<p><hr width="100%"><pre>&nbsp; String label; // The label on the button
+&nbsp; boolean pressed = false; // Becomes true if the button is pressed.
+&nbsp; //Refers to a list of ActionListener objects
+&nbsp; ActionListener actionListener;</pre>
+The instance variables named <b>label </b>and <b>actionListener </b>have
+the same meaning as the similar instance variables in the sample program
+in an earlier lesson on "Program-Generated Events."
+
+<p>The instance variable named <b>pressed</b> is used in the logic for
+the <b>LWButton </b>object to decide when to cause it to change color and
+also to decide when to generate an <b>ActionEvent</b>.
+
+<p>This is followed by a pair of (almost) standard constructors. There
+is one aspect of the constructors that we have not seen before. In particular,
+the following statement is contained in the constructor which invokes the
+<b>enableEvents()</b> method.
+<pre><hr width="100%">
+&nbsp;&nbsp;&nbsp;&nbsp; enableEvents(AWTEvent.MOUSE_EVENT_MASK);</pre>
+Here is the description of the <b>enableEvents()</b> method taken directly
+from <b>java.awt.Component </b>class documentation.
+<ul><li><tt>"Enables the events defined by the specified event mask parameter to
+be delivered to this component. Event types are automatically enabled when
+a listener for that type is added to the component, therefore this method
+only needs to be invoked by subclasses of a component which desire to have
+the specified event types delivered to <b>processEvent </b>regardless of
+whether a listener is registered."</tt></li></ul>
+Now let's look at <b>enableEvents()</b> from a different viewpoint. The
+following comes from the description of the <b>processMouseEvent()</b>
+method of the <b>Component </b>class. The reason that this is important
+is because we will be overriding the <b>processMouseEvent()</b> method
+later.
+<ul><li><tt>"Processes mouse events occurring on this component by dispatching
+them to any registered MouseListener objects. NOTE: This method will not
+be called <b>unless </b>mouse events are enabled for this component; this
+happens when one of the following occurs: a) A MouseListener object is
+registered via addMouseListener() b) <b>Mouse events are enabled via enableEvents()</b>.
+Classes overriding this method should call <b>super.processMouseEvent()</b>
+to ensure default event processing continues normally."</tt></li></ul>
+So, the reason for the statement in the constructor to enable mouse events
+is to make it possible to override the <b>processMouseEvent()</b> method,
+and to have it <i>automatically invoked</i> by the runtime system whenever
+a mouse event occurs.
+
+<p>This is an important milestone. Now we have learned <u>two different
+ways</u> to trap and process events under JDK 1.1.
+<ul><li>
+The first way is by adding <b>Listener </b>objects to components which
+we have been doing for several lessons.</li>
+
+<li>
+The second way is to couple an invocation of an <b>enable...()</b> method
+with the overriding of a <b>process...Event()</b> method.</li></ul><u>Both</u> approaches are used in this program.
+
+<p>The next interesting code fragment is the following method that creates
+a list of registered <b>ActionListener </b>objects which are to be notified
+whenever the <b>LWButton </b>object generates an <b>ActionEvent</b>. This
+is essentially the same code that we saw in an earlier lesson that discussed
+program-generated events. The use of the <b>AWTEventMulticaster.add()</b>
+method to create the list was discussed in detail in that lesson and shouldn't
+need to be repeated here.
+<pre><hr width="100%">
+&nbsp; public void addActionListener(ActionListener listener) {
+&nbsp;&nbsp;&nbsp; actionListener = AWTEventMulticaster.add(actionListener, listener);
+&nbsp; }//end addActionListener()</pre>
+This code is followed by similar code to remove an <b>ActionListener </b>object
+from the list which we won't discuss here.
+
+<p>This brings us to a section of code that is different from any that
+we have seen before, although it does contain elements of action event
+dispatching that we saw in the lesson on program-generated events. In this
+class, we override the <b>processMouseEvent()</b> method of the <b>Component
+</b>class. The purpose is twofold. When the user clicks on one of our new
+<b>LWButton </b>objects, we want to
+<ul><li><u>Invoke</u> the <b>actionPerformed()</b> method of every <b>ActionListener
+</b>object contained in the list of registered <b>Listener </b>objects
+described above. We learned how to do this in the lesson on program-generated
+events so this shouldn't require further discussion</li>
+
+<li><u>Modify the appearance</u> of the <b>LWButton </b>object to provide visual
+feedback to the user.</li></ul>
+In the final analysis, this method does not actually modify the appearance
+of the <b>LWButton </b>object. Rather, it sets up some parameters and then
+invokes <b>repaint()</b>. This causes the overridden <b>paint()</b> method
+to be invoked which actually modifies the appearance of the object. (As
+mentioned in an earlier lesson, there are other circumstances, such as
+moving a window, that can cause the <b>paint()</b> method to be invoked.)
+
+<p>Remember that I said earlier that because we have <i>enabled mouse events</i>,
+the <b>processMouseEvent()</b> method will be <u>called automatically</u>
+any time a mouse event occurs on the component. Therefore, one of our tasks
+will be to distinguish among the different types of mouse events.
+
+<p>Our code will use a fairly typical <b>switch</b> statement inside the
+<b>processMouseEvent()</b> method to distinguish among the various types
+of mouse events. The beginning portion of the switch statement is shown
+in the next code fragment.
+<pre><hr width="100%">
+&nbsp;&nbsp;&nbsp; switch(e.getID()) {
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; case MouseEvent.MOUSE_PRESSED:
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; pressed = true;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; repaint();&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; break;
+</pre>
+This code fragment detects a <b>MOUSE_PRESSED</b> event and sets the <b>pressed</b>
+instance variable of the object to <b>true</b>. Then the <b>repaint()</b>
+method is called. This causes the <b>paint()</b> method to be called. The
+logic in the overridden <b>paint()</b> method uses the value of the <b>pressed</b>
+instance variable to decide what to do about the color of the <b>LWButton
+</b>object.
+
+<p>The next code fragment detects a <b>MOUSE_RELEASED</b> event and does
+a couple of things.
+
+<p><hr width="100%"><pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; case MouseEvent.MOUSE_RELEASED:
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(actionListener != null) {//if an ActionListener is registered
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; actionListener.<b>actionPerformed</b>(new ActionEvent(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; this, ActionEvent.ACTION_PERFORMED, label));
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end if on actionListener
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(pressed == true) {
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; pressed = false;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; repaint();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end if on pressed
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; break;</pre>
+First, it confirms that the list of registered ActionListener objects is
+not empty, and if the list is not empty, it invokes the <b>actionPerformed()
+</b>method on the reference to the list. This is the same as the code that
+we saw in an earlier lesson on program-generated events.
+
+<p>Then it executes some logic involving the <b>pressed</b> instance variable
+and calls <b>repaint()</b> to cause the overridden version of <b>paint()</b>
+to be invoked to modify the appearance of the <b>LWButton </b>object.
+
+<p>Following this, we have some code to detect the <b>MOUSE_ENTERED</b>
+and <b>MOUSE_EXITED</b> events and to display an announcement on the screen
+of the occurrence of these events.
+
+<p><hr width="100%"><pre>&nbsp;&nbsp;&nbsp;&nbsp; case MouseEvent.MOUSE_ENTERED:
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Mouse entered for illustration only");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; break;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; case MouseEvent.MOUSE_EXITED:
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Mouse exited for illustration only");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; break;</pre>
+A recommendation in the JDK 1.1 documentation (which we saw in an excerpt
+earlier) is that you should always finish your overridden <b>processMouseEvent()</b>
+method with the following statement to make certain that all possible mouse
+events are properly handled.
+
+<p><hr width="100%"><pre>&nbsp;&nbsp; super.processMouseEvent(e);</pre>
+Next we find two methods that deal with the <i>preferred size</i> and <i>minimum
+size</i> of the <b>LWButton </b>objects. This information is used by various
+layout managers when constructing a visual layout. These two methods involve
+some graphics methods that we have not studied yet, so we will defer a
+discussion of this material to a subsequent lesson involving those graphics
+methods.
+
+<p>We also have a couple of methods that are used to <i>set </i>and<i>
+get </i>the value of the <b>label</b> instance variable. These methods
+are so simple that they don't merit further discussion.
+
+<p>That brings us to the overridden <b>paint()</b> method. As mentioned
+earlier, this method uses the current value of the <b>pressed</b> variable
+to manipulate the color of the <b>LWButton </b>object. When the button
+is not pressed, it is transparent. When it is pressed, it becomes non-transparent
+and much darker in color. Virtually all of the code in the overridden <b>paint()</b>
+method uses graphics methods that we have not studied yet. Again, we will
+defer a detailed discussion of those methods to a subsequent lesson involving
+graphics.
+
+<p>And finally, this brings us to a method named <b>contains()</b> that
+is supposed to use graphics methods to determine if the mouse click is
+inside an <b>LWButton </b>object when a mouse event occurs.
+
+<p>However, as of 3/23/97, there is an apparent bug in the JDK 1.1 software
+(at least in the Win95 implementation) that causes the y-coordinate of
+the mouse pointer to be reported with an erroneous offset. Therefore, this
+method returns <b>false </b>if the pointer is <u>inside but near the top</u>
+of the <b>LWButton </b>object, and returns <b>true </b>if the mouse pointer
+is <u>outside but near the bottom</u> of the <b>LWButton </b>object. Otherwise,
+it seems to work properly. (This problem seems to have been resolved in
+JDK 1.1.3.
+<center><h3><a name="program listing"></a><font color="#ff0000">Program Listing</font></h3></center>
+This section contains a complete listing of the program with numerous additional
+comments. Refer to previous sections for an operational description of
+the program.
+
+<p><hr width="100%"><pre>/* File LWButton.java Copyright 1997, R.G.Baldwin
+This program is designed to be compiled and run under JDK 1.1.
+
+The purpose of this program is to illustrate the creation and use of
+lightweight components.</pre>
+
+<pre>This program creates a Frame object containing two LWButton objects and
+one standard Button object.&nbsp; The background of the Frame object is yellow.
+The transparent nature of the LWButton objects is apparent because the
+yellow background shows through them.&nbsp; The background does not show&nbsp;
+through the opaque standard button.
+
+Various outputs are produced on the screen as the buttons are manipulated
+using the mouse.
+
+A typical output might be as follows:
+
+Mouse entered for illustration only
+Mouse exited for illustration only
+Mouse entered for illustration only
+java.awt.event.ActionEvent[ACTION_PERFORMED,cmd=LW Button A] on LWButton[,53,28,106x106]
+Mouse exited for illustration only
+Mouse entered for illustration only
+Mouse exited for illustration only
+java.awt.event.ActionEvent[ACTION_PERFORMED,cmd=Std Button] on button0
+Mouse entered for illustration only
+java.awt.event.ActionEvent[ACTION_PERFORMED,cmd=LW Button B] on LWButton[,239,28,107x107]
+Mouse exited for illustration only
+
+When one of the LWButtons is pressed, the color of the button becomes
+darker to provide visual feedback to the user.&nbsp; When the LWButton is&nbsp;
+pressed and then the mouse button is released, an ActionEvent object
+is dispatched to all ActionListener objects.
+
+This program was tested using JDK 1.1 under Win95.
+*/
+//=======================================================================
+import java.awt.*;
+import java.awt.event.*;
+//==========================================================================
+public class Lightweight02 {
+&nbsp; public static void main(String[] args){
+&nbsp;&nbsp;&nbsp; GUI gui = new GUI();//instantiate a Graphical User Interface object
+&nbsp; }//end main
+}//end class Container03
+//=========================================================================
+class GUI{
+&nbsp; public GUI(){//constructor
+&nbsp;&nbsp;&nbsp; Frame myFrame = new Frame("Copyright 1997, R.G.Baldwin");
+&nbsp;&nbsp;&nbsp; myFrame.setLayout(new FlowLayout());
+&nbsp;&nbsp;&nbsp; myFrame.setBackground(Color.yellow);
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; LWButton aLWButton = new LWButton("LW Button A");
+&nbsp;&nbsp;&nbsp; Button myStdButton = new Button("Std Button");&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; LWButton bLWButton = new LWButton("");
+
+&nbsp;&nbsp;&nbsp; bLWButton.setLabel("LW Button B");&nbsp;&nbsp;&nbsp;&nbsp;
+
+&nbsp;&nbsp;&nbsp; aLWButton.addActionListener(new MyActionListener());
+&nbsp;&nbsp;&nbsp; bLWButton.addActionListener(new MyActionListener());
+&nbsp;&nbsp;&nbsp; myStdButton.addActionListener(new MyActionListener());
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; myFrame.add(aLWButton);
+&nbsp;&nbsp;&nbsp; myFrame.add(myStdButton);
+&nbsp;&nbsp;&nbsp; myFrame.add(bLWButton);
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; myFrame.setSize(400,200);
+&nbsp;&nbsp;&nbsp; myFrame.setVisible(true);
+
+&nbsp;&nbsp;&nbsp; myFrame.addWindowListener(new Terminate());
+&nbsp; }//end constructor
+}//end class GUI
+//========================================================================
+//Class to respond to action events
+class MyActionListener implements ActionListener{
+&nbsp; public void actionPerformed(ActionEvent e){
+&nbsp;&nbsp;&nbsp; System.out.println(e);
+&nbsp; }//end actionPerformed
+}//end class MyActionListener
+//========================================================================
+class Terminate extends WindowAdapter{
+&nbsp; public void windowClosing(WindowEvent e){
+&nbsp;&nbsp;&nbsp; System.exit(0);//terminate the program when the window is closed&nbsp;&nbsp;
+&nbsp; }//end windowClosing
+}//end class Terminate
+
+//########################################################################
+//&nbsp; The following class produces the LW Button Component&nbsp;
+//========================================================================
+class LWButton extends Component {
+&nbsp; String label; // The label on the button
+&nbsp; boolean pressed = false; // Becomes true if the button is pressed.
+&nbsp; ActionListener actionListener;//Refers to a list of ActionListener objects
+&nbsp;&nbsp;
+&nbsp; //-----------------------------------------------------------------------
+&nbsp; public LWButton() {//Constructs a LWButton with no label.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; this("");//invoke the next constructor with an empty string
+&nbsp; }//end constructor
+
+&nbsp; public LWButton(String label) {//Constructs a LWButton with label.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; this.label = label;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; enableEvents(AWTEvent.MOUSE_EVENT_MASK);
+&nbsp; }//end constructor
+&nbsp; //-----------------------------------------------------------------------
+&nbsp; //The following method constructs a list of ActionListener objects that
+&nbsp; // are registered on a particular LWButton object
+&nbsp; public void addActionListener(ActionListener listener) {
+&nbsp;&nbsp;&nbsp; actionListener = AWTEventMulticaster.add(actionListener, listener);
+&nbsp; }//end addActionListener()
+&nbsp; //-----------------------------------------------------------------------
+&nbsp; //The following method removes ActionListener objects from the list&nbsp;
+&nbsp; // described above
+&nbsp; public void removeActionListener(ActionListener listener) {
+&nbsp;&nbsp;&nbsp;&nbsp; actionListener = AWTEventMulticaster.remove(actionListener, listener);
+&nbsp; }//end removeActionListener
+
+&nbsp; //---------------------------------------------------------------------
+&nbsp; //The&nbsp; purpose of this method is twofold:
+&nbsp; // 1.&nbsp; Modify the appearance of the LWButton object.
+&nbsp; // 2.&nbsp; Invoke the actionPerformed() method in the Listener object that
+&nbsp; //&nbsp;&nbsp;&nbsp;&nbsp; is registered to listen to this LWButton object.
+&nbsp; //This method is automatically called whenever a mouse event occurs on the
+&nbsp; // component and the method enableEvents(AWTEvent.MOUSE_EVENT_MASK)&nbsp;
+&nbsp; // has been previously invoked on the component.
+&nbsp; public void processMouseEvent(MouseEvent e) {
+&nbsp;&nbsp;&nbsp; Graphics g;
+&nbsp;&nbsp;&nbsp; switch(e.getID()) {
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; case MouseEvent.MOUSE_PRESSED:
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //When the mouse is pressed on the LWButton object, set the "pressed"
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // state of the object to true and force it to be repainted to change
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // its appearance.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; pressed = true;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; repaint();&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; break;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; case MouseEvent.MOUSE_RELEASED:
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //When the mouse is released on the LWButton object, do two things:
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // 1. Invoke the actionPerformed() method in the Listener objects that
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //&nbsp;&nbsp;&nbsp; are registered to listen to this LWButton object.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // 2. Confirm that the "pressed" state is true and if so, set it to
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //&nbsp;&nbsp;&nbsp; false and force the object to be repainted to change its
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //&nbsp;&nbsp;&nbsp; appearance.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(actionListener != null) {//if an ActionListener is registered
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; actionListener.actionPerformed(new ActionEvent(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; this, ActionEvent.ACTION_PERFORMED, label));
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end if on actionListener
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(pressed == true) {
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; pressed = false;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; repaint();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end if on pressed
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; break;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; case MouseEvent.MOUSE_ENTERED:
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Mouse entered for illustration only");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; break;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; case MouseEvent.MOUSE_EXITED:
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Mouse exited for illustration only");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; break;
+&nbsp;&nbsp;&nbsp; }//end switch
+&nbsp;&nbsp;&nbsp; super.processMouseEvent(e);
+&nbsp; }//end paint
+&nbsp;&nbsp;
+&nbsp; //---------------------------------------------------------------------
+&nbsp; //The following two methods provide the preferred size and the&nbsp;
+&nbsp; // minimum size to be used by the various layout managers.&nbsp;&nbsp;
+&nbsp; public Dimension getPreferredSize() {//overridden getPreferredSize()
+&nbsp;&nbsp;&nbsp; Font f = getFont();
+&nbsp;&nbsp;&nbsp; if(f != null) {
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; FontMetrics fm = getFontMetrics(getFont());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int max = Math.max(fm.stringWidth(label) + 40, fm.getHeight() + 40);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; return new Dimension(max, max);
+&nbsp;&nbsp;&nbsp; } else return new Dimension(100, 100);
+&nbsp; }//end getPreferredSize()
+&nbsp;&nbsp;
+&nbsp; public Dimension getMinimumSize() {//overridden getMinimumSize()
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; return new Dimension(100, 100);
+&nbsp; }//end getMinimumSize()
+&nbsp; //------------------------------------------------------------------------
+&nbsp; //The following two methods are available to modify the label of
+&nbsp; // an LWButton object.
+&nbsp; public String getLabel() {//gets the label
+&nbsp;&nbsp;&nbsp; return label;
+&nbsp; }//end getLabel()
+&nbsp;&nbsp;
+&nbsp; public void setLabel(String label) {//sets the label
+&nbsp;&nbsp;&nbsp; this.label = label;
+&nbsp;&nbsp;&nbsp; invalidate();
+&nbsp;&nbsp;&nbsp; repaint();
+&nbsp; }//end setLabel()
+&nbsp; //---------------------------------------------------------------------&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp; //The following overridden paint() method paints the LWButton, with the&nbsp;
+&nbsp; // appearance of the button being determined by whether the "pressed"
+&nbsp; // state of the button is true or false.
+&nbsp; public void paint(Graphics g) {//paints the LWButton
+&nbsp;&nbsp;&nbsp; int s = Math.min(getSize().width - 1, getSize().height - 1);
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; // paint the interior of the button
+&nbsp;&nbsp;&nbsp; if(pressed) g.setColor(getBackground().darker().darker());
+&nbsp;&nbsp;&nbsp; else g.setColor(getBackground());
+&nbsp;&nbsp;&nbsp; g.fillArc(0, 0, s, s, 0, 360);
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; // draw the perimeter of the button
+&nbsp;&nbsp;&nbsp; g.setColor(getBackground().darker().darker().darker());
+&nbsp;&nbsp;&nbsp; g.drawArc(0, 0, s, s, 0, 360);
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; // draw the label centered in the button
+&nbsp;&nbsp;&nbsp; Font f = getFont();
+&nbsp;&nbsp;&nbsp; if(f != null) {
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; FontMetrics fm = getFontMetrics(getFont());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; g.setColor(getForeground());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; g.drawString(label,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; s/2 - fm.stringWidth(label)/2,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; s/2 + fm.getMaxDescent());
+&nbsp;&nbsp;&nbsp; }//end if on f!=null
+&nbsp; }//end overridden paint() method
+&nbsp; //--------------------------------------------------------------------------
+&nbsp; //This method is supposed to determine if a mouse event is inside the
+&nbsp; // LWButton component.&nbsp; However, as of 3/21/97, there is a vertical&nbsp;
+&nbsp; // offset error in the Win95 implementation of JDK 1.1 and this method
+&nbsp; // returns true if the mouse is outside but below the object.&nbsp; It
+&nbsp; // returns false if the mouse is inside near the top of the object.
+&nbsp; // Otherwise, it seems to work OK.
+&nbsp; // NOTE: THE PROBLEM DESCRIBED ABOVE SEEMS TO HAVE BEEN RESOLVED IN
+&nbsp; // JDK 1.1.3.
+&nbsp; public boolean contains(int x, int y) {
+&nbsp;&nbsp;&nbsp;&nbsp; int mx = getSize().width/2;
+&nbsp;&nbsp;&nbsp;&nbsp; int my = getSize().height/2;
+&nbsp;&nbsp;&nbsp;&nbsp; return (((mx-x)*(mx-x) + (my-y)*(my-y)) &lt;= mx*mx);
+&nbsp; }//end contains()
+&nbsp; //---------------------------------------------------------------------------&nbsp;&nbsp;
+}//end class LWButton
+//===========================================================</pre>
+
+<center><h2><a name="review"></a><font color="#ff0000">Review</font></h2></center>
+Review material for this lesson is not being included at this time because
+the lesson is not being included in the Intermediate Java Programming course
+at ACC at this time.
+
+<p>-end-<!--end--></body></html>

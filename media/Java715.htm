@@ -1,0 +1,494 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>... in Java by Richard G Baldwin</TITLE>
+<META NAME="Template" CONTENT="C:\PROGRAM FILES\MICROSOFT OFFICE\OFFICE\html.dot">
+</HEAD>
+<BODY LINK="#0000ff" VLINK="#800080" BGCOLOR="#ffffff">
+
+<P><!--start--></P>
+<I><H3 ALIGN="CENTER">Richard G Baldwin (512) 223-4758, </I><A HREF="mailto:baldwin@austin.cc.tx.us"><I>baldwin@austin.cc.tx.us</I></A><I>, </I><A HREF="http://www2.austin.cc.tx.us/baldwin/"><I>http://www2.austin.cc.tx.us/baldwin/</I></A></H3>
+<H2 ALIGN="CENTER"><!--title-->Security, Policy Files in JDK 1.2 <!--endtitle--></H2>
+<P>Java Programming, Lecture Notes # 715, Revised 5/16/99. </P>
+
+<UL>
+<LI><A HREF="#Preface">Preface</A> </LI>
+<LI><A HREF="#Disclaimer">Disclaimer</A> </LI>
+<LI><A HREF="#Discussion">Discussion</A> </LI>
+<LI><A HREF="#SampleProgram">Sample Program</A> </LI>
+
+<UL>
+<LI><A HREF="#ProgramFile">Program File</A> </LI>
+<LI><A HREF="#PolicyFile">Policy File</A> </LI>
+<LI><A HREF="#BatchFile">Batch File</A> </LI>
+<LI><A HREF="#InterestingCodeFragments">Interesting Code Fragments</A></LI></UL>
+
+<LI><A HREF="#ProgramListing">Program Listing</A></LI></UL>
+
+<P><HR></P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Preface">Preface</A></H2>
+</FONT><P>Students in Prof. Baldwin's <B><U>Advanced Java Programming</B></U> classes at ACC will be responsible for knowing and understanding all of the material in this lesson beginning with the spring semester of 1999. </P>
+<P>This lesson was originally written on April 10, 1999 and has been updated several times since. </P>
+<P>The purpose of this lesson is to provide an introduction to the use of security policy files under JDK 1.2.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Disclaimer">Disclaimer</A></H2>
+</FONT><P>I claim absolutely no expertise in the area of security. I am simply a college professor attempting to gather information about Java on one hand and present it to my students on the other. I disclaim any responsibility for any security problems that may occur as a result of anyone using any of the material in any of my tutorial lessons.</P>
+<P>You are responsible for your own actions. With regard to security, you should study not only the material that I will present, but also material provided by others who possess expertise in the security area. Hopefully my material will be useful in getting you started in that direction.</P>
+<P>Two good books on security published by O'Reilly &amp; Associates are:</P>
+
+<UL>
+<U><LI>Java Security</U> by Scott Oaks </LI>
+<U><LI>Java Cryptography</U> by Jonathan Knudsen</LI></UL>
+
+<P>I highly recommend both of these books.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Discussion">Discussion</A></H2>
+<B><P>The pain of progress</P>
+</B></FONT><P>When migrating from JDK 1.1 to JDK 1.2, you must contend with the fact that JDK 1.2 incorporates significant changes in the overall security model. Some programs that run fine under JDK 1.1 throw security exceptions and won't run under JDK 1.2. </P>
+<P>This lesson provides a brief introduction to the use of security policy files. You are referred to the documentation available for JDK 1.2 for a more complete discussion.</P>
+<P>This lesson is also designed to get you over the initial hump and show you how to create security policy files to get your JDK 1.1 programs back up and running under JDK 1.2.</P>
+<B><FONT COLOR="#ff0000"><P>Policy-based, easily-configurable, fine-grained access control</P>
+</B></FONT><P>Sun refers to the new security capability introduced in JDK 1.2 as "<B>Policy-based, easily-configurable, fine-grained access control</B>." When code is loaded, it is assigned <I>"permissions"</I> based on the security policy currently in effect.</P>
+<P>Each individual permission specifies a permitted access to a particular resource. Typical permissions are:</P>
+
+<UL>
+<LI>"read" and "write" access to a specified file or directory </LI>
+<LI>"connect" access to a given host and port. </LI></UL>
+
+<B><FONT COLOR="#ff0000"><P>Basis for permissions</P>
+</B></FONT><P>Permissions can be based on the source of the code, the signer of the code, or both. The policy that specifies which permissions are available for code from various signers/locations can be initialized from an external configurable policy file. This enables the JVM to offer fine-grain, configurable, flexible, and extensible access control. Such control can be specified for all Java code, including applets, applications, beans, and servlets.</P>
+<B><FONT COLOR="#ff0000"><P>What is a permission?</P>
+</B></FONT><P>A permission represents access to a system resource. In order for access to a resource to be allowed for an applet (or for an application running with a security manager), the corresponding permission must be explicitly granted to the code attempting the access.</P>
+<B><FONT COLOR="#ff0000"><P>When are permissions required?</P>
+</B></FONT><P>If the application is running without a security manager, there is no requirement to establish permissions for that application. By default, the application has full access to all resources. Therefore, when migrating from JDK 1.1 to JDK 1.2, you are most likely to encounter security problems when running JDK 1.1 applications that use a security manager. This includes all RMI applications.</P>
+<B><FONT COLOR="#ff0000"><P>How are permissions granted?</P>
+</B></FONT><P>Permissions are granted by creating (and invoking) policy configuration files. Policy configuration files are text files that can be created using a text editor, or by using the graphical <B>policytool</B> program that is part of the JDK download. By using <B>policytool</B>, you can avoid the requirement to know the syntax of the policy configuration files or the class names of the permission classes. (See the JDK 1.2 documentation for instructions on how to use <B>policytool</B>.) However, <B>policytool</B> provides no help in knowing which permissions to grant for a particular situation, and how to grant them. You must get that information from the JDK 1.2 documentation.</P>
+<B><FONT COLOR="#ff0000"><P>How can you invoke a policy file?</P>
+</B></FONT><P>Certain default policy files are invoked automatically. Additional policy files can be invoked at runtime by starting the JVM using a statement such as the following:</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=487>
+<TR><TD VALIGN="TOP" BGCOLOR="#ffff00">
+<PRE>java <B>-Djava.security.policy=Rmi02Client.policy</B> Rmi02Client</PRE></TD>
+</TR>
+</TABLE>
+
+<P>This statement causes the <B>Rmi02Client</B> application to be executed after setting a system property causing the file named <B>Rmi02Client.policy</B> to establish the security policy.</P>
+<B><FONT COLOR="#ff0000"><P>What is a Policy object?</P>
+</B></FONT><P>A Policy object represents the policy for a Java application environment. The policy can be specified within one or more policy configuration files in the default Policy implementation. The policy file(s) specify the permissions that are granted to code from specified sources.</P>
+<B><FONT COLOR="#ff0000"><P>What are <I>target names</I> and <I>actions</I>?</P>
+</B></FONT><P>A permission typically has a <I>"target name"</I> and, in some cases, a comma-separated list of one or more <I>actions</I>. For example, when included in a policy file, the following text grants permission for code that originates in the directory specified by the URL following the word <I>codeBase</I> to <B>write</B> a file named <B>junk.txt</B>. The <I>target</I> is <B>junk.txt</B> and the <I>action</I> is <B>write</B>.</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#ffff00">
+<PRE>grant 
+codeBase 
+  "file:/G:/Baldwin/AA-School/JavaProg/Combined/Java/"{
+permission java.io.FilePermission "junk.txt", "write";
+};</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Where can I learn more about permission types and associated risks?</P>
+</B></FONT><P>The JDK 1.2 documentation contains tables that describe the built-in JDK 1.2 permission types and discuss the risks of granting each of the available permissions. It also contains tables showing the methods that require permissions to be in effect for successful execution of the method. The required permissions are shown for each such method.</P>
+<P>The policy for a Java application environment (specifying which permissions are available for code from various sources) is represented by a Policy subclass providing an implementation of the abstract methods in the Policy class (which is in the java.security package).</P>
+<B><FONT COLOR="#ff0000"><P>Where are the policy configuration files?</P>
+</B></FONT><P>The source location for the policy information depends on the Policy implementation. The default Policy implementation obtains its information from static policy configuration files.</P>
+<P>The policy can be specified within <U>one or more</U> policy configuration files in the default Policy implementation. The configuration file(s) specify what permissions are allowed for code from specified code sources. </P>
+<P>By default, there is a single system-wide policy file, and a single (optional) user policy file. You can create additional policy configuration files and invoke them when you start the JVM.</P>
+<B><FONT COLOR="#ff0000"><P>Where is the system-wide policy configuration file located?</P>
+</B></FONT><P>By default, the system-wide policy configuration file is located at: </P>
+
+<UL>
+<I><LI>java.home</I>/lib/security/java.policy (Solaris) </LI>
+<I><LI>java.home</I>\lib\security\java.policy (Windows)</LI></UL>
+
+<P>In this representation, <I>java.home</I> refers to the value of the system property named "<B>java.home</B>", which specifies the directory into which the JDK was installed. </P>
+<B><FONT COLOR="#ff0000"><P>What is the purpose of the system-wide policy configuration file?</P>
+</B></FONT><P>The system-wide policy file is intended to grant system-wide code permissions. The default java.policy file that is installed when you install the JDK </P>
+
+<UL>
+<LI>Grants all permissions to standard extensions </LI>
+<LI>Allows anyone to listen on un-privileged ports </LI>
+<LI>Allows any code to read certain "standard" properties that are not security-sensitive (such as "os.name" and "file.separator").</LI></UL>
+
+<B><FONT COLOR="#ff0000"><P>Where is the user policy configuration file located?</P>
+</B></FONT><P>By default, the user policy file is located at </P>
+
+<UL>
+<I><LI>user.home</I>/.java.policy (Solaris) </LI>
+<I><LI>user.home</I>\.java.policy (Windows)</LI></UL>
+
+<P>Note: <I>user.home</I> refers to the value of the system property named "<B>user.home</B>", which specifies the user's home directory. </P>
+<P>On Windows systems the "<B>user.home</B>" property value defaults to </P>
+
+<UL>
+<LI>C:\Winnt\Profiles\<I>userName</I> on multi-user Windows NT systems </LI>
+<LI>C:\Windows\Profiles\<I>userName</I> on multi-user Windows 95 systems </LI>
+<LI>C:\Windows on single-user Windows 95 systems</LI></UL>
+
+<B><FONT COLOR="#ff0000"><P>Loading Policy Files</P>
+</B></FONT><P>The system policy is loaded first at initialization. Then the user policy is added to it. If neither policy is present, a built-in policy is used. According to the documentation, this built-in policy is the same as the original sandbox policy.</P>
+<B><FONT COLOR="#ff0000"><P>What and where is the <I>security properties</I> file?</P>
+</B></FONT><P>The locations of the policy configuration files are also configurable. Policy file locations are specified in the <I>security properties</I> file, which is located at </P>
+
+<UL>
+<I><LI>java.home</I>/lib/security/<B>java.security</B> (Solaris) </LI>
+<I><LI>java.home</I>\lib\security\<B>java.security</B> (Windows)</LI></UL>
+
+<P>If you need to modify the locations of the policy configuration files, see the JDK 1.2 documentation for more information on how to modify the <I>security properties</I> file.</P>
+<B><FONT COLOR="#ff0000"><P>Using Alternative Policy Files</P>
+</B></FONT><P>As mentioned earlier, it is also possible to specify an additional or a different policy file when starting the JVM to execute an application. This is illustrated in the sample program presented later in this lesson. </P>
+<P>To specify an alternative policy file when you start the JVM, use the following command line argument, which sets the value of the <B>java.security.policy</B> property.</P>
+<CODE><BLOCKQUOTE>"<B>-Djava.security.policy</B>" </BLOCKQUOTE>
+</CODE><P>For example, if <I>myURL</I> is a URL specifying the location of a policy file, and <I>myApp</I> is the name of an application, then</P>
+<B><BLOCKQUOTE>java -Djava.security.manager -Djava.security.policy=myURL myApp</BLOCKQUOTE>
+</B><P>will cause the specified policy file to be loaded <U>in addition to</U> all the policy files that are specified in the security properties file. </P>
+<P>Note that "<B>-Djava.security.manager</B>" was specified in addition to the file containing the new security policy.</P>
+<B><FONT COLOR="#ff0000"><P>Why include <I>-Djava.security.manager</I>?</P>
+</B></FONT><P>Inclusion of the "<B>-Djava.security.manager</B>" argument ensures that the default security manager is installed. This causes the application to be subject to policy checks. This argument is not required if the application installs a security manager. </P>
+<B><FONT COLOR="#ff0000"><P>Any limitations on the URL?</P>
+</B></FONT><P>The URL can be any regular URL or simply the name of a policy file in the current directory, as shown below: </P>
+<BLOCKQUOTE>java <B>-Djava.security.policy=Security03.policy</B> Security03</BLOCKQUOTE>
+<P>This particular application installs its own security manager. Thus, there was no requirement to include the "<B>-Djava.security.manager</B>" argument</P>
+<B><FONT COLOR="#ff0000"><P>Using only one specific policy configuration file</P>
+</B></FONT><P>The following format, which uses a double equal</P>
+<B><BLOCKQUOTE>java -Djava.security.manager -Djava.security.policy==myURL myApp</BLOCKQUOTE>
+</B><P>instructs that <U>just the specified policy file will be used</U>. All of the policy files specified in the <I>security properties</I> file will be ignored. </P>
+<B><FONT COLOR="#ff0000"><P>Using Alternative Policy Files with appletviewer</P>
+</B></FONT><P>It is also possible to pass policy files to <B>appletviewer </B>using syntax such as the following. See the JDK 1.2 documentation for more information.</P>
+<B><BLOCKQUOTE>appletviewer -J-Djava.security.policy=myURL myApplet</BLOCKQUOTE>
+<FONT COLOR="#ff0000"><P>Disabling Alternative Policy Files</P>
+</B></FONT><P>It is also possible to disable the ability to specify an alternate security policy by setting the <B>policy.allowSystemProperty</B> property to <I>false</I> in the <I>security properties</I> file. The default is <I>true</I>.</P>
+<P>Other aspects of security are configurable as well.</P>
+<B><FONT COLOR="#ff0000"><P>Once again, what are the policy configuration files used for?</P>
+</B></FONT><P>The policy configuration file(s) for a JDK installation specify what permissions are allowed by code from specified code sources. </P>
+<P>An applet, or an application running under a security manager, must be granted permission to perform secured actions (such as reading or writing a file) under JDK 1.2. </P>
+<B><FONT COLOR="#ff0000"><P>Exceptions to the rule</P>
+</B></FONT><P>One exception is that code always automatically has permission to <I>read</I> files from its same (URL) location, and subdirectories of that location. It does not need explicit permission to do so.</P>
+<B><FONT COLOR="#ff0000"><P>What is a <I>grant</I> entry?</P>
+</B></FONT><P>Other than this exception, by default, a permission must be granted by a <I>grant</I> entry in a policy configuration file. The overall format of a policy configuration file is a list of entries. </P>
+<B><FONT COLOR="#ff0000"><P>What is a <I>keystore</I> entry?</P>
+</B></FONT><P>There may be zero or one <I>keystore</I> entry and zero or more <I>grant</I> entries. (The concept of a keystore will be addressed in a separate lesson and won't be discussed further here.)</P>
+<P>Code being executed is considered to come from a particular <I>"code source."</I> An object of type CodeSource represents the code-source).</P>
+<B><FONT COLOR="#ff0000"><P>What is the <I>source</I> of the code?</P>
+</B></FONT><P>The code source includes</P>
+
+<UL>
+<LI>The location (URL) where the code originated </LI>
+<LI>A reference to the certificate(s) containing the <I>public key(s)</I> corresponding to the <I>private key(s)</I> used to sign the code.</LI></UL>
+
+<P>(Certificates, public keys, and private keys will be discussed in a separate lesson.)</P>
+<B><FONT COLOR="#ff0000"><P>Format of grant Entries</P>
+</B></FONT><P>Each <I>grant</I> entry includes one or more <I>"permission entries"</I>.</P>
+<P>The permission entries are preceded by optional <I>codeBase</I> and <I>signedBy</I> name/value pairs. These name/value pairs specify the code to which you want to grant the permissions.</P>
+<P>In case you need to know it, the basic format of a grant entry is as follows. (The use of the <B>policytool</B> program eliminates the requirement for you to be concerned about such formats.)</P>
+<B><PRE>  grant signedBy "signer_names", codeBase "URL" {
+    permission permission_class_name "target_name", "action",
+      signedBy "signer_names";
+    permission permission_class_name "target_name", "action", 
+      signedBy "signer_names";
+  };</PRE>
+<FONT COLOR="#ff0000"><P>The <I>signedBy</I> value</P>
+</B></FONT><P>A <I>signedBy</I> value indicates the alias for a certificate stored in the keystore. As mentioned earlier, I will have more to say about certificates and keystore in a separate lesson. The <I>signedBy</I> value can be a comma-separated list of multiple aliases where the comma indicates an <I>AND</I> relationship. </P>
+<P>To use the exact wording from the Sun documentation, a statement like <I>"Code signed by Adam" </I>means </P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<P>"Code in a class file contained in a JAR file, where the JAR file was signed using the private key corresponding to the public key that appears in a keystore certificate in an entry aliased by Adam."</TD>
+</TR>
+</TABLE>
+
+<P>The <I>signedBy</I> field is optional. If it is omitted, it doesn't matter whether the code is signed or not or by whom. </P>
+<B><FONT COLOR="#ff0000"><P>The <I>codeBase</I> value</P>
+</B></FONT><P>A <I>codeBase</I> value indicates the code source location. This field is also optional. By specifying a <I>codeBase</I>, you grant the specified permission(s) to code from that location. An empty <I>codeBase</I> entry signifies <I>"any code."</I> It doesn't matter where the code originates. </P>
+<P>A <I>codeBase</I> value is a URL and must always use forward slashes (never backslashes) as the directory separator, even when the code source is actually on a Windows system. This is a requirement for you to know about even when using the <B>policytool</B> program to create your policy configuration files.</P>
+<P>See the sample program later in this lesson for a URL representing a directory on the file system for a Windows 95 system.</P>
+<B><FONT COLOR="#ff0000"><P>The codeBase options</P>
+</B></FONT><P>There are several optional formulations of <I>codeBase</I>. The exact meaning of a <I>codeBase</I> value depends on the characters at the end. </P>
+
+<UL>
+<LI>A <I>codeBase</I> with a trailing "<B>/</B>" matches all class files (not JAR files) in the specified directory. </LI>
+<LI>A <I>codeBase</I> with a trailing "<B>/*</B>" matches all files (both class and JAR files) contained in that directory. </LI>
+<LI>A <I>codeBase</I> with a trailing "<B>/-</B>" matches all files (both class and JAR files) in the directory and recursively all files in subdirectories contained in that directory.</LI></UL>
+
+<B><FONT COLOR="#ff0000"><P>Permission Entries</P>
+</B></FONT><P>A permission entry must begin with the word <I>permission</I>. A portion of the template presented above is repeated here for convenience.</P>
+<PRE>permission permission_class_name "target_name", "action",
+      signedBy "signer_names";</PRE>
+<P>The <I>permission_class_name</I> is a specific permission type, such as <I>java.io.FilePermission</I> or <I>java.lang.RuntimePermission</I>. (Use of the <B>policytool</B> program eliminates the need for you to know the names of the permission classes.)</P>
+<P>A permission type can require a <I>target</I>. For example, the "target_name" for <I>java.io.FilePermission</I> is the path/file name that specifies a particular directory or file.</P>
+<P>Many, but not all, permission types require an <I>"action"</I> parameter. For example, <I>java.io.FilePermission</I> requires an action parameter to specify <I>read</I>, <I>write</I>, etc. (Use of the <B>policytool</B> program eliminates the need for you to know which permission types need action types. When it is not needed, the <I>action</I> field is "grayed out" in the dialog.) </P>
+<P>The <I>signedBy</I> name/value pair for a permission entry is optional. It indicates that the permission class itself must be signed by the given alias(es) in order for the permission to be granted. For more details on this, see the Sun documentation.</P>
+<B><FONT COLOR="#ff0000"><P>Items in a Permission Entry</P>
+</B></FONT><P>The order of the items in a permission entry must be as follows:</P>
+
+<UL>
+<LI>permission </LI>
+<LI>permission_class_name </LI>
+<LI>"target_name" </LI>
+<LI>"action" </LI>
+<LI>signedBy (optional) </LI>
+<LI>"signer_names" (optional)</LI></UL>
+
+<B><FONT COLOR="#ff0000"><P>Tidbits</P>
+</B></FONT><P>An entry is terminated with a semicolon. </P>
+<P>Case is not important for the identifiers (permission, signedBy, codeBase, etc.) but is significant for the <I>permission_class_name</I> or for any string that is passed in as a value.</P>
+<P>When you specify a <I>java.io.FilePermission</I>, the <I>"target_name"</I> is a file path. On Windows systems, whenever you directly specify a file path in a string (<U>but not in a codeBase URL</U>), you must include <U>two backslashes</U> for each actual single backslash in the path,</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="SampleProgram">Sample Program</H2>
+</FONT><P></A>Name: <B>Security03.java</P>
+</B><P>This application and the two related files listed below are designed to illustrate the use of policy configuration files in JDK 1.2.</P>
+
+<UL>
+<LI>Security03.bat </LI>
+<LI>Security03.policy</LI></UL>
+
+<B><FONT COLOR="#ff0000"><P>What does the program do?</P>
+</B></FONT><P>This application illustrates <I>writing</I> and then <I>reading</I> a file where the application creates a security manager that <U>doesn't allow</U> <I>writing</I> and <I>reading</I> files. </P>
+<P>Because the security manager doesn't allow <I>writing</I> and <I>reading</I> files, the application cannot be executed under JDK 1.1. It also cannot be executed under JDK 1.2 without invoking a policy configuration file that <U>overrides the security manager</U> set by the application.</P>
+<B><FONT COLOR="#ff0000"><P>Granting file write/read permission</P>
+</B></FONT><P>Under JDK 1.2, a policy configuration file is created to grant the application permission to <I>write</I> and then <I>read</I> the file. In order to use the policy file to grant the permissions, it must be invoked when the application is started.</P>
+<P>To make things simple and avoid typing errors, the following statement is encapsulated in a batch file to start the application and invoke the policy file named <B>Security03.policy</B>:</P><DIR>
+<DIR>
+
+<B><CODE><P>java -Djava.security.policy=Security03.policy Security03</P></DIR>
+</DIR>
+
+</B></CODE><P>The output from the program is:</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<PRE>Start the program and write a file
+Read, and print the file
+Dick
+End of program</PRE></TD>
+</TR>
+</TABLE>
+
+<P>&nbsp;</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="InterestingCodeFragments">Interesting Code Fragments</H2>
+</FONT><P></A>The following sections contain interesting code fragments from the three files. Complete listings of all three files are provided near the end of the lesson.</P>
+<FONT COLOR="#ff0000"><H3 ALIGN="CENTER"><A NAME="ProgramFile">Program File</A></H3>
+<B><P>Defining a security manager class</P>
+</B></FONT><P>The first fragment defines a security manager class for the application. Note that this class definition is completely empty. </P>
+<P>Since this class doesn't override any of the methods of the <B>SecurityManager</B> class, an application that uses an object of this class as a security manger has almost no permission to access system resources.</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=492>
+<TR><TD VALIGN="TOP" BGCOLOR="#ffff00">
+<PRE>class DummySecurityManager extends SecurityManager
+{
+}</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Setting the security manager for the application</P>
+</B></FONT><P>The next fragment shows </P>
+
+<UL>
+<LI>The beginning of the controlling class </LI>
+<LI>The beginning of the <B>main()</B> method </LI>
+<LI>The setting of the security manager for the application as an object of the class discussed above.</LI></UL>
+
+<P>Setting the security manager in this fashion effectively eliminates most permissions for access of resources by the application including permission to <I>write</I> and <I>read</I> files. However, the invocation of the policy configuration file shown later overrides the security manager set by the application and gives the application permission to <I>write</I> and then <I>read</I> a specific file on the local file system. </P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=492>
+<TR><TD VALIGN="TOP" BGCOLOR="#ffff00">
+<PRE>class Security03{
+  public static void main(String[] args){
+    System.<B>setSecurityManager</B>(new DummySecurityManager());</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Writing and reading the file</P>
+</B></FONT><P>The next fragment writes and then reads a file named <B>junk.txt</B>. By now you should have no difficulty understanding this code. I have included it here simply for completeness, but won't discuss it further.</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=492>
+<TR><TD VALIGN="TOP" BGCOLOR="#ffff00">
+<PRE>    System.out.println(
+                    "Start the program and write a file");
+    try{
+      FileOutputStream outFile = 
+                          new FileOutputStream("junk.txt");
+  
+      //Write four bytes to the file and close it
+      outFile.write('D');
+      outFile.write('i');
+      outFile.write('c');
+      outFile.write('k');
+      outFile.close();
+    }catch(IOException e){System.out.println(e);}
+
+    System.out.println("Read, and print the file");
+  
+    try{
+      FileInputStream inFile = 
+                           new FileInputStream("junk.txt");
+      int data;
+  
+      //Read and print until eof indicated by -1.
+      while( (data = inFile.read()) != -1)
+        System.out.print((char)data);
+      inFile.close();
+    }catch(IOException e){System.out.println(e);}
+    System.out.println("\nEnd of program");
+  }// end main
+}//end class Security03</PRE></TD>
+</TR>
+</TABLE>
+
+<P>&nbsp;</P>
+<FONT COLOR="#ff0000"><H3 ALIGN="CENTER"><A NAME="PolicyFile">Policy File</A></H3>
+</FONT><P>The key to this lesson, and the key to making it possible for the above application to <I>write</I> and then <I>read</I> a file named <B>junk.txt</B> is the policy configuration file shown below.</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=492>
+<TR><TD VALIGN="TOP" BGCOLOR="#ffff00">
+<PRE>/* File Security03.policy, rev 4/10/99, R.G.Baldwin*/
+
+grant codeBase 
+"file:/G:/Baldwin/AA-School/JavaProg/Combined/Java/" {
+  permission java.io.FilePermission "junk.txt", "write";
+};
+
+grant codeBase 
+"file:/G:/Baldwin/AA-School/JavaProg/Combined/Java/" {
+  permission java.io.FilePermission "junk.txt", "read";
+};</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Granting very specific permission</P>
+</B></FONT><P>When invoked to set security policy, the first entry in this file <I>grants</I> code originating at the URL permission to <B>write</B> a file named <B>junk.txt</B> on the local file system. This is true even though the security manager implemented by the application does not grant that privilege.</P>
+<B><CODE><BLOCKQUOTE>"file:/G:/Baldwin/AA-School/JavaProg/Combined/Java/"</BLOCKQUOTE>
+</B></CODE><P>The second entry <I>grants</I> code originating at the same URL permission to <B>read</B> the same file.</P>
+<FONT COLOR="#ff0000"><H3 ALIGN="CENTER"><A NAME="BatchFile">Batch File</A></H3>
+</FONT><P>The batch file that I used to start the program causes the policy configuration file named <B>Security03.policy</B> to be used to set security policy for the execution of the application. This, in turn, grants the <I>write</I> and <I>read</I> privileges discussed above.</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=492>
+<TR><TD VALIGN="TOP" BGCOLOR="#ffff00">
+<PRE>java -Djava.security.policy=<B>Security03.policy</B> Security03</PRE></TD>
+</TR>
+</TABLE>
+
+<P>&nbsp;</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="ProgramListing">Program Listing</A></H2>
+</FONT><P>This section contains listing of all three files.</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=492>
+<TR><TD VALIGN="TOP" BGCOLOR="#ffff00">
+<PRE>/* File Security03.java Copyright 1999, R.G.Baldwin
+This application and two related files named 
+
+Security03.bat
+Security03.policy
+
+are designed to illustrate the use of security policy files
+in JDK 1.2.
+
+This application illustrates writing and then reading a 
+file one byte at a time where the application creates a
+security manager to control itself.  The security manager
+does not allow the writing and subsequent reading of disk
+files.  Therefore, the application cannot be executed under
+JDK 1.1.
+
+Under JDK 1.2, a security policy file can be created
+locally to grant the application permission to write and
+then read the file.  In order to use the policy file to
+grant the permissions, it must be invoked when the 
+application is started.  The following statement is
+encapsulated in a batch file to start the application and
+invoke the policy file named Security03.policy:
+  
+java -Djava.security.policy=Security03.policy Security03
+
+The contents of the policy file are shown below:
+
+grant codeBase 
+"file:/G:/Baldwin/AA-School/JavaProg/Combined/Java/" {
+  permission java.io.FilePermission "junk.txt", "write";
+};
+
+grant codeBase 
+"file:/G:/Baldwin/AA-School/JavaProg/Combined/Java/" {
+  permission java.io.FilePermission "junk.txt", "read";
+};
+
+These two segments of text in the policy file make it
+possible for class files loaded from the following URL
+
+  file:/G:/Baldwin/AA-School/JavaProg/Combined/Java/
+
+to write and read a file named
+
+  junk.txt
+
+on the local file system.
+
+
+The output from the program is:
+
+Start the program and write a file
+Read, and print the file
+Dick
+End of program
+**********************************************************/
+
+import java.io.*;
+
+//Define a dummy security manager class.
+class DummySecurityManager extends SecurityManager{}
+//=======================================================//
+
+class Security03{
+  public static void main(String[] args){
+    //Create a dummy security manager.
+    System.setSecurityManager(new DummySecurityManager());
+    
+    System.out.println(
+                    "Start the program and write a file");
+    try{
+      FileOutputStream outFile = 
+                          new FileOutputStream("junk.txt");
+  
+      //Write four bytes to the file and close it
+      outFile.write('D');
+      outFile.write('i');
+      outFile.write('c');
+      outFile.write('k');
+      outFile.close();
+    }catch(IOException e){System.out.println(e);}
+
+    System.out.println("Read, and print the file");
+  
+    try{
+      FileInputStream inFile = 
+                           new FileInputStream("junk.txt");
+      int data;
+  
+      //Read and print until eof indicated by -1.
+      while( (data = inFile.read()) != -1)
+        System.out.print((char)data);
+      inFile.close();
+    }catch(IOException e){System.out.println(e);}
+    System.out.println("\nEnd of program");
+  }// end main
+}//end class Security03</PRE></TD>
+</TR>
+</TABLE>
+
+
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=492>
+<TR><TD VALIGN="TOP" BGCOLOR="#ffff00">
+<PRE>/* File Rmi02Server.policy, rev 4/10/99, R.G.Baldwin*/
+
+grant codeBase 
+"file:/G:/Baldwin/AA-School/JavaProg/Combined/Java/" {
+  permission java.io.FilePermission "junk.txt", "write";
+};
+
+grant codeBase 
+"file:/G:/Baldwin/AA-School/JavaProg/Combined/Java/" {
+  permission java.io.FilePermission "junk.txt", "read";
+};</PRE></TD>
+</TR>
+</TABLE>
+
+
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=492>
+<TR><TD VALIGN="TOP" BGCOLOR="#ffff00">
+<PRE>rem File Secuity03.bat Rev 4/10/99 RGB
+
+java -Djava.security.policy=Security03.policy Security03</PRE></TD>
+</TR>
+</TABLE>
+
+<P>-end-<!--end--></P></BODY>
+</HTML>

@@ -1,0 +1,490 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>... in Java by Richard G Baldwin</TITLE>
+<META NAME="Template" CONTENT="C:\PROGRAM FILES\MSOFFICE\OFFICE\html.dot">
+</HEAD>
+<BODY LINK="#0000ff" VLINK="#800080" BGCOLOR="#ffffff">
+
+<P><!--start--></P>
+<I><H3 ALIGN="CENTER">Richard G Baldwin (512) 223-4758, </I><A HREF="mailto:baldwin@austin.cc.tx.us"><I>baldwin@austin.cc.tx.us</I></A><I>, </I><A HREF="http://www2.austin.cc.tx.us/baldwin/"><I>http://www2.austin.cc.tx.us/baldwin/</I></A></H3>
+<H2 ALIGN="CENTER"><!--title-->CORBA, Passing References to Remote Objects -- Callback Methods<!--endTitle--></H2>
+<P>Java Programming, Lecture Notes 636, Revised 03/08/99. </P>
+
+<UL>
+<LI><A HREF="#Preface">Preface</A> </LI>
+<LI><A HREF="#Introduction">Introduction</A> </LI>
+<LI><A HREF="#Overview">Overview</A> </LI>
+<LI><A HREF="#Sample_Program">Sample Program</A> </LI>
+<LI><A HREF="#The_Interface_Definition_Language__IDL__">The Interface Definition Language (IDL) File</A> </LI>
+<LI><A HREF="#The_Batch_file">The Batch File</A> </LI>
+<LI><A HREF="#The_Server_File">The Server File</A> </LI>
+<LI><A HREF="#The_Client_File">The Client File</A> </LI>
+<LI><A HREF="#Summary">Summary</A> </LI>
+<LI><A HREF="#Program_Listings">Program Listings</A> </LI></UL>
+
+<P><HR></P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Preface">Preface</A></H2>
+</FONT><P>Students in Prof. Baldwin's <B><U>Advanced Java Programming</B></U> classes at ACC will be responsible for knowing and understanding all of the material in this lesson beginning with the spring semester of 1999. </P>
+<P>This lesson was originally written on October 27, 1998. The sample program was tested using the JDK 1.2beta4 download package. The purpose of this lesson is to illustrate the passing of servant object references as parameters to other methods with JavaSoft's Java IDL and CORBA. The passing of strings is also illustrated.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Introduction">Introduction</A></H2>
+</FONT><P>Before embarking on this lesson, you need to study and understand all of the previous lessons on CORBA and Java. This lesson builds directly upon those lessons. Unless you understand the material in those lessons, you probably won't understand what is going on here.</P>
+<P>Using CORBA, a client machine anywhere in the world has the capability of invoking methods on a servant object on a cooperating server anywhere in the world, and the programs at the two ends can be developed using different programming languages. One of those programming languages is Java.</P>
+<P>Once the client code has a reference to the remote object, the invocation of methods on the remote object is very similar to the invocation of methods on local objects. </P>
+<P>Methods of servant objects on the server side can receive references to servant objects on the client side and use those references to invoke methods on servant objects on the client side. I will refer to these as <EM>callback methods</EM>.</P>
+<P>Both the client code and the server code must have access to an IDL file that declares the methods that can be invoked remotely. This is the key to the whole process and the glue that holds it all together. The client and the server must also agree on how the server will provide an object reference to the client.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Overview">Overview</A></H2>
+</FONT><P>It doesn't matter how a method on either the client or the server gets a reference to a servant object on the other side. Once the method has the reference, it can invoke methods on the servant object.</P>
+<P>I have shown you how to provide references to servant objects using both the name service and stringified object references. This lesson will show you another way to provide an object reference: by passing a reference to a servant object as a parameter to a method on another servant object. </P>
+<P>The sample program in this lesson uses a stringified object reference stored in a common disk file to provide a reference to a servant object on the server to a method on the client. The method on the client uses this object reference to invoke a method on the servant object on the server.</P>
+<P>When the client invokes the method on the servant object on the server, it passes two parameters. One parameter is a String object. The other parameter is a reference to a servant object on the client. The servant object on the server uses the reference to invoke a method on the servant object on the client, passing the String object as a parameter to the method of the servant object on the client. I will refer to the servant object on the client as a <EM>callback</EM> method.</P>
+<P>Thus, the code in the client passes a String to a method on the server, which in turn passes the String back to a method on the client. The method on the client then displays the contents of the String. </P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Sample_Program">Sample Program</A></H2>
+</FONT><P>The application requires three separate source files and one utility program.&nbsp; The source files are: </P>
+
+<UL>
+<LI>An IDL file that declares the signature of a method on a servant object on the server that can be invoked by the client and the signature of a method on a servant object on the client that can be invoked by the method on the servant object on the server. </LI>
+<LI>A file that serves as the server program. </LI>
+<LI>A file that serves as the client program. </LI></UL>
+
+<P>The utility program is: </P>
+<B><BLOCKQUOTE>idltojava.exe</B> - a program that converts the IDL file to several Java files, producing stub and skeleton source files and some other source files used by the client and the server.</BLOCKQUOTE>
+<P>I have a folder on my computer that contains the following four source files:</P>
+
+<UL>
+<LI>Corba06.bat </LI>
+<LI>Corba06.idl </LI>
+<LI>Corba06Server.java </LI>
+<LI>Corba06Client.java </LI></UL>
+
+<P>Only the last three files are required. The batch file is optional, but is useful for managing the whole process.</P>
+<P>Initially, this folder doesn't have any sub folders. However, execution of the program <STRONG>idltojava</STRONG> creates a package to contain the source files that it generates. I forced the package to be in a tree that begins with a folder named <STRONG>junk</STRONG>. As a result, a <STRONG>junk</STRONG> folder is automatically generated which contains another folder named <STRONG>TheDateApp,</STRONG> which is the actual package name.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="The_Interface_Definition_Language__IDL__">The Interface Definition Language (IDL) File</A></H2>
+</FONT><P>The IDL file is the glue that holds the system of programs together and makes it possible for code in a client to invoke methods in a remote object on a basis that is both platform and language independent. This was discussed in some detail in the earlier lessons.</P>
+<P>The IDL for this sample program is named <STRONG>Corba06.idl</STRONG>. This file is considerably different from IDL files used in previous lessons. In particular, this IDL file declares two interfaces. As before, one of the interfaces named <STRONG>TheDateInterface </STRONG>is used to instantiate a servant object on the server whose method named <STRONG>getTheDateMethod() </STRONG>can be invoked remotely by code on the client.</P>
+<P>However, this IDL file also contains an interface named <STRONG>TheCallbackInterface</STRONG> used to instantiate a servant object on the client. A reference to this servant object is passed to the method on the servant object on the server, which turns around and uses that reference to invoke a method named <STRONG>theCallbackMethod()</STRONG> on the servant object on the client.</P>
+<P>Another major difference is the fact that the method on the servant object on the server takes two parameters. The sample programs in previous lessons haven't involved passing parameters.</P>
+<P>An IDL file is not written in Java syntax. Rather, it is written in IDL syntax. Here you see something about IDL parameter syntax that is considerably different from Java. In addition to specifying the type and name of each method parameter, IDL syntax also requires that each parameter be categorized into one of the following categories:</P>
+
+<UL>
+<STRONG><LI>in</STRONG> </LI>
+<STRONG><LI>out</STRONG> </LI>
+<STRONG><LI>inout</STRONG> </LI></UL>
+
+<P>I am going to expect you to study the details of parameter passing in IDL syntax on your own using other sources (there are many available documents on the web which describe the IDL). </P>
+
+<UL>
+<STRONG><LI>in</STRONG> indicates a parameter that is used solely for incoming information. </LI>
+<STRONG><LI>out</STRONG> indicates a parameter that is used solely for outgoing information. </LI>
+<STRONG><LI>inout</STRONG> indicates a parameter that is used both for incoming and outgoing information. </LI></UL>
+
+<P>Both of the parameters in <STRONG>getTheDateMethod()</STRONG> are specified as <STRONG>in</STRONG> parameters. The incoming parameter named <STRONG>objRef</STRONG> is a reference to a servant object containing a callback method on the client. The parameter named <STRONG>message</STRONG> is simply a string.</P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>module <STRONG>TheDateApp</STRONG>{
+  interface <STRONG>TheCallbackInterface</STRONG>{
+    void <STRONG>theCallbackMethod</STRONG>(in string message);
+  };//end interface TheCallbackInterface
+  //-----------------------------------------------------//
+  interface <STRONG>TheDateInterface</STRONG>{
+    string <STRONG>getTheDateMethod</STRONG>(
+         <STRONG>in</STRONG> TheCallbackInterface objRef,<STRONG>in</STRONG> string message);
+  };//end interface TheDateInterface
+};//end module TheDateApp</PRE></TD>
+</TR>
+</TABLE>
+
+<P>You will recall that when the <STRONG>idltojava</STRONG> program is applied to an IDL file, several new Java source files are automatically generated in packages with names that match the module names in the IDL file. In this case, the following Java source files were automatically generated and placed in the package named <STRONG>TheDateApp</STRONG>.</P>
+
+<UL>
+<LI>_TheCallbackInterfaceStub.java </LI>
+<LI>TheCallbackInterface.java </LI>
+<LI>TheCallbackInterfaceHolder.java </LI>
+<LI>TheCallbackInterfaceHelper.java </LI>
+<LI>_TheCallbackInterfaceImplBase.java </LI>
+<LI>_TheDateInterfaceStub.java </LI>
+<LI>TheDateInterface.java </LI>
+<LI>TheDateInterfaceHolder.java </LI>
+<LI>TheDateInterfaceHelper.java </LI>
+<LI>_TheDateInterfaceImplBase.java</LI></UL>
+
+<P>&nbsp;</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="The_Batch_file">The Batch file</A></H2>
+</FONT><P>The batch file for this application is named <STRONG>Corba06.bat</STRONG>. The important parts of the file are shown below. Complete listing for all the files are provided near the end of this lesson. The most significant change in this batch file relative to previous versions is that it does not start the client program. This change was made to eliminate a race condition where the client program sometimes tried to read the file containing the stringified object reference before the server had time to create that file. With this program, it is necessary to manually start the client program after the server program announces that it is ready.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>rem File Corba06.bat
+idltojava -fno-cpp -p junk Corba06.idl
+javac Corba06*.java
+start java Corba06Server
+
+echo <STRONG>Start the client manually</STRONG> to avoid race condition</PRE></TD>
+</TR>
+</TABLE>
+
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="The_Server_File">The Server File</A></H2>
+</FONT><P>The name of the file containing the server code is <STRONG>Corba06Server.java</STRONG>.</P>
+<P>I will discuss the source code for the server in fragments, and for the most part will only discuss that code that is different from the code in previous lessons.</P>
+<P>The first fragment shows the class definition for the servant class named <STRONG>TheDateInterfaceServant</STRONG>. This is the class from which the servant object on the server side was instantiated. This class includes the method named <STRONG>getTheDateMethod()</STRONG> that satisfies the requirements of the IDL file. The use of CORBA makes it possible for remote clients to invoke this method on an object of this class.</P>
+<P>This method receives two parameters. The type of the first parameter is <STRONG>TheCallbackInterface</STRONG>. This type is an interface type defined by one of the files automatically generated by the <STRONG>idltojava</STRONG> program. It is the Java interface definition that satisfies the IDL interface requirement for the IDL interface named <STRONG>TheCallbackInterface</STRONG>. This parameter is a reference to a servant object on the client side.</P>
+<P>The second parameter is of type <STRONG>String</STRONG> that satisfies the IDL requirement for an IDL <STRONG>string</STRONG> parameter.</P>
+<P>Code in the method uses the incoming object reference to invoke the method named <STRONG>theCallbackMethod()</STRONG> on the servant object on the client, passing a <STRONG>String</STRONG> object that includes the incoming <STRONG>String</STRONG> object plus some additional characters concatenated onto that object.</P>
+<P>When control returns from <STRONG>theCallbackMethod()</STRONG>, the method in this servant object instantiates and returns a <STRONG>String</STRONG> representation of a <STRONG>Date</STRONG> object containing the current date and time.</P>
+<P>To recap, the client invokes a method on a servant object on the server, passing a reference to a servant object on the client. The method on the server uses that reference to invoke a method on the servant object on the client. When that method returns, the method on the server returns control to the client.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>class <STRONG>TheDateInterfaceServant</STRONG> 
+                         extends _TheDateInterfaceImplBase{
+  public String <STRONG>getTheDateMethod</STRONG>(
+              <STRONG>TheCallbackInterface</STRONG> objRef, <STRONG>String</STRONG> message){
+
+    objRef.<STRONG>theCallbackMethod</STRONG>(
+                       "Rcvd from client: " + message
+                       + "\nThis string added by servant");
+    <STRONG>return</STRONG> new Date().toString();
+  }//end getTheDateMethod()
+}//end TheDateInterfaceservant class</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The remaining code that I will discuss in this section is contained in the <STRONG>main()</STRONG> method in the class named <STRONG>Corba06Server</STRONG>. This is the code for the main server object.</P>
+<P>As usual, I create and initialize an <STRONG>ORB</STRONG> object to support the server.</P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      ORB orb = ORB.<STRONG>init</STRONG>(args, null);</PRE></TD>
+</TR>
+</TABLE>
+
+<P>Next, I create a servant object on the server and register it with the <STRONG>ORB</STRONG>.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      TheDateInterfaceServant theObjectReference = 
+                             new <STRONG>TheDateInterfaceServant</STRONG>();
+      orb.<STRONG>connect</STRONG>(theObjectReference);</PRE></TD>
+</TR>
+</TABLE>
+
+<P>Next, I use the method named <STRONG>object_to_string()</STRONG> to convert the object reference to a stringified object reference and store it in a common file for access by the client. I wrote a method named <STRONG>setStringifiedObjectRef()</STRONG> to handle all of the file manipulations so that those manipulations wouldn't clutter up the main part of the program. There is really nothing new in that method. You can view it in the program listings near the end of this lesson.</P>
+<P>Another reason for breaking that operation out as a separate method is that it will be easier to modify in future lessons to use different approaches for providing the stringified object reference to the client.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      <STRONG>setStringifiedObjectRef</STRONG>(
+                 orb.<STRONG>object_to_string</STRONG>(theObjectReference));</PRE></TD>
+</TR>
+</TABLE>
+
+<P>All of the remaining code in the server is standard code that you have seen several times before. You can view that code in the program listings near the end of this lesson.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="The_Client_File">The Client File</A></H2>
+</FONT><P>The file containing the client code is named <STRONG>Corba06Client.java</STRONG>.</P>
+<P>I will discuss the source code for the client in fragments, and for the most part will only discuss that code that is different from the sample programs in previous lessons. A complete listing of the program is provided near the end of this lesson.</P>
+<P>The first fragment is different from anything that I have shown you in previous lessons. In particular, this is the definition of a class from which a servant object is instantiated <U>on the client</U>. Previous lessons only had servant objects on the server.</P>
+<P>This class is the required implementation of the IDL interface named <STRONG>TheCallbackInterface</STRONG>, which declares a method named <STRONG>theCallbackMethod()</STRONG>. When the program is executed, this method is invoked by code in the method on the servant object on the server. This method receives a <STRONG>String</STRONG>, which it displays in the <STRONG>MS-DOS</STRONG> window in which the client is running.</P>
+<P>When this method terminates, control returns to the code in the method on the servant object on the server from which it was invoked.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>class <STRONG>TheCallbackInterfaceServant</STRONG> 
+                     extends _TheCallbackInterfaceImplBase{
+  public void <STRONG>theCallbackMethod</STRONG>(<STRONG>String</STRONG> theMessage){
+    System.out.println("In client's callback method");
+    System.out.println("Received following as parameter");
+    System.out.println(theMessage);
+    System.out.println("Terminating callback method");
+  }//end theCallbackMethod()
+}//end class TheCallbackInterfaceServant</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The remaining code that I will discuss in this section is all contained in the <STRONG>main()</STRONG> method of the class named <STRONG>Corba06Client</STRONG>. I will omit most of the familiar portions of the code. You can view it in the program listings near the end of the lesson.</P>
+<P>Both the client and the server need an <STRONG>ORB</STRONG> object to handle their communication with the other end of the connection. The following code creates and initializes the <STRONG>ORB</STRONG> object for the client.</P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      ORB orb = ORB.<STRONG>init</STRONG>(args, null);</PRE></TD>
+</TR>
+</TABLE>
+
+<P>As mentioned earlier, this application uses a stringified object reference stored in a common disk file. As with the server, I created a new method named <STRONG>getStringifiedObjRef()</STRONG> that handles all of the file manipulations associated with getting that reference from the disk file. There is nothing new in the method. You can view a listing of that method in the program listings near the end of this lesson.</P>
+<P>That method returns the stringified reference to the servant object on the server. The stringified reference is passed as a parameter to the method named <STRONG>string_to_object()</STRONG> for conversion to a reference of the CORBA Object type.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      org.omg.CORBA.Object theGenericObjRef = 
+              orb.<STRONG>string_to_object</STRONG>(<STRONG>getStringifiedObjRef</STRONG>());</PRE></TD>
+</TR>
+</TABLE>
+
+<P>As in previous lessons, it is necessary to <EM>cast</EM> or <EM>narrow</EM> the reference to type <STRONG>TheDateInterface</STRONG> before it can be used. This type is defined by a Java interface file that was automatically generated by the <STRONG>idltojava</STRONG> program. </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      <STRONG>TheDateInterface</STRONG> theRemoteObjRef = 
+           TheDateInterfaceHelper.<STRONG>narrow</STRONG>(theGenericObjRef);</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The next fragment contains information that is new to this lesson. This fragment instantiates a servant object for the client that will be passed as a reference to a method on the servant object on the server so that the method on the server can invoke a callback method on the servant object on the client. The fragment also registers the servant object on the client with the client's <STRONG>ORB</STRONG> object.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>
+      TheCallbackInterfaceServant theCallbackObjectRef = 
+                         new <STRONG>TheCallbackInterfaceServant</STRONG>();
+      orb.<STRONG>connect</STRONG>(theCallbackObjectRef);</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The next fragment is similar to what you have seen before. In this fragment, code in the client uses the object reference to the servant object on the server to invoke the method named <STRONG>getTheDateMethod()</STRONG> on the servant object on the server. However, in this case, two parameters are passed in the method invocation. The first parameter is the reference named <STRONG>theCallbackObjectRef</STRONG>, which is a reference to the servant object on the client. The second parameter is a String.</P>
+<P>The method on the server will use this reference to invoke the callback method on the servant object on the client. After that, the method on the server will return a <STRONG>String</STRONG> representation of the current date and time which is displayed by client code.</P>
+<P>The remainder of the code in the client program is the same as what you have seen several times before, so I won't discuss it further. You can view that code in the program listings near the end of this lesson.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      String theDate = 
+              theRemoteObjRef.<STRONG>getTheDateMethod</STRONG>(
+              <STRONG>theCallbackObjectRef</STRONG>,"The Test Message");</PRE></TD>
+</TR>
+</TABLE>
+
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Summary">Summary</A></H2>
+</FONT><P>With CORBA, if a method has a reference to a remote servant object, it can invoke methods on that object pretty much the same as if the methods were methods on a local object. It doesn't matter how it gets that reference. Once it has the reference, it can invoke the methods.</P>
+<P>One way of passing such a reference is by way of a name service. We saw how to use the name service in several sample programs early in this series of lessons.</P>
+<P>Another way of passing such a reference is to stringify the reference and communicate it using any reliable means of communicating string data. The receiving code can then use Java methods to restore to a reference object and use it to invoke methods on the servant object.</P>
+<P>A third way of passing such a reference is to pass it as a parameter in a call to a method on a servant object. This leads to the ability to invoke a method on a servant object in such a way as to have it make a <EM>callback</EM> when appropriate. You have seen how to do that in this lesson.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Program_Listings">Program Listings</A></H2>
+</FONT><P>Complete listings for the IDL file, the batch file and the source code files that you must create are provided in this section. Listings are not provided for the Java source code files that are automatically generated by the <STRONG>idltojava</STRONG> program.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Corba06.idl
+See Corba06Server.java for information on this program.
+**********************************************************/
+module TheDateApp{
+  interface TheCallbackInterface{
+    void theCallbackMethod(in string message);&#9;&#9;
+  };//end interface TheCallbackInterface
+  //-----------------------------------------------------//
+  interface TheDateInterface{
+    string getTheDateMethod(
+         in TheCallbackInterface objRef,in string message);
+  };//end interface TheDateInterface
+};//end module TheDateApp</PRE></TD>
+</TR>
+</TABLE>
+
+<FONT COLOR="#ff0000"><P>.</P></FONT>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>rem File Corba06.bat
+echo off
+rem See Corba06Server.java for description of program
+rem This program does not use a name service.
+
+echo off
+
+echo Convert the idl file to the required set of java files
+idltojava -fno-cpp -p junk Corba06.idl
+
+echo Compile all of the java files
+javac Corba06*.java
+
+echo Start the server as a new process. 
+start java Corba06Server
+
+echo Start the client manually to avoid race condition</PRE></TD>
+</TR>
+</TABLE>
+
+<P>. </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Corba06Server.java
+Revised 10/27/98
+
+This is a Java/CORBA server that illustrates the use 
+of callbacks in CORBA.
+
+This server provides a servant object that returns the
+date and time as a string. In addition, this servant
+object receives a string and a reference to a servant 
+object provided by the client.  It uses the reference to 
+invoke the client's callback method passing the string
+as a parameter to the client's callback method.
+
+The client's callback method displays the string that
+it receives as a parameter.
+
+This program uses a stringified object reference to the
+server's servant object rather than using the name 
+service.
+
+Tested using JDK 1.2beta4 under Win95.
+**********************************************************/
+import junk.TheDateApp.*;
+import org.omg.CORBA.*;
+import java.util.Date;
+import java.io.*;
+ 
+class TheDateInterfaceServant 
+                         extends _TheDateInterfaceImplBase{
+  public String getTheDateMethod(
+              TheCallbackInterface objRef, String message){
+
+    objRef.theCallbackMethod(//call the callback method
+                       "Rcvd from client: " + message
+                       + "\nThis string added by servant");
+    return new Date().toString();
+  }//end getTheDateMethod()
+}//end TheDateInterfaceservant class
+//=======================================================//
+ 
+public class Corba06Server   {
+ 
+  public static void main(String args[]){
+    try{      
+      //Create and initialize the ORB
+      ORB orb = ORB.init(args, null);
+ 
+      //Create servant and register it with the ORB
+      TheDateInterfaceServant theObjectReference = 
+                             new TheDateInterfaceServant();
+      orb.connect(theObjectReference);
+
+      //Convert the object reference to a string and store
+      // it in a common file for access by the client.
+      setStringifiedObjectRef(
+                 orb.object_to_string(theObjectReference));
+
+      System.out.println("Server is running");
+ 
+      // wait for invocations from clients
+      java.lang.Object sync = new java.lang.Object();
+      synchronized (sync) {
+        sync.wait();
+      }//end synchronized block
+ 
+    }catch (Exception e) {
+       System.err.println("ERROR: " + e);
+       e.printStackTrace(System.out);
+    }//end catch block
+  }//end main()
+  //-----------------------------------------------------//
+  
+  static void setStringifiedObjectRef(String stringObjRef){
+    //Write the stringified object ref to a file named
+    // junk.txt in the user's home directory
+    try{
+      String theFile = System.getProperty("user.home")
+      &#9;             + System.getProperty("file.separator")
+      &#9; &#9;                              + "junk.txt";
+      FileOutputStream fileOutputStream = 
+                             new FileOutputStream(theFile);
+      PrintStream printStream = 
+                         new PrintStream(fileOutputStream);
+      printStream.print(stringObjRef);
+      printStream.close();
+      System.out.println("Obj ref stored in: " 
+                     + System.getProperty("user.home")
+      &#9;           + System.getProperty("file.separator")
+      &#9; &#9;                           + "junk.txt");
+    }catch (Exception e) {
+       System.err.println("ERROR: " + e);
+       e.printStackTrace(System.out);
+    }//end catch block
+
+  }//end setStringifiedObjectRef()
+  &#9;
+}//end Corba06Server class</PRE></TD>
+</TR>
+</TABLE>
+
+<P>. </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Corba06Client.java
+See Corba06Server.java for information on this program.
+**********************************************************/
+import junk.TheDateApp.*;
+import org.omg.CORBA.*;
+import java.io.*;
+
+class TheCallbackInterfaceServant 
+                     extends _TheCallbackInterfaceImplBase{
+  public void theCallbackMethod(String theMessage){
+  &#9;System.out.println("In client's callback method");
+    System.out.println("Received following as parameter");
+    System.out.println(theMessage);
+    System.out.println("Terminating callback method");
+  }//end theCallbackMethod()
+}//end class TheCallbackInterfaceServant
+//=======================================================//
+
+ 
+public class Corba06Client{
+  public static void main(String args[]){
+    try{
+      // create and initialize the ORB
+      ORB orb = ORB.init(args, null);
+      
+      //Get and convert the stringified object reference 
+      // to a generic CORBA object reference
+      org.omg.CORBA.Object theGenericObjRef = 
+              orb.string_to_object(getStringifiedObjRef());
+
+      //Cast, or narrow the generic object reference to a 
+      // true object reference.
+      TheDateInterface theRemoteObjRef = 
+           TheDateInterfaceHelper.narrow(theGenericObjRef);
+ 
+      TheCallbackInterfaceServant theCallbackObjectRef = 
+                         new TheCallbackInterfaceServant();
+      orb.connect(theCallbackObjectRef);
+ 
+      //Call the TheDateInterface server object and 
+      // print results
+      System.out.println(
+                      "In the client calling remote obj");
+      String theDate = 
+              theRemoteObjRef.getTheDateMethod(
+              theCallbackObjectRef,"The Test Message");
+      System.out.println("Back in the client");
+      System.out.println(
+                "Following was returned from remote obj");
+      System.out.println(theDate);
+      
+      //Delay program termination so that the console
+      // won't disappear from the screen when running
+      // under control of a batch file.
+      int ch1 = '0';
+      System.out.println("Press Ctrl-z to terminate");
+      while( (ch1 = System.in.read() ) != -1);      
+    }catch (Exception e) {
+      System.out.println("ERROR : " + e) ;
+      e.printStackTrace(System.out);
+    }//end catch block
+  }//end main() method
+  //-----------------------------------------------------//
+  
+  //This method gets a stringified object reference 
+  // provided by the server according to a specific
+  // agreement as to how the reference will be delivered.
+  static String getStringifiedObjRef(){
+  &#9;String stringifiedObjectRef = "Failed to get it";
+  &#9;try{
+      //Read the stringified object ref from a file named
+      // junk.txt in the user's home directory
+      String filename = System.getProperty("user.home")
+    &#9;            + System.getProperty("file.separator")
+     &#9;&#9;                              +"junk.txt";
+      FileInputStream fileInputStream = 
+                            new FileInputStream(filename);
+      DataInputStream dataInputStream = 
+                     new DataInputStream(fileInputStream);
+      stringifiedObjectRef = dataInputStream.readLine(); 
+    }catch (Exception e) {
+      System.out.println("ERROR : " + e) ;
+      e.printStackTrace(System.out);
+    }//end catch block
+    return stringifiedObjectRef;
+  }//end getStringifiedObjRef()
+}//end Corba06Client class</PRE></TD>
+</TR>
+</TABLE>
+
+<P>-end- </P>
+<P><!--end--></P></BODY>
+</HTML>

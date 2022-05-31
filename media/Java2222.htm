@@ -1,0 +1,2600 @@
+<!DOCTYPE doctype PUBLIC "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+  <meta http-equiv="Content-Type"
+ content="text/html; charset=iso-8859-1">
+  <title>... in Java by Richard G Baldwin</title>
+</head>
+<body link="#0000ff" vlink="#666666" alink="#ff0000" lang="EN-US">
+<h2>Graphics, using Java and JDOM with SVG, Part 1</h2>
+<i>Learn a little about JDOM as an alternative to Sun's JAXP DOM API. Learn 
+how to create an SVG file using raw JDOM commands. Learn how to write a 
+Java/JDOM/SVG graphics library to reduce the effort required to create SVG files 
+using JDOM and Java.</i><p><b>Published:</b>&nbsp; July 24, 2007<br>
+<b>By <a href="mailto:Baldwin@DickBaldwin.com">Richard G. Baldwin</a></b>
+</p>
+<p>Java Programming Notes # 2222</p>
+<ul>
+	<li><a href="#Preface">Preface</a></li>
+
+	<ul>
+		<li><a href="#General">General</a></li>
+		<li><a href="#Viewing_tip">Viewing tip</a><ul>
+			<li><a href="#Figures">Figures</a></li>
+			<li><a href="#Listings">Listings</a></li>
+		</ul></li>
+		<li><a href="#Supplementary_material">Supplementary material</a></li>
+	</ul>
+	<li><a href="#General%20Background%20Information">General
+	background information</a></li>
+	<li><a href="#Preview">Preview</a></li>
+	<li><a href="#Discussion%20and%20Sample%20Programs">Discussion and
+	sample code</a></li>
+	<ul>
+		<li><a href="#The_program_named_Svg15">The program named Svg15</a></li>
+		<li><a href="#The_program_named_Svg16">The program named Svg16</a></li>
+	</ul>
+	<li><a href="#Run%20the%20program">Run the program</a></li>
+	<li><a href="#Summary">Summary</a></li>
+	<li><a href="#Whats%20Next">What's next?</a></li>
+	<li><a href="#Resources">Resources</a></li>
+	<li><a href="#Complete%20Program%20Listings">Complete program
+	listings</a></li>
+	<li><a href="#Copyright">Copyright</a></li>
+	<li><a href="#About_the_author">About the author</a></li>
+</ul>
+<hr size="3" width="100%" align="center">
+<p align="left">&nbsp;</p>
+<center>
+<h2> <a name="Preface"></a>Preface</h2>
+</center>
+<h3> <a name="General">General</a></h3>
+<p> <font color="#FF0000"><b>First of two parts</b></font></p>
+<p> This lesson is the first part of two-part tutorial on using Java and JDOM to 
+create SVG files.</p>
+<p> <font color="#FF0000"><b>What you have learned</b></font></p>
+<p> In previous lessons, you learned how to use <i>Sun's JAXP DOM API</i> to do 
+the following:</p>
+<ul>
+	<li>Write Java code that will deposit SVG/XML code into an SVG file.</li>
+	<li>Write Java code that will deposit in-line SVG code into an XHTML file.</li>
+	<li>Write Java servlet code that will deposit in-line SVG code into XHTML 
+	code in the servlet's output data stream.</li>
+	<li>Write Java code that will create an output XHTML file that references an 
+	external SVG file.</li>
+	<li>Write Java servlet code that will create an output XHTML data stream 
+	that references an external SVG file.</li>
+	<li>Write a Java/SVG graphics library that removes much of the pain from 
+	writing Java code to produce SVG/XML output.</li>
+	<li>Program and use many of the features of SVG to produce rich graphics in 
+	an SVG-capable browser window, including Bézier curves and elliptical arcs.</li>
+</ul>
+<p> By Sun's JAXP DOM API, I am referring mainly to the interfaces and other 
+material in the <b>org.w3c.dom</b> package of Sun's J2SE 5.0.</p>
+<p> <font color="#FF0000"><b>There is a better way</b></font></p>
+<p> While Sun's JAXP DOM API is a powerful way to accomplish these tasks, it can 
+be very complicated, and in my opinion, it is not the best way.&nbsp; There is a 
+better way, and that better way is JDOM <i>(see Resources)</i>.&nbsp; Some of 
+the problems with Sun's JAXP DOM API and the advantages of JDOM are spelled out 
+in <a href="http://www.cafeconleche.org/books/xmljava/chapters/ch14.html">
+Chapter 14</a> of Elliotte Rusty Harold's book, <i>Processing XML with Java</i>.</p>
+<p> <font color="#FF0000"><b>What is JDOM?</b></font></p>
+<p> Here is a statement of the JDOM 
+<a href="http://www.jdom.org/mission/index.html">mission</a> taken from the JDOM website:</p>
+<blockquote>
+	<p><i><b>We want to provide a solution for using XML from Java that is as 
+	simple as Java itself. </b></i></p>
+	<p><i>There is no compelling reason for a Java API to manipulate XML to be 
+	complex, tricky, unintuitive, or a pain in the neck. JDOM<sup><font size="-2">TM</font></sup> is both 
+	Java-centric and Java-optimized. It behaves like Java, it uses Java 
+	collections, it is completely natural API for current Java developers, and 
+	it provides a low-cost entry point for using XML.</i></p>
+	<p><i>While JDOM interoperates well with existing standards such as the 
+	Simple API for XML (SAX) and the Document Object Model (DOM), it is not an 
+	abstraction layer or enhancement to those APIs. Rather, it provides a 
+	robust, light-weight means of reading and writing XML data without the 
+	complex and memory-consumptive options that current API offerings provide</i>.</p>
+</blockquote>
+<p> <font color="#FF0000"><b>Why learn about both approaches?</b></font></p>
+<p> At this point, you may be wondering why I spent all of that time and effort 
+teaching you how to use Sun's JAXP DOM API to create SVG code if JDOM is a 
+better way.&nbsp; The reason is simple.&nbsp; Because Sun's JAXP DOM API is part 
+of J2SE 5.0, it is very likely to be available on any server that supports 
+servlets.&nbsp; JDOM, on the other hand, while widely used, is probably less 
+likely to be available on some servers.&nbsp; Therefore, if JDOM is available on 
+your server of choice, you should use it.&nbsp; If it is not available, you will 
+need to fall back and use Sun's JAXP DOM API.&nbsp; Therefore, you need to 
+understand and know how to use both approaches.</p>
+<p> <font color="#FF0000"><b>A JDOM/SVG graphics library</b></font></p>
+<p> In earlier lessons, I taught you how write your own Java SVG graphics 
+library making use of Sun's JAXP DOM API to eliminate, or at least alleviate the 
+requirement to write raw XML code or raw JAXP DOM code.&nbsp; The use of the SVG 
+graphics library makes it possible for you to produce SVG output simply by 
+making typical Java method calls.&nbsp; In the two parts of this tutorial, I will 
+teach you how to write your own Java SVG graphics library making use of JDOM to 
+accomplish the same purpose.</p>
+<p>
+<table width="275" cellpadding="0" cellspacing="0" border="0" align="right">
+<tr>
+<td width="10">
+<td>
+  <table width="100%" cellpadding="5" cellspacing="0" border="1">
+  <tr><td bgcolor="#eeeeee">
+  <b>An excellent online resource.</b><br />
+  Chapters 14 and 15 of Elliotte Rusty Harold's book, <i>Processing XML with Java</i>,
+	<i>(see <a href="#Resources">Resources</a>)</i> are an excellent online 
+	resource for learning about JDOM in general.</td></tr></table>
+</td>
+</tr>
+</table>
+
+ <font color="#FF0000"><b>Not a lesson on JDOM proper</b></font></p>
+<p> This is not a lesson on how to use JDOM. <i>(How to use JDOM for a variety 
+of useful purposes would probably be a good topic for a future series of 
+tutorial lessons.)</i> Rather, this is a lesson on SVG.&nbsp; In this lesson, I 
+will teach you just enough about JDOM that you can use it to create SVG code to 
+produce rich graphics in your browser.</p>
+<h3> <a name="Viewing_tip">Viewing tip</a></h3>
+<p> I recommend that you open another copy of this document in a separate 
+browser window and use the following links to easily find and view the figures 
+and listings while you are reading about them.</p>
+<h4> <a name="Figures">Figures</a></h4>
+<ul>
+	<li><a href="#Figure_1">Figure 1</a>. Graphic output from both programs.</li>
+	<li><a href="#Figure_2">Figure 2</a>. Drawing with a Bezier curve and a 
+	radial gradient.</li>
+	<li><a href="#Figure_3">Figure 3</a>. Bit mapped image enlarged by a factor 
+	of four.</li>
+	<li><a href="#Figure_4">Figure 4</a>. SVG drawing enlarged by a factor of 
+	four.</li>
+	<li><a href="#Figure_5">Figure 5</a>. Svg drawing enlarged by a factor of 
+	sixteen.</li>
+	<li><a href="#Figure_6">Figure 6</a>. Svg drawing enlarged by a factor of 
+	sixteen.</li>
+	<li><a href="#Figure_7">Figure 7</a>. Enlargement of bit mapped image by a 
+	factor of sixteen.</li>
+</ul>
+<h4> <a name="Listings">Listings</a></h4>
+<ul>
+	<li><a href="#Listing_1">Listing 1</a>. Beginning of class and main method 
+	for Svg15.</li>
+	<li><a href="#Listing_2">Listing 2</a>. Create DTD strings.</li>
+	<li><a href="#Listing_3">Listing 3</a>. Create the root node named svg.</li>
+	<li><a href="#Listing_4">Listing 4</a>. Create a DocType node.</li>
+	<li><a href="#Listing_5">Listing 5</a>. Create the Document node.</li>
+	<li><a href="#Listing_6">Listing 6</a>. Create and populate a description 
+	element node.</li>
+	<li><a href="#Listing_7">Listing 7</a>. Create a comment node.</li>
+	<li><a href="#Listing_8">Listing 8</a>. Create the rectangular border.</li>
+	<li><a href="#Listing_9">Listing 9</a>. Create a yellow rectangle with a red 
+	border.</li>
+	<li><a href="#Listing_10">Listing 10</a>. The remaining graphics elements.</li>
+	<li><a href="#Listing_11">Listing 11</a>. Write the output file.</li>
+	<li><a href="#Listing_12">Listing 12</a>. The writePrettyFile method.</li>
+	<li><a href="#Listing_13">Listing 13</a>. The final SVG/XML code for the 
+	program named Svg15.</li>
+	<li><a href="#Listing_14">Listing 14</a>. The preliminary stuff for Svg16.</li>
+	<li><a href="#Listing_15">Listing 15</a>. Create and save the root node 
+	named svg.</li>
+	<li><a href="#Listing_16">Listing 16</a>. The makeSvg method.</li>
+	<li><a href="#Listing_17">Listing 17</a>. Set default attribute values for 
+	the makeSvg method.</li>
+	<li><a href="#Listing_18">Listing 18</a>. Set user specified attribute 
+	values for the makeSvg method.</li>
+	<li><a href="#Listing_19">Listing 19</a>. Create a DocType and a Document.</li>
+	<li><a href="#Listing_20">Listing 20</a>. Create a description element.</li>
+	<li><a href="#Listing_21">Listing 21</a>. The makeDescription method.</li>
+	<li><a href="#Listing_22">Listing 22</a>. Create a comment element.</li>
+	<li><a href="#Listing_23">Listing 23</a>. Make the border for the canvas.</li>
+	<li><a href="#Listing_24">Listing 24</a>. The makeRect method.</li>
+	<li><a href="#Listing_25">Listing 25</a>. Create the yellow rectangle.</li>
+	<li><a href="#Listing_26">Listing 26</a>. Create the ellipse node.</li>
+	<li><a href="#Listing_27">Listing 27</a>. Draw the polyline.</li>
+	<li><a href="#Listing_28">Listing 28</a>. The makePolyline method.</li>
+	<li><a href="#Listing_29">Listing 29</a>. Create the polygon.</li>
+	<li><a href="#Listing_30">Listing 30</a>. Create the diagonal line and the 
+	circle.</li>
+	<li><a href="#Listing_31">Listing 31</a>. Write the output file.</li>
+	
+	<li><a href="#Listing_32">Listing 32</a>. Java program code for Svg15.</li>
+	<li><a href="#Listing_33">Listing 33</a>. Java program code for Svg16.</li>
+</ul>
+<h3 align="left"> <a name="Supplementary_material">Supplementary material</a></h3>
+<p> I recommend that you also study the other lessons in my extensive collection 
+of online Java tutorials.&nbsp; You will find a consolidated index at
+<font
+ color="#000000"> <a href="http://www.dickbaldwin.com/toc.htm">
+www.DickBaldwin.com</a>.</font></p>
+<h2 align="center"><font color="#000000"> <a
+ name="General Background Information">General background information</a></font></h2>
+<p>According to <a href="http://en.wikipedia.org/wiki/JDOM">Wikipedia</a>, the 
+free encyclopedia,</p>
+<blockquote>
+	<p><i><b>JDOM</b> is an
+	<a title="Open source" href="http://en.wikipedia.org/wiki/Open_source">open 
+	source</a> Java-based document object model for
+	<a title="XML" href="http://en.wikipedia.org/wiki/XML">XML</a> that was 
+	designed specifically for the
+	<a title="Java platform" href="http://en.wikipedia.org/wiki/Java_platform">
+	Java platform</a> so that it can take advantage of its language features. 
+	JDOM integrates with
+	<a title="Document Object Model" href="http://en.wikipedia.org/wiki/Document_Object_Model">
+	Document Object Model</a> (DOM) and
+	<a title="Simple API for XML" href="http://en.wikipedia.org/wiki/Simple_API_for_XML">
+	Simple API for XML</a> (SAX), supports
+	<a title="XPath" href="http://en.wikipedia.org/wiki/XPath">XPath</a> and
+	<a title="XSL Transformations" href="http://en.wikipedia.org/wiki/XSL_Transformations">
+	XSLT</a>. It uses external parsers to build documents. JDOM was developed by 
+	Jason Hunter and Brett McLaughlin starting in March 2000. It has been part 
+	of the
+	<a title="Java Community Process" href="http://en.wikipedia.org/wiki/Java_Community_Process">
+	Java Community Process</a> as JSR 102, though that effort has since been 
+	abandoned. The name JDOM is a
+	<a title="Pseudo-acronym" href="http://en.wikipedia.org/wiki/Pseudo-acronym">
+	pseudo-acronym</a> for Java Document Object Model.</i></p>
+</blockquote>
+<p>According to
+<a href="http://www.cafeconleche.org/books/xmljava/chapters/ch14.html">Chapter 
+14</a> of Elliotte Rusty Harold's book, <i>Processing XML with Java</i>,</p>
+<blockquote>
+	<p><i>JDOM is a tree-based API for processing XML documents with Java that 
+	threw out DOM&#8217;s limitations and assumptions and started from scratch. It is 
+	designed purely for XML, purely for Java, and with no concern for backwards 
+	compatibility with earlier, similar APIs. It is thus much cleaner and much 
+	simpler than DOM. Most developers find JDOM to be far more intuitive and 
+	easy to use than DOM. It&#8217;s not that JDOM will enable you to do anything you 
+	can&#8217;t do with DOM. However, writing the same program with JDOM will normally 
+	take you less time and have fewer bugs when finished, simply because of the 
+	greater intuitiveness of the API. In many ways, JDOM is to DOM as Java is to 
+	C++, a much improved, incompatible replacement for the earlier more complex 
+	technology.</i></p>
+</blockquote>
+<h2 align="center"><font color="#000000"><a name="Preview">Preview</a></font></h2>
+<p>In this lesson, I will present and explain two programs named <b>Svg15</b> 
+and <b>Svg16</b>.&nbsp; Both programs use JDOM 1.0 to create an XML file named
+<b>Svg15.svg</b> that draws at least one of each of the following six basic SVG 
+shapes when rendered in an SVG graphics engine such as Firefox 2.0.0.4: </p>
+<ul>
+	<li>rectangle</li>
+	<li>circle</li>
+	<li>ellipse</li>
+	<li>line</li>
+	<li>polyline</li>
+	<li>polygon</li>
+</ul>
+<p>The graphic output from both programs is shown in Figure 1.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+<p>
+ <b><a name="Figure_1">Figure 1</a>. Graphic output from both programs. </b>
+<table cols="1" bgcolor="#ffffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><img border="0" src="java2222a01.jpg" width="470" height="623"></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Differences between the two programs</b></font></p>
+<p>The program named <b>Svg15</b> uses raw JDOM code to produce the SVG code 
+contained in the output file.&nbsp; The main purpose of this program is to 
+introduce you to the use of JDOM and to teach you how to create an SVG file 
+using raw JDOM commands.</p>
+<p>A secondary purpose of this program is to teach you how to use an SVG <b>
+viewBox</b> element to work in convenient virtual canvas dimensions, <i>(such as 
+1000x1000)</i> instead of having to work in less convenient actual canvas 
+dimensions <i>(such as 459x459)</i>.&nbsp; The use of the <b>viewBox</b> element 
+will be extended in the second part of this tutorial to teach you the 
+significance of the word <i>Scalable</i> in the name Scalable Vector Graphics <i>
+(SVG)</i>.</p>
+<p>
+<table width="275" cellpadding="0" cellspacing="0" border="0" align="right">
+<tr>
+<td width="10">
+<td>
+  <table width="100%" cellpadding="5" cellspacing="0" border="1">
+  <tr><td bgcolor="#eeeeee">
+  <b>Proper spelling of Bézier's name.</b><br />
+  Although <b>Bézier</b> is the proper spelling of <b>Pierre Bézier's </b>name, 
+	the use of the special character as the second character in the name makes 
+	it very difficult to compose text using a standard computer keyboard.&nbsp; 
+	Therefore, to make it easier to compose the remainder of this tutorial, I 
+	will take the liberty of spelling it <b>Bezier</b>.</td></tr></table>
+</td>
+</tr>
+</table>
+
+The program named <b>Svg16</b> is an improved version of the program named <b>
+Svg15</b>.&nbsp; The purpose of <b>Svg16</b> is to begin the development and use 
+of a Java/JDOM/SVG graphics library designed to eliminate much of the effort 
+involved in writing Java programs to produce SVG files.&nbsp; The development of 
+the graphics library will be continued in the second part of this tutorial to 
+include advanced SVG features such as linear and radial gradients, Bezier curves, and elliptical arcs.</p>
+<p><font color="#FF0000"><b>A preview of Part 2</b></font></p>
+<p>Part 2 of this tutorial will:</p>
+<ul>
+	<li>Expand the Java/JDOM/SVG graphics library to include more advanced SVG 
+	features such as linear and radial gradients, Bezier curves, and elliptical 
+	arcs.</li>
+	<li>Teach you about the significance of the word <i>Scalable</i> in the name 
+	Scalable Vector Graphics <i>(SVG)</i>.</li>
+	<li>Teach you how to use JDOM to write XHTML output files containing SVG/XML 
+	code.</li>
+	<li>Teach you how to accomplish all of the above in a Java servlet.</li>
+</ul>
+<p><font color="#FF0000"><b>A small bit mapped image</b></font></p>
+<p>Figure 2 shows a small graphic image containing a blue cubic Bezier curve and 
+in a yellow background and a 
+radial gradient in a rectangle.&nbsp; This drawing was produced using a program 
+similar to one that I will present and explain in Part 2.</p>
+<p>
+ <b><a name="Figure_2">Figure 2</a>. Drawing with a Bezier curve and a radial 
+	gradient. </b>
+<table border="0" cols="1" bgcolor="#ffffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><img border="1" src="java2222b01.jpg" width="117" height="60"></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Enlarge the bit mapped image</b></font></p>
+<p>I captured the image shown in Figure 2 as a bit mapped JPEG image using a standard screen 
+capture program.&nbsp; Then I enlarged the bit mapped image by a factor of four, 
+producing the result shown in Figure 3.</p>
+<p>
+ <b><a name="Figure_3">Figure 3</a>. Bit mapped image enlarged by a factor of 
+	four. </b>
+<table border="0" cols="1" bgcolor="#ffffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><img border="1" src="java2222b02.jpg" width="460" height="236"></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>As you would expect <i>(if you are familiar with the limitations of bit 
+mapped images)</i> the results aren't very pleasing.&nbsp; To make a long story 
+short, bit mapped images aren't very scalable, at least insofar as enlargement 
+is concerned.</p>
+<p><font color="#FF0000"><b>Enlarge the SVG drawing by a factor of four</b></font></p>
+<p>Figure 4 shows the result of increasing the size of the SVG drawing by the 
+same factor of four.&nbsp; This result shows the significance of the word <i>
+Scalable</i> in the name Scalable Vector Graphics <i>(SVG)</i>.</p>
+<p>
+ <b><a name="Figure_4">Figure 4</a>. SVG drawing enlarged by a factor of four. </b>
+<table border="0" cols="1" bgcolor="#ffffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><img border="1" src="java2222b03.jpg" width="461" height="230"></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>
+<table width="275" cellpadding="0" cellspacing="0" border="0" align="right">
+<tr>
+<td width="10">
+<td>
+  <table width="100%" cellpadding="5" cellspacing="0" border="1">
+  <tr><td bgcolor="#eeeeee">
+  <b>Import degradation.</b><br />
+There is a small amount of degradation showing in Figure 4.&nbsp; That 
+degradation was introduced by the process of capturing the image from the screen 
+as a JPEG image and importing it into this document.&nbsp; That degradation did 
+	not exist in the original rendered version of the drawing in the Firefox 
+	2.0.0.4 
+	browser window.</td></tr></table>
+</td>
+</tr>
+</table>
+
+The quality of the scaled image in Figure 4 is excellent.&nbsp; No 
+degradation in image quality was introduced by enlarging the SVG drawing.</p>
+<p><font color="#FF0000"><b>Enlarge the SVG drawing by a factor of sixteen</b></font></p>
+<p>To drive home the point that scaling the SVG drawing does not degrade the 
+quality of the drawing, Figure 5 and Figure 6 show captured portions of the 
+drawing produced by enlarging the original drawing shown in Figure 2 by a factor of sixteen.</p>
+<p>
+ <b><a name="Figure_5">Figure 5</a>. Svg drawing enlarged by a factor of 
+	sixteen. </b>
+<table border="0" cols="1" bgcolor="#ffffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><img border="1" src="java2222b04.jpg" width="459" height="451"></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Note that because I am limited as to the width of images that I can publish 
+on this web site, I was unable to publish the entire enlarged drawing.&nbsp; 
+Therefore, it was necessary for me to capture and publish portions of the 
+drawing that was enlarged by a factor of sixteen.</p>
+<p>
+ <b><a name="Figure_6">Figure 6</a>. Svg drawing enlarged by a factor of 
+	sixteen. </b>
+<table border="0" cols="1" bgcolor="#ffffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><img border="1" src="java2222b05.jpg" width="456" height="452"></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Once again, the small amount of degradation that you can see in Figure 5 and 
+Figure 6 did not exist in the original rendering of the drawing in the Firefox 
+2.0.0.4 browser window.&nbsp; That degradation was introduced by the process of 
+capturing the image from the screen as a JPEG image and importing it into this 
+document.</p>
+<p><font color="#FF0000"><b>Could continue to enlarge indefinitely</b></font></p>
+<p>I could continue this process of enlarging the SVG drawing indefinitely and 
+no degradation would be introduced into the drawing.&nbsp; That is the true 
+significance of the word <i>Scalable</i> in the name Scalable Vector Graphics <i>
+(SVG)</i>.</p>
+<p><font color="#FF0000"><b>What about the bit mapped image?</b></font></p>
+<p>To drive home the point that bit mapped images are not scalable, Figure 7 shows the result of enlarging the original bit mapped image 
+from Figure 2 by a factor of sixteen and capturing a portion of the enlarged 
+image for publication in this lesson.</p>
+<p>
+ <b><a name="Figure_7">Figure 7</a>. Enlargement of bit mapped image by a factor 
+	of sixteen. </b>
+<table border="0" cols="1" bgcolor="#ffffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><img border="1" src="java2222b06.jpg" width="460" height="449"></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The image shown in Figure 7 is approximately the same portion of the enlarged 
+image as that shown in Figure 5.&nbsp; However, because of the poor quality of 
+the image, it was not possible for me to identify and capture the exact same 
+portion.</p>
+<p>As you can see, bit mapped images are not scalable in the same way that SVG 
+drawings are scalable.</p>
+<center>
+<h2> <a name="Discussion and Sample Programs"></a><font color="#000000">Discussion
+and sample code</font></h2>
+</center>
+<h3><a name="The_program_named_Svg15">The program named Svg15</a></h3>
+<p><font color="#FF0000"><b><a name="Downloading_and_installing_JDOM">Downloading and installing JDOM</a></b></font></p>
+<p>You will need to download and install the JDOM API before you can compile and 
+run this program.&nbsp; Fortunately, that is an easy task to accomplish.</p>
+<p>You can access the JDOM download page from the JDOM Main Page <i>(see
+<a href="#Resources">Resources</a>)</i>.&nbsp; It has been a while since I did 
+it, but my recollection is that it was not difficult to download and install 
+both the API and the javadoc documentation, at least for Windows XP.</p>
+<p>When I did the download, the file that I received was named <b>jdom-1.0.zip</b>.&nbsp; 
+When I looked inside that file, I found a file named <b>README.TXT</b>.&nbsp; 
+That file contained everything that I needed to know in order to install the 
+API.&nbsp; I also found a file named <b>readme</b> that contained supplemental 
+information about the JAR files contained in the download.</p>
+<p>Be sure to pay attention to the following explanation and instruction that is 
+contained in the second file mentioned above:</p>
+<blockquote>
+	<p><i>&quot;<b>jdom.jar</b> This JAR is created during the build process and put 
+	in the &quot;build&quot; directory.&nbsp; This contains the org.jdom.* classes and 
+	you should add this JAR to your classpath when using JDOM.&quot;</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Description of the program</b></font></p>
+<p>The program named <b>Svg15</b> uses JDOM 1.0 to create an XML file named <b>
+Svg15.svg</b>.&nbsp; The contents of that file draw at least one of each of the 
+following six basic SVG shapes when rendered in an SVG graphics engine such as 
+Firefox 2.0.0.4:</p>
+<ol>
+	<li>rectangle</li>
+	<li>circle</li>
+	<li>ellipse</li>
+	<li>line</li>
+	<li>polyline</li>
+	<li>polygon</li>
+</ol>
+<p><font color="#FF0000"><b>Purpose of the program</b></font></p>
+<p>The main purpose of this program is to teach you how to create an SVG file 
+using raw JDOM commands.&nbsp; The program named <b>Svg16</b> that I will 
+present later in this lesson will show how to write a Java/JDOM/SVG graphics 
+library that eliminates much of the effort of SVG programming using raw JDOM 
+commands.</p>
+<p>A secondary purpose of this program is to illustrate the use of a <b>viewBox</b> 
+element to make it possible for you to work in convenient virtual canvas 
+dimensions, <i>(such as 1000x1000)</i>, instead of having to work in less 
+convenient physical canvas dimensions, <i>(such as 459x459)</i>.</p>
+<p><font color="#FF0000"><b>Program testing</b></font></p>
+<p>The file produced by this program validates at:
+<a href="http://validator.w3.org/">http://validator.w3.org/</a></p>
+<p>The program was tested using J2SE 6.0, JDOM 1.0, and Firefox 2.0.0.4 running 
+under WinXP.</p>
+<p><font color="#FF0000"><b>Will discuss in fragments</b></font></p>
+<p>As is my custom, I will present and explain this program in fragments.&nbsp; 
+The first fragment, which shows the beginning of the class and the beginning of 
+the <b>main</b> method, is presented in Listing 1.&nbsp; You can view the entire 
+program in Listing 32 near the end of the lesson.</p>
+<p>
+<b><a name="Listing_1">Listing 1</a>. Beginning of class and main method for 
+Svg15. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>public class Svg15{
+  public static void main(String[] args){
+    String ns = &quot;http://www.w3.org/2000/svg&quot;;</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Listing 1 creates a <b>String</b> variable containing the namespace URI.&nbsp; 
+This variable is used to reduce the amount of typing that is required later. 
+Note that the variable name is short and easy to type.</p>
+<p><font color="#FF0000"><b>JDOM and namespaces</b></font></p>
+<p>Here is what Elliotte Rusty Harold tells us about JDOM and namespaces in 
+Chapter 14 of his book, <i>Processing XML with Java (see <a href="#Resources">
+Resources</a>).</i></p>
+<blockquote>
+	<p><i>&quot;The basic JDOM rule about namespaces is that when an element or 
+	attribute is in a namespace, rather than specifying its full qualified name, 
+	you give its local name, its prefix, and its URI, in that order. If the 
+	element is in the default namespace, omit the prefix.&quot;</i></p>
+</blockquote>
+<p>What this tells us is that each time that we create a new element we must 
+pass the namespace URI to the constructor for the element.&nbsp; As you can see 
+in Listing 1, the actual namespace string for SVG is fairly long.&nbsp; That is 
+the rationale for defining it in a <b>String</b> variable that is short and easy 
+to type.</p>
+<p><font color="#FF0000">
+<b>Create DTD strings</b></font></p>
+<p>For clarity, the code in Listing 2 creates strings containing:</p>
+<ul>
+	<li>The name of the element that is constrained by the DTD (the root 
+	element)</li>
+	<li>The Public ID of the DTD</li>
+	<li>The System ID of the DTD</li>
+</ul>
+<p>
+<b><a name="Listing_2">Listing 2</a>. Create DTD strings. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    String dtdConstrainedElement = "svg";
+    String dtdPublicID = "-//W3C//DTD SVG 1.1//EN";
+    String dtdSystemID = 
+       "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd";</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The rationale here is not that these items will be used repetitively.&nbsp; 
+In fact, they will be used only once in this program, being passed to the 
+constructor for a <b>DocType</b> object.&nbsp; However, that statement became so 
+cluttered when I first wrote it, I decided to break the three items out 
+separately as shown in Listing 2 to make the code easier to understand.</p>
+<p><font color="#FF0000">
+<b>Create the root node named svg</b></font></p>
+<p>Now that we are done with the preliminaries, it is time to get serious and 
+instantiate an <b>Element</b> node that represents the root node with the given 
+name and namespace.</p>
+<p>You learned way back in the earlier lesson titled &quot;Java JAXP, Creating 
+graphics using Java and SVG&quot; <i>(see <a href="#Resources">Resources</a>)</i> 
+that the root node in an SVG document must be named <b>svg</b>.&nbsp; You also 
+learned about the namespace for the <b>svg</b> element in that lesson also.</p>
+<p>Listing 3 uses typical Java syntax to instantiate a new object of type <b>
+Element</b> to serve as the root node and to set four attributes on the node as 
+well.&nbsp; If you go back and compare the first statement in Listing 3 with the 
+first statement in Listing 8 of the earlier lesson titled &quot;Java JAXP, Creating 
+graphics using Java and SVG&quot; <i>(see <a href="#Resources">Resources</a>)</i>, 
+you will probably conclude as I have that the JDOM approach is a little more 
+straightforward.</p>
+<p>
+<b><a name="Listing_3">Listing 3</a>. Create the root node named svg. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    <b>Element svg = new Element("svg",ns)</b>;
+
+    svg.setAttribute("version","1.1");
+    svg.setAttribute("width","459");
+    svg.setAttribute("height","459");
+    svg.setAttribute("viewBox","0 0 1000 1000");
+    svg.setAttribute("preserveAspectRatio","none");</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>What does the svg node represent?</b></font></p>
+<p>The <b>svg</b> element represents the canvas on which various shapes can be 
+drawn.&nbsp; The width and height attribute values of the <b>svg</b> element 
+establish the physical size of the canvas on the screen.</p>
+<table width="275" cellpadding="0" cellspacing="0" border="0" align="right">
+<tr>
+<td width="10">
+<td>
+  <table width="100%" cellpadding="5" cellspacing="0" border="1">
+  <tr><td bgcolor="#eeeeee">
+  <b>The importance of viewBox.</b><br />
+  In Part 2 of this tutorial, I will show you how to use the viewBox attribute 
+	in such a way as to make it possible to change the value of a single scaling 
+	variable and cause the entire drawing to be scaled accordingly without any 
+	requirement to change any other code.&nbsp; Using this approach, the program 
+	could be written in such a way as to allow the user to apply a scaling 
+	factor to the drawing to be created using SVG.</td></tr></table>
+</td>
+</tr>
+</table>
+
+<p><font color="#FF0000"><b>The viewBox attribute</b></font></p>
+<p>The values of the <b>viewBox</b> attribute establish the size of the canvas 
+in <i>&quot;user units.&quot;</i>&nbsp;&nbsp; The dimensions of the <b>viewBox</b> map 
+directly into the dimensions of the canvas.&nbsp; This makes it possible for you 
+to work in virtual dimensions that are convenient, <i>(such as 1000x1000)</i>, 
+instead of having to work with less convenient physical dimensions <i>(such as 
+459x459)</i>.&nbsp; As you can see in Listing 3, the physical size of the canvas 
+for this program is 459x459 pixels.&nbsp; However, as you will see later, the 
+SVG graphics code for this program was written in terms of a virtual canvas with 
+dimensions of 1000x1000 user units.</p>
+<p>
+<p><font color="#FF0000"><b>The preserveAspectRatio attribute</b></font></p>
+<p>Setting the value of the <b>preserveAspectRatio</b> attribute to <i>none</i> 
+prevents the system from attempting to automatically preserve the aspect ratio.&nbsp;
+<i>(This, by the way, is a fairly complex SVG/XML topic.)</i>&nbsp; When you set 
+this attribute value to <i>none</i>, it is probably a good idea to make the ratio of 
+the height and width of the <b>viewBox</b> the same as the ratio of the height and 
+width of the physical canvas.&nbsp; That way, a circle will look like a circle 
+instead of looking like an ellipse.</p>
+<p><font color="#FF0000">
+<b>Create a DocType node</b></font></p>
+</p>
+<p>Listing 4 instantiates a new <b>DocType</b> object that represents the DTD, 
+passing the name of the constrained element along with the public and system IDs 
+of the DTD to the constructor.</p>
+<p>
+<b><a name="Listing_4">Listing 4</a>. Create a DocType node. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    DocType docType = new DocType(dtdConstrainedElement,
+                                  dtdPublicID,
+                                  dtdSystemID);</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000">
+<b>Create the Document node</b></font></p>
+<p>We now have everything needed to create the <b>Document</b> node:</p>
+<ul>
+	<li>The root element object</li>
+	<li>The DocType object <i>(optional)</i>.</li>
+</ul>
+<p>The statement in Listing 5 instantiates a new <b>Document</b> object for the specified root element and the specified DTD.</p>
+<p>
+<b><a name="Listing_5">Listing 5</a>. Create the Document node. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    Document doc = new Document(svg,docType);</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>To gain an even better appreciation as to why I prefer JDOM over Sun's JAXP DOM API,
+<i>(which was used in the earlier lesson titled &quot;Java JAXP, Creating graphics 
+using Java and SVG&quot; (see <a href="#Resources">Resources</a>))</i>, compare the 
+single statement in Listing 5 above with the first three rather convoluted 
+statements in Listing 7 of that earlier lesson.&nbsp; Not only does the 
+statement in Listing 5 replace the three statements in the previous lesson, the 
+code in that lesson didn't even involve a DTD.&nbsp; Presumably it would have 
+been even more complex if a DTD had been involved.</p>
+<p><font color="#FF0000">
+<b>Create and populate a description element node</b></font></p>
+<p>One of the element types that are allowed by the SVG DTD is a description 
+element.&nbsp; Its purpose is pretty much what the name implies.&nbsp; The code 
+in Listing 6:</p>
+<ul>
+	<li>Instantiates a description element</li>
+	<li>Set it's text content value</li>
+	<li>Appends it to the root node</li>
+</ul>
+<p>
+<b><a name="Listing_6">Listing 6</a>. Create and populate a description element 
+node. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    Element desc = new Element("desc",ns);
+    desc.setText("The basic SVG shapes.");
+    svg.addContent(desc);</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Declaring the namespace</b></font></p>
+<p>As I explained earlier using the quotation from Elliotte Rusty Harold's book, 
+because the root element named <b>svg</b> declares a namespace <i>(see Listing 
+3)</i>, each child of the root node <i>(with at least one exception)</i> must 
+also declare a namespace.&nbsp; Otherwise, the child is assigned to the 
+following namespace:</p>
+<p><pre><b>xmlns=&quot;&quot;</b></pre></p>
+<p>As I explained earlier, this is part of the reason for declaring a <b>String</b> 
+variable with a short name containing the URI for the namespace.</p>
+<p><font color="#FF0000"><b>Setting the text content for the element</b></font></p>
+<p>Although I don't have an example readily available to show you, the use of the <b>setText</b> 
+method to establish the text content of an element is not only completely intuitive 
+for experienced Java programmers, it 
+is also simpler than the required approach with Sun's JAXP DOM API.</p>
+<p><font color="#FF0000">
+<b>Create a comment node</b></font></p>
+<p>The SVG DTD also allows for standard XML comment elements to be included in 
+the SVG/XML data.&nbsp; Listing 7 creates such a comment node and appends it to 
+the root node.</p>
+<p>
+<b><a name="Listing_7">Listing 7</a>. Create a comment node. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    Comment comment = new Comment(
+                             " Show outline of canvas. ");
+    svg.addContent(comment);</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Note that this is the one case that I have identified where it is not 
+necessary to declare the namespace to create the node.</p>
+<p><font color="#FF0000"><b>Now do some graphics programming</b></font></p>
+<p>The next seven elements that will be created are SVG graphics elements.&nbsp; 
+It is very important to note that they are specified using virtual <b>viewBox</b> dimensions rather than physical 
+canvas dimensions.</p>
+<p><font color="#FF0000">
+<b>Create the rectangular border</b></font></p>
+<p>Listing 8 instantiates an element node of type <b>rect</b> that represents 
+the black rectangular border for the canvas shown in Figure 1.&nbsp; Listing 8 
+also appends the node to the root.</p>
+<p>
+<b><a name="Listing_8">Listing 8</a>. Create the rectangular border. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    Element rectA = new Element("<b>rect</b>",ns);
+
+    rectA.setAttribute("x","1");
+    rectA.setAttribute("y","1");
+    rectA.setAttribute("width","999");
+    rectA.setAttribute("height","999");
+    rectA.setAttribute("fill","none");
+    rectA.setAttribute("stroke","black");
+    rectA.setAttribute("stroke-width","20");
+
+    svg.addContent(rectA);</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>The stroke-width attribute</b></font></p>
+<p>Although the stroke-width is set to 20, the width of the border in Figure 1 
+appears to be only about 10 <i>(as compared to the red border on the 
+yellow rectangle, which has a width of 10)</i>.&nbsp; This is because when the 
+stroke width is greater than 1, half of the width falls on one side of the 
+stroke and the other half falls on the other side of the stroke.&nbsp; 
+Therefore, half of the stroke width in this case is outside the bounds of the 
+canvas and therefore isn't visible in the drawing.</p>
+<p><font color="#FF0000"><b>A fill attribute value of none</b></font></p>
+<p>In case I haven't mentioned it before, setting the fill to none essentially 
+causes the shape to be transparent except for the stroke that outlines the 
+shape.</p>
+<p>Otherwise, I would hope that from what you have learned in earlier lessons, 
+everything is Listing 8 is straightforward and shouldn't require further 
+explanation.</p>
+<p><font color="#FF0000"><b>Lots of code for a single rectangular shape</b></font></p>
+<p>By now, you may have concluded that having to write nine different statements 
+to draw this rectangle is a lot of work.&nbsp; That is the issue that I will 
+tackle in the program named <b>Svg16</b>, where I will develop a JDOM graphics 
+library to greatly reduce the required programming effort.&nbsp; Before getting 
+to that, however, I want to make certain that you know how to create SVG 
+graphics using raw JDOM code so that you will understand the structure of the 
+library.</p>
+<p><font color="#FF0000">
+<b>A yellow rectangle with a red border</b></font></p>
+<p>Listing 9 instantiates a node that represents the rectangle with a yellow 
+fill and a red border with a width of 10 shown in Figure 1.&nbsp; Listing 9 also 
+appends the node to the root.&nbsp; As you can see in Figure 1, this rectangle 
+is centered in the canvas on the basis of virtual <b>viewBox</b> dimensions.</p>
+<p>
+<b><a name="Listing_9">Listing 9</a>. Create a yellow rectangle with a red 
+border.</b><table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    Element rectB = new Element("rect",ns);
+    rectB.setAttribute("x","299");
+    rectB.setAttribute("y","399");
+    rectB.setAttribute("width","400");
+    rectB.setAttribute("height","200");
+    rectB.setAttribute("fill","yellow");
+    rectB.setAttribute("stroke","red");
+    rectB.setAttribute("stroke-width","10");
+    svg.addContent(rectB);</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000">
+<b>The remaining graphics elements</b></font></p>
+<p>The code in Listing 10 creates the remaining five graphics elements shown in 
+Figure 1.&nbsp; The pattern is pretty much the same from one graphic element to 
+the next.&nbsp; Therefore, no explanation beyond the embedded comments should be 
+needed.</p>
+<p>
+<b><a name="Listing_10">Listing 10</a>. The remaining graphics elements. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    //Instantiate a node that represents an ellipse that
+    // just fits inside the borders of the yellow
+    // rectangle and append it to the root.
+    Element ellipse = new Element("ellipse",ns);
+    ellipse.setAttribute("cx","499");
+    ellipse.setAttribute("cy","499");
+    ellipse.setAttribute("rx","195");
+    ellipse.setAttribute("ry","95");
+    ellipse.setAttribute("fill","none");
+    ellipse.setAttribute("stroke","black");
+    ellipse.setAttribute("stroke-width","1");
+    svg.addContent(ellipse);
+    
+    //Instantiate a node that represents a polyline with
+    // three points and append it to the root.  This
+    // polyline forms an open triangular shape in the
+    // upper half of the canvas.
+    Element polyline = new Element("polyline",ns);
+    polyline.setAttribute("points",
+         "449,200, 499,100 549,200");
+    polyline.setAttribute("fill","none");
+    polyline.setAttribute("stroke","black");
+    polyline.setAttribute("stroke-width","1");
+    svg.addContent(polyline);
+    
+    //Instantiate a node that represents a polygon with
+    // three points and append it to the root. This
+    // polygon forms a closed triangle in the lower half
+    // of the canvas.
+    Element polygon = new Element("polygon",ns);
+    polygon.setAttribute("points",
+         "449,800, 499,900 549,800");
+    polygon.setAttribute("fill","none");
+    polygon.setAttribute("stroke","black");
+    polygon.setAttribute("stroke-width","1");
+    svg.addContent(polygon);
+    
+    //Instantiate a node that represents a black line
+    // that extends from the upper left corner of the
+    // canvas to the lower right corner of the canvas.
+    // Append it to the root.
+    Element line = new Element("line",ns);
+    line.setAttribute("x1","0");
+    line.setAttribute("y1","0");
+    line.setAttribute("x2","999");
+    line.setAttribute("y2","999");
+    line.setAttribute("stroke","black");
+    line.setAttribute("stroke-width","1");
+    svg.addContent(line);
+    
+    //Instantiate a node that represents a black circle
+    // that just fits inside the canvas. Note that it
+    // overlaps the border on the canvas. Append the node
+    // to the root.
+    Element circle = new Element("circle",ns);
+    circle.setAttribute("cx","499");
+    circle.setAttribute("cy","499");
+    circle.setAttribute("r","499");
+    circle.setAttribute("stroke","black");
+    circle.setAttribute("stroke-width","1");
+    circle.setAttribute("fill","none");
+    svg.addContent(circle);</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000">
+<b>Write the output file</b></font></p>
+<p>Listing 11 calls the writePrettyFile method to write an output file 
+containing the SVG/XML code to an SVG file.&nbsp; I will explain that method 
+shortly.</p>
+<p>
+<b><a name="Listing_11">Listing 11</a>. Write the output file.</b><table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    writePrettyFile(&quot;Svg15.svg&quot;,doc);
+//    writeCompactFile(&quot;Svg15.svg&quot;,doc);
+    
+  }//end main</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>In addition to the method named <b>writePrettyFile</b>, I also provided 
+another method named <b>writeCompactFile</b>.&nbsp; You can enable one or the 
+other of the two method calls in Listing 11 to select between a pretty-print 
+format and a compact format.</p>
+<p>The compact format is more efficient than the pretty-print format and is 
+probably what you should normally use.&nbsp; However, the pretty-print format is 
+very useful during test and debugging because you can view the source in your 
+browser and the XML code will be reasonably well formatted.</p>
+<p><font color="#FF0000"><b>End of the main method</b></font></p>
+<p>Listing 11 also signals the end of the main method and the end of the 
+program.</p>
+<p><font color="#FF0000">
+<b>The writePrettyFile method</b></font></p>
+<p>The <b>writePrettyFile</b> method that was called in Listing 11 is shown in 
+its entirety in Listing 12.&nbsp; As you can see, the method receives a <b>
+String</b> that specifies the file name along with a reference to the <b>
+Document</b> object as incoming parameters.</p>
+<p>
+<b><a name="Listing_12">Listing 12</a>. The writePrettyFile method. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  private static void writePrettyFile(
+                              String fname, Document doc){
+    try{
+      FileOutputStream out = new FileOutputStream(fname);
+
+<b>      XMLOutputter xmlOut = 
+               new XMLOutputter(Format.getPrettyFormat());
+      xmlOut.output(doc,out);</b>
+
+      out.flush();
+      out.close();
+    }catch (IOException e){
+      System.err.println(e);
+    }//end catch
+  }//end writePrettyFile</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>
+<table width="275" cellpadding="0" cellspacing="0" border="0" align="right">
+<tr>
+<td width="10">
+<td>
+  <table width="100%" cellpadding="5" cellspacing="0" border="1">
+  <tr><td bgcolor="#eeeeee">
+  <b>Specifying the output format.</b><br />
+  Had I wanted to write the output file in the compact format, I would have 
+	specified the format as <b>Format.getCompactFormat()</b> instead of&nbsp;
+
+<b>      Format.getPrettyFormat()</b>.&nbsp; See the method named <b>
+	writeCompactFile</b> in Listing 32 near the end of the lesson.</td></tr></table>
+</td>
+</tr>
+</table>
+
+There are only two statements in Listing 12 that are in any way peculiar to 
+the processing of XML data.&nbsp; The first statement instantiates an object of 
+the <b>XMLOutputter</b> class.&nbsp; The second statement uses that object to 
+write the contents of the <b>Document</b> object into the output file in the 
+specified format.&nbsp; All of the other code in Listing 12 is the kind of code 
+that you always encounter when writing files in Java.<p><font color="#FF0000">
+<b>Another comparison with Sun's JAXP DOM API</b></font></p>
+<p>For an extreme comparison with Sun's JAXP DOM API, compare the two boldface 
+statements in Listing 12 above with six of the very convoluted statements in 
+Listing 15 of the earlier lesson titled &quot;Java JAXP, Creating graphics using Java 
+and SVG&quot; <i>(see <a href="#Resources">Resources</a>)</i>.&nbsp; While some of 
+the statements in that listing produce screen output, six of those statements 
+are required to transform the DOM tree into SVG/XML code write an output file 
+containing that code.</p>
+<p><font color="#FF0000"><b>The final SVG/XML code</b></font></p>
+<p>In case you are interested, the SVG/XML code produced by this program is 
+shown in Listing 13.</p>
+<p>
+<b><a name="Listing_13">Listing 13</a>. The final SVG/XML code for the program 
+named Svg15.
+</b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>
+&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;!<b>DOCTYPE</b> svg PUBLIC "-//W3C//DTD SVG 1.1//EN" 
+"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"&gt;
+
+&lt;<b>svg</b> <b>xmlns</b>="http://www.w3.org/2000/svg" version="1.1" 
+  width="459" height="459" viewBox="0 0 1000 1000" 
+  preserveAspectRatio="none"&gt;
+  &lt;<b>desc</b>&gt;The basic SVG shapes.&lt;/desc&gt;
+  &lt;!-- Show outline of canvas. --&gt;
+  &lt;<b>rect</b> x="1" y="1" width="999" height="999" fill="none" 
+  stroke="black" stroke-width="20" /&gt;
+  &lt;<b>rect</b> x="299" y="399" width="400" height="200" 
+  fill="yellow" stroke="red" stroke-width="10" /&gt;
+  &lt;<b>ellipse</b> cx="499" cy="499" rx="195" ry="95" fill="none" 
+  stroke="black" stroke-width="1" /&gt;
+  &lt;<b>polyline</b> points="449,200, 499,100 549,200" fill="none" 
+  stroke="black" stroke-width="1" /&gt;
+
+  &lt;<b>polygon</b> points="449,800, 499,900 549,800" fill="none" 
+  stroke="black" stroke-width="1" /&gt;
+  &lt;<b>line</b> x1="0" y1="0" x2="999" y2="999" stroke="black" 
+  stroke-width="1" /&gt;
+  &lt;<b>circle</b> cx="499" cy="499" r="499" stroke="black" 
+  stroke-width="1" fill="none" /&gt;
+&lt;/<b>svg</b>&gt;
+</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Note that the pretty-print output was much too wide to fit in this narrow 
+publication format.&nbsp; Therefore, it was necessary for me to manually insert 
+line breaks into Listing 13 to force it to fit.</p>
+<p>Also note that I highlighted some items of interest using boldface in Listing 
+13.&nbsp; You should be able to directly correlate the SVG/XML code in Listing 
+13 with the statements in the program named <b>Svg15.</b></p>
+<h3><a name="The_program_named_Svg16">The program named Svg16</a></h3>
+<p><font color="#FF0000"><b>Program description</b></font></p>
+<p>This program is an update of the program named <b>Svg15</b>.&nbsp; The 
+purpose of this update is begin the development and use of a Java/JDOM/SVG 
+graphics library designed to eliminate much of the work involved in writing Java 
+programs to produce SVG files.</p>
+<p>This program uses JDOM 1.0 and an SVG graphics library class of my own design 
+named <b>JdomSvg</b> to create an XML file named <b>Svg16.svg</b>&nbsp; That 
+file draws at least one of each of the following six basic SVG shapes when 
+rendered in an SVG graphics engine such as Firefox 2.0.0.4: </p>
+<ul>
+	<li>rectangle</li>
+	<li>circle</li>
+	<li>ellipse</li>
+	<li>line</li>
+	<li>polyline</li>
+	<li>polygon</li>
+</ul>
+<p>The graphic output is identical to that produced by the program named <b>
+Svg15</b>, and is shown in Figure 1.</p>
+<p><font color="#FF0000"><b>The preliminary stuff</b></font></p>
+<p>The beginning of the class and the beginning of the <b>main</b> method is 
+shown in Listing 14.</p>
+<p>
+<b><a name="Listing_14">Listing 14</a>. The preliminary stuff for Svg16.</b><table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>public class <b>Svg16</b>{
+  
+  public static void <b>main</b>(String[] args){
+    //Create a String variable containing the namespace
+    // URI to reduce the amount of typing that is required
+    // later. Note that the variable name is short and
+    // easy to type.
+    String ns = "http://www.w3.org/2000/svg";
+    
+    //For clarity, create strings containing the name of
+    // the element that is constrained by the DTD (the
+    // root element), the Public ID of the DTD, and the
+    // System ID of the DTD.
+    String dtdConstrainedElement = "svg";
+    String dtdPublicID = "-//W3C//DTD SVG 1.1//EN";
+    String dtdSystemID = 
+       "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd";</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The code in Listing 14 is the same as the code in the program named <b>Svg15</b>, 
+and therefore shouldn't require an explanation beyond the embedded comments.</p>
+<p><font color="#FF0000"><b>Comments deleted from the main method</b></font></p>
+<p>Note that the code in the <b>main</b> method of this program replicates the 
+behavior of the <b>main</b> method in the program named <b>Svg15</b>.&nbsp; From 
+this point forward, most of the explanatory comments have been removed from the
+<b>main</b> method for brevity.&nbsp; See the comments in the program named <b>
+Svg15</b> for an explanation of the behavior of this program.</p>
+<p><font color="#FF0000"><b>The class named JdomSvg</b></font></p>
+<p>Putting the <b>main</b> method aside for the moment, I want to introduce you 
+to the class named <b>JdomSvg</b>.&nbsp; This class contains a Java/JDOM/SVG 
+graphics library of my own design that is designed to reduce the amount of work 
+required to use JDOM to create SVG output.</p>
+<p>The library contains individual static methods that are used to construct and 
+return many of the standard SVG graphics elements.&nbsp; Many of the methods 
+have default attribute values.&nbsp; If you need different attribute values for 
+a particular graphic element, you can call the <b>setAttribute</b> method on the 
+returned value to change the attribute values after the method returns.</p>
+<p>Also, many of the methods set the <b>stroke</b> attribute value to black and 
+set the <b>stroke-width</b> attribute value to 1.&nbsp; If you don't want to be 
+able to see the outline of the shape, change the <b>stroke-width</b> attribute 
+value to 0 after the method returns.</p>
+<p>As this discussion progresses, I will be switching back and forth between 
+statements in the <b>main</b> method and the methods in the library that are 
+called by the statements in the main method.&nbsp; Each time I return to the <b>
+main</b> method, I will insert a Java comment in the upper left corner of the 
+listing indicating that the code in that listing comes from the <b>main</b> 
+method.</p>
+<p><font color="#FF0000">
+<b>Create and save the root node named svg</b></font></p>
+<p>Listing 15 calls the <b>makeSvg</b> method of the <b>JdomSvg</b> class to 
+construct and return a root node named <b>svg</b>.</p>
+<p>
+<b><a name="Listing_15">Listing 15</a>. Create and save the root node named svg. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>//In main
+    Element svg = JdomSvg.<b>makeSvg</b>(ns,459,459,1000,1000);</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Compare the code in Listing 15 with the raw JDOM code in Listing 3.</p>
+<p>The first parameter that is passed to the method in Listing 15 is a reference 
+to the namespace string.&nbsp; The remaining four parameters correspond to the 
+values of four of the attributes shown in Listing 3.&nbsp; Obviously the single 
+statement in Listing 15 requires a lot less work to write than the six 
+individual statements in Listing 3.</p>
+<p><font color="#FF0000"><b>The makeSvg method</b></font></p>
+<p>The <b>makeSvg</b> method begins in Listing 16.&nbsp; This method constructs 
+and returns a reference to an SVG root element node named <b>svg</b>.&nbsp; </p>
+<p>
+<b><a name="Listing_16">Listing 16</a>. The makeSvg method.</b><table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  public static Element <b>makeSvg</b>(
+                      String ns,//namespace URI
+                      int svgWidth,//width of the canvas
+                      int svgHeight,//height of the canvas
+                      int vbWidth,//width of the viewBox
+                      int vbHeight//height of the viewBox
+                      ){
+    Element svg = new Element("svg",ns);</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The comments associated with the formal arguments in the method signature 
+should make the purpose of each argument clear.&nbsp; </p>
+<p>The first executable statement inside the method in Listing 16 instantiates 
+the new <b>Element</b> object of type <b>svg</b> declaring the namespace to 
+which it belongs.</p>
+<p><font color="#FF0000"><b>Default attribute values</b></font></p>
+<p>By default, the min-x and min-y attribute values of the viewBox are set to 0 
+0.&nbsp; Those are the coordinates of the upper left corner of the viewbox.</p>
+<p>Also by default, the value of the <b>preserveAspectRatio</b> attribute is set 
+to none.</p>
+<p><font color="#FF0000"><b>Physical versus virtual size of the canvas</b></font></p>
+<p>Recall that the <b>svg</b> element represents the canvas on which various 
+shapes can be drawn.&nbsp; The width and height attribute values of the <b>svg</b> 
+element establish the physical size of the canvas on the screen.&nbsp; The 
+values of the <b>viewBox</b> attribute establish the virtual size of the canvas 
+in &quot;user units.&quot; </p>
+<p>The dimensions of the <b>viewBox</b> map directly into the dimensions of the 
+canvas.&nbsp; This makes it possible for you to work in virtual dimensions that 
+are convenient, <i>(such as 1000x1000)</i>, instead of having to work with less 
+convenient physical dimensions of the canvas <i>(such as 459x459)</i>.</p>
+<p><font color="#FF0000"><b>Aspect ratio</b></font></p>
+<p>Also recall that setting the value of the <b>preserveAspectRatio</b> 
+attribute to none prevents the system from attempting to automatically preserve 
+the aspect ratio.&nbsp; In this case, it is probably a good idea for you to make 
+the ratio of the height and width of the <b>viewBox</b> the same as the ratio of 
+the height and width of the canvas.&nbsp; That way, a circle will look like a 
+circle instead of looking like an ellipse.&nbsp; Note, however, that in some 
+cases, such as the plotting of curves in an x-y coordinate system, that may not 
+be preferable.</p>
+<p><font color="#FF0000">
+<b>Set default attribute values</b></font></p>
+<p>Listing 17 sets the default attribute values as described above.</p>
+<p>
+<b><a name="Listing_17">Listing 17</a>. Set default attribute values for the 
+makeSvg method. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    svg.setAttribute("version","1.1");
+    svg.setAttribute("preserveAspectRatio","none");
+    String vbMinX = "0 ";
+    String vbMinY = "0 ";</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000">
+<b>Set user specified attribute values</b></font></p>
+<p>Listing 18 sets the user specified attribute values on the basis of the 
+incoming parameter values.</p>
+<p>
+<b><a name="Listing_18">Listing 18</a>. Set user specified attribute values for 
+the makeSvg method. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    svg.setAttribute("width",""+svgWidth);
+    svg.setAttribute("height",""+svgHeight);
+    svg.setAttribute("viewBox",
+             vbMinX + vbMinY + ""+vbWidth + " "+vbHeight);
+    
+    return svg;
+  }//end makeSvg</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Note the format that is required to construct the attribute value for the <b>
+viewBox</b> attribute.&nbsp; If you need to call the <b>setAttribute</b> method 
+after this method returns to change the attribute value for the <b>viewBox</b> 
+attribute, you will need to comply with the format requirements for that value.&nbsp; 
+Also note that the first two components of the <b>viewBox</b> attribute value 
+were set as default values in Listing 17.</p>
+<p><font color="#FF0000"><b>Explanation of a peculiar syntax</b></font></p>
+<p>Note the syntax of the second parameter to the <b>setAttribute</b> method for 
+the <b>width</b> attribute.&nbsp; At first, this syntax may look a little 
+strange.&nbsp; You will see it used throughout this graphics library.</p>
+<p>In this case, as in many others, the <b>setAttribute</b> method requires that 
+an integer numeric value be passed to the method as a <b>String</b> object.&nbsp; 
+However, in Listing 15, it is much quicker for you to pass integer numeric 
+parameters to the<b> makeSvg</b> method without the requirements to type 
+the quotation marks to convert them to type<b> String</b>.&nbsp; Also, the 
+values will often be produced by the evaluation of a numeric computational 
+expression.</p>
+<p>The syntax used for the second parameter to the <b>setAttribute</b> method 
+for the <b>width</b> attribute is simply a &quot;quick and dirty&quot; way to convert a 
+value of type <b>int</b> to a <b>String</b> object.&nbsp; It works because of 
+the concatenation and coercion rules associated with <b>String</b> objects.</p>
+<p><font color="#FF0000"><b>End of the method</b></font></p>
+<p>Listing 18 also signals the end of the <b>makeSvg</b> method.</p>
+<p><font color="#FF0000">
+<b>Create a DocType and a Document</b></font></p>
+<p>The code in Listing 19 is the same as the code in the program named <b>Svg15</b>, 
+but without the explanatory comments.</p>
+<p>
+<b><a name="Listing_19">Listing 19</a>. Create a DocType and a Document. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>//In main
+    DocType docType = new DocType(
+           dtdConstrainedElement,dtdPublicID,dtdSystemID);
+
+    Document doc = new Document(svg,docType);</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000">
+<b>Create a description element</b></font></p>
+<p>Listing 20 calls the <b>makeDescription</b> method to create a <b>desc</b> 
+element and to make it a child of the <b>svg</b> element.&nbsp; Compare the 
+statement in Listing 20 with the code in Listing 6.</p>
+<p>
+<b><a name="Listing_20">Listing 20</a>. Create a description element. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>//In main
+    JdomSvg.<b>makeDescription</b>(
+                          svg,ns,"The basic SVG shapes.");</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>
+<table width="275" cellpadding="0" cellspacing="0" border="0" align="right">
+<tr>
+<td width="10">
+<td>
+  <table width="100%" cellpadding="5" cellspacing="0" border="1">
+  <tr><td bgcolor="#eeeeee">
+  <b>The parent of the root named svg.</b><br />
+  There is no parent 
+parameter for the <b>makeSvg</b> method because it gets attached to its parent, 
+	(<b>Document</b>), by passing it to the constructor for the <b>Document</b> 
+object as shown in Listing 19.</p>
+</td></tr></table>
+</td>
+</tr>
+</table>
+
+The parameter list for the <b>makeDescription</b> method is more typical of 
+the methods in the graphics library than the parameter list for the <b>makeSvg</b> 
+method.&nbsp; Note that the first parameter passed to the <b>makeDescription</b> 
+method is a reference to the parent to which the new element is to be attached.&nbsp; 
+The second parameter is the namespace URI string.&nbsp; This is typical of most 
+of the methods in the library.<p><font color="#FF0000">
+<b>The makeDescription method</b></font></p>
+<p>The <b>makeDescription</b> method is shown in its entirety in Listing 21.</p>
+<p>
+<b><a name="Listing_21">Listing 21</a>. The makeDescription method. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  public static Element <b>makeDescription</b>(
+              Element parent,//The parent of this element.
+              String nameSpace,//The namespace.
+              String text//Text content for this element.
+              ){
+    Element desc = new Element("desc",nameSpace);
+    parent.addContent(desc);
+    desc.setText(text);
+
+    return desc;
+  }//end makeDescription</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>This method constructs and returns a <b>desc</b> node for a given namespace and a given parent.&nbsp; 
+As is the case for many of the methods in the library, it also adds the new node 
+to the parent causing it to become a child of the parent.&nbsp; It also 
+populates the new node with the incoming text string in the third parameter.</p>
+<p><font color="#FF0000">
+<b>Create a comment element</b></font></p>
+<p>The code in Listing 22 creates a comment element and attaches it as a child 
+to the <b>svg</b> element.</p>
+<p>
+<b><a name="Listing_22">Listing 22</a>. Create a comment element. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>//In main.
+    JdomSvg.<b>makeComment</b>(svg," Show outline of canvas. ");</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Note that the parameter list for the <b>makeComment</b> method doesn't 
+require a reference to the namespace URI string as discussed earlier in this 
+lesson.</p>
+<p>The code in the <b>makeComment</b> method is so straightforward that I'm not 
+going to bore you by breaking it out into a separate listing.&nbsp; You can view 
+the method in its entirety in Listing 33 near the end of the lesson.</p>
+<p><font color="#FF0000">
+<b>Make the border for the canvas</b></font></p>
+<p>The code in Listing 23 calls the makeRect method to construct the black 
+border for the canvas shown in Figure 1.&nbsp; Compare the two statements in 
+Listing 23 with the nine statements that were required in Listing 8 to 
+accomplish the same thing.</p>
+<p>
+<b><a name="Listing_23">Listing 23</a>. Make the border for the canvas. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>//In main.
+    Element rectA = JdomSvg.<b>makeRect</b>(svg,ns,1,1,999,999);
+    rectA.<b>setAttribute</b>("stroke-width","20");</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>As you will see shortly, the <b>makeRect</b> method sets the <b>stroke</b> to
+<i>black</i> with a <b>stroke-width</b> of 1.&nbsp; In this case, I needed a 
+stroke-width value of 20, so I called the <b>setAttribute</b> method after the
+<b>makeRect</b> method returned to change the width from the default value of 1 
+to a new value of 20.</p>
+<p><font color="#FF0000">
+<b>The makeRect method</b></font></p>
+<p>The <b>makeRect</b> method is shown in its entirety in Listing 24.</p>
+<p>
+<b><a name="Listing_24">Listing 24</a>. The makeRect method. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  public static Element <b>makeRect</b>(
+                  Element parent,
+                  String namespace,
+                  int x,//Coordinate of upper-left corner.
+                  int y,//Coordinate of upper-left corner.
+                  int width,
+                  int height
+                  ){
+    Element rect = new Element("rect",namespace);
+    parent.addContent(rect);
+    
+    //Set default attribute values.
+    rect.setAttribute("fill","none");
+    rect.setAttribute("stroke","black");
+    rect.setAttribute("stroke-width","1");
+    
+    //Set user specified attribute values.
+    rect.setAttribute("x",""+x);
+    rect.setAttribute("y",""+y);
+    rect.setAttribute("width",""+width);
+    rect.setAttribute("height",""+height);
+    
+    return rect;
+  }//end makeRect
+</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>This method constructs and returns a <b>rect</b> node for a given parent in a given namespace.&nbsp; By default, the stroke is black, the stroke-width is 1, and the fill is none.&nbsp; 
+In addition to constructing the node, the method also attaches the node as a 
+child of the specified parent.</p>
+<p><font color="#FF0000"><b>A typical structure</b></font></p>
+<p>The general structure of the <b>makeRect</b> method in Listing 24 is typical 
+of many of the methods in the graphic library.&nbsp; The method begins by 
+constructing the new node and attaching it as a child of the specified parent 
+node.</p>
+<p>Then it calls the <b>setAttribute</b> method several times in succession to 
+set the default values for those attributes that get default values.&nbsp; 
+Follow that, it calls the <b>setAttribute</b> method several more times in 
+succession to set the user specified attribute values based on the incoming 
+parameter values.</p>
+<p><font color="#FF0000"><b>Create the yellow rectangle</b></font></p>
+<p>Listing 25 calls the <b>makeRect</b> method again to create the code for the 
+yellow rectangle with the red border shown in the center of Figure 1.</p>
+<p>
+<b><a name="Listing_25">Listing 25</a>. Create the yellow rectangle. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>//In main.
+    Element rectB = JdomSvg.<b>makeRect</b>(
+                                  svg,ns,299,399,400,200);
+    rectB.setAttribute("fill","yellow");
+    rectB.setAttribute("stroke","red");
+    rectB.setAttribute("stroke-width","10");</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>In this case, I needed values for three attributes that were different from 
+the default values for those attributes provided by the <b>makeRect</b> method.&nbsp; 
+Therefore, I called the <b>setAttribute</b> method three times in succession 
+after the <b>makeRect</b> method returned to change the attribute values from 
+their default values to the desired values.</p>
+<p><font color="#FF0000">
+<b>Create the ellipse node</b></font></p>
+<p>Listing 26 calls the <b>makeEllipse</b> method to create the ellipse that is 
+shown inside the red rectangle in Figure 1.&nbsp; Compare this statement with 
+the first nine statements in Listing 10 that accomplish the same thing.</p>
+<p>
+<b><a name="Listing_26">Listing 26</a>. Create the ellipse node. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>//In main.
+    JdomSvg.<b>makeEllipse</b>(svg,ns,499,499,195,95);</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The code in the <b>makeEllipse</b> method fits the general structure 
+described above and is completely straightforward.&nbsp; Therefore, it shouldn't 
+require an explanation beyond the embedded comments.&nbsp; You can view the 
+method in its entirety in Listing 33 near the end of the lesson.</p>
+<p><font color="#FF0000">
+<b>Draw the polyline</b></font></p>
+<p>Listing 27 calls the makePolyline method to draw the open triangular shape 
+near the top of Figure 1</p>
+<p>Compare this statement with six statements in Listing 10 that accomplish the 
+same thing.</p>
+<p>
+<b><a name="Listing_27">Listing 27</a>. Draw the polyline. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>//In main.
+    JdomSvg.<b>makePolyline</b>(svg,ns,
+                      <b>new int[]{</b>449,200,499,100,549,200});</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>This method is a little different from most of the other methods in the 
+graphic library.&nbsp; In particular, in order to draw a polyline, you must 
+specify the coordinates for every point in the polyline.&nbsp; As you can see, 
+the method call in Listing 27 constructs and passes a reference to an array 
+object containing coordinate pairs of integer data as the third parameter.</p>
+<p><font color="#FF0000">
+<b>The makePolyline method</b></font></p>
+<p>The <b>makePolyline</b> method is shown in its entirety in Listing 28.</p>
+<p>
+<b><a name="Listing_28">Listing 28</a>. The makePolyline method. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  static Element <b>makePolyline</b>(Element parent,
+                              String namespace,
+                              int[] points){//See above.
+    Element polyline = new Element("polyline",namespace);
+    parent.addContent(polyline);
+
+    //Set default attributes
+    polyline.setAttribute("stroke","black");
+    polyline.setAttribute("stroke-width","1");
+    polyline.setAttribute("fill","none");
+    
+    //Set user specified attributes.
+    String dataPoints = "";
+    for(int cnt=0;cnt&lt;points.length;cnt++){
+      dataPoints += "" + points[cnt] + " ";
+    }//end for loop
+    polyline.setAttribute("points",dataPoints);
+    
+    return polyline;
+  }//end makePolyline</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The<b> makePolyline </b>method constructs and returns a polyline node for a 
+given parent in a given namespace.&nbsp; It also attaches the node as a child of 
+the specified parent node.</p>
+<p>The incoming array of type <b>int[]</b>, which contains the coordinates for 
+each point in the polyline, must contain an even number of values for the 
+polyline to be drawn correctly.&nbsp; Otherwise, the polyline simply won't be 
+drawn.</p>
+<p>The values are extracted from the array and treated as coordinate values 
+x1,y1, x2,y2, x3,y3 ...etc.</p>
+<p>By default, the stroke is set to black one pixel wide with no fill.</p>
+<p><font color="#FF0000"><b>Similar to a polygon</b></font></p>
+<p>The main difference between a polyline and a polygon <i>(see below)</i> is 
+that a polygon is automatically closed by connecting the last point to the first 
+point when it is drawn. While you may choose to close a polyline if you cause 
+the coordinates of the last point to match the coordinates of the first point, 
+it is not automatically closed as in the case of a polygon.</p>
+<p>Be careful if you fill a polyline that is not closed. The results may not be 
+what you expect to see.</p>
+<p><font color="#FF0000">
+<b>Create the polygon</b></font></p>
+<p>Listing 29 calls the <b>makePolygon</b> method to draw the triangle near the 
+bottom of Figure 1.</p>
+<p>
+<b><a name="Listing_29">Listing 29</a>. Create the polygon. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>//In main.
+    JdomSvg.<b>makePolygon</b>(svg,ns,
+                      <b>new int[]{</b>449,800,499,900,549,800});</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>As is the case for the <b>makePolyline</b> method, the <b>makePolygon</b> 
+method expects to receive a reference to an array object containing integer 
+coordinate values as the third parameter.</p>
+<p>The <b>makePolygon</b> method is very similar to the <b>makePolyline</b> 
+method and shouldn't require an explanation beyond the embedded comments in the 
+method.&nbsp; You can view the method in its entirety in Listing 33 near the end 
+of the lesson.</p>
+<p><font color="#FF0000">
+<b>Create the diagonal line and the circle</b></font></p>
+<p>Listing 30 calls the two boldface methods in Listing 30 to draw the diagonal 
+line and the circle in Figure 1.</p>
+<p>
+<b><a name="Listing_30">Listing 30</a>. Create the diagonal line and the circle. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>//In main.
+    JdomSvg.<b>makeLine</b>(svg,ns,0,0,999,999);
+
+    JdomSvg.<b>makeCircle</b>(svg,ns,499,499,499);</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The <b>makeLine</b> method and the <b>makeCircle</b> method are both very 
+similar to the typical <b>makeRect</b> method discussed in Listing 24. There is 
+nothing unusual about either method, so they shouldn't require any explanation 
+beyond the embedded comments.&nbsp; You can view both methods in their entirety 
+in Listing 33 near the end of the lesson.</p>
+<p><font color="#FF0000"><b>No more graphics elements</b></font></p>
+<p>That covers all of the graphics elements shown in Figure 1.&nbsp; All that 
+remains is to transform the JDOM tree to raw SVG/XML code and write it into the 
+output file.&nbsp; This is accomplished by the code in Listing 31.</p>
+<p><font color="#FF0000">
+<b>Write the output file</b></font></p>
+<p>Listing 31 calls either the <b>writePrettyFile</b> method or the <b>
+writeCompactFile</b> method <i>(depending on which statement is enabled)</i> to 
+write the output file.</p>
+<p>
+<b><a name="Listing_31">Listing 31</a>. Write the output file. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>//In main.
+    JdomSvg.<b>writePrettyFile</b>("Svg16.svg",doc);
+    //JdomSvg.writeCompactFile("Svg16.svg",doc);
+    
+  }//end main</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>These two methods are identical to the code that I explained in Listing 12.&nbsp; 
+I simply moved them into the graphics library class named <b>JdomSvg</b> and 
+made them static.&nbsp; You can view both of the methods in Listing 33 near the 
+end of the lesson.</p>
+<p><font color="#FF0000"><b>End of the program</b></font></p>
+<p>Listing 31 also signals the end of the <b>main</b> method and the end of the 
+program.</p>
+<center>
+<h2><a name="Run the program"></a>Run the program</h2>
+</center>
+<p>I encourage you to download and <a href="#Downloading_and_installing_JDOM">
+install</a> the JDOM API as described earlier.&nbsp; Then copy the code from 
+Listing 32 and Listing 33 into your text
+editor.&nbsp; Compile the code and execute it.&nbsp; View the output files in an 
+SVG graphics engine such as Firefox 2.0.0.4.&nbsp; Experiment with the code, making
+changes, and observing the results of your changes.</p>
+<p>Above all, enjoy the process. Programming, particularly graphics programming, 
+can be fun if you approach it with a positive attitude.</p>
+<h2 align="center"><a name="Summary">Summary</a></h2>
+<p><i>In this lesson, I taught you a little about JDOM as an alternative to 
+Sun's JAXP DOM API.&nbsp; I taught you how to create an SVG file using raw JDOM 
+commands.&nbsp; I also taught you how to write a Java/JDOM/SVG graphics library 
+to reduce the effort required to create SVG files using JDOM and Java.</i></p>
+<h2 align="center"><a name="Whats Next">What's next?</a></h2>
+<p>In Part 2 of this tutorial, I will:</p>
+<ul>
+	<li>Expand the Java/JDOM/SVG graphics library to include more advanced SVG 
+	features such as linear and radial gradients, Bezier curves, and elliptical 
+	arcs.</li>
+	<li>Teach you about the significance of the word <i>Scalable</i> in the name 
+	Scalable Vector Graphics <i>(SVG)</i>.</li>
+	<li>Teach you how to use JDOM to write XHTML output files containing SVG/XML 
+	code.</li>
+	<li>Teach you how to accomplish all of the above in a Java servlet.</li>
+</ul>
+<h2 align="center"><a name="Resources">Resources</a></h2>
+<p><a href="http://www.dickbaldwin.com/toc.htm">Links</a> to all tutorial 
+lessons at DickBaldwin.com</p>
+<p><b>Java 2D Graphics</b><br>
+<a href="http://www.dickbaldwin.com/java/Java300.htm">300</a> Java 2D Graphics, 
+Nested Top-Level Classes and Interfaces&nbsp; <br>
+<a href="http://www.dickbaldwin.com/java/Java302.htm">302</a> Java 2D Graphics, 
+The Point2D Class&nbsp; <br>
+<a href="http://www.dickbaldwin.com/java/Java304.htm">304</a> Java 2D Graphics, 
+The Graphics2D Class&nbsp; <br>
+<a href="http://www.dickbaldwin.com/java/Java306.htm">306</a> Java 2D Graphics, 
+Simple Affine Transforms&nbsp; <br>
+<a href="http://www.dickbaldwin.com/java/Java308.htm">308</a> Java 2D Graphics, 
+The Shape Interface, Part 1&nbsp; <br>
+<a href="http://www.dickbaldwin.com/java/Java310.htm">310</a> Java 2D Graphics, 
+The Shape Interface, Part 2&nbsp; <br>
+<a href="http://www.dickbaldwin.com/java/Java312.htm">312</a> Java 2D Graphics, 
+Solid Color Fill&nbsp; <br>
+<a href="http://www.dickbaldwin.com/java/Java314.htm">314</a> Java 2D Graphics, 
+Gradient Color Fill&nbsp; <br>
+<a href="http://www.dickbaldwin.com/java/Java316.htm">316</a> Java 2D Graphics, 
+Texture Fill&nbsp; <br>
+<a href="http://www.dickbaldwin.com/java/Java318.htm">318</a> Java 2D Graphics, 
+The Stroke Interface&nbsp; <br>
+<a href="http://www.dickbaldwin.com/java/Java320.htm">320</a> Java 2D Graphics, 
+The Composite Interface and Transparency&nbsp; <br>
+<a href="http://www.dickbaldwin.com/java/Java322.htm">322</a> Java 2D Graphics, 
+The Composite Interface, GradientPaint, and Transparency&nbsp; <br>
+<a href="http://www.dickbaldwin.com/java/Java324.htm">324</a> Java 2D Graphics, 
+The Color Constructors and Transparency<br>
+<a href="http://java.sun.com/j2se/1.5.0/docs/guide/2d/spec.html">Java 2D API 
+Specification</a><br>
+<a href="http://java.sun.com/products/java-media/2D/">Java 2D API</a></p>
+<p><b>Java API for XML Processing (JAXP)</b><br>
+<a href="http://www.developerva/other/article.php/3099751">2200</a> Java API for 
+XML Processing (JAXP), Getting Started<br>
+<a href="http://www.developer.com/xml/article.php/3113351">2202</a> Getting 
+Started with Java JAXP and XSL Transformations (XSLT)<br>
+<a href="http://www.developer.com/java/other/article.php/3292751">2204</a> Java 
+JAXP, Exposing a DOM Tree<br>
+<a href="http://www.developer.com/java/other/article.php/3313341">2206</a> Java 
+JAXP, Implementing Default XSLT Behavior in Java<br>
+<a href="http://www.developer.com/java/other/article.php/3361261">2208</a> Java 
+JAXP, Writing Java Code to Emulate an XSLT Transformation<br>
+<a href="http://www.developer.com/java/data/article.php/3398741">2210</a> Java 
+JAXP, Transforming XML to XHTML<br>
+<a href="http://www.dickbaldwin.com/tocxml.htm">Links to numerous XML tutorials 
+by Richard G. Baldwin</a><br>
+<br>
+<b>Scalable Vector Graphics (SVG)</b><br>
+<a href="http://www.developer.com/java/other/article.php/3655506">2212</a> Java 
+JAXP, Creating graphics using Java and SVG<br>
+<a href="http://www.developer.com/java/other/article.php/3665131">2214</a> An 
+improved approach for creating SVG/XML code and SVG/XML DOM nodes using Java<br>
+<a href="http://www.developer.com/java/data/article.php/3676331">2216</a> Using 
+Java to produce SVG code in XHTML data<br>
+<a href="http://www.developer.com/java/ent/article.php/3684126">2218</a> Writing 
+Java servlets to produce XHTML code that references external SVG files<br>
+<a href="http://www.developer.com/java/other/article.php/3689251">2220</a> Drawing grids, Bézier curves and elliptical arcs using Java and SVG<br>
+<a href="http://www.w3.org/TR/SVG/">Scalable Vector Graphics (SVG) 1.1 
+Specification</a><br>
+<a href="http://www.adobe.com/svg/">Adobe SVG Viewer plug-in</a><br>
+<a href="https://www6.software.ibm.com/developerworks/education/x-svggraphics/index.html">
+Create vector graphics in the browser with SVG</a> by Uche Ogbuji<br>
+<a href="http://www.w3schools.com/svg/default.asp">SVG Tutorial</a><br>
+<a href="http://www.svgbasics.com/shapes.html">SVG Basics</a><br>
+<a href="http://www.carto.net/papers/svg/samples/svg_html.shtml">SVG in HTML 
+pages</a></p>
+<p><b>Bézier Curves<br>
+</b><a href="http://www.moshplant.com/direct-or/bezier/index.html">What's a 
+Bézier Curve?</a><br>
+<a href="http://en.wikipedia.org/wiki/Bézier_curve">Wikipedia, Bézier curve</a><br>
+<a href="http://www.math.ucla.edu/~baker/java/hoefer/Bezier.htm">Bézier Curve 
+Demo</a></p>
+<p><b>Miscellaneous<br>
+</b><a href="http://validator.w3.org/file-upload.html">W3C Markup Validation 
+Service</a><br>
+<a href="http://www.xmlvalidation.com/">XMLvalidation.com</a><br>
+<a href="http://regentsprep.org/Regents/Math/coreflec/reflect.htm">Reflection in 
+a Line</a><br>
+<a href="http://regentsprep.org/Regents/Math/reflect/Lreflect.htm">An Intuitive 
+Notion of Line Reflections</a></p>
+<p><b>JDOM</b><br>
+<a href="http://www.jdom.org/">JDOM Main Page</a><br>
+<a href="http://www-128.ibm.com/developerworks/java/library/j-jdom/">Simplify 
+XML programming with JDOM</a><br>
+<a href="http://www.topxml.com/tutorials/main.asp?id=jdom">Interactive Java &amp; 
+JDOM Online Tutorial</a><br>
+<a href="http://www.javaworld.com/javaworld/jw-05-2000/jw-0518-jdom_p.html">Easy 
+Java/XML integration with JDOM</a><br>
+<a href="http://en.wikipedia.org/wiki/JDOM">Wikipedia, JDOM</a><br>
+<a href="http://www.cafeconleche.org/books/xmljava/chapters/ch14.html">Chapter 
+14</a> (JDOM) of Elliotte Rusty Harold's book, <i>Processing XML with Java<br>
+</i><a href="http://www.cafeconleche.org/books/xmljava/chapters/ch15.html">
+Chapter 15</a> (The JDOM Model) of Elliotte Rusty Harold's book, <i>Processing 
+XML with Java</i>.</p>
+<center>
+<h2> <a name="Complete Program Listings"></a>Complete program listings</h2>
+</center>
+Complete listings of the programs discussed in this lesson are shown in
+Listing 32 and Listing 33 below.
+<p>
+<b><a name="Listing_32">Listing 32</a>. Java program code for Svg15. </b>
+<table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>/*File Svg15.java,
+Copyright 2007, R.G.Baldwin
+
+This is my first published Java/JDOM/SVG program.
+
+This program uses JDOM 1.0 to create an XML file named 
+Svg15.svg that draws at least one of each of the
+following six basic SVG shapes when rendered in an SVG
+graphics engine such as Firefox 2.0.0.4:
+
+    * rectangle
+    * circle
+    * ellipse
+    * line
+    * polyline
+    * polygon
+
+
+The main purpose is to illustrate how to create an SVG 
+file using raw JDOM commands. A later program will show
+how to write a Java/JDOM/SVG graphics library that
+eliminates much of the pain of programming using raw
+JDOM commands.
+
+A secondary purpose is to illustrate the use of a viewBox
+element to make it possible for the programmer to work
+in terms of convenient canvas dimensions, such as
+1000x1000 instead of having to work in less convenient
+dimensions such as 459x459.
+
+The file validates at: http://validator.w3.org/
+
+Tested using J2SE 6.0, JDOM 1.0, and Firefox 2.0.0.4
+running under WinXP.
+*********************************************************/
+import java.io.*;
+import org.jdom.*;
+import org.jdom.output.XMLOutputter;
+import org.jdom.output.Format;
+public class Svg15{
+  
+  public static void main(String[] args){
+    //Create a String variable containing the namespace
+    // URI to reduce the amount of typing that is required
+    // later. Note that the variable name is short and
+    // easy to type.
+    String ns = "http://www.w3.org/2000/svg";
+    
+    //For clarity, create strings containing the name of
+    // the element that is constrained by the DTD (the
+    // root element), the Public ID of the DTD, and the
+    // System ID of the DTD.
+    String dtdConstrainedElement = "svg";
+    String dtdPublicID = "-//W3C//DTD SVG 1.1//EN";
+    String dtdSystemID = 
+       "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd";
+    
+    //Instantiate an Element node that represents the
+    // root node with the given name and namespace. Set
+    // four attributes on the node. 
+    //The svg element represents the canvas on which
+    // various shapes can be drawn. The width and height
+    // attribute values of the svg element establish the
+    // physical size of the canvas on the screen. The
+    // values of the viewBox attribute establish the
+    // size of the canvas in "user units."  The
+    // dimensions of the viewbox map directly into the
+    // dimensions of the canvas.  This makes it possible
+    // for the programmer to work in dimensions that are
+    // convenient, such as 1000x1000, instead of having
+    // to work with less convenient dimensions such as
+    // 459x459.
+    //Setting the value of the preserveAspectRatio
+    // attribute to none prevents the system from
+    // attempting to automatically preserve the aspect
+    // ratio.  In this case, it is probably a good idea
+    // for the programmer to make the ratio of the height
+    // and width of the viewbox the same as the ratio of
+    // the height and width of the canvas. That way, a
+    // circle will look like a circle instead of looking
+    // like an ellipse.
+    Element svg = new Element("svg",ns);
+    svg.setAttribute("version","1.1");
+    svg.setAttribute("width","459");
+    svg.setAttribute("height","459");
+    svg.setAttribute("viewBox","0 0 1000 1000");
+    svg.setAttribute("preserveAspectRatio","none");
+    
+    //Instantiate a new DocType object that represents the
+    // DTD, passing the name of the constrained element
+    // along with the public and system IDs of the DTD to
+    // the constructor.
+    DocType docType = new DocType(dtdConstrainedElement,
+                                  dtdPublicID,
+                                  dtdSystemID);
+                                  
+    //Instantiate a new Document for the specified root
+    // element and the specified DTD.
+    Document doc = new Document(svg,docType);
+
+    //Instantiate a description element. Set it's text
+    // value, and append it to the root. Note that because
+    // the root declares a namespace, each child of the
+    // root node must declare a namespace.  Otherwise, the
+    // child is assigned to xmlns="". This is part of the 
+    // reason for declaring a String variable with a short
+    // name containing the URI for the namespace earlier. 
+    Element desc = new Element("desc",ns);
+    desc.setText("The basic SVG shapes.");
+    svg.addContent(desc);
+    
+    //Instantiate a comment node and append it to the 
+    // root node.  Note that no namespace is required 
+    // here.
+    Comment comment = new Comment(
+                             " Show outline of canvas. ");
+    svg.addContent(comment);
+    
+    //The next seven elements are SVG elements. Note that
+    // they are drawn using viewBox dimensions rather 
+    // than physical screen dimensions.
+    
+    //Instantiate a node that represents a black
+    // rectangular border for the canvas and append it to
+    // the root.  Although the stroke-width is set to 20,
+    // the width of the border appears to be only about
+    // 10, because the other half of the border is 
+    // outside the bounds of the canvas.
+    Element rectA = new Element("rect",ns);
+    rectA.setAttribute("x","1");
+    rectA.setAttribute("y","1");
+    rectA.setAttribute("width","999");
+    rectA.setAttribute("height","999");
+    rectA.setAttribute("fill","none");
+    rectA.setAttribute("stroke","black");
+    rectA.setAttribute("stroke-width","20");
+    svg.addContent(rectA);
+    
+    //Instantiate a node that represents a rectangle with
+    // a yellow fill and a red border with a width of
+    // 10.  Append it to the root. This rectangle is
+    // centered in the canvas.
+    Element rectB = new Element("rect",ns);
+    rectB.setAttribute("x","299");
+    rectB.setAttribute("y","399");
+    rectB.setAttribute("width","400");
+    rectB.setAttribute("height","200");
+    rectB.setAttribute("fill","yellow");
+    rectB.setAttribute("stroke","red");
+    rectB.setAttribute("stroke-width","10");
+    svg.addContent(rectB);
+
+    //Instantiate a node that represents an ellipse that
+    // just fits inside the borders of the yellow
+    // rectangle and append it to the root.
+    Element ellipse = new Element("ellipse",ns);
+    ellipse.setAttribute("cx","499");
+    ellipse.setAttribute("cy","499");
+    ellipse.setAttribute("rx","195");
+    ellipse.setAttribute("ry","95");
+    ellipse.setAttribute("fill","none");
+    ellipse.setAttribute("stroke","black");
+    ellipse.setAttribute("stroke-width","1");
+    svg.addContent(ellipse);
+    
+    //Instantiate a node that represents a polyline with
+    // three points and append it to the root.  This
+    // polyline forms an open triangular shape in the
+    // upper half of the canvas.
+    Element polyline = new Element("polyline",ns);
+    polyline.setAttribute("points",
+         "449,200, 499,100 549,200");
+    polyline.setAttribute("fill","none");
+    polyline.setAttribute("stroke","black");
+    polyline.setAttribute("stroke-width","1");
+    svg.addContent(polyline);
+    
+    //Instantiate a node that represents a polygon with
+    // three points and append it to the root. This
+    // polygon forms a closed triangle in the lower half
+    // of the canvas.
+    Element polygon = new Element("polygon",ns);
+    polygon.setAttribute("points",
+         "449,800, 499,900 549,800");
+    polygon.setAttribute("fill","none");
+    polygon.setAttribute("stroke","black");
+    polygon.setAttribute("stroke-width","1");
+    svg.addContent(polygon);
+    
+    //Instantiate a node that represents a black line
+    // that extends from the upper left corner of the
+    // canvas to the lower right corner of the canvas.
+    // Append it to the root.
+    Element line = new Element("line",ns);
+    line.setAttribute("x1","0");
+    line.setAttribute("y1","0");
+    line.setAttribute("x2","999");
+    line.setAttribute("y2","999");
+    line.setAttribute("stroke","black");
+    line.setAttribute("stroke-width","1");
+    svg.addContent(line);
+    
+    //Instantiate a node that represents a black circle
+    // that just fits inside the canvas. Note that it
+    // overlaps the border on the canvas. Append the node
+    // to the root.
+    Element circle = new Element("circle",ns);
+    circle.setAttribute("cx","499");
+    circle.setAttribute("cy","499");
+    circle.setAttribute("r","499");
+    circle.setAttribute("stroke","black");
+    circle.setAttribute("stroke-width","1");
+    circle.setAttribute("fill","none");
+    svg.addContent(circle);
+
+    
+    //Write the SVG/XML code to an SVG file. Enable and
+    // disable one or the other of the following two
+    // method calls to select between a pretty-print
+    // format and a compact format. The pretty-print file
+    // is less efficient than the compact file, but it
+    // is very useful during test and debugging because
+    // you can view source in your browser and the XML
+    // code will be reasonably well formatted.
+    writePrettyFile("Svg15.svg",doc);
+//    writeCompactFile("Svg15.svg",doc);
+    
+  }//end main
+  //----------------------------------------------------//
+  
+  //This method writes the XML code into an output file
+  // in pretty-print format
+  private static void writePrettyFile(
+                              String fname, Document doc){
+    try{
+      FileOutputStream out = new FileOutputStream(fname);
+
+      XMLOutputter xmlOut = 
+               new XMLOutputter(Format.getPrettyFormat());
+      xmlOut.output(doc,out);
+
+      out.flush();
+      out.close();
+    }catch (IOException e){
+      System.err.println(e);
+    }//end catch
+  }//end writePrettyFile
+  //----------------------------------------------------//
+  
+  //This method writes the XML code into an output file
+  // in whitespace-normalized format 
+  private static void writeCompactFile(
+                              String fname, Document doc){
+    try{
+      FileOutputStream out = new FileOutputStream(fname);
+
+      XMLOutputter xmlOut = 
+              new XMLOutputter(Format.getCompactFormat());
+      xmlOut.output(doc,out);
+
+      out.flush();
+      out.close();
+    }catch (IOException e){
+      System.err.println(e);
+    }//end catch
+  }//end writePrettyFile
+  //----------------------------------------------------//
+  
+}//end class Svg15
+//======================================================//
+</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>
+<b><a name="Listing_33">Listing 33</a>. Java program code for Svg16.</b><table border="1" cols="1" width="477" bgcolor="#eeeeee">
+  <tbody>
+    <tr>
+      <td>
+      <pre>/*File Svg16.java,
+Copyright 2007, R.G.Baldwin
+
+This program is an update of the program named Svg15.
+The purpose of this update is begin the development and
+use of a Java/JDOM/SVG graphics library designed to 
+eliminate much of the pain involved in writing Java 
+programs to produce SVG files.
+
+This program uses JDOM 1.0 and an SVG graphics library 
+class of my own design named JdomSvg to create an XML 
+file named Svg16.svg that draws at least one of each of 
+the following six basic SVG shapes when rendered in an 
+SVG graphics engine such as Firefox 2.0.0.4:
+
+    * rectangle
+    * circle
+    * ellipse
+    * line
+    * polyline
+    * polygon
+
+
+The main purpose is to illustrate how to create an SVG 
+file using the JDOM SVG graphics library.
+
+A secondary purpose is to illustrate the use of a viewBox
+element to make it possible for the programmer to work
+in terms of convenient canvas dimensions, such as
+1000x1000 instead of having to work in less convenient
+dimensions such as 459x459.
+
+The file validates at: http://validator.w3.org/
+
+Tested using J2SE 6.0, JDOM 1.0, and Firefox 2.0.0.4
+running under WinXP.
+*********************************************************/
+import java.io.*;
+import org.jdom.*;
+import org.jdom.output.XMLOutputter;
+import org.jdom.output.Format;
+public class Svg16{
+  
+  public static void main(String[] args){
+    //Create a String variable containing the namespace
+    // URI to reduce the amount of typing that is required
+    // later. Note that the variable name is short and
+    // easy to type.
+    String ns = "http://www.w3.org/2000/svg";
+    
+    //For clarity, create strings containing the name of
+    // the element that is constrained by the DTD (the
+    // root element), the Public ID of the DTD, and the
+    // System ID of the DTD.
+    String dtdConstrainedElement = "svg";
+    String dtdPublicID = "-//W3C//DTD SVG 1.1//EN";
+    String dtdSystemID = 
+       "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd";
+       
+    //Note that the code in the main method of this
+    // program replicates the behavior of the main method
+    // in the program named Svg15.  From this point
+    // forward, most of the explanatory comments have been
+    // removed for brevity.  See the comments in the
+    // program named Svg15 for an explanation of the
+    // behavior of this program.
+
+    Element svg = JdomSvg.makeSvg(ns,459,459,1000,1000);
+
+    DocType docType = new DocType(
+           dtdConstrainedElement,dtdPublicID,dtdSystemID);
+
+    Document doc = new Document(svg,docType);
+
+    JdomSvg.makeDescription(
+                          svg,ns,"The basic SVG shapes.");
+      
+    JdomSvg.makeComment(svg," Show outline of canvas. ");
+    
+    Element rectA = JdomSvg.makeRect(svg,ns,1,1,999,999);
+    rectA.setAttribute("stroke-width","20");
+
+    Element rectB = JdomSvg.makeRect(
+                                  svg,ns,299,399,400,200);
+    rectB.setAttribute("fill","yellow");
+    rectB.setAttribute("stroke","red");
+    rectB.setAttribute("stroke-width","10");
+
+    JdomSvg.makeEllipse(svg,ns,499,499,195,95);
+    
+    JdomSvg.makePolyline(svg,ns,
+                      new int[]{449,200,499,100,549,200});
+
+    JdomSvg.makePolygon(svg,ns,
+                      new int[]{449,800,499,900,549,800});
+
+    JdomSvg.makeLine(svg,ns,0,0,999,999);
+
+    JdomSvg.makeCircle(svg,ns,499,499,499);
+ 
+    JdomSvg.writePrettyFile("Svg16.svg",doc);
+    //JdomSvg.writeCompactFile("Svg16.svg",doc);
+    
+  }//end main
+  //----------------------------------------------------//
+
+}//end class Svg16
+//======================================================//
+
+//This is a graphics library that is designed to eliminate
+// much of the pain involved in writing JDOM code to
+// create SVG output. The library contains individual
+// static methods that are used to construct and return
+// many of the standard SVG graphics elements.
+//Many of the methods have default attribute values.  If
+// you need different attribute values for a particular
+// graphic element, you can call the setAttribute method
+// on the returned value to change the attribute values 
+// after the method returns.
+//Many of the methods set the stroke attribute value to
+// black and set the stroke-width attribute value to 1.
+// If you don't want to be able to see the outline of the
+// shape, change the stroke-width attribute value to 0.
+class JdomSvg{
+  //----------------------------------------------------//
+
+  //This method writes the XML code into an output file
+  // in pretty-print format. The pretty-print format
+  // is less efficient than the compact format, but it
+  // is very useful during test and debugging because
+  // you can view source in your browser and the XML
+  // code will be reasonably well formatted.
+  public static void writePrettyFile(
+                              String fname, Document doc){
+    try{
+      FileOutputStream out = new FileOutputStream(fname);
+
+      XMLOutputter xmlOut = 
+               new XMLOutputter(Format.getPrettyFormat());
+      xmlOut.output(doc,out);
+
+      out.flush();
+      out.close();
+    }catch (IOException e){
+      System.err.println(e);
+    }//end catch
+  }//end writePrettyFile
+  //----------------------------------------------------//
+  
+  //This method writes the XML code into an output file
+  // in whitespace-normalized format.
+  public static void writeCompactFile(
+                              String fname, Document doc){
+    try{
+      FileOutputStream out = new FileOutputStream(fname);
+
+      XMLOutputter xmlOut = 
+              new XMLOutputter(Format.getCompactFormat());
+      xmlOut.output(doc,out);
+
+      out.flush();
+      out.close();
+    }catch (IOException e){
+      System.err.println(e);
+    }//end catch
+  }//end writePrettyFile
+  //----------------------------------------------------//
+
+  //This method constructs and returns a reference to an
+  // SVG root element node named svg.
+  //By default, the min-x and min-y attribute values of
+  // the viewBox are set to 0 0 and the value of the
+  // preserveAspectRatio is set to none.
+  //The svg element represents the canvas on which
+  // various shapes can be drawn. The width and height
+  // attribute values of the svg element establish the
+  // physical size of the canvas on the screen. The
+  // values of the viewBox attribute establish the
+  // size of the canvas in "user units."  The
+  // dimensions of the viewbox map directly into the
+  // dimensions of the canvas.  This makes it possible
+  // for the programmer to work in dimensions that are
+  // convenient, such as 1000x1000, instead of having
+  // to work with less convenient dimensions such as
+  // 459x459.
+  //Setting the value of the preserveAspectRatio
+  // attribute to none prevents the system from
+  // attempting to automatically preserve the aspect
+  // ratio.  In this case, it is probably a good idea
+  // for the programmer to make the ratio of the height
+  // and width of the viewbox the same as the ratio of
+  // the height and width of the canvas. That way, a
+  // circle will look like a circle instead of looking
+  // like an ellipse.
+  public static Element makeSvg(
+                      String ns,//namespace URI
+                      int svgWidth,//width of the canvas
+                      int svgHeight,//height of the canvas
+                      int vbWidth,//width of the viewBox
+                      int vbHeight//height of the viewBox
+                      ){
+    Element svg = new Element("svg",ns);
+    
+    //Set default attribute values.
+    svg.setAttribute("version","1.1");
+    svg.setAttribute("preserveAspectRatio","none");
+    String vbMinX = "0 ";
+    String vbMinY = "0 ";
+    
+    //Set user-specified attribute values. Note the 
+    // format that is required to construct the attribute
+    // value for the viewBox. If you need to call the
+    // setAttribute method after this method returns to
+    // change the attribute value for the viewBox
+    // attribute, you will need to comply with the format
+    // requirements for that value.
+    svg.setAttribute("width",""+svgWidth);
+    svg.setAttribute("height",""+svgHeight);
+    svg.setAttribute("viewBox",
+             vbMinX + vbMinY + ""+vbWidth + " "+vbHeight);
+    
+    return svg;
+  }//end makeSvg
+  //----------------------------------------------------//
+  
+  //This method constructs and returns a description node
+  // for a given namespace and a given parent.
+  public static Element makeDescription(
+              Element parent,//The parent of this element.
+              String nameSpace,//The namespace.
+              String text//Text content for this element.
+              ){
+    Element desc = new Element("desc",nameSpace);
+    parent.addContent(desc);
+    desc.setText(text);
+
+    return desc;
+  }//end makeDescription
+  //----------------------------------------------------//
+  
+  //This method constructs and returns a comment node
+  // for a given parent.
+  public static Comment makeComment(
+              Element parent,//The parent of this element.
+              String text//Text content for this element.
+              ){
+    Comment comment = new Comment(text);
+    parent.addContent(comment);
+
+    return comment;
+  }//end makeComment
+  //----------------------------------------------------//
+
+  //This method constructs and returns a rect node for a
+  // given parent in a given namespace.  By default,the
+  // stroke is black, the stroke-width is 1, and the fill
+  // is none.  
+  public static Element makeRect(
+                  Element parent,
+                  String namespace,
+                  int x,//Coordinate of upper-left corner.
+                  int y,//Coordinate of upper-left corner.
+                  int width,
+                  int height
+                  ){
+    Element rect = new Element("rect",namespace);
+    parent.addContent(rect);
+    
+    //Set default attribute values.
+    rect.setAttribute("fill","none");
+    rect.setAttribute("stroke","black");
+    rect.setAttribute("stroke-width","1");
+    
+    //Set user specified attribute values.
+    rect.setAttribute("x",""+x);
+    rect.setAttribute("y",""+y);
+    rect.setAttribute("width",""+width);
+    rect.setAttribute("height",""+height);
+    
+    return rect;
+  }//end makeRect
+  //----------------------------------------------------//
+
+  //This method constructs and returns an ellipse node for
+  // a given parent in a given namespace.  By default,the
+  // stroke is black, the stroke-width is 1, and the fill
+  // is none.
+  public static Element makeEllipse(
+                                Element parent,
+                                String namespace,
+                                int cx,//Center coordinate
+                                int cy,//Center coordinate
+                                int rx,//Horizontal radius
+                                int ry //Vertical radius
+                                ){
+    Element ellipse = new Element("ellipse",namespace);
+    parent.addContent(ellipse);
+    
+    //Set default attribute vales
+    ellipse.setAttribute("fill","none");
+    ellipse.setAttribute("stroke","black");
+    ellipse.setAttribute("stroke-width","1");
+    
+    //Set user specified attribute values.
+    ellipse.setAttribute("cx",""+cx);
+    ellipse.setAttribute("cy",""+cy);
+    ellipse.setAttribute("rx",""+rx);
+    ellipse.setAttribute("ry",""+ry);
+    
+    return ellipse;
+  }//end makeEllipse
+  //----------------------------------------------------//
+
+  //This method constructs and returns a polyline node for
+  // a given parent in a given namespace..
+  //The array of type int[], which contains the
+  // coordinates for each point in the polyline, must
+  // contain an even number of values for the polyline
+  // to be drawn correctly. Otherwise, it simply won't be
+  // drawn.
+  //The values are extracted from the array and treated
+  // as coordinate values x1,y1, x2,y2, x3,y3 ... etc.
+  // By default, the stroke is set to black one pixel
+  // wide with no fill.
+  //The main difference between a polyline and a polygon
+  // (see below) is that a polygon is automatically closed
+  // by connecting the last point to the first point.
+  // While you may close a polyline if you cause the
+  // coordinates of the last point to match the
+  // coordinates of the first point, it is not
+  // automatically closed as in the case of a polygon.
+  //Be careful if you fill a polyline that is not closed.
+  // The results may not be what you expect to see.
+  static Element makePolyline(Element parent,
+                              String namespace,
+                              int[] points){//See above.
+    Element polyline = new Element("polyline",namespace);
+    parent.addContent(polyline);
+
+    //Set default attributes
+    polyline.setAttribute("stroke","black");
+    polyline.setAttribute("stroke-width","1");
+    polyline.setAttribute("fill","none");
+    
+    //Set user specified attributes.
+    String dataPoints = "";
+    for(int cnt=0;cnt&lt;points.length;cnt++){
+      dataPoints += "" + points[cnt] + " ";
+    }//end for loop
+    polyline.setAttribute("points",dataPoints);
+    
+    return polyline;
+  }//end makePolyline
+  //----------------------------------------------------//
+  
+  //This method constructs and returns a polygon node for
+  // a given parent in a given namespace..
+  //The array of type int[], which contains the
+  // coordinates for each point in the polyline, must
+  // contain an even number of values for the polyline
+  // to be drawn correctly. Otherwise, it simply won't be
+  // drawn.
+  //The values are extracted from the array and treated
+  // as coordinate values x1,y1, x2,y2, x3,y3 ... etc.
+  // By default, the stroke is set to black one pixel
+  // wide with no fill.
+  //The main difference between a polygon and a polyline
+  // (see above) is that a polygon is automatically closed
+  // by connecting the last point to the first point.
+  static Element makePolygon(Element parent,
+                             String namespace,
+                             int[] points){
+    Element polygon = new Element("polygon",namespace);
+    parent.addContent(polygon);
+    //Set default attributes.
+    polygon.setAttribute("stroke","black");
+    polygon.setAttribute("stroke-width","1");
+    polygon.setAttribute("fill","none");
+    
+    //Set user specified attributes.
+    String dataPoints = "";
+    for(int cnt=0;cnt&lt;points.length;cnt++){
+      dataPoints += "" + points[cnt] + ",";
+    }//end for loop
+    polygon.setAttribute("points",dataPoints);
+
+    return polygon;
+  }//end makePolygon
+  //----------------------------------------------------//
+  
+  //This method constructs and returns a line node for a
+  // given parent in a given namespace.  By default,the
+  // stroke is black and the stroke-width is 1.
+  public static Element makeLine(
+                                Element parent,
+                                String namespace,
+                                int x1,//Start coordinate
+                                int y1,//Start coordinate
+                                int x2,//End coordinate
+                                int y2 //End coordinate
+                                ){
+    Element line = new Element("line",namespace);
+    parent.addContent(line);
+    
+    //Set default attribute vales
+    line.setAttribute("stroke","black");
+    line.setAttribute("stroke-width","1");
+    
+    //Set user specified attribute values.
+    line.setAttribute("x1",""+x1);
+    line.setAttribute("y1",""+y1);
+    line.setAttribute("x2",""+x2);
+    line.setAttribute("y2",""+y2);
+    
+    return line;
+  }//end makeLine
+  //----------------------------------------------------//
+  
+  //This method constructs and returns a circle node for a
+  // given parent in a given namespace.  By default,the
+  // stroke is black, the stroke-width is 1, and the fill
+  // is none.
+  public static Element makeCircle(
+                                Element parent,
+                                String namespace,
+                                int cx,//Center coordinate
+                                int cy,//Center coordinate
+                                int r  //Radius
+                                ){
+    Element circle = new Element("circle",namespace);
+    parent.addContent(circle);
+    
+    //Set default attribute vales
+    circle.setAttribute("fill","none");
+    circle.setAttribute("stroke","black");
+    circle.setAttribute("stroke-width","1");
+    
+    //Set user specified attribute values.
+    circle.setAttribute("cx",""+cx);
+    circle.setAttribute("cy",""+cy);
+    circle.setAttribute("r",""+r);
+    
+    return circle;
+  }//end makeCircle
+  //----------------------------------------------------//
+
+}//end class JdomSvg
+
+//======================================================//
+</pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>&nbsp;</p>
+
+<p> </p>
+<hr align="center" size="3" width="100%">
+<h2 align="center"><a name="Copyright">Copyright</a></h2>
+<p>Copyright 2007, Richard G. Baldwin.&nbsp; Reproduction in whole or in part in any 
+form or medium without express written permission from Richard Baldwin is 
+prohibited. </p>
+<h2 align="center"><a name="About_the_author">About the author</a></h2>
+<b><a href="mailto:Baldwin@DickBaldwin.com">Richard Baldwin</a></b><i> is a 
+college professor (at Austin Community College in Austin, TX) and private 
+consultant whose primary focus is a combination of Java, C#, and XML. In 
+addition to the many platform and/or language independent benefits of Java and 
+C# applications, he believes that a combination of Java, C#, and XML will become 
+the primary driving force in the delivery of structured information on the Web.</i>    
+<p><i>Richard has participated in numerous consulting projects and he 
+frequently provides onsite training at the high-tech companies located in and 
+around Austin, Texas.&nbsp; He is the author of Baldwin's Programming
+<a href="http://www.dickbaldwin.com">Tutorials</a>, which have gained a 
+worldwide following among experienced and aspiring programmers. He has also 
+published articles in JavaPro magazine.</i> </p>
+<p><i>In addition to his programming expertise, Richard has many years of 
+practical experience in Digital Signal Processing (DSP).&nbsp; His first job after he 
+earned his Bachelor's degree was doing DSP in the Seismic Research Department of 
+Texas Instruments.&nbsp; (TI is still a world leader in DSP.)&nbsp; In the following 
+years, he applied his programming and DSP expertise to other interesting areas 
+including sonar and underwater acoustics.</i> </p>
+<p><i>Richard holds an MSEE degree from Southern Methodist University and has 
+many years of experience in the application of computer technology to real-world 
+problems.</i> </p>
+<p><i><a href="mailto:baldwin@dickbaldwin.com">Baldwin@DickBaldwin.com</a></i>
+</p>
+<p><b>Keywords</b><br>
+java jaxp svg &quot;scalable vector graphics&quot; </p>
+<p>-end- </p>
+<p>&nbsp;</p>
+</body>
+</html>

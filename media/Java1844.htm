@@ -1,0 +1,753 @@
+<!doctype html public "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+   <meta name="GENERATOR" content="Microsoft FrontPage 5.0">
+   <title>... in Java by Richard G Baldwin</title>
+</head>
+<body link="#DD0000" vlink="#0000FF" alink="#FF0000" lang="EN-US">
+<h2>
+Focusability in Java Version 1.4</h2>
+<i>Baldwin shows you how to control the focusability of individual components at 
+runtime, how to query for the currently focused Component, the default Focus 
+Traversal Policy for Swing, and how to use the OS look and feel with Swing.</i><p><b>Published:</b>&nbsp; 
+June 3, 2003<br><b>By <a href="mailto:Baldwin@DickBaldwin.com">Richard G. Baldwin</a></b>
+<p>Java Programming Notes # 1844<ul >
+<li>
+<a href="#Preface">Preface</a></li>
+<li>
+<a href="#General Background Information">General Background Information</a></li>
+<li>
+<a href="#Preview">Preview</a></li>
+
+<li>
+<a href="#Discussion and Sample Programs">Discussion and Sample Code</a></li>
+
+<li>
+<a href="#Run the program">Run the Program</a></li>
+
+<li>
+<a href="#Summary">Summary</a></li>
+
+<li>
+<a href="#Whats Next">What's Next?</a></li>
+
+<li>
+<a href="#Complete Program Listings">Complete Program Listing</a></li>
+</ul>
+
+<hr size=3 width="100%" align=center>
+<center>
+<h2>
+<a NAME="Preface"></a>Preface</h2></center>
+<p>
+<b><font color="#FF0000">New features in SDK Version 1.4.0</font></b> </p>
+<p>The recently released Java<sup>TM</sup> 2 SDK, Standard Edition Version 1.4 
+contains a large number of new features, including many changes and additions to 
+the focus subsystem.&nbsp; This is the second lesson in a new miniseries that will 
+teach you how to use the features of the new focus subsystem.&nbsp; The first lesson in the series was entitled 
+<a href="http://www.developer.com/java/other/article.php/2198221">Focus 
+Traversal Policies in Java Version 1.4</a>.</p>
+<p>During the lifetime of Java, few if any of the improvements included in new 
+versions have been incompatible with code written for previous versions.&nbsp; 
+Unfortunately, that history of upgrade success changed with the release of the 
+new focus subsystem in V1.4.&nbsp; Several aspects of the new subsystem are 
+incompatible with code written for previous versions.</p>
+<p>
+<font color="#FF0000"><b>Historical problems with the focus subsystem</b></font><p>According 
+to Sun,<blockquote>
+<p><i>&quot;Prior to Java 2 Standard Edition, JDK 1.4, the AWT focus subsystem
+      was inadequate. It suffered from major design and API problems,
+      as well as over a hundred open bugs. Many of these bugs were caused by
+      platform inconsistencies, or incompatibilities between the native
+      focus system for heavyweights and the Java focus system for
+      lightweights.&quot;</i></blockquote>
+<p><font color="#FF0000"><b>What does Sun say about focus in V1.4?</b></font><p>Sun goes on to describe some of the specific problems and then states:<blockquote>
+<p><i>&quot;To address these and other deficiencies, we have designed a new focus
+      model for the AWT in JDK 1.4. The primary design changes were the
+      construction of a new centralized KeyboardFocusManager class, and a
+      lightweight focus architecture.&quot;</i></blockquote>
+<p><font color="#FF0000"><b>Unfortunately, Sun also states,</b></font><blockquote>
+<p><i>&quot;While we have
+      attempted to remain backward compatible with the existing
+      implementation, we were forced to make minor incompatible changes in
+      order to reach an elegant and workable conclusion. We anticipate that
+      these incompatibilities will have only a trivial impact on existing
+      applications.&quot;</i></blockquote>
+<p><font color="#ff0000"><b>KeyboardFocusManager</b></font></p>
+<p>The <b>KeyboardFocusManager</b> class provides APIs that make it possible for 
+client code to:</p>
+<ul>
+  <li>Inquire about the current focus state</li>
+  <li>Initiate focus changes</li>
+  <li>Replace the default focus event dispatching with a custom dispatcher</li>
+</ul>
+<p>I will be discussing each of these capabilities in the tutorial lessons in 
+this miniseries.&nbsp; In addition, I will use the <b>KeyboardFocusManager</b> 
+class in the sample program in this lesson.</p>
+<p><font color="#ff0000"><b>PropertyChangeListener</b></font></p>
+<p>Clients can inquire about the focus state directly.&nbsp; Alternatively, clients 
+can register a <b>PropertyChangeListener</b> to receive a <b>PropertyChangeEvent</b> 
+when a change to the focus state occurs.</p>
+<p>I will also discuss these alternatives in the tutorial lessons in this 
+miniseries.</p>
+<p><font color="#FF0000"><b>A lot to learn</b></font><p>There is a lot to learn 
+about the new focus subsystem.&nbsp; It is anything but trivial.&nbsp; This 
+lesson will deal with several aspects of the new focus subsystem, including:<ul>
+  <li>How to control focusability at runtime.</li>
+  <li>The ability to query for the currently focused Component.</li>
+  <li>The default Focus Traversal Policy.</li>
+</ul>
+<p>In addition, this lesson will show you how to write Swing programs that 
+exhibit the look and feel of the operating system being used.&nbsp; While this 
+is not directly related to the new focus subsystem, it is good thing to know, 
+and this is an opportune time for me to explain it.</p>
+<p>
+<b><font color="#FF0000">Viewing tip</font></b>
+<p>You may find it useful to open another copy of this lesson in a separate
+browser window.&nbsp; That will make it easier for you to scroll back and
+forth among the different listings and figures while you are reading about
+them.
+<p><b><font color="#FF0000">Supplementary material</font></b>
+<p>I recommend that you also study the other lessons in my extensive collection
+of online Java tutorials.&nbsp; You will find those lessons published at
+<a href="http://softwaredev.earthweb.com/java">Gamelan.com</a>.&nbsp;
+However, as of the date of this writing, Gamelan doesn't maintain a consolidated
+index of my Java tutorial lessons, and sometimes they are difficult to
+locate there.&nbsp; You will find a consolidated index at <font color="#000000">
+<a href="http://www.DickBaldwin.com">www.DickBaldwin.com</a>.</font>
+<h2 align="center"><font color="#000000">
+<a name="General Background Information">General Background Information</a></font></h2>
+<p><font color="#FF0000"><b>Focusability</b></font></p>
+<p>
+A focusable Component is a component that can become the focus owner and 
+participates in keyboard focus traversal with
+a <b>FocusTraversalPolicy</b>.<p>
+<font color="#FF0000"><b>Information from the previous lesson</b></font><p>The 
+first lesson in this series, entitled 
+<a href="http://www.developer.com/java/other/article.php/2198221">Focus 
+Traversal Policies in Java Version 1.4</a>, contained a great deal of 
+important information, including descriptions of several important terms:<ul>
+  <li>Focus traversal</li>
+  <li>The focus cycle root</li>
+  <li>Focus traversal cycle</li>
+  <li>Focus owner</li>
+  <li>Up cycle and down cycle 
+traversal operations</li>
+  <li>Focus traversal policy</li>
+  </ul>
+  <p>In addition, that lesson showed you how to establish a focus traversal 
+  policy, and how to modify that policy at runtime.<p>It is strongly recommended 
+  that you study that lesson before continuing with this 
+  lesson.<h2 align="center"><font color="#000000">
+<a name="Preview">Preview</a></font></h2>
+<p>The sample program that I will discuss in this lesson illustrates the 
+  following:<ul>
+    <li>How to control the focusability of individual components at runtime.</li>
+    <li>The ability to query for the currently focused Component.</li>
+    <li>The default Focus Traversal Policy for Swing.</li>
+    <li>The use of the OS look and feel with Swing.</li>
+  </ul>
+  <center>
+<h2>
+<a NAME="Discussion and Sample Programs"></a><font color="#000000">Discussion
+and Sample Code</font></h2></center>
+  <p>
+<font color="#FF0000"><b>Description of the program named Focusability01</b></font><p>A single <b>JFrame</b> object appears on the screen, 
+as shown in Figure 1.<p align="center">
+<img border="0" src="java1844a.gif" width="251" height="121"><p align="center">
+Figure 1&nbsp; The GUI at startup<p>Three <b>JButton</b> objects and a 
+  <b>JTextField</b> object appear at the North, South, East, and Center locations in 
+  the frame.<p><font color="#FF0000"><b>Program state at startup</b></font><p>When the program first starts running, the text field has the 
+  focus and the button in the South location displays the word <b>Focusable</b>.<p>
+  <font color="#FF0000"><b>The focus traversal policy</b></font><p>
+  The default focus traversal policy is in effect at startup <i>(and throughout 
+  the running of the program).</i>&nbsp; Generally, this policy 
+  causes the focus to traverse from left to right, top to bottom <i>(I will 
+  discuss this in more detail later).</i><p>Successive presses on the tab key 
+  causes the focus to traverse these components in the following order:<ul>
+    <li>Text field</li>
+    <li>Button 2</li>
+    <li>Button 1</li>
+    <li>Focusable button</li>
+    <li>Back up to the text field where the cycle repeats</li>
+    </ul>
+    <p>
+<font color="#FF0000"><b>Change focusability of the South button</b></font><p>When you click 
+    <b>Button2</b>, the text and the color of the characters in the South button changes to 
+    that shown in Figure 2.<p align="center">
+<img border="0" src="java1844b.gif" width="251" height="121"><p align="center">
+Figure 2&nbsp; The GUI after clicking Button2<p>More importantly, the South 
+    button loses its ability to gain the focus when you click <b>Button2</b>.<p>
+<font color="#FF0000"><b>The new focus traversal path</b></font><p>Successive presses on the tab 
+    key causes the focus to traverse these components in the following order <i>
+    (skipping the South button):</i><ul>
+      <li>Text field</li>
+      <li>Button 2</li>
+      <li>Button 1</li>
+      <li>Back up to the text field where the cycle repeats</li>
+      </ul>
+      <p><font color="#FF0000"><b>Toggle the focusability of the South button</b></font><p>Successive clicking on 
+<b>Button2</b> causes the South button to toggle back 
+      and forth between being focusable and not being focusable.<p>
+<font color="#FF0000"><b>SDK Version 1.4 required</b></font><p>
+This program requires SDK V1.4 or later, because features used in this program 
+were first released in V1.4.<p>
+The program was tested using SDK 1.4.1 under WinXP<p>
+<font color="#FF0000"><b>More detailed description of the program</b></font><p>The GUI uses Swing components and exhibits a 
+      look and feel that is the standard look and feel 
+      for the operating system under which the program 
+      is running.</p>
+<p>The program displays a frame object containing a 
+      button at the South location of the frame, which is 
+      initially labeled <b>Focusable</b>.&nbsp; When this button 
+      is labeled <b>Focusable</b>, it is part of the default 
+      focus traversal path, which proceeds from the 
+      top left to the bottom right in the GUI.</p>
+<p><font color="#FF0000"><b>The focus traversal path</b></font></p>
+<p>The previous lesson taught you how to establish the focus traversal path for 
+a graphical user interface.&nbsp; If you don't explicitly establish the 
+traversal path, a default focus traversal path will be used.</p>
+<p><font color="#FF0000"><b>The default focus traversal path for Swing 
+components</b></font></p>
+<p>The default traversal path is not the same for AWT components and Swing 
+components.&nbsp; Here is what Sun has to say about the default traversal path 
+for Swing components:</p>
+<blockquote>
+<p><i>"Swing applications, or mixed Swing/AWT 
+applications, that use one of the standard look 
+and feels, or any other look and feel derived 
+from BasicLookAndFeel, will use 
+<b>LayoutFocusTraversalPolicy</b> for all Containers by default.&quot;</i></p>
+</blockquote>
+<p> 
+ 
+<font color="#FF0000"><b>The LayoutFocusTraversalPolicy</b></font></p>
+<p> 
+ 
+Here is part of what Sun has to say about the <b>LayoutFocusTraversalPolicy:</b></p>
+      <blockquote>
+<p> 
+ 
+<i><b>&quot;... </b>Based on their size and position, Components are roughly 
+categorized into rows and columns. For a Container with horizontal orientation, 
+columns run left-to-right or right-to-left, and rows run top-to-bottom. ... All 
+columns in a row are fully traversed before proceeding to the next row.<b>&quot;</b></i></p>
+      </blockquote>
+<p> 
+ 
+I did not explicitly define a focus traversal path for this program, so the 
+default focus traversal policy is in effect throughout the running of this 
+program.</p>
+<p> 
+ 
+The above quotation from Sun is a little cryptic, buy you should be able to pick out 
+enough information to understand why the default traversal path for this program 
+runs from left to right, top to bottom.</p>
+<p> 
+ 
+<font color="#FF0000"><b>Toggling the focusability of the South button</b></font></p>
+<p> 
+ 
+The GUI also displays a button labeled Button2, as shown in Figure 1.&nbsp; 
+Clicking this button toggles the text on the South button between <b>Focusable</b> and 
+<b>Not Focusable</b>.</p>
+<p> 
+ 
+When the South button is labeled 
+<b>Not Focusable</b>, the South button cannot receive 
+the focus.&nbsp; It is not included in the focus 
+traversal path.&nbsp; It does not receive the focus as a result of successively 
+pressing the tab key, and it does not receive the focus 
+when it is clicked with the mouse.</p>
+<p> 
+ 
+<font color="#FF0000"><b>Not disabled for events</b></font></p>
+<p> 
+ 
+However, each 
+time the South button is clicked with the mouse, regardless of 
+whether  it has or gets the focus, it fires 
+an <b>ActionEvent</b>.</p>
+      <blockquote>
+<p> 
+ 
+<i>(Not being focusable does not equate to being unable to fire events.)</i></p>
+      </blockquote>
+<p> 
+ 
+Also, if the space bar is pressed while the South button has the focus, it fires 
+an <b>ActionEvent</b>.</p>
+<p> 
+ 
+<font color="#FF0000"><b>The ActionEvent handler</b></font></p>
+<p> 
+ 
+The <b>ActionEvent</b> handler registered on the South button causes the text 
+<i>"Button0 clicked"</i> followed by the name of the 
+<i>"Currently Focused Component&quot; </i>to be displayed.&nbsp; Here is an example of such an output produced 
+by clicking the South button while <b>Button2</b> has the focus and the South 
+button is not focusable:</p>
+<p> 
+ 
+<b><font face="Courier New" size="2">Button0 clicked<br>
+Currently Focused Component: Button2</font></b></p>
+<p> 
+ 
+<font color="#FF0000"><b>Other components</b></font></p>
+<p> 
+ 
+In addition to the two buttons discussed above, 
+the GUI also displays a text field and another 
+button as shown in Figure 1.&nbsp; No  listeners are registered on 
+either of those components. </p>
+      <p>
+<font color="#FF0000"><b>Will discuss sample program in fragments</b></font><p>
+As usual, I will discuss the program in fragments.&nbsp; You can view a listing 
+of the entire program in Listing 10 near the end of the lesson.<p><font color="#FF0000"><b>The main method</b></font></p>
+  <p>The program begins in Listing 1 where the <b>main</b> method simply 
+  instantiates an object of the class named <b>GUI</b>.<br>
+&nbsp;<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>public class Focusability01 {
+  public static void main(String[] args){
+    <b>new GUI();</b>
+  }//end main
+}//end class Focusability01
+
+<b><font face="Courier New,Courier">Listing 1</font></b></pre>
+</td>
+</tr>
+</table>
+<p>It is the class named <b>GUI</b> that produces the user interface shown in 
+Figures 1 and 2.</p>
+<p><font color="#FF0000"><b>The class named GUI</b></font></p>
+  <p>The class named <b>GUI</b>, which extends <b>JFrame</b>, begins in Listing 
+  2.<br>
+&nbsp;<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>class GUI extends JFrame{
+  JTextField textField;
+  JButton button0;
+  JButton button1;
+  JButton button2;
+  boolean button0isFocusable = true;
+
+<b><font face="Courier New,Courier">Listing 2</font></b></pre>
+</td>
+</tr>
+</table>
+<p>The class begins by declaring reference variables that will be used to hold 
+references to each of the components shown in Figure 1.</p>
+<p>The code in Listing 2 also declares and initializes an instance variable that 
+will be used to hold the focusability state of the South button.&nbsp; When this 
+variable is true, the button is focusable.&nbsp; When this variable is false, 
+the button is not focusable.</p>
+<p><font color="#FF0000"><b>The constructor</b></font></p>
+  <p>The constructor for the <b>GUI</b> class begins in Listing 3.&nbsp; <br>
+&nbsp;<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>  public GUI(){//constructor
+    textField = new JTextField("Some text");
+    button0 = new JButton("Focusable");
+    button1 = new JButton("Button1");
+    button2 = new JButton("Button2");
+
+<b><font face="Courier New,Courier">Listing 3</font></b></pre>
+</td>
+</tr>
+</table>
+<p>The code in Listing 3 instantiates the four components shown in Figure 1, and 
+saves those object's references in the corresponding instance variables.</p>
+<p><font color="#FF0000"><b>Give each component a name</b></font></p>
+<p>Later on, a query will be performed to determine which component currently 
+has the focus.&nbsp; The name of the currently focused component will be 
+displayed on the standard output device.</p>
+<p>The code in Listing 4 sets the <b>name</b> property for each of the four 
+components to a unique value.</p>
+  <table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>    textField.setName("Text Field");
+    button0.setName("Button0");
+    button1.setName("Button1");
+    button2.setName("Button2");
+
+<b><font face="Courier New,Courier">Listing 4</font></b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>The worst problem</b></font></p>
+<p>Sun provides several reasons for releasing a new focus subsystem in V1.4, in 
+order to correct problems with the earlier focus subsystem.</p>
+<p>According to Sun,</p>
+  <blockquote>
+<p><i>&quot;The single worst problem with the earlier AWT focus implementation was the inability to query for the currently focused Component.&quot;</i></p>
+  </blockquote>
+<p>Code in the next fragment demonstrates that this problem has been solved in V1.4.</p>
+<p><font color="#FF0000"><b>An action listener on the South button</b></font></p>
+  <p>Continuing with the code in the constructor, the code in Listing 5 
+  registers an action listener on the South button.&nbsp; The purpose of this 
+  action listener is twofold:<ul>
+  <li>Demonstrate that a button is capable of firing action events even when it 
+  is incapable of gaining the focus.</li>
+  <li>Show the syntax required to query for the currently focused component.</li>
+  </ul>
+  <table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>    button0.addActionListener(
+                            new ActionListener(){
+      public void actionPerformed(ActionEvent e){
+        System.out.println("Button0 clicked");
+
+        System.out.println(
+                "Currently Focused Component: " +
+             <b>   KeyboardFocusManager.
+                getCurrentKeyboardFocusManager().
+                getFocusOwner().getName());</b>
+      }//end actionPerformed
+    });
+
+<b><font face="Courier New,Courier">Listing 5</font></b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>Two print statements</b></font></p>
+<p>The code in Listing 5 contains two print statements inside the <b>
+actionPerformed</b> method.&nbsp; The first print statement simply displays the 
+fact that the South button was clicked.</p>
+<p>The second print statement gets and displays the value of the <b>name</b> 
+property <i>(set earlier) </i>of the component that holds the focus when the 
+South button is clicked.</p>
+<p><font color="#FF0000"><b>Toggle the focusability of the South button</b></font></p>
+<p>Whether or not a component can gain the focus is determined by the value of 
+the <b>focusable</b> property of the component.&nbsp; The code in Listing 6 
+registers an action listener on <b>button2</b>, which toggles the focusability 
+of the South button between true and false each time <b>button2</b> is clicked.</p>
+  <table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>    button2.addActionListener(
+                            new ActionListener(){
+      public void actionPerformed(ActionEvent e){
+        if(button0isFocusable){
+          button0isFocusable = false;
+          button0.setForeground(Color.RED);
+          button0.setText("Not Focusable");
+          button0.<b>setFocusable(false);</b>
+        }else{
+          button0isFocusable = true;
+          button0.setForeground(Color.BLACK);
+          button0.setText("Focusable");
+          button0.<b>setFocusable(true);</b>
+        }//end else
+      }//end actionPerformed
+    });
+
+<b><font face="Courier New,Courier">Listing 6</font></b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>Focusable</b></font></p>
+<p>When the value of the <b>focusable</b> property is set to true, the South 
+button is included in the focus traversal path, and also gains the focus when it 
+is clicked by the mouse.</p>
+<p><font color="#FF0000"><b>Not focusable</b></font></p>
+<p>When the value of the <b>focusable</b> property is set to false, the South 
+button is unable to gain the focus.&nbsp; It is removed from the focus traversal 
+path, and also doesn't gain the focus when clicked by the mouse.</p>
+<p><font color="#FF0000"><b>Finish constructing the GUI</b></font></p>
+  <p>The code in Listing 7 sets the size and the title of the frame.<br>
+&nbsp;<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>    setSize(250,120);
+    setTitle("Copyright 2003 R.G.Baldwin");
+
+    //Add objects to the frame using default
+    // border layout manager.  Do not add in same
+    // order as default focus traversal order.
+    getContentPane().add(button0,"South");
+    getContentPane().add(textField,"North");
+    getContentPane().add(button1,"East");
+    getContentPane().add(button2,"Center");
+
+<b><font face="Courier New,Courier">Listing 7</font></b></pre>
+</td>
+</tr>
+</table>
+<p>In addition, the code in Listing 7 adds the four components to the frame.</p>
+<p><font color="#FF0000"><b>Note the addition order of the components</b></font></p>
+<p>Note that the components were purposely added to the frame in an order that 
+is different from the default focus traversal path.&nbsp; This demonstrates that 
+under the new focus subsystem, the default focus traversal path for Swing 
+components is independent of the order in which the components are added to the 
+container.</p>
+<p><font color="#FF0000"><b>Set the look and feel</b></font></p>
+  <p>If you don't set the look and feel when you create a Swing GUI, the default 
+  look and feel will be the look and feel sometimes known as the <b>metal</b> 
+  look and feel or the <b>Java</b> look and feel.<p>That may not be what you 
+  want.&nbsp; You may want the look and feel to match the native look and feel 
+  for the current operating system.<br>
+&nbsp;<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>    String plafClassName =
+       UIManager.<b>getSystemLookAndFeelClassName();</b>
+
+    try{
+       UIManager.setLookAndFeel(plafClassName);
+    }catch(Exception ex){System.out.println(ex);}
+
+    //Cause the L&F to become visible.
+    SwingUtilities.updateComponentTreeUI(this);
+
+<b><font face="Courier New,Courier">Listing 8</font></b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>Get and use look and feel for current operating 
+system</b></font></p>
+<p>The code in Listing 8 gets and uses the look and feel for the current 
+operating system without a requirement for the programmer to know the current 
+operating system <i>(provided that Java supports a look and feel for that 
+operating system).</i></p>
+<p><font color="#FF0000"><b>Odds and ends</b></font></p>
+<p>The code in Listing 9 takes care of a couple more odds and ends, closes the 
+constructor, and closes the definition of the GUI class.</p>
+  <table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>    setVisible(true);//make the frame visible
+    setDefaultCloseOperation(
+                           JFrame.EXIT_ON_CLOSE);
+  }//end constructor
+}//end class GUI definition
+
+<b><font face="Courier New,Courier">Listing 9</font></b></pre>
+</td>
+</tr>
+</table>
+<center>
+<h2>
+<a NAME="Run the program"></a>Run the Program</h2></center>
+      <p>I encourage you to copy the code from Listing 10 into your text editor, compile it, and execute it.&nbsp; Experiment
+with it, making changes, and observing the results of your changes. </p>
+<p>Remember, however, that you must be running Java V1.4 or later
+to compile and execute this program, because it makes use of Java features that 
+were first released in V1.4.<h2 align="center"><a name="Summary">Summary</a></h2>
+  <p>In this lesson, I have taught you:<ul>
+    <li>How to control the focusability of individual components at runtime.</li>
+    <li>How to query for the currently focused Component.</li>
+    <li>About the default Focus Traversal Policy for Swing.</li>
+    <li>How to use the OS look and feel with Swing.</li>
+  </ul>
+  <h2 align="center"><a name="Whats Next">What's Next?</a></h2>
+  <p>As time goes on, I plan to publish additional lessons that will help
+you learn to use  other features of the new focus subsystem.&nbsp; Future lessons will discuss new focus features of version 1.4 
+      including:<ul>
+        <li>The KeyEventDispatcher interface</li>
+        <li>The KeyEventPostProcessor interface</li>
+        <li>FocusEvent and WindowEvent</li>
+        <li>Event delivery</li>
+        <li>Opposite components</li>
+        <li>Temporary focus events</li>
+        <li>Programmatic focus traversal</li>
+        <li>Focus and PropertyChangeListener</li>
+        <li>Focus and VetoableChangeListener </li>
+      </ul>
+  <center>
+<h2>
+<a NAME="Complete Program Listings"></a>Complete Program Listing</h2></center>
+  A complete listing of the program discussed in this lesson is shown in Listing 
+  10 below.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>/*File Focusability01.java
+Copyright 2003 R.G.Baldwin
+
+This program illustrates:
+1. How to control focusability at runtime.
+2. The ability to query for the currently
+   focused Component.
+3. Default Focus Traversal Policy
+4. Use of the OS look and feel with Swing.
+
+The behavior of the program is as follows:
+
+The GUI uses Swing components and exhibits a
+look and feel that is the standard look and feel
+for the operating system under which the program
+is running.
+
+The program displays a frame object containing a
+button at the bottom of the frame, which is
+initially labeled Focusable.  While this button
+is labeled Focusable, it is part of the default
+focus traversal path, which proceeds from the
+top left to the bottom right in the GUI.
+
+The GUI also displays a button labeled button2.
+Clicking this button toggles the text on the
+bottom button between Focusable and
+Not Focusable.  When the bottom button is labeled
+Not Focusable, the bottom button does not receive
+the focus.  It is not included in the focus
+traversal path, and it does not receive the focus
+when it is clicked with the mouse.  However, each
+time it is clicked with the mouse, regardless of
+whether or not it has or gets the focus, it fires
+an ActionEvent, which causes the text
+"Button0 clicked" followed by the name of the
+"Currently Focused Component "to be displayed on
+the Standard Output Device.
+
+In addition to the two buttons discussed above,
+the GUI also displays a text field and another
+button.  No active listeners are registered on
+either of these components.
+
+Requires Java SDK V1.4 or later.
+Tested using JDK 1.4 under WinXP
+************************************************/
+
+import java.awt.*;
+import java.awt.event.*;
+import javax.swing.*;
+
+public class Focusability01 {
+  public static void main(String[] args){
+    new GUI();
+  }//end main
+}//end class Focusability01
+
+//=============================================//
+
+class GUI extends JFrame{
+  JTextField textField;
+  JButton button0;
+  JButton button1;
+  JButton button2;
+  boolean button0isFocusable = true;
+
+  public GUI(){//constructor
+    //Create several visual components
+    textField = new JTextField("Some text");
+    button0 = new JButton("Focusable");
+    button1 = new JButton("Button1");
+    button2 = new JButton("Button2");
+
+    textField.setName("Text Field");
+    button0.setName("Button0");
+    button1.setName("Button1");
+    button2.setName("Button2");
+
+    //Register an action listener on button0 to
+    // show that button0 fires action events even
+    // when it is not focusable.
+    button0.addActionListener(
+                            new ActionListener(){
+      public void actionPerformed(ActionEvent e){
+        System.out.println("Button0 clicked");
+        //According to Sun,  The single worst
+        // problem with the earlier AWT focus
+        // implementation was the inability to
+        // query for the currently focused
+        // Component.  The following statement
+        // demonstrates that the problem has
+        // been solved in V1.4.
+        System.out.println(
+                "Currently Focused Component: " +
+                KeyboardFocusManager.
+                getCurrentKeyboardFocusManager().
+                getFocusOwner().getName());
+      }//end actionPerformed
+    });
+
+    //Register an action listener on button2 to
+    // toggle focusability of button0.
+    button2.addActionListener(
+                            new ActionListener(){
+      public void actionPerformed(ActionEvent e){
+        if(button0isFocusable){
+          button0isFocusable = false;
+          button0.setForeground(Color.RED);
+          button0.setText("Not Focusable");
+          button0.setFocusable(false);
+        }else{
+          button0isFocusable = true;
+          button0.setForeground(Color.BLACK);
+          button0.setText("Focusable");
+          button0.setFocusable(true);
+        }//end else
+      }//end actionPerformed
+    });
+
+    setSize(250,120);
+    setTitle("Copyright 2003 R.G.Baldwin");
+
+    //Add objects to the frame using default
+    // border layout manager.  Do not add in same
+    // order as default focus traversal order.
+    getContentPane().add(button0,"South");
+    getContentPane().add(textField,"North");
+    getContentPane().add(button1,"East");
+    getContentPane().add(button2,"Center");
+
+    //Set L&F to op syst being used
+    String plafClassName =
+       UIManager.getSystemLookAndFeelClassName();
+
+    try{
+       UIManager.setLookAndFeel(plafClassName);
+    }catch(Exception ex){System.out.println(ex);}
+
+    //Cause the L&F to become visible.
+    SwingUtilities.updateComponentTreeUI(this);
+    setVisible(true);//make the frame visible
+    setDefaultCloseOperation(
+                           JFrame.EXIT_ON_CLOSE);
+  }//end constructor
+
+}//end class GUI definition
+//=============================================//
+
+<b><font face="Courier New,Courier">Listing 10</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>
+<hr size=3 width="100%" align=center>
+<p>Copyright 2003, Richard G. Baldwin.&nbsp; Reproduction in whole or in
+part in any form or medium without express written permission from Richard
+Baldwin is prohibited.
+<h4>
+<a NAME="About the author"></a>About the author</h4>
+<b><a href="mailto:Baldwin@DickBaldwin.com">Richard Baldwin</a></b><i>
+is a college professor (at Austin Community College in Austin, TX) and
+private consultant whose primary focus is a combination of Java, C#, and
+XML. In addition to the many platform and/or language independent benefits
+of Java and C# applications, he believes that a combination of Java, C#,
+and XML will become the primary driving force in the delivery of structured
+information on the Web.</i>
+<p><i>Richard has participated in numerous consulting projects, and he
+frequently provides onsite training at the high-tech companies located
+in and around Austin, Texas.&nbsp; He is the author of Baldwin's Programming
+<a href="http://www.DickBaldwin.com">Tutorials</a>,
+which has gained a worldwide following among experienced and aspiring programmers.
+He has also published articles in JavaPro magazine.</i>
+<p><i>Richard holds an MSEE degree from Southern Methodist University and
+has many years of experience in the application of computer technology
+to real-world problems.</i>
+<p><i><a href="mailto:Baldwin@DickBaldwin.com">Baldwin@DickBaldwin.com</a></i>
+<p>-end-
+<br>&nbsp;
+</body>
+</html>

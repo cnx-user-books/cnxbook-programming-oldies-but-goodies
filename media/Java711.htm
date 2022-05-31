@@ -1,0 +1,743 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>... in Java by Richard G Baldwin</TITLE>
+<META NAME="Template" CONTENT="C:\PROGRAM FILES\MICROSOFT OFFICE\OFFICE\html.dot">
+</HEAD>
+<BODY LINK="#0000ff" VLINK="#800080" BGCOLOR="#ffffff">
+
+<P><!--start--></P>
+<I><H3 ALIGN="CENTER">Richard G Baldwin (512) 223-4758, </I><A HREF="mailto:baldwin@austin.cc.tx.us"><I>baldwin@austin.cc.tx.us</I></A><I>, </I><A HREF="http://www2.austin.cc.tx.us/baldwin/"><I>http://www2.austin.cc.tx.us/baldwin/</I></A></H3>
+<H2 ALIGN="CENTER"><!--title-->Security, Passphrase Protected Message Digests <!--endtitle--></H2>
+<P>Java Programming, Lecture Notes # 711, Revised 5/13/99. </P>
+
+<UL>
+<LI><A HREF="#Preface">Preface</A> </LI>
+<LI><A HREF="#Disclaimer">Disclaimer</A> </LI>
+<LI><A HREF="#Introduction">Introduction</A> </LI>
+<LI><A HREF="#Discussion">Discussion</A> </LI>
+<LI><A HREF="#ProgramSecurity07A">Program Security07A</A> </LI>
+
+<UL>
+<LI><A HREF="#Security07ACodeFragments">Security07A Code Fragments</A></LI></UL>
+
+<LI><A HREF="#ProgramSecurity07B">Program Security07B</A> </LI>
+
+<UL>
+<LI><A HREF="#Security07BCodeFragments">Security07B Code Fragments</A></LI></UL>
+
+<LI><A HREF="#ProgramSecurity07C">Program Security07C</A> </LI>
+
+<UL>
+<LI><A HREF="#Security07CCodeFragments">Security07C Code Fragments</A></LI></UL>
+
+<LI><A HREF="#program_listing">Program Listings </A></LI></UL>
+
+<P><HR></P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Preface">Preface</A></H2>
+</FONT><P>Students in Prof. Baldwin's <B><U>Advanced Java Programming</B></U> classes at ACC will be responsible for knowing and understanding all of the material in this lesson beginning with the spring semester of 1999. </P>
+<P>This lesson was originally written on April 19, 1999 and has been updated several times since. </P>
+<P>The programs in this lesson were tested using JDK 1.2 under Win95</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Disclaimer">Disclaimer</A></H2>
+</FONT><P>I claim absolutely no expertise in the area of security. I am simply a college professor attempting to gather information about Java on one hand and present it to my students on the other. I disclaim any responsibility for any security problems that may occur as a result of anyone using any of the material in any of my tutorial lessons.</P>
+<P>You are responsible for your own actions. With regard to security, you should study not only the material that I will present, but also material provided by others who possess expertise in the security area. Hopefully my material will be useful in getting you started in that direction.</P>
+<P>Two good books on security published by O'Reilly &amp; Associates are:</P>
+
+<UL>
+<U><LI>Java Security</U> by Scott Oaks </LI>
+<U><LI>Java Cryptography</U> by Jonathan Knudsen</LI></UL>
+
+<P>I highly recommend both of these books.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Introduction">Introduction</A></H2>
+<B><P>Integrity and authentication</P>
+</B></FONT><P>A previous lesson introduced you to message digests. This lesson will show you how to combine a <I>passphrase</I> with a message digest to confirm data <I>integrity</I> and some degree of <I>authentication</I>.</P>
+<B><FONT COLOR="#ff0000"><P>What is a <I>passphrase</I>? </P>
+</B></FONT><P>A <I>passphrase</I> is the new jargon for the old reliable <I>password</I>. It means the same thing but it is more difficult to say. (Perhaps one difference is that a passphrase can contain spaces and special characters that are not allowed in a password on some systems.)</P>
+<B><FONT COLOR="#ff0000"><P>Three sample programs</P>
+</B></FONT><P>Three sample programs are presented. </P>
+<P>The first program shows you how to create a message digest combining an original document and a passphrase. </P>
+<P>The second program shows how to use the message digest, the passphrase, and a copy of the original document to <U>confirm the integrity</U> of the copy of the document.</P>
+<P>The third sample program is used to <U>corrupt the original document</U> to illustrate that the procedure implement by the second program will detect the fact that the document has been corrupted.</P>
+<B><FONT COLOR="#ff0000"><P>Serialized objects</P>
+</B></FONT><P>These sample programs also show you how to encapsulate the document and the digest as serialized objects in a file for transmission to an intended receiver.</P>
+<B><FONT COLOR="#ff0000"><P>Two aspects of Internet security</P>
+</B></FONT><P>As discussed in an earlier lesson, there are two major aspects of Java and security on the Internet:</P>
+
+<UL>
+<LI>The <U>mechanics</U> of using Java tools and the Java API. </LI>
+<U><LI>Overall security procedures</U> that make use of the Java tools and the Java API.</LI></UL>
+
+<P>For the most part, my tutorial lessons will <U>concentrate on the mechanics</U> of using the Java tools and the Java API. I won't attempt to give advice on overall security procedures. Rather, I will leave that to others who have given more thought to the topic than I have.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Discussion">Discussion</A></H2>
+<B><P>The security stool has three legs</P>
+</B></FONT><P>An earlier lesson suggested that when exchanging data electronically, the parties to the communication might be interested in the following three aspects of that communication:</P>
+
+<UL>
+<B><LI>Authentication</B>: Confirming the identities of the parties involved. </LI>
+<B><LI>Confidentiality</B>: Making certain that only authorized parties can understand the communication, even if it is intercepted by unauthorized persons. </LI>
+<B><LI>Integrity</B>: Confirming that the content of the communication wasn't modified during transmission.</LI></UL>
+
+<P>This lesson deals with <U>only the first and third</U> items: </P>
+
+<UL>
+<LI>authentication </LI>
+<LI>integrity. </LI></UL>
+
+<P>Generally, some type of encryption is required to achieve <I>confidentiality</I>. Encryption is the topic of a different lesson.</P>
+<B><FONT COLOR="#ff0000"><P>Sometimes confidentiality is not needed</P>
+</B></FONT><P>When might an approach like this be appropriate? See my lesson on <I>digital signatures</I> for a discussion of a hypothetical situation where confidentiality is not of concern, but where both the sender and the receiver of a message are very concerned about <I>authentication</I> and <I>integrity</I>.</P>
+<P>Another situation where we might be very concerned about <I>authentication</I> and <I>integrity</I> but not concerned about <I>confidentiality</I> is in the distribution of software. We might like to know where it came from, and that it hasn't been tampered with, but might not care if someone else can read it.</P>
+<B><FONT COLOR="#ff0000"><P>Using a passphrase for authentication and integrity</P>
+</B></FONT><P>Under some circumstances, a passphrase can be an effective means of achieving <I>authentication</I> and <I>integrity</I>. </P>
+<P>Under the right circumstances, it has some operational advantages over the use of <I>public</I> and <I>private</I> keys for the creation of digital signatures (the topic of a subsequent lesson). </P>
+<P>For example, when the passphrase is properly constructed, the human mind can easily memorize it eliminating the need for either a written or electronic record. (Few human minds are equipped to memorize <I>public</I> and <I>private</I> keys.)</P>
+<B><FONT COLOR="#ff0000"><P>Don't use <I>password</I> spelled backwards as your passphrase</P>
+</B></FONT><P>When you read the many available books that discuss operational procedures, you will find long lists of phrases that you should not use for your passphrase (birthdays, quotations from poems, etc.). </P>
+<P>However, it isn't difficult to come up with a long phrase that has never been written down in well-known literature, but is easy for two or more people to memorize. An example of such a phrase might be:</P>
+<B><BLOCKQUOTE>"The purple bear likes to eat honey in the woods"</BLOCKQUOTE>
+</B><P>Since I made that up while sitting at my keyboard, it is unlikely that it is a well-known phrase.</P>
+<B><FONT COLOR="#ff0000"><P>You can also use just the initials</P>
+</B></FONT><P>Either the entire phrase or perhaps a concatenation of the first letters from each word could be used as a passphrase. An example created by concatenating the first letters of each word is:</P>
+<B><BLOCKQUOTE>"Tpbltehitw"</BLOCKQUOTE>
+</B><P>After reading the books on operational procedures, you can decide for yourself about the security aspects of using a passphrase. I will simply concentrate on showing you how to do it if you decide to do it.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="ProgramSecurity07A">Program Security07A</H2>
+</FONT><P></A>This program is designed to work in conjunction with the following other programs:</P>
+
+<UL>
+<LI>Security07B </LI>
+<LI>Security07C</LI></UL>
+
+<B><FONT COLOR="#ff0000"><P>Illustrates passphrase protected message digests</P>
+</B></FONT><P>This program illustrates the use of passphrase protected message digests. A file is written to the disk containing serialized versions of a data array and a digest value corresponding to the <U>data array combined with a passphrase</U>.</P>
+<P>The program named <B>Security07B</B> is designed to </P>
+
+<UL>
+<LI>Read the file</LI>
+<LI>Extract the serialized objects, and </LI>
+<LI>Use the digest value along with the <U>known passphrase</U> to determine if the data in the object was corrupted after the original digest was computed and placed in the file.</LI></UL>
+
+<B><FONT COLOR="#ff0000"><P>Intercept and corrupt the file</P>
+</B></FONT><P>The program named <B>Security07C</B> is designed to </P>
+
+<UL>
+<LI>Intercept the file</LI>
+<LI>Corrupt the data</LI>
+<LI>Compute a digest value corresponding to the corrupted data, and </LI>
+<LI>Write both the corrupted data and the digest value into a file having the same name as the original.</LI></UL>
+
+<B><FONT COLOR="#ff0000"><P>Program output</P>
+</B></FONT><P>When the programs were run in the sequence 7A, 7B, 7C, 7B, the output produced by the programs was as shown below:</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<PRE><B>Security07A
+</B>ABCDEFG
+i8xdQShcLLPBI9J83h+hxXzptrQ=
+
+<B>Security07B
+</B>ABCDEFG
+i8xdQShcLLPBI9J83h+hxXzptrQ=
+
+i8xdQShcLLPBI9J83h+hxXzptrQ=
+
+<B>Valid message
+</B>
+<B>Security07C
+</B>Intercept and corrupt the file
+XBCDEFG
+L9QY4fxaiTY6ubOZWAaBVduqZ4I=
+
+<B>Security07B
+</B>XBCDEFG
+L9QY4fxaiTY6ubOZWAaBVduqZ4I=
+
++PqZf+XFDeTv1E3RLGan+Ecc+gc=
+
+<B>Corrupted message</PRE></B></TD>
+</TR>
+</TABLE>
+
+<P>As you can see from the boldface output, when the procedures of <B>Security07B</B> were applied to the original message and digest produced by <B>Security07A</B>, the integrity of the message was verified. </P>
+<B><FONT COLOR="#ff0000"><P>You can't fool me</P>
+</B></FONT><P>However, after <B>Security07C</B> was run to corrupt the message, the procedures of <B>Security07B</B> reported that the message had been corrupted.</P>
+<P>The digest values are also shown to give you a visual indication of how the program compares digests to confirm or deny integrity.</P>
+<FONT COLOR="#ff0000"><H3 ALIGN="CENTER"><A NAME="Security07ACodeFragments">Security07A Code Fragments</A></H3>
+</FONT><P>The first fragment shows the beginning of the <B>main()</B> method which includes the generation of a passphrase (<B>Pass Phrase</B>) and the message (<B>ABCDEFG</B>). </P>
+<B><FONT COLOR="#ff0000"><P>Keeping it simple</P>
+</B></FONT><P>In this case, both the passphrase and the message were <U>hard coded</U> into the program to keep it simple. </P>
+<P>In a real program, the passphrase would be <U>provided as a user input</U> and the message would most likely be extracted from a file on the disk.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>class Security07A {
+  public static void <B>main</B>(String[] args) {
+    System.out.println("Security07A");
+
+    byte[] passPhrase = "<B>Pass Phrase</B>".getBytes();
+    byte[] dataBuffer = "<B>ABCDEFG</B>".getBytes();//create data
+
+    System.out.println(new String(dataBuffer));//display</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Digesting the data</P>
+</B></FONT><P>The next fragment calls the method named <B>digestIt() </B>to get a digest value based on a <U>combination of the message and the passphrase</U>. I will discuss the details of this method later. </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>    byte[] theDigest = <B>digestIt</B>(dataBuffer,passPhrase);
+    <B>displayBase64</B>(theDigest);//display in Base 64</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Base64 again</P>
+</B></FONT><P>The fragment also displays the digest value in Base 64 format.  I explained Base 64 format in an earlier lesson. You can view the method named <B>displayBase64()</B> in the complete program listing near the end of the lesson.</P>
+<B><FONT COLOR="#ff0000"><P>Writing serialized objects</P>
+</B></FONT><P>The next fragment calls the method named <B>writeTheObject()</B> to write the message and the digest value into a disk file as two serialized objects. This is a convenient way to transfer data from one program to another in Java. I will discuss the method later.</P>
+<P>This fragment also ends the <B>main()</B> method.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>  <B>writeTheObject</B>(dataBuffer,theDigest);
+  }//end main</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>The digestIt() method</P>
+</B></FONT><P>The next fragment, showing the method named <B>digestIt(),</B> is the key to this program. This method receives two arrays of bytes. One array of bytes contains the <I>message</I> and the other contains the <I>passphrase</I>. </P>
+<P>The method generates and <U>returns a digest value</U> obtained by <U>combining the message with the passphrase</U>.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>  static byte[] <B>digestIt</B>(byte[] dataOne, byte[] dataTwo){
+    byte[] theDigest = null;
+    try{
+      //Create a MessageDigest object implementing
+      // the SHA algorithm from the default provider.
+      MessageDigest messageDigest = 
+                   MessageDigest.getInstance("SHA");
+      //Feed the byte arrays to the digester.  
+      messageDigest.<B>update</B>(dataOne);
+      messageDigest.<B>update</B>(dataTwo);
+      //Complete the digestion and save the result
+      theDigest = messageDigest.<B>digest</B>();
+    }catch(Exception e){System.out.println(e);}
+    //Return the digest value to the calling method 
+    return theDigest;
+  }//end digestIt()</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Similar to previously discussed code</P>
+</B></FONT><P>Since the above code is very similar to code explained in an earlier lesson on message digests, I won't discuss it in detail. The significant difference is that the <B>update()</B> method is <U>called twice</U>. </P>
+<B><FONT COLOR="#ff0000"><P>Feeding the update() method</P>
+</B></FONT><P>First the message is fed to the <B>update()</B> method and then the passphrase is fed to the <B>update()</B> method. </P>
+<P>After all of the data has been fed to the <B>update()</B> method, the <B>digest()</B> method is called to complete the task and return the digest value.</P>
+<B><FONT COLOR="#ff0000"><P>Writing the serialized objects</P>
+</B></FONT><P>The final fragment shows the code used to write the message and the digest value into an output file as serialized objects. The methodology for writing and reading serialized objects is covered in other lessons, so I won't discuss it further here. This fragment is presented here for completeness.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>  static void <B>writeTheObject</B>(byte[] objOne,byte[] objTwo){
+    try{
+      FileOutputStream fileOut = 
+                    new FileOutputStream("Security07.obj");
+      ObjectOutputStream objOut = 
+                           new ObjectOutputStream(fileOut);
+      objOut.writeObject(objOne);
+      objOut.writeObject(objTwo);
+      objOut.close();
+    }catch(Exception e){System.out.println(e);}
+  }//end writeTheObject</PRE></TD>
+</TR>
+</TABLE>
+
+<P>&nbsp;</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="ProgramSecurity07B">Program Security07B</A></H2>
+<B><P>Getting the data</P>
+</B></FONT><P>This program reads a file containing two serialized objects produced by the program named <B>Security07A</B>. It extracts </P>
+
+<UL>
+<LI>A data array representing the message</LI>
+<LI>A digest value for the message. </LI></UL>
+
+<B><FONT COLOR="#ff0000"><P>Verifying the integrity of the data</P>
+</B></FONT><P>It is assumed that the digest value was produced by combining the original message with a known passphrase in a specified manner.</P>
+<P>The program uses the digest value along with the known passphrase to determine if the data array has become corrupted since the digest value was computed and placed in the file along with the data.</P>
+<B><FONT COLOR="#ff0000"><P>Compute digest value for comparison</P>
+</B></FONT><P>This is accomplished by </P>
+
+<UL>
+<LI>Computing a new digest value by <U>combining the data and the known passphrase</U> </LI>
+<LI>Comparing the new digest value with the digest value extracted from the file. </LI></UL>
+
+<B><FONT COLOR="#ff0000"><P>Interpreting the results</P>
+</B></FONT><P>If the two are the same, this is a very strong indication that </P>
+
+<UL>
+<LI>Either the original message has not been corrupted, or </LI>
+<LI>The passphrase has been compromised. </LI></UL>
+
+<P>(Another person who has gained knowledge of the passphrase could corrupt the original message and use the passphrase along with the corrupted message to compute a new digest value that would pass this test.)</P>
+<B><FONT COLOR="#ff0000"><P>Loose lips sink ships</P>
+</B></FONT><P>Therefore, the security of the process depends on the ability of the parties involved to <U>keep the passphrase secret</U>.</P>
+<FONT COLOR="#ff0000"><H3 ALIGN="CENTER"><A NAME="Security07BCodeFragments">Security07B Code Fragments</A></H3>
+</FONT><P>The first fragment shows the beginning of the main method and includes a hard-coded passphrase. As explained earlier, the passphrase would be provided as a user input in a real program. It was hard coded in this sample program just to keep the program simple.</P>
+<P>The fragment also declares two byte arrays that will be used later in the program.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>class Security07B {
+  public static void <B>main</B>(String[] args) {
+    System.out.println("Security07B");
+    try{
+      byte[] passPhrase = "<B>Pass Phrase</B>".getBytes();
+      byte[] dataBuffer = null;
+      byte[] originalDigest = null;</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Getting the data</P>
+</B></FONT><P>The next fragment reads the disk file and extracts the two byte arrays: </P>
+
+<UL>
+<LI>One that represents the original message</LI>
+<LI>One that represents a digest value produced by combining the original message with the passphrase.</LI></UL>
+
+<P>Code for reading serialized objects is explained in other lessons on Java I/O, so I won't discuss this code further at this point.</P>
+<P>This fragment also displays the message and the digest value using methodology that should also be well known to you by now.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      FileInputStream fileIn = 
+                     new FileInputStream("Security07.obj");
+      ObjectInputStream objIn = 
+                             new ObjectInputStream(fileIn);
+      <B>dataBuffer</B> = (byte[])objIn.readObject();
+      <B>originalDigest</B> = (byte[])objIn.readObject();
+      objIn.close();
+
+      System.out.println(new String(dataBuffer));//display
+      displayBase64(originalDigest);//display in Base 64</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Generating a digest value for comparison</P>
+</B></FONT><P>The next fragment calls the <B>digestIt()</B> method to generate a digest value for the combination of the message and the passphrase. This process is the same as in the earlier program that produced the original message digest.</P>
+<P>This fragment also displays the newly computed digest value.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      byte[] theDigest = <B>digestIt</B>(dataBuffer,passPhrase);
+      displayBase64(theDigest);//display in Base 64</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Do they match?</P>
+</B></FONT><P>The final step is to call the <B>isEqual()</B> method of the <B>MessageDigest</B> class to compare the newly computed digest value with the digest value that was extracted from the file. </P>
+<P>As indicated earlier, if the two are the same, this is a very good indication that either the message has not been corrupted since the computation of the original digest value or that the passphrase has been compromised.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      if(MessageDigest.<B>isEqual</B>(theDigest,originalDigest)){
+        System.out.println("<B>Valid message</B>");
+      }else{
+        System.out.println("<B>Corrupted message</B>");
+      }//end else</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The methods used to compute the digest value and to display the digest value in Base 64 are essentially the same as in the previous program, so I won't show them here. You can view them in the complete listing of the program near the end of the lesson.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="ProgramSecurity07C">Program Security07C</A></H2>
+</FONT><P>The purpose of this program is to intercept and corrupt the data array in a file written by <B>Security07A</B> before it is read by <B>Security07C</B>.</P>
+<B><FONT COLOR="#ff0000"><P>Corrupting the data and computing the digest</P>
+</B></FONT><P>The first element in the data array is overwritten with an 'X'. Then a new digest is computed for the corrupted data array and a new file is written containing the corrupted data array and the digest value corresponding to that array.</P>
+<B><FONT COLOR="#ff0000"><P>Don't have the passphrase</P>
+</B></FONT><P>Since the person corrupting the data doesn't (or shouldn't) have access to the passphrase, it is <U>extremely difficult</U> for that person to produce a corrupted version of the data for which the digest value will match the original digest value produced by combining the original data with the passphrase. </P>
+<P>Therefore, when <B>Security07B</B> is used to verify the data and the digest value (using the passphrase), it is highly unlikely that the two will pass the verification test.</P>
+<FONT COLOR="#ff0000"><H3 ALIGN="CENTER"><A NAME="Security07CCodeFragments">Security07C Code Fragments</A></H3>
+</FONT><P>The first code fragment shows the program reading the data array from the file. This is essentially the same as in the previous program so no further discussion should be needed.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>class Security07C {
+  public static void <B>main</B>(String[] args) {
+    try{
+      System.out.println("Security07C");
+      System.out.println("Intercept and corrupt the file");
+    
+      byte[] dataBuffer = null;
+
+      //Read the object file and extract the data array
+      FileInputStream fileIn = 
+                     new FileInputStream("Security07.obj");
+      ObjectInputStream objIn = 
+                             new ObjectInputStream(fileIn);
+      <B>dataBuffer</B> = (byte[])objIn.readObject();
+      objIn.close();</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Corrupting the data</P>
+</B></FONT><P>The next fragment corrupts the data by overwriting the first element in the data array with the lower eight bits of the character 'X'. The contents of the array are then displayed.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      dataBuffer[0] = (byte)'X';
+
+      System.out.println(new String(dataBuffer));//display</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Digesting the corrupted data</P>
+</B></FONT><P>The next fragment invokes a method named <B>digestIt()</B> to obtain a digest value for the corrupted data. Note that this version of the method <U>only requires one parameter</U>. In particular, it doesn't make provision for a passphrase to be incorporated into the digest value since the user of the method doesn't know the password.</P>
+<B><FONT COLOR="#ff0000"><P>Doesn't invoke update()</P>
+</B></FONT><P>A listing of this version of the method can be viewed in the complete program listing near the end of the lesson. I recommend that you take a look at one aspect of this method. In particular, it doesn't make use of the <B>update()</B> method to produce the digest value. </P>
+<P>Whenever the data to be digested is contained in a single byte array, an overloaded version of the <B>digest()</B> method can be used to digest the array and return the digest value without the requirement to first feed the data to the <B>update()</B> method.</P>
+<P>The fragment also displays the digest value in Base 64.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      byte[] theDigest = <B>digestIt</B>(dataBuffer);
+      <B>displayBase64</B>(theDigest);//display in Base 64</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Write to a file</P>
+</B></FONT><P>The next fragment writes a file containing the corrupted data array and the digest value for that corrupted array as two serialized objects. The <B>writeTheObject()</B> method used to write the file is the same as in the programs discussed earlier and can be viewed in the program listing near the end of the lesson.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE><B>      writeTheObject</B>(dataBuffer,theDigest);</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Isn't it obvious that the corruption didn't work?</P>
+</B></FONT><P>We might surmise that an astute person who might be inclined to corrupt the data in this manner could: </P>
+
+<UL>
+<LI>Compute the digest value for the data in the message </LI>
+<LI>Compare it with the digest value provided for the message </LI>
+<LI>Conclude immediately that the digest value is not a simple representation of the digest value for the message.</LI></UL>
+
+<P>That person <U>should know immediately</U> that they face a formidable task in trying to corrupt the message and provide a digest value that will pass the verification test that is likely to be applied by the lawful recipient of the message.</P>
+<P>Thus, the use of passphrase protected message digests could serve as an easily implemented <U>deterrent</U> to those who might otherwise attempt this form of malicious behavior.</P>
+<FONT COLOR="#ff0000"><H3 ALIGN="CENTER"><A NAME="program_listing"></A>Program Listings</H3>
+</FONT><P>Complete listings of all three programs are contained in this section.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Security07A.java Copyright 1999, R.G.Baldwin
+Rev 4/16/99
+
+This program works in conjunction with the following two
+other programs:
+Security07B
+Security07C
+
+This program illustrates passphrase protected message
+digests.  An object is written to the disk containing a
+data array and a digest value corresponding to the data
+array plus a passphrase
+
+The program named Security07B is designed to read the
+object and to use the digest value along with the known 
+passphrase to determine if the data in the object was
+corrupted after the original digest was computed and
+placed in the object.
+
+The program named Security07C is designed to intercept
+the object, corrupt the data, compute a digest value
+corresponding to the corrupted data, and write both the
+corrupted data and the digest value back out into an 
+object file having the same name.
+
+Tested using JDK 1.2 under Win95.
+
+When the programs were run in the following sequence, the
+output produced by the programs was:
+  
+Security07A
+ABCDEFG
+i8xdQShcLLPBI9J83h+hxXzptrQ=
+
+Security07B
+ABCDEFG
+i8xdQShcLLPBI9J83h+hxXzptrQ=
+
+i8xdQShcLLPBI9J83h+hxXzptrQ=
+
+Valid message
+
+Security07C
+Intercept and corrupt the file
+XBCDEFG
+L9QY4fxaiTY6ubOZWAaBVduqZ4I=
+
+Security07B
+XBCDEFG
+L9QY4fxaiTY6ubOZWAaBVduqZ4I=
+
++PqZf+XFDeTv1E3RLGan+Ecc+gc=
+
+Corrupted message  
+**********************************************************/
+
+import java.io.*;
+import java.security.*;
+import sun.misc.*;
+
+class Security07A {
+
+  public static void main(String[] args) {
+    System.out.println("Security07A");
+    //Hard code the pass phrase to keep the program simple
+    byte[] passPhrase = "Pass Phrase".getBytes();
+    byte[] dataBuffer = "ABCDEFG".getBytes();//create data
+    System.out.println(new String(dataBuffer));//display
+    //Get a digest for the byte array &amp; the passphrase
+    byte[] theDigest = digestIt(dataBuffer,passPhrase);
+    displayBase64(theDigest);//display in Base 64
+    writeTheObject(dataBuffer,theDigest);
+  }//end main
+  //-----------------------------------------------------//
+  
+  static void writeTheObject(byte[] objOne,byte[] objTwo){
+    try{
+      FileOutputStream fileOut = 
+                    new FileOutputStream("Security07.obj");
+      ObjectOutputStream objOut = 
+                           new ObjectOutputStream(fileOut);
+      objOut.writeObject(objOne);
+      objOut.writeObject(objTwo);
+      objOut.close();
+    }catch(Exception e){System.out.println(e);}
+  }//end writeTheObject
+
+  //-----------------------------------------------------//
+
+  //This method generates and returns a digest for two
+  // incoming arrays of bytes.
+  static byte[] digestIt(byte[] dataOne, byte[] dataTwo){
+    byte[] theDigest = null;
+    try{
+      //Create a MessageDigest object implementing
+      // the SHA algorithm from the default provider.
+      MessageDigest messageDigest = 
+                   MessageDigest.getInstance("SHA");
+      //Feed the byte arrays to the digester.  
+      messageDigest.update(dataOne);
+      messageDigest.update(dataTwo);
+      //Complete the digestion and save the result
+      theDigest = messageDigest.digest();
+    }catch(Exception e){System.out.println(e);}
+    //Return the digest value to the calling method 
+    return theDigest;
+  }//end digestIt()
+  //-----------------------------------------------------//
+
+  //Method to display an array of bytes in base 64 format
+  static void displayBase64(byte[] data){
+    BASE64Encoder encoder = new BASE64Encoder();
+    String encoded = encoder.encodeBuffer(data);
+    System.out.println(encoded);
+  }//end base64Display()
+  //-----------------------------------------------------//
+}//end class Security07A</PRE></TD>
+</TR>
+</TABLE>
+
+<P>.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Security07B.java Copyright 1999, R.G.Baldwin
+Rev 4/16/99
+
+This program works in conjunction with the following two
+other programs:
+Security07A
+Security07C
+
+This program illustrates passphrase protected message
+digests.
+
+The program reads an object produced by Security07A, 
+extracts a data array and a digest value from the object,
+and uses the digest value along with a known passphrase
+to determine if the data array has become corrupted since
+the digest value was computed and placed in the object
+along with the data.
+
+Tested using JDK 1.2 under Win95.
+**********************************************************/
+
+import java.io.*;
+import java.security.*;
+import sun.misc.*;
+
+class Security07B {
+
+  public static void main(String[] args) {
+    System.out.println("Security07B");
+    try{
+      //Hard code the pass phrase to keep the 
+      // program simple
+      byte[] passPhrase = "Pass Phrase".getBytes();
+      byte[] dataBuffer = null;
+      byte[] originalDigest = null;
+
+      //Read the object from the disk file and extract the
+      // two byte arrays from the object.
+      FileInputStream fileIn = 
+                      new FileInputStream("Security07.obj");
+      ObjectInputStream objIn = 
+                             new ObjectInputStream(fileIn);
+      dataBuffer = (byte[])objIn.readObject();
+      originalDigest = (byte[])objIn.readObject();
+      objIn.close();
+
+      System.out.println(new String(dataBuffer));//display
+      displayBase64(originalDigest);//display in Base 64
+
+      //Get a digest for the byte array and the passphrase
+      byte[] theDigest = digestIt(dataBuffer,passPhrase);
+      displayBase64(theDigest);//display in Base 64
+    
+      //Test the newly computed digest value against the
+      // original digest value to determine if the data
+      // has become corrupted.
+      if(MessageDigest.isEqual(theDigest,originalDigest)){
+        System.out.println("Valid message");
+      }else{
+        System.out.println("Corrupted message");
+      }//end else
+
+    }catch(Exception e){System.out.println(e);}
+
+  }//end main
+  //-----------------------------------------------------//
+
+  //This method generates and returns a digest for two
+  // incoming arrays of bytes.
+  static byte[] digestIt(byte[] dataOne, byte[] dataTwo){
+    byte[] theDigest = null;
+    try{
+      //Create a MessageDigest object implementing
+      // the SHA algorithm from the default provider.
+      MessageDigest messageDigest = 
+                   MessageDigest.getInstance("SHA");
+      //Feed the byte array to the digester.  Can 
+      // accommodate multiple calls if needed
+      messageDigest.update(dataOne);
+      messageDigest.update(dataTwo);
+      //Complete the digestion and save the result
+      theDigest = messageDigest.digest();
+    }catch(Exception e){System.out.println(e);}
+    //Return the digest value to the calling method 
+    return theDigest;
+  }//end digestIt()
+  //-----------------------------------------------------//
+
+  //Method to display an array of bytes in base 64 format
+  static void displayBase64(byte[] data){
+    BASE64Encoder encoder = new BASE64Encoder();
+    String encoded = encoder.encodeBuffer(data);
+    System.out.println(encoded);
+  }//end base64Display()
+  //-----------------------------------------------------//
+}//end class Security07B</PRE></TD>
+</TR>
+</TABLE>
+
+<P>.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Security07C.java Copyright 1999, R.G.Baldwin
+Rev 4/16/99
+
+This program works in conjunction with the following two
+other programs:
+Security07A
+Security07B
+
+The purpose of this program is to intercept and corrupt
+the data array in an object file written by Security07A 
+before it is read by Security07C.
+
+The first element in the data array is overwritten with
+an 'X'.  Then a new digest is computed for the corrupted
+data array and a new object is written to the disk 
+containing the corrupted data array and the digest value
+corresponding to that array.
+
+Tested using JDK 1.2 under Win95.
+**********************************************************/
+
+import java.io.*;
+import java.security.*;
+import sun.misc.*;
+
+class Security07C {
+
+  public static void main(String[] args) {
+    try{
+      System.out.println("Security07C");
+      System.out.println("Intercept and corrupt the file");
+    
+      byte[] dataBuffer = null;
+
+      //Read the object file and extract the data array
+      FileInputStream fileIn = 
+                     new FileInputStream("Security07.obj");
+      ObjectInputStream objIn = 
+                             new ObjectInputStream(fileIn);
+      dataBuffer = (byte[])objIn.readObject();
+      objIn.close();
+
+      //Corrupt the data by overwriting the first byte
+      dataBuffer[0] = (byte)'X';
+
+      System.out.println(new String(dataBuffer));//display
+
+      //Get a digest for the corrupted data array
+      byte[] theDigest = digestIt(dataBuffer);
+      displayBase64(theDigest);//display in Base 64
+
+      //Write an object containing the corrupted data
+      // array and the corresponding digest value.
+      writeTheObject(dataBuffer,theDigest);
+    }catch(Exception e){System.out.println(e);}
+
+  }//end main
+  //-----------------------------------------------------//
+
+  static void writeTheObject(byte[] objOne,byte[] objTwo){
+    try{
+      FileOutputStream fileOut = 
+                    new FileOutputStream("Security07.obj");
+      ObjectOutputStream objOut = 
+                           new ObjectOutputStream(fileOut);
+      objOut.writeObject(objOne);
+      objOut.writeObject(objTwo);
+      objOut.close();
+    }catch(Exception e){System.out.println(e);}
+  }//end writeTheObject
+  //-----------------------------------------------------//
+
+  //This method generates and returns a digest for an
+  // incoming arrays of bytes.
+  static byte[] digestIt(byte[] theData){
+    byte[] theDigest = null;
+    try{
+      //Create a MessageDigest object implementing
+      // the SHA algorithm from the default provider.
+      MessageDigest messageDigest = 
+                   MessageDigest.getInstance("SHA");
+      //Perform the digestion and save the result. Note
+      // that the update() method was not used.
+      theDigest = messageDigest.digest(theData);
+    }catch(Exception e){System.out.println(e);}
+    //Return the digest value to the calling method 
+    return theDigest;
+  }//end digestIt()
+  //-----------------------------------------------------//
+
+  //Method to display an array of bytes in base 64 format
+  static void displayBase64(byte[] data){
+    BASE64Encoder encoder = new BASE64Encoder();
+    String encoded = encoder.encodeBuffer(data);
+    System.out.println(encoded);
+  }//end base64Display()
+  //-----------------------------------------------------//
+}//end class Security07C</PRE></TD>
+</TR>
+</TABLE>
+
+<P>-end-<!--end--></P></BODY>
+</HTML>

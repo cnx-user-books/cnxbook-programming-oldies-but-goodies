@@ -1,0 +1,791 @@
+<html><head>
+   <meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
+   <meta name="generator" content="mozilla/4.04 [en] (win95; i) [netscape]">
+   <meta name="author" content="richard g. baldwin">
+   <title>... in Java by Richard G Baldwin</title></head><body><!--start-->
+
+<center><h3><b><i>Richard G Baldwin (512) 223-4758, <a href="mailto:baldwin@austin.cc.tx.us">baldwin@austin.cc.tx.us</a>,
+<a href="http://www2.austin.cc.tx.us/baldwin/">http://www2.austin.cc.tx.us/baldwin/</a></i></b></h3></center>
+
+<center><h2><b><!--title-->Reflection and the Method Class - III<!--endtitle--></b></h2></center>
+Java Programming, Lecture Notes # 262, Revised 02/13/98.
+<ul><li><a href="#preface">Preface</a></li>
+
+<li><a href="#introduction">Introduction</a></li>
+
+<li><a href="#sample program">Sample Program</a></li>
+
+<ul><li><a href="#interesting code fragments">Interesting Code Fragments</a></li>
+
+<li><a href="#program listing">Program Listing</a></li></ul></ul>
+
+<hr width="100%"><center><h2><a name="preface"></a><font color="#ff0000">Preface</font></h2></center>
+Students in Prof. Baldwin's <b><u>Advanced Java Programming</u></b> classes
+at ACC are responsible for knowing and understanding all of the material
+in this lesson.
+<center><h2><a name="introduction"></a><b><font color="#ff0000">Introduction</font></b></h2></center>
+In an earlier lesson, I promised you that I was going to give you a practical
+example of the use of the <b>invoke()</b> method of the <b>Method</b> class
+of the reflection API. Well, this is it.
+
+<p>Note that this lesson also makes heavy use of <b>Hashtables</b>. If
+you aren't really comfortable with the use of a hashtable, you might want
+to go back and review the lesson on <b><u>Vectors, Enumerations, and Hashtables</u></b>.
+As of the time of this writing, that was lesson 76 in the Intermediate
+Java tutorial.
+
+<p>In this lesson, we will develop a sample program that is a sample of
+a large class of programs often referred to as <i>smart adapters</i>. The
+form of the program that we will develop will only be indicative of what
+can be accomplished using numerous variations of this powerful technique.
+<center><h2><a name="sample program"></a><font color="#ff0000">Sample Program</font></h2></center>
+This program uses <b>reflection </b>and <b>hashtables </b>to receive <b>ActionEvents
+</b>from several different sources and route them to the same or different
+destination methods on the same or different destination objects.
+
+<p>In other words, an action event handler is designed to operate in between
+the source of the event and the method that will ultimately respond to
+the event. In one case, this event handler provides some filtering capability.
+There many variations on the benefits that can accrue from an operation
+structured in this manner.
+
+<p>There can be a very large number of sources, and they can be any objects
+capable of generating <i>action events</i>.
+
+<p>By making a fairly simple modification to the program to give it the
+capability to <i>unregister</i> previously registered associations, the
+manner in which events are delivered to destination methods could be modified
+at runtime, and could change during the execution of a program.
+
+<p>A primary requirement is that the formal argument list for all destination
+methods <u>must be the same</u>.
+
+<p>Typically the formal argument list would include an object of type <b>ActionEvent</b>.
+In this program, it also includes an object of type <b>Date</b>() in order
+to timestamp the events.
+
+<p>A reader has pointed out that for clarification, I should remind everyone
+that even though I am passing an object of type <b>ActionEvent</b> to the
+destination method, it is not a "standard" action listener method. Rather,
+it is one step removed from the action listener method (named <b>actionPerformed</b>)
+and is being called by the action listener method. That is why I can get
+by with passing a <b>Date</b> object in addition to the <b>ActionEvent</b>
+object.
+
+<p>The same destination method can receive events from two or more sources.
+
+<p>The same source can be registered on only one destination. In this program,
+once a source is registered on a given destination, any attempt to register
+that source on another destination will result in the attempt being ignored
+and an exception being thrown. However, nothing is done with the exception
+in this program other than to display it for demonstration purposes.
+
+<p>Provisions were not made to <i>unregister </i>a source from a destination,
+but it wouldn't be difficult to do so. This would make it possible to rearrange
+the source-destination links at runtime.
+
+<p>In addition to providing the routing capability described above, this
+program also demonstrates an event filtering capability.
+
+<p>Event filtering is usually interpreted to mean that the event handler
+does some preprocessing of event data before delivering the event to the
+destination method. In some cases, the data could be modified before forwarding
+the event, and in some cases, the event might not be forwarded at all.
+The latter is the case in this demonstration program.
+
+<p>If the source of the event is a <b>TextField </b>and the text value
+is an empty <b>String</b>, the event is ignored and is not delivered to
+the registered destination method.
+
+<p>Now lets discuss some of the details of operation.
+
+<p>An <b>ActionListener </b>class is defined that receives action events
+from any number of sources and dispatches them to the same or different
+methods on the same or different destination objects. It uses a <b>Hashtable
+</b>as the dispatching table to associate the event source with the required
+destination object and the required method in that object.
+
+<p>The general methodology is to save an object containing a reference
+to a <b>Method </b>object that represents the destination method and a
+reference to the <u>destination object</u> along with the associated action
+event source in a hash table. The event source is the <i>key</i>. The object
+containing the two references is the <i>value </i>in the <i>key/value</i>
+pair of a hashtable.
+
+<p><u>When an action event occurs later</u>, the program uses the <u>event
+source as the key</u> to retrieve the object containing the references
+to the <b>Method </b>object and the destination object from the table.
+
+<p>The program then uses the the <b>invoke</b>() method of the <b>Method
+</b>class on the <b>Method </b>object to invoke the destination method
+on the destination object.
+
+<p>To do all of this, it is first necessary to create the <b>Method </b>object
+that <u>represents a destination method</u>. This requires the <u>name</u>
+of the destination method along with an array of type <b>Class </b>whose
+elements represent the <u>types of the arguments</u> in the formal argument
+list of the destination method.
+
+<p>Since it is assumed that the types of the formal argument list are known
+and may not change in this demonstration program, a <b>static final</b>
+array of type <b>Class </b>is instantiated and initialized with this information.
+This array is named <b>destinationMethodArgTypes</b>.
+
+<p>A new instance of a <b>Hashtable </b>is also declared and instantiated
+when the class is loaded. This object will be used as the dispatching table.
+
+<p>The class contains a method named <b>registerDestinationMethod</b>()
+that receives three parameters.
+<ul><li>
+One parameter is a <u>reference to an action event source</u>.</li>
+
+<li>
+A second parameter is a <u>reference to the object</u> that contains the
+destination method.</li>
+
+<li>
+A third parameter is a <b>String </b>object which contains the <u>name</u>
+of the destination method that is to be associated with that particular
+event source for event dispatching purposes.</li></ul>
+This method uses the name of the destination method, along with the <b>Class
+</b>array named <b>destinationMethodArgTypes</b>, as parameters to the
+<b>getMethod</b>() method of the <b>Class </b>class to create an object
+of type <b>Method </b>that <u>represents the destination method</u>.
+
+<p>A reference to this <b>Method </b>object, along with <u>a reference
+to the destination object</u> are encapsulated in an object of type <b>Combine</b>.
+
+<p>Then an entry is made in the dispatch hash table with the action <u>event
+source</u> as the <i>key </i>and the <u>reference to the object of type
+Combine</u> as the <i>value</i>. This makes it possible to come back later
+and retrieve the reference to the <b>Method </b>object and the reference
+to the <u>destination object</u> from the dispatch table using the <u>source</u>
+of an action event as the <i>key</i>.
+
+<p>All classes that service action events must define the <b>actionPerformed</b>()
+method because it is declared in the <b>ActionListener </b>interface. Therefore,
+this class has an overridden <b>actionPerformed</b>() method.
+
+<p>When an action event is generated by a source object on which this listener
+object is registered, the <b>actionPerformed</b>() method of this object
+is invoked. This method uses the <u>source</u> of the event as the <i>key
+</i>and extracts the object of type <b>Combine </b>from the <b>Hashtable</b>.
+It then extracts the reference to the <b>Method </b>object and the reference
+to the <u>destination object</u> from that object.
+
+<p>This <b>Method </b>object, along with the <b>invoke</b>() method of
+the <b>Method </b>class will be used to invoke the destination method on
+the destination object that is associated with the source of the event
+in the dispatch table.
+
+<p>This <b>invoke</b>() method requires two parameters.
+<ul><li>
+The first parameter is a reference to the object on which the destination
+method is to be invoked. This is the destination object that was extracted
+from the object retrieved from the hashtable.</li>
+
+<li>
+The second parameter is an array of type <b>Object </b>whose elements are
+the parameters required by the destination method.</li></ul>
+In this program, the destination method is defined to require two parameters.
+<ul><li>
+The first parameter is the object of type <b>ActionEvent </b>associated
+with the actual event.</li>
+
+<li>
+The second parameter is an object of type <b>Date</b>() which provides
+a date stamps for the event.</li></ul>
+The requisite <b>Object </b>array is instantiated and populated.
+
+<p>Then the <b>invoke</b>() method is invoked on the reference to the object
+of type <b>Method </b>that was extracted from the dispatch <b>Hashtable
+</b>with the following being passed as parameters.
+<ul><li>
+the reference to the destination object, and</li>
+
+<li>
+the array of Object references</li></ul><u>This causes the destination method to be invoked on the destination
+object</u>.
+
+<p>Beyond this, everything is pretty straightforward. Two classes are defined
+from which destination objects can be instantiated.
+
+<p>One of these classes defines two different destination methods that
+have the same required formal argument list. The other class defines one
+destination method with the same formal argument list.
+
+<p>To keep things as simple as possible, all that these methods do is to
+<u>display some information when they are invoked</u>, but they could be
+put to useful purposes in a real program. If they are modified to do anything
+that is expected to consume a lot of time, they should spawn another thread
+to do the work and return as soon as possible.
+
+<p>A class named <b>GUI </b>is defined that instantiates and adds three
+<b>Button </b>objects and a <b>TextField </b>object to a <b>Frame </b>object.
+These components are used as <u>sources of action events</u> for test purposes.
+
+<p>Then the program instantiates <u>two destination objects</u> and an
+<u>action listener object</u>. It <u>registers</u> the destination methods
+and destination objects on the sources of action events by way of the action
+listener object, specifying which source is to be associated with which
+destination method and destination object. Several combinations of associations
+are made between event sources and destination methods.
+
+<p>Then the action listener object is registered on all four event sources
+where it will receive all action events generated by those sources and
+dispatch them to the requisite destination method.
+
+<p>If the action listener object receives an action event from the <b>TextField
+</b>object at a time when the <b>TextField </b>is empty, <u>the event will
+be filtered out</u> and will <u>not be dispatched</u> to its intended destination.
+
+<p>Finally, a <b>WindowListener </b>object is registered on the <b>Frame
+</b>so that the program will terminate when the user closes the <b>Frame
+</b>object.
+
+<p>This program was tested using JDK 1.1.3 under Win95.
+
+<p>The output produced by the program when action events were generated
+on all four components in left to right order will be shown later.
+<center><h3><a name="interesting code fragments"></a><font color="#ff0000">Interesting
+Code Fragments</font></h3></center>
+With that explanation of the program behind us, let's look at some code.
+We will begin with the <b>ActionListener</b> class, and will break it up
+and discuss it in pieces.
+
+<p>This is the <b>ActionListener </b>class that receives action events
+and dispatches them to the same or different methods on the same or different
+destination objects. It uses a <b>Hashtable </b>as the dispatching table
+to associate the event source with the required destination object and
+method.
+
+<p>The first interesting code fragment declares, instantiates, and initializes
+a <b>static final</b> array of type <b>Class</b> which contains objects
+that represent the types of arguments in the formal argument list. (Note
+the braces used in the initialization of this array.)
+
+<p>It also instantiates a new <b>Hashtable</b> object.
+<br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td><pre>&nbsp; final static Class[] <b>destinationMethodArgTypes </b>=&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {ActionEvent.class, Date.class};
+&nbsp; Hashtable dispatchTable = <b>new Hashtable()</b>;</pre></td></tr></table>
+Two different pieces of information are going to be associated with each
+key in the <b>Hashtable</b> object. Therefore, we will define an <i>inner
+class</i> that can be used to encapsulate the two pieces of information
+into a single object that can be referenced as a value in the <b>Hashtable</b>
+object.
+
+<p>The definition of that inner class is shown below. Note that the instance
+variables in this class have default or package access, making them directly
+available to other code later in the program.
+<br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td><pre>&nbsp; class <b>Combine</b>{
+&nbsp;&nbsp;&nbsp; Object theDestinationObj;
+&nbsp;&nbsp;&nbsp; Method theMethod;
+&nbsp;&nbsp;&nbsp; //---------------------------------------------------//
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Constructor for inner class
+&nbsp;&nbsp;&nbsp; Combine(Object theDestinationObj, Method theMethod){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; this.theDestinationObj = theDestinationObj;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; this.theMethod = theMethod;
+&nbsp;&nbsp;&nbsp; }//end constructor for inner class
+&nbsp; }//end class Combine&nbsp;&nbsp;</pre></td></tr></table>
+This is followed by the method named <b>registerDestinationMethod()</b>
+that is used to register destination methods on event sources. This is
+what instructs the action listener object as to which destination method
+on which destination object is to be notified when an action event occurs
+on a particular source. Recall that a source can be registered on only
+one destination method.
+
+<p>This is a fairly long method, so we will probably need to break it into
+smaller fragments and discuss them separately.
+
+<p>The first fragment simply shows the method header and shows how the
+<b>Class</b> object representing the destination object is obtained by
+invoking the <b>getClass()</b> method on the reference to the destination
+object. This <b>Class</b> object is required in order to get the <b>Method</b>
+object that represents the method of interest.
+<br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td><pre>&nbsp; public void <b>registerDestinationMethod</b>(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Object <b>destinationObj</b>,Object <b>whichSource</b>,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; String <b>methodName</b>){
+
+&nbsp;&nbsp;&nbsp; Class <b>theDestinationObjClass </b>=&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; destinationObj.<b>getClass</b>();</pre></td></tr></table>
+I'm going to ignore the try/catch blocks in reviewing this code.
+
+<p>The next code fragment uses the <b>getMethod</b>() method of the <b>Class
+</b>class to create a <b>Method </b>object that represents a method with
+a <u>matching name and formal argument list</u>. Note that this method
+needs the name of the method as a <b>String</b> object and the <b>Class</b>
+array that represents the types of the arguments of the method as parameters.
+<br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td><pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Method <b>theMethod </b>= theDestinationObjClass.<b>getMethod</b>(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; methodName,destinationMethodArgTypes);</pre></td></tr></table>
+Once we have the <b>Method</b> object, we can encapsulate it, along with
+the reference to the destination object, in an object of type <b>Combine</b>
+for storage in the <b>Hashtable</b>.
+<br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td><pre>&nbsp;&nbsp;&nbsp; Combine combinedStuff =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>new Combine</b>(destinationObj,theMethod);</pre></td></tr></table>
+Now it is time to make an entry in the <b>Hashtable</b>. This entry associates
+a reference to an object that is the <u>source</u> of an action event with
+a reference to an object of type <b>Combine </b>that contains a reference
+to a <b>Method</b> object representing the method that is to be invoked
+whenever that source generates an event and also contains a reference to
+the object that contains the method.
+
+<p>We don't want to allow duplicate keys (duplicate references to the same
+event source) so we will test for duplicate keys at this point. If a duplicate
+key is specified, we will ignore it (not put it in the table) and throw
+an exception.
+<br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td><pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(!dispatchTable.<b>containsKey</b>(whichSource))
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; dispatchTable.<b>put</b>(whichSource,combinedStuff);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; else throw new IllegalAccessException();</pre></td></tr></table>
+Following this is the <b>actionPerformed</b>() method which is invoked
+whenever a source that this listener object is registered on generates
+an action event.
+
+<p>This method goes into the dispatch table with a reference to the the
+source object of the event and comes back with a reference to an object
+that contains a reference to the <b>Method </b>object that is associated
+with that source and a reference to the <u>destination object</u> that
+contains the method.
+
+<p>Then it uses the <b>Method </b>object to <u>invoke the destination method</u>
+on the destination object, passing a reference to the <b>ActionEvent </b>object
+and a reference to a <b>Date</b>() object as parameters to the method.
+
+<p>However if the source is a <b>TextField </b>object which contains an
+<u>empty string</u>, the program filters the event and doesn't forward
+it to its intended receiver.
+
+<p>We will also break this method into a couple of fragments and review
+them separately. As before, we will ignore the <b>try/catch</b> blocks.
+
+<p>When this method is invoked, it receives an <b>ActionEvent</b> object
+from the source object. The reference to this object is known locally as
+<b>evt</b>.
+
+<p>We invoke the <b>getSource()</b> method on the <b>ActionEvent</b> object
+to obtain a reference to the object that generated the event. This becomes
+the <i>key</i> by which we will access our <b>Hashtable</b>.
+
+<p>There is some pretty ugly downcasting going on here, because only references
+of type <b>Object</b> are stored in a <b>Hashtable</b>. Whenever we access
+a <b>Hashtable</b>, we normally need to downcast the result to make it
+useful.
+
+<p>Once we have a reference to the object of type <b>Combine</b> named
+<b>combinedStuff</b>, we can access the two instance variables of that
+object directly (as mentioned earlier). This gives us references to the
+two objects that we need for the next step in the process.
+<br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td><pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Object key = evt.<b>getSource</b>();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Combine <b>combinedStuff </b>=&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (Combine)dispatchTable.<b>get</b>(key);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Method theMethod = (Method)combinedStuff.<b>theMethod</b>;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Object theDestinationObj =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (Object)combinedStuff.<b>theDestinationObj</b>;</pre></td></tr></table>
+At this point, we are going to do some filtering just to illustrate how
+it might be done. We test to determine if the source object for the event
+was a <b>TextField</b> object, and if so we test to determine it it contained
+an empty string when the event occurred. If it was not a <b>TextField</b>
+object, or if it was a <b>TextField</b> object but did not contain an empty
+string, we go ahead with the dispatching operation.
+
+<p>If it was a <b>TextField</b> object containing an empty string, we simply
+bypass the dispatching operation.
+
+<p>The dispatching operation consists of two steps:
+
+<p>Instantiate an array of type <b>Object </b>containing the actual parameters
+to be passed to the method.
+
+<p>Use the <b>invoke()</b> method of the <b>Method</b> class to invoke
+the method represented by the <b>Method</b> object on the destination object,
+passing the array of parameter values as a parameter to the <b>invoke()</b>
+method. If this doesn't make sense, go back and review the simple program
+on the <b>invoke()</b> method in an earlier lesson.
+<br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td><pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>if</b>( !((key instanceof TextField)&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &amp;&amp; (((TextField)key).getText().equals("") )) ){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Object methodParameters[] = { evt, new Date() };
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theMethod.<b>invoke</b>(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>theDestinationObj,methodParameters</b>);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end if</pre></td></tr></table>
+And that is the end of the <b>actionPerformed()</b> method and also the
+end of the <b>ActionListener</b> class.
+
+<p>This is followed by a couple of simple class definitions that are used
+in the demonstration program to instantiate destination objects containing
+destination methods. There is nothing in these classes that you haven't
+already seen many times before, so I am not going to discuss them.
+
+<p>This is then followed by the class named <b>GUI</b> that is used to
+exercise the <b>ActionListener</b> class. Much of this is completely standard
+stuff, so I am going to delete lots of code and replace that code by comments.
+I will keep the statements that are interesting insofar as this smart adapter
+program is concerned.
+
+<p>As you review this code, recall that the argument list for the method
+named <b>registerDestinationMethod()</b> consists of a reference to the
+destination object, a reference to a specific source object for action
+events, and a <b>String</b> object containing the name of the method to
+be invoked. I have extracted one such statement and presented it below
+for your review.
+<br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td><pre><b>&nbsp;&nbsp; actionListener.registerDestinationMethod(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; destinationObject0,myButton0,"abcMethod0")</b></pre></td></tr></table>
+This is the only thing that is really new in this entire test program.
+<br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td><pre>class GUI{
+&nbsp; GUI(){//constructor
+&nbsp;&nbsp;&nbsp; //Put three buttons and a TextField object in a Frame
+&nbsp;&nbsp;&nbsp; // and make it visible
+
+&nbsp;&nbsp;&nbsp; //Instantiate the destination objects that contain the
+&nbsp;&nbsp;&nbsp; // destination methods
+&nbsp;&nbsp;&nbsp; abcClass <b>destinationObject0 </b>= new abcClass();
+&nbsp;&nbsp;&nbsp; defClass <b>destinationObject1 </b>= new defClass();
+
+&nbsp;&nbsp;&nbsp; //Instantiate the action listener object
+&nbsp;&nbsp;&nbsp; MyActionListener <b>actionListener </b>=&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b> new MyActionListener()</b>;
+
+&nbsp;&nbsp;&nbsp; //MAKE CERTAIN THAT YOU UNDERSTAND THE DIFFERENCE
+&nbsp;&nbsp;&nbsp; // BETWEEN THE FOLLOWING TWO REGISTRATION PROCESSES.
+
+&nbsp;&nbsp;&nbsp; //The following code <b>registers destination methods</b> on
+&nbsp;&nbsp;&nbsp; // specific <b>sources </b>by <b>informing the actionListener
+</b>&nbsp;&nbsp;&nbsp; // object which method on which destination object
+&nbsp;&nbsp;&nbsp; // is to be invoked whenever one of the sources
+&nbsp;&nbsp;&nbsp; // generates an action event.
+
+<b>&nbsp;&nbsp;&nbsp; actionListener.registerDestinationMethod(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; destinationObject0,myButton0,"abcMethod0");
+</b>&nbsp;&nbsp;&nbsp; actionListener.registerDestinationMethod(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; destinationObject0,myTextField,"abcMethod0");
+&nbsp;&nbsp;&nbsp; actionListener.registerDestinationMethod(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; destinationObject0,myButton1,"abcMethod1");
+&nbsp;&nbsp;&nbsp; actionListener.registerDestinationMethod(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; destinationObject1,myButton2,"defMethod");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //<b>Force an exception to be thrown</b> by attempting to&nbsp;
+&nbsp;&nbsp;&nbsp; // register the same source on two different&nbsp;
+&nbsp;&nbsp;&nbsp; // destinations.
+&nbsp;&nbsp;&nbsp; actionListener.registerDestinationMethod(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; destinationObject1,<b>myButton0</b>,"defMethod");
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //The following code <b>registers </b>the <b>actionListener
+</b>&nbsp;&nbsp;&nbsp; // object on the <b>individual sources
+</b>&nbsp;&nbsp;&nbsp; myButton0.addActionListener(actionListener);
+&nbsp;&nbsp;&nbsp; myTextField.addActionListener(actionListener);
+&nbsp;&nbsp;&nbsp; myButton1.addActionListener(actionListener);
+&nbsp;&nbsp;&nbsp; myButton2.addActionListener(actionListener);
+
+&nbsp;&nbsp;&nbsp; //snip
+&nbsp; }//end constructor
+}// end class GUI</pre></td></tr></table>
+The output from running this program and generating an action event on
+each of the objects in the <b>Frame</b> going from left to right is shown
+below. Manual line breaks were inserted to force this material to fit on
+the page.
+
+<p>You should be able to explain this output on the basis of what you have
+seen above.
+<br>&nbsp;
+<table border bgcolor="#ffff80" ><tr><td bgcolor="#00ffff"><pre>java.lang.IllegalAccessException
+<b>Attempt to register same source&nbsp;
+on more than one method
+</b>In object :<b>abcClass@1ccc1b
+</b>In <b>abcMethod0 </b>java.awt.event.ActionEvent[
+&nbsp; ACTION_PERFORMED,cmd=Button0] on <b>button0
+</b>Time Stamp Wed Jan 07 18:23:49 CST 1998
+
+In object :<b>abcClass@1ccc1b
+</b>In <b>abcMethod0 </b>java.awt.event.ActionEvent[
+&nbsp; ACTION_PERFORMED,cmd=TextField] on <b>textfield0
+</b>Time Stamp Wed Jan 07 18:23:53 CST 1998
+
+In object :<b>abcClass@1ccc1b
+</b>In <b>abcMethod1 </b>java.awt.event.ActionEvent[
+&nbsp; ACTION_PERFORMED,cmd=Button1] on <b>button1
+</b>Time Stamp Wed Jan 07 18:23:55 CST 1998
+
+In object :<b>defClass@1ccc1d
+</b>In <b>defMethod </b>java.awt.event.ActionEvent[
+&nbsp; ACTION_PERFORMED,cmd=Button2] on <b>button2
+</b>Time Stamp Wed Jan 07 18:23:56 CST 1998</pre></td></tr></table>
+A complete listing of the program follows in the next section.
+<center><h3><a name="program listing"></a><font color="#ff0000">Program Listing</font></h3></center>
+
+<table border bgcolor="#ffff80" ><tr><td><pre>/*File Reflections06.java Copyright 1998, R.G.Baldwin
+
+This program uses reflection and hash tables to receive
+action events from several different sources and route&nbsp;
+them to the same or different destination methods on&nbsp;
+the same or different
+destination objects.
+
+This program was tested using JDK 1.1.3 under Win95.
+
+**********************************************************/
+import java.lang.reflect.*;
+import java.awt.event.*;
+import java.awt.*;
+import java.util.*;
+//=======================================================//
+
+class Reflections06 {
+&nbsp; public static void main(String[] args) {
+&nbsp;&nbsp;&nbsp; //Instantiate a GUI object to control the program.
+&nbsp;&nbsp;&nbsp; GUI guiObj = new GUI();
+&nbsp; }//end main()
+}//end Reflections06
+//=======================================================//
+
+//This is an ActionListener class that receives&nbsp;
+// action events and dispatches them to the same or
+// different methods on the same or different destination
+// objects. It uses a Hashtable as the dispatching table
+// to associate the event source with the required&nbsp;
+// destination object and method.
+class MyActionListener implements ActionListener{
+&nbsp;&nbsp;
+&nbsp; //Initialize the array of Class objects to match the
+&nbsp; // required types in the formal argument list of the
+&nbsp; // destination methods.
+&nbsp; final static Class[] destinationMethodArgTypes =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {ActionEvent.class, Date.class};
+&nbsp; Hashtable dispatchTable = new Hashtable();
+&nbsp; //-----------------------------------------------------//
+&nbsp;&nbsp;
+&nbsp; //This inner class is used to encapsulate the reference
+&nbsp; // to the Method object and the reference to the
+&nbsp; // destination object in a new object that can be
+&nbsp; // referenced by the value component of a hashtable.
+&nbsp; class Combine{
+&nbsp;&nbsp;&nbsp; Object theDestinationObj;
+&nbsp;&nbsp;&nbsp; Method theMethod;
+&nbsp;&nbsp;&nbsp; //---------------------------------------------------//
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Constructor for inner class
+&nbsp;&nbsp;&nbsp; Combine(Object theDestinationObj, Method theMethod){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; this.theDestinationObj = theDestinationObj;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; this.theMethod = theMethod;
+&nbsp;&nbsp;&nbsp; }//end constructor for inner class
+&nbsp; }//end class Combine&nbsp;&nbsp;
+&nbsp; //-----------------------------------------------------//
+&nbsp;&nbsp;
+&nbsp; //This method is used to register specific destination
+&nbsp; // methods and their objects with specific action event
+&nbsp; // sources.
+&nbsp; public void registerDestinationMethod(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Object destinationObj,Object whichSource,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; String methodName){
+
+&nbsp;&nbsp;&nbsp; Class theDestinationObjClass =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; destinationObj.getClass();
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Use the getMethod() method of the Class class to
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // create a Method object that represents a method
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // with a matching name and formal argument list.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Method theMethod = theDestinationObjClass.getMethod(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; methodName,destinationMethodArgTypes);
+
+&nbsp;&nbsp;&nbsp; //Encapsulate the two refrences in a new object for
+&nbsp;&nbsp;&nbsp; // referencing in the dispatch table.
+&nbsp;&nbsp;&nbsp; Combine combinedStuff =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new Combine(destinationObj,theMethod);
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Make an entry in the dispatch table that associates
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // the source of an action event with a reference
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // to an object that contains a reference to method
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // that is to be invoked whenever that source
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // generates an event and a reference to the object
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // that contains the method.&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Don't allow duplicate keys (duplicate references
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // to the same event source).&nbsp; If a duplicate is
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // specified, ignore it and throw an exception.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(!dispatchTable.containsKey(whichSource))
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; dispatchTable.put(whichSource,combinedStuff);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; else throw new IllegalAccessException();
+&nbsp;&nbsp;&nbsp; }//end try block
+&nbsp;&nbsp;&nbsp; catch(NoSuchMethodException e){System.out.println(e);}
+&nbsp;&nbsp;&nbsp; catch(IllegalAccessException e){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(e);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Attempt to register same " +
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "source \non more than one method");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end catch block
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp; }//end registerDestinationMethod()
+&nbsp; //-----------------------------------------------------//
+&nbsp;&nbsp;
+&nbsp; //This actionPerformed() method is invoked whenever a
+&nbsp; // source that this listener object is registered on&nbsp;
+&nbsp; // generates an action event.&nbsp; This method goes into the
+&nbsp; // dispatch table with the source of the event and
+&nbsp; // comes back with a reference to an object that&nbsp;
+&nbsp; // contains a reference to the Method object that is&nbsp;
+&nbsp; // associated with that source and a reference to the
+&nbsp; // destination object that contains the method.&nbsp; Then it
+&nbsp; // uses the Method object to invoke the destination&nbsp;
+&nbsp; // method on the destination object, passing the&nbsp;
+&nbsp; // ActionEvent object along with a Date() object.
+&nbsp;&nbsp;
+&nbsp; //If the source is a TextField object which returns
+&nbsp; // an empty string, filter the event and don't forward
+&nbsp; // it to its intended receiver.
+&nbsp; public void actionPerformed(ActionEvent evt){
+&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Object key = evt.getSource();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Combine combinedStuff =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (Combine)dispatchTable.get(key);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Method theMethod = (Method)combinedStuff.theMethod;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Object theDestinationObj =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (Object)combinedStuff.theDestinationObj;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Filter out empty strings from TextField object
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if( !((key instanceof TextField)&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &amp;&amp; (((TextField)key).getText().equals("") )) ){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Instantiate and populate an array of Object&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // references with the parameters that are to be
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // passed to the destination method when it is&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // invoked.&nbsp; Note the initialization syntax.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Object methodParameters[] = { evt, new Date() };
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Invoke the destination method on the destination
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // object passing the parameters generated above.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theMethod.invoke(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theDestinationObj,methodParameters);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end if
+&nbsp;&nbsp;&nbsp; }//end try
+&nbsp;&nbsp;&nbsp; catch(InvocationTargetException e){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(e);}
+&nbsp;&nbsp;&nbsp; catch(IllegalAccessException e){System.out.println(e);}
+
+&nbsp; }//end actionPerformed()
+}//end class MyActionListener
+
+//=======================================================//
+//Objects of this class can be registered on the&nbsp;
+// ActionListener object to have specific methods
+// invoked when specific sources generate action events.
+class abcClass{
+&nbsp; public void abcMethod0(ActionEvent e, Date d){
+&nbsp;&nbsp;&nbsp; System.out.println("In object :" + this);
+&nbsp;&nbsp;&nbsp; System.out.println("In abcMethod0 " + e);
+&nbsp;&nbsp;&nbsp; System.out.println("Time Stamp " + d + "\n");
+&nbsp; }//end abcMethod0
+&nbsp; //-----------------------------------------------------//
+&nbsp;&nbsp;
+&nbsp; public void abcMethod1(ActionEvent e, Date d){
+&nbsp;&nbsp;&nbsp; System.out.println("In object :" + this);
+&nbsp;&nbsp;&nbsp; System.out.println("In abcMethod1 " + e);
+&nbsp;&nbsp;&nbsp; System.out.println("Time Stamp " + d + "\n");
+&nbsp; }//end abcMethod1
+}//end abcClass
+//=======================================================//
+
+//Objects of this class can also be registered on the&nbsp;
+// ActionListener object to have specific methods
+// invoked when specific sources generate action events.
+class defClass{
+&nbsp; public void defMethod(ActionEvent e, Date d){
+&nbsp;&nbsp;&nbsp; System.out.println("In object :" + this);
+&nbsp;&nbsp;&nbsp; System.out.println("In defMethod " + e);
+&nbsp;&nbsp;&nbsp; System.out.println("Time Stamp " + d + "\n");
+&nbsp; }//end defMethod
+}//end defClass
+//=======================================================//
+
+class GUI{
+&nbsp; GUI(){//constructor
+&nbsp;&nbsp;&nbsp; //Put three buttons and a TextField object in a Frame
+&nbsp;&nbsp;&nbsp; // and make it visible
+&nbsp;&nbsp;&nbsp; Button myButton0 = new Button("Button0");
+&nbsp;&nbsp;&nbsp; TextField myTextField = new TextField("TextField");
+&nbsp;&nbsp;&nbsp; Button myButton1 = new Button("Button1");
+&nbsp;&nbsp;&nbsp; Button myButton2 = new Button("Button2");
+
+&nbsp;&nbsp;&nbsp; Frame myFrame = new Frame(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Copyright 1998, R.G.Baldwin");
+&nbsp;&nbsp;&nbsp; myFrame.setLayout(new FlowLayout());
+&nbsp;&nbsp;&nbsp; myFrame.add(myButton0);
+&nbsp;&nbsp;&nbsp; myFrame.add(myTextField);
+&nbsp;&nbsp;&nbsp; myFrame.add(myButton1);
+&nbsp;&nbsp;&nbsp; myFrame.add(myButton2);
+&nbsp;&nbsp;&nbsp; myFrame.setSize(300,100);
+&nbsp;&nbsp;&nbsp; myFrame.setVisible(true);
+
+&nbsp;&nbsp;&nbsp; //MAKE CERTAIN THAT YOU UNDERSTAND THE DIFFERENCE
+&nbsp;&nbsp;&nbsp; // BETWEEN THE FOLLOWING TWO REGISTRATION PROCESSES.
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Instantiate the destination objects that contain the
+&nbsp;&nbsp;&nbsp; // methods to be invoked when the components generate
+&nbsp;&nbsp;&nbsp; // action events.
+&nbsp;&nbsp;&nbsp; abcClass destinationObject0 = new abcClass();
+&nbsp;&nbsp;&nbsp; defClass destinationObject1 = new defClass();
+
+&nbsp;&nbsp;&nbsp; //Instantiate the action listener object that will take
+&nbsp;&nbsp;&nbsp; // care of dispatching action events from the different
+&nbsp;&nbsp;&nbsp; // sources to the different destination methods.
+&nbsp;&nbsp;&nbsp; MyActionListener actionListener =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new MyActionListener();
+
+&nbsp;&nbsp;&nbsp; //The following code registers destination methods on
+&nbsp;&nbsp;&nbsp; // specific sources by informing the actionListener
+&nbsp;&nbsp;&nbsp; // object which method on which destination object
+&nbsp;&nbsp;&nbsp; // is to be invoked whenever one of the buttons&nbsp;
+&nbsp;&nbsp;&nbsp; // generates an action event.
+
+&nbsp;&nbsp;&nbsp; //Register different combinations of destination
+&nbsp;&nbsp;&nbsp; // methods and destination objects on sources.
+&nbsp;&nbsp;&nbsp; actionListener.registerDestinationMethod(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; destinationObject0,myButton0,"abcMethod0");
+&nbsp;&nbsp;&nbsp; actionListener.registerDestinationMethod(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; destinationObject0,myTextField,"abcMethod0");
+&nbsp;&nbsp;&nbsp; actionListener.registerDestinationMethod(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; destinationObject0,myButton1,"abcMethod1");
+&nbsp;&nbsp;&nbsp; actionListener.registerDestinationMethod(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; destinationObject1,myButton2,"defMethod");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Force an exception to be thrown by attempting to&nbsp;
+&nbsp;&nbsp;&nbsp; // register the same source on two different&nbsp;
+&nbsp;&nbsp;&nbsp; // destinations.
+&nbsp;&nbsp;&nbsp; actionListener.registerDestinationMethod(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; destinationObject1,myButton0,"defMethod");
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //The following code registers the actionListener
+&nbsp;&nbsp;&nbsp; // object on the individual sources so that the&nbsp;
+&nbsp;&nbsp;&nbsp; // actionListener object will be notified when one&nbsp;
+&nbsp;&nbsp;&nbsp; // of the sources generates an action event.&nbsp; In this
+&nbsp;&nbsp;&nbsp; // case, the same actionListener object is being&nbsp;
+&nbsp;&nbsp;&nbsp; // registered on all of the sources.&nbsp; The&nbsp;
+&nbsp;&nbsp;&nbsp; // actionListener object will dispatch the event to
+&nbsp;&nbsp;&nbsp; // the correct destination method and object as
+&nbsp;&nbsp;&nbsp; // defined above.
+&nbsp;&nbsp;&nbsp; myButton0.addActionListener(actionListener);
+&nbsp;&nbsp;&nbsp; myTextField.addActionListener(actionListener);
+&nbsp;&nbsp;&nbsp; myButton1.addActionListener(actionListener);
+&nbsp;&nbsp;&nbsp; myButton2.addActionListener(actionListener);
+
+&nbsp;&nbsp;&nbsp; //Register listener to terminate program when
+&nbsp;&nbsp;&nbsp; // user closes the Frame.
+&nbsp;&nbsp;&nbsp; myFrame.addWindowListener(new Terminate());
+&nbsp; }//end constructor
+}// end class GUI
+//=======================================================//
+
+class Terminate extends WindowAdapter{
+&nbsp; public void windowClosing(WindowEvent e){
+&nbsp;&nbsp;&nbsp; System.exit(0);
+&nbsp; }//end windowClosing()
+}//end class Terminate
+//=======================================================//</pre></td></tr></table>
+-end-<!--end--></body></html>

@@ -1,0 +1,912 @@
+<!doctype html public "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+   <meta name="GENERATOR" content="Microsoft FrontPage 5.0">
+   <title>... DSP by Richard G Baldwin</title>
+</head>
+<body link="#DD0000" vlink="#0000FF" alink="#FF0000" lang="EN-US">
+<h2>
+Digital Signal Processing (DSP) in Java, Averaging Time Series</h2>
+<i>Baldwin begins with a discussion of averaging time series, and ends with a 
+discussion of spectral resolution, covering several related topics in between.</i><p><b>Published:</b>&nbsp; 
+December 11, 2002<br><b>By <a href="#About the author">Richard G. Baldwin</a></b>
+<p>DSP Programming, Notes # 108<ul >
+<li>
+<a href="#Preface">Preface</a></li>
+
+<li>
+<a href="#Preview">Preview</a></li>
+
+<li>
+<a href="#Discussion and Sample Programs">Discussion</a></li>
+
+<li>
+<a href="#Summary">Summary</a></li>
+</ul>
+
+<hr size=3 width="100%" align=center>
+<center>
+<h2>
+<a NAME="Preface"></a>Preface</h2></center>
+This is one in a series of lessons designed to teach you about
+Digital Signal Processing (DSP) using Java.&nbsp; The purpose of the miniseries
+is to present the concepts of DSP in a way that can be understood by persons
+having no prior DSP experience.&nbsp; However, some experience in Java
+programming would be useful.&nbsp; Whenever it is necessary for me to
+write a program to illustrate a point, I will write it in Java.
+<p><b><font color="#FF0000">Viewing tip</font></b>
+<p>You may find it useful to open another copy of this lesson in a separate
+browser window.&nbsp; That will make it easier for you to scroll back and
+forth among the different figures  while you are reading about
+them.
+<p><b><font color="#FF0000">Supplementary material</font></b>
+<p>I recommend that you also study the other lessons in my extensive collection 
+of online programming tutorials. You will find a consolidated index of my online 
+tutorial lessons at <font color="#000000"><a href="http://www.DickBaldwin.com">
+www.DickBaldwin.com</a>.</font><p><font color="#FF0000"><b>Some of what you have 
+previously learned</b></font><p>In a previous lesson, I explained the meaning of sampling, and 
+discussed some of the problems that occur as a result of high-frequency 
+components in the analog signal.<p><font color="#FF0000"><b>Measure and record 
+the signal amplitude</b></font><p>I told you that to sample an analog signal means to measure and record its 
+amplitude at a series of points in time.&nbsp; The values that you record 
+constitute a <i>sampled time series </i>intended to represent the analog 
+signal.</p>
+<p><font color="#FF0000"><b>Avoiding frequency folding</b></font></p>
+<p>I told you that to avoid problems, the sampling frequency must be a least 
+twice as great as the highest frequency component contained in the analog 
+signal, and as a practical matter, should probably be somewhat higher.</p>
+<p><font color="#FF0000"><b>Sinusoids, frequency, and period</b></font></p>
+<p>I introduced you to sinusoids, taught you about sine and cosine functions, 
+and introduced  the concepts of period and frequency for sinusoids.</p>
+<p><font color="#FF0000"><b>Decomposition of time series</b></font></p>
+<p>I told you that almost everything we will discuss in this series on DSP is 
+based on the premise that every time series can be decomposed into a large 
+number of sinusoids, each having its own amplitude and frequency.</p>
+<p><font color="#FF0000"><b>The notion of DSP</b></font></p>
+<p>I told you that DSP is based on the notion that signals in nature can be 
+sampled and converted into a series of numbers.&nbsp; The numbers can be fed 
+into some sort of digital device, which can process the numbers to achieve some 
+desired objective.</p>
+<center>
+<h2>
+<a NAME="Preview"></a><font color="#000000">Preview</font></h2></center>
+<p>This is a broad-ranging lesson.&nbsp; It begins with a discussion of 
+averaging time series,  ends with a discussion of spectral resolution, and covers 
+several related topics in between.&nbsp; Don't be 
+alarmed, however, at the range of the lesson.&nbsp; The topics of time-series 
+averaging and spectral resolution are very strongly related.</p>
+<p>I will discuss why we frequently need to average sampled 
+time series, and explain some of the issues involved in that process.</p>
+<p>I will also show you the impact of those averaging issues on DSP, using 
+spectrum analysis as an example.</p>
+<center>
+<h2>
+<a NAME="Discussion and Sample Programs"></a><font color="#000000">Discussion</font></h2></center>
+<p>It never ceases to amaze me how something as mathematically complex as DSP 
+can be distilled down to the simplest of computational processes.</p>
+<p><font color="#FF0000"><b>Which screw to turn ...</b></font></p>
+<p>DSP reminds me of the old story about the customer who complained about the 
+bill at the auto repair shop being too high.&nbsp; According to the customer, 
+all the mechanic did to fix the problem was  turn one screw, and the bill was too 
+high for the labor involved.&nbsp; The mechanic responded that he didn't charge 
+for turning the screw.&nbsp; Rather, he charged for knowing which screw to turn, 
+and knowing which way to turn it.</p>
+<p><font color="#FF0000"><b>Turning the screws in DSP</b></font></p>
+<p>Knowing how to turn the screw is not the complicated part of DSP.&nbsp; 
+Rather, the complicated part of DSP lies in  knowing which screw to turn and which way 
+to turn it.&nbsp; Once you know that, you will be surprised  just how 
+easy it is to actually turn the screw.</p>
+<p><font color="#FF0000"><b>Computing the average value of a time series</b></font></p>
+<p>As you will learn in this series of lessons, a large majority of DSP operations consist 
+simply of the following two steps:</p>
+<ul>
+  <li>Multiply one time series by another time series, to produce a third time 
+  series.&nbsp; </li>
+  <li>Compute the average value of the third time series.&nbsp; </li>
+</ul>
+<p>In many cases, it is the average value of the third time series that provides 
+the answer you are seeking.</p>
+<p>The challenge is in knowing what the average value means, and how to 
+interpret it.</p>
+<p><font color="#FF0000"><b>Decomposition of time series</b></font></p>
+<p>Almost everything that we will discuss in this series on 
+DSP is based on the premise that every time series can be decomposed into a 
+<i>(potentially large)</i> number of sinusoids, each having its own amplitude and frequency.</p>
+<p>Suppose, for example, that we have two time series, each of which is composed of 
+two sinusoidal components as follows:</p>
+<p><b><font face="monospace" size="2">f(x) = cos(ax) + cos (bx)<br>
+g(x) = cos(cx) + cos(dx)</font></b></p>
+<p>The product of the two time series is given by:</p>
+<p><b><font face="monospace" size="2">h(x) = f(x)*g(x)</font></b><br>
+<b><font face="monospace" size="2">&nbsp;&nbsp;&nbsp;&nbsp; = (cos(ax) + cos (bx)) <br>
+&nbsp;&nbsp;&nbsp;&nbsp;
+* (cos(cx) + cos(dx))</font></b></p>
+<p>where the asterisk (*) means multiplication.</p>
+<p>Multiplying this out produces the following:</p>
+<p><b><font face="monospace" size="2">h(x) = cos(ax)*cos(cx) <br>
+&nbsp;&nbsp;&nbsp;&nbsp;
++ cos(ax)*cos(dx) <br>
+&nbsp;&nbsp;&nbsp;&nbsp;
++
+cos(bx)*cos(cx) <br>
+&nbsp;&nbsp;&nbsp;&nbsp;
++ cos(bx)*cos(dx)</font></b></p>
+<p><font color="#FF0000"><b>A sum of products of sinusoids</b></font></p>
+<p>Thus, the time series produced by multiplying any two time series consists of 
+the sum of a <i>(potentially large)</i> number of terms, each of which is the 
+product of two sinusoids.</p>
+<p><font color="#FF0000"><b>The product of two sinusoids</b></font></p>
+<p>We probably need to learn a little about the product of two 
+sinusoids.&nbsp; I will discuss this topic with a little more mathematical rigor 
+in a future lesson.&nbsp; In this lesson, however, I will simply illustrate the 
+topic using graphs.</p>
+<blockquote>
+<p><b>Important:</b>&nbsp; <b>The product of two sinusoids is always a new time series, 
+which is the sum of two new sinusoids.&nbsp; </b> </p>
+</blockquote>
+<p><font color="#FF0000"><b>The frequencies of the new sinusoids</b></font></p>
+<p>The frequencies of the new sinusoids are different from the frequencies of 
+the original sinusoids.&nbsp; Furthermore, the frequency of one of the new 
+sinusoids may be zero.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<p align="left"><font color="#FF0000"><b>What is a sinusoid with zero frequency?</b></font><p align="left">
+As a practical matter, a sinusoid with zero frequency is simply a constant 
+value.&nbsp; It plots as a horizontal straight line.<p align="left">Think of it 
+this way.&nbsp; As the frequency of the sinusoid approaches zero, the period, <i>
+(which is the 
+reciprocal of frequency),</i> approaches infinity.&nbsp; Thus, the width of the first 
+lobe of the sinusoid widens, causing every value in that lobe to be the same as 
+the first value.<p align="left">This will become a very important concept as we 
+pursue DSP operations.</td>
+</tr>
+</table>
+
+<p><font color="#FF0000"><b>Sum and difference frequencies</b></font></p>
+
+<p>More specifically, when you multiply two sinusoids, the frequency of one of 
+the  sinusoids in the new time series is the sum of the frequencies of  the two sinusoids that were multiplied.&nbsp; The frequency of the other sinusoid in the new time series is the difference between the frequencies of 
+ 
+the two sinusoids that were multiplied.</p>
+
+<p><font color="#FF0000"><b>An important special case</b></font></p>
+
+<p>For the special case where the two original sinusoids have the same 
+frequency, the difference frequency is zero and one of the  sinusoids in the new 
+time series has 
+a frequency of zero.&nbsp; It is this special case that makes digital filtering and 
+digital spectrum analysis possible.</p>
+
+<p><font color="#FF0000"><b>Many sinusoidal products</b></font></p>
+
+<p>When we multiply two time series and compute the average of the resulting 
+time series, we are in effect computing the average of the products of all the 
+individual sinusoidal components contained in the two time series.&nbsp; That 
+is, the new time series contains the products of <i>(potentially many)</i> 
+individual sinusoids contained in the two original time series.&nbsp; In the 
+end, it all comes down to computing the average value of products of sinusoids.</p>
+
+<p><font color="#FF0000"><b>Product of sinusoids with same frequency</b></font></p>
+
+<p>The product of any pair of sinusoids that have the same frequency will 
+produce a time series containing the sum of two sinusoids.&nbsp; One of the 
+sinusoids will have a frequency of zero <i>(hence it will have a constant value).</i>&nbsp; The other sinusoid will have a 
+frequency that is double the frequency of the original sinusoids.</p>
+
+<p><font color="#FF0000"><b>The ideal average value</b></font></p>
+
+<p>Ideally, the average value of the new time series 
+will be equal to the constant value of the sinusoid with zero frequency.&nbsp; 
+This is because, ideally, the average value of the other sinusoid will be zero.</p>
+
+<p><font color="#FF0000"><b>Product of sinusoids with different frequencies</b></font></p>
+
+<p>The product of any pair of sinusoids that do not have the same frequency will 
+produce a new time series containing the sum of two sinusoids.&nbsp; One of the 
+new sinusoids will have a frequency that is the sum of the frequencies of the 
+two original sinusoids.&nbsp; The other sinusoid will have a frequency that is 
+the difference between the frequencies of the two original sinusoids.</p>
+
+<p><font color="#FF0000"><b>Ideal average value is zero</b></font></p>
+
+<p>Ideally, the average value of the new time series in this case will be equal to 
+zero, because ideally the average value of each of the sinusoids that make up 
+the time series will be zero.</p>
+
+<p><font color="#FF0000"><b>Oops!</b></font></p>
+
+<p>As we will see later, we don't always achieve the ideal.</p>
+
+<p><font color="#FF0000"><b>Examples of products of sinusoids</b></font></p>
+
+<p>Let's examine some time series produced by multiplying  sinusoids.&nbsp; Figures 1, 2, and 3 show the results of multiplying sinusoids 
+having the same and different frequencies.&nbsp; Consider first the plots in Figure 1.</p>
+<p align="center">
+<img border="0" src="dsp00108figb.gif" width="409" height="431"></p>
+<p align="center">Figure 1 Products of sinusoids</p>
+<p><font color="#FF0000"><b>Multiplying sinusoids with same frequency</b></font></p>
+<p>The top plot in Figure 1 shows a sinusoid whose frequency and sampling rate 
+are such that it has 32 samples per cycle.&nbsp; The second plot from the top in 
+Figure 1 is identical to the top plot.&nbsp; <i>(To simplify the explanation, 
+these two sinusoids are also cosine functions.)</i></p>
+<p>The third plot down from the top in Figure 1 shows the product of these two 
+sinusoids, which have the same frequency.&nbsp; If you examine the third plot, you will notice several important 
+characteristics.&nbsp;  </p>
+<p><font color="#FF0000"><b>A double-frequency sinusoid</b></font></p>
+<p>By 
+matching the peaks, you can determine that the frequency of the sinusoid in the 
+third plot is double the frequency of each of the  top two plots.&nbsp; <i>(This is the 
+sum of the frequencies of the two sinusoids that were multiplied together.)</i></p>
+<p><font color="#FF0000"><b>Half the amplitude with a positive bias</b></font></p>
+<p>Next, you will notice that the amplitude of the sinusoid in the third plot is 
+half that of each of the first two plots.&nbsp; In addition, the entire sinusoid in the third plot is in the positive value range.&nbsp; </p>
+<p><font color="#FF0000"><b>The sum of two sinusoids</b></font></p>
+<p>The third plot is actually the sum of two 
+sinusoids.&nbsp; One of the sinusoids has a frequency of zero, giving a constant 
+value of 0.5.&nbsp; This constant value of 0.5 is added to all the values in the 
+other sinusoid, causing it to be plotted in the positive value region.</p>
+<p>Later on, we will compute the average value of the time series in the third 
+plot, and ideally, that average value will be the constant value produced by the 
+zero-frequency sinusoid.</p>
+<p><font color="#FF0000"><b>Product of sinusoids with different frequencies</b></font></p>
+<p>Now consider the bottom two plots in Figure 1.&nbsp; The fourth plot down 
+from the top is a cosine function whose frequency is almost, but not quite the same as 
+the frequency of the sinusoid in the top plot.&nbsp; The sinusoid in the top 
+plot has 32 samples per cycle while the sinusoid in the fourth plot has 31 
+samples per cycle.</p>
+<p>The time series in the bottom plot is the product of the time series in the 
+first and fourth plots.&nbsp; </p>
+<p><font color="#FF0000"><b>The sum of two sinusoids</b></font></p>
+<p>Once again, this time series is the sum of two sinusoids, one whose frequency 
+is the difference between the two original frequencies, and one whose frequency 
+is the sum of the two original frequencies.</p>
+<p>However, in this case, the difference frequency is not zero.&nbsp; Rather, it 
+is a very low frequency.&nbsp; What you see in the bottom plot of Figure 1 is a 
+sinusoid whose frequency is the sum of the two original frequencies added to a 
+sinusoid whose frequency is the difference between the two original frequencies.&nbsp; 
+Because the two original frequencies were almost equal, the frequency of the 
+second sinusoid is very low.</p>
+<p>As you can see, the low-frequency component in the bottom plot in Figure 1 appears to be the beginning of a cosine 
+function whose period is 
+much greater than the width of the plot <i>(400 points).</i></p>
+<p><font color="#FF0000"><b>Another view of the same data</b></font></p>
+<p>Figure 2 shows another view of the bottom two plots from Figure 1.</p>
+<p align="center">
+<img border="0" src="dsp00108figd.gif" width="403" height="199"></p>
+<p align="center">Figure 2 Products of sinusoids</p>
+<p>The difference between Figure 2 and Figure 1 is that while Figure 1 shows 
+only 400 points along the x-axis, Figure 2 shows 1200 points along the x-axis.&nbsp; 
+Thus, the horizontal scale in Figure 2 is significantly compressed relative to 
+the horizontal scale in Figure 1.</p>
+<p><font color="#FF0000"><b>More than one cycle</b></font></p>
+<p>Figure 2 lets you see a little more than one full cycle of the low-frequency 
+component of the  time series produced by multiplying the two sinusoids.</p>
+<blockquote>
+<p align="left"><i>(Figure 2 does not provide a  very good representation of 
+the high-frequency component.&nbsp; This is because I plotted 1200 points in a 
+part of the screen that is only 400 pixels wide.&nbsp; On my computer, I can 
+expand this to the full screen width.&nbsp; However, I can't publish it at that 
+width, so I published the 400-pixel version.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Averaging can be problematic in this case</b></font></p>
+<p>Later on, we will compute the average value of the time series represented by 
+the bottom plot in Figures 1 and 2.&nbsp; Ideally, that average value will be 
+zero.&nbsp; However, you have probably already figured out that a great many 
+data points must be included in the computation of the average to get anything 
+near zero.&nbsp; An eyeball estimate indicates that about 900 data points are 
+required just to include a single cycle of the low-frequency component.</p>
+<p><font color="#FF0000"><b>More examples of the products of sinusoids</b></font></p>
+<p>Figure 3 shows two additional time series created by multiplying sinusoids.</p>
+<p align="center">
+<img border="0" src="dsp00108figc.gif" width="409" height="431"></p>
+<p align="center">Figure 3 Products of sinusoids</p>
+<p>The arrangement in Figure 3 is the same as in Figure 1.&nbsp; The top plot in 
+Figure 3 is the same sinusoid shown in the top plot of Figure 1.&nbsp; This is a 
+sinusoid with 32 samples per cycle.</p>
+<p>Immediately below the top sinusoid in Figure 3 is another sinusoid.&nbsp; 
+This sinusoid has 24 cycles per cycle.&nbsp; As you can see, the frequency of 
+this sinusoid is a little higher than the frequency of the sinusoid in the top 
+plot.</p>
+<p>The time series in the third plot down from the top is the product of the 
+time series in the  top two plots.&nbsp; Again, this time series is composed of 
+two new sinusoids whose frequencies are the sum of and difference between the two 
+original frequencies.</p>
+<p><font color="#FF0000"><b>A greater frequency difference</b></font></p>
+<p>Because the frequency difference between the first two plots in Figure 3 is considerably greater 
+than was the case for the bottom plot of Figure 1, the frequency of the low frequency component of 
+the third plot in Figure 3 is considerably greater than was the case in 
+Figure 1.</p>
+<p>Later on, we will compute the average value of the third plot in 
+Figure 3.&nbsp; Ideally, the average value will be zero.</p>
+<p><font color="#FF0000"><b>An even greater frequency difference</b></font></p>
+<p>The fourth plot in Figure 3 shows a sinusoid having 16 samples per cycle.&nbsp; 
+The frequency of this sinusoid is double the frequency of the sinusoid in the 
+top plot.</p>
+<p>The bottom curve in Figure 3 shows the product of the first and fourth plots.&nbsp; As usual, this time series consists of the sum of two sinusoids 
+whose frequencies are the sum and the difference of the original frequencies.</p>
+<p>We will compute the average value of the bottom plot later on.&nbsp; 
+Ideally, the average value will be zero.</p>
+<p><font color="#FF0000"><b>What is the average value of a sinusoid?</b></font></p>
+<p>Hopefully by now you understand why we need to be concerned about the average 
+value of a sinusoid.</p>
+<p>Consider Figure 4, which shows five different sampled sinusoids with 
+different frequencies.</p>
+<p align="center">
+<img border="0" src="dsp00108figa.gif" width="401" height="431"></p>
+<p align="center">Figure 4 Five Sampled Sinusoids</p>
+<p>We may be tempted to say that the average value of a 
+sinusoid is zero.&nbsp; After all, the positive lobes of the sinusoid are shaped 
+exactly like the negative lobes.&nbsp; <i>Therefore, every positive value is offset by a 
+corresponding negative value.</i></p>
+<p><font color="#FF0000"><b>Is that a true statement?</b></font></p>
+<p>Every positive value is offset by a corresponding negative value only if you compute the average over an even number 
+of cycles of the sinusoid.&nbsp; For example, it is pretty obvious that if you 
+compute the average on the 64 data values shown for the bottom plot in Figure 4, 
+the result will not be zero.&nbsp; Rather, it will be a positive non-zero value.</p>
+<p><font color="#FF0000"><b>Sample average values</b></font></p>
+<p>Next we will take a look at the computed average values of the time series 
+from Figures 1 and 3 that were produced by multiplying sinusoids.</p>
+<p>The black curve in Figure 5 shows an expanded view of the sinusoidal curve from the top half of 
+the third plot in Figure 1 <i>(recall that the bottom half of that plot was 
+empty, so I didn't include it in Figure 5).&nbsp; </i>This curve was the result of multiplying two sinusoids with the same 
+frequency.</p>
+<p align="center">
+<img border="0" src="dsp00108fige.gif" width="409" height="431"></p>
+<p align="center">Figure 5 Computed average value of a time series</p>
+<p><font color="#FF0000"><b>The average value</b></font></p>
+<p>The red curve in Figure 5 shows the computed average value as a function of 
+the number of points included in the average.&nbsp; In other words, a particular 
+point on the red curve in figure 5 represents the average value of all the points on the 
+black curve to the left of and including that point on the black curve.</p>
+<p>The blue horizontal line if Figure 5 shows the ideal average value for this 
+situation.</p>
+<p><font color="#FF0000"><b>Result converges on the ideal</b></font></p>
+<p>As more and more points are included in the average, the values 
+of the positive and negative peaks on the red curve approach the ideal blue line 
+asymptotically <i>(except for a slight positive bias, which is the result of the 
+sampling process).</i></p>
+<p><font color="#FF0000"><b>An expanded view</b></font></p>
+<p>Figure 6 shows a greatly expanded view of the red average values in Figure 5.</p>
+<p align="center">
+<img border="0" src="dsp00108figf.gif" width="409" height="431"></p>
+<p align="center">Figure 6 Expanded average value of a time series</p>
+<p>The ideal value for this average is 0.5, and that is the value represented by 
+the blue line.&nbsp; The plot in Figure 6 shows the same horizontal scale as 
+Figure 5.&nbsp; However, the entire vertical plotting area in Figure 6 
+represents the values from 0.48 to 0.52.&nbsp; </p>
+<p><font color="#FF0000"><b>Ideal value is never reached</b></font></p>
+<p>As you can see, the ideal value is never reached in Figure 6 except at 
+isolated points where the red curve crosses the horizontal line.&nbsp; Even if I 
+extended the horizontal axis to 1200 or more points, that would continue 
+to be the case.</p>
+<p><font color="#FF0000"><b>A more serious case</b></font></p>
+<p>Figure 7 computes and displays the average value of the bottom plot in 
+Figure 2 <i>(recall that this plot shows 1200 points on the horizontal axis, whereas 
+Figure 5 shows only 400 points on the horizontal axis).</i> Recall also that this time series was produced by multiplying two sinusoids having 
+nearly the same frequency.</p>
+<p align="center">
+<img border="0" src="dsp00108figg.gif" width="409" height="429"></p>
+<p align="center">Figure 7 Computed average value of a time series</p>
+<p><font color="#FF0000"><b>Red curve is the average</b></font></p>
+<p>As before, the black curve in Figure 7 shows the time series, and the red 
+curve shows the computed average value as a function of the number of points 
+included in the average.</p>
+<blockquote>
+<p align="left"><i>(In this case, I didn't even bother to show the 
+short axis containing only 400 points.&nbsp; The horizontal axis in Figure 7 
+contains 1200 points, the same as in Figure 2.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>The ideal average value is zero</b></font></p>
+<p>In this case, the ideal average value is zero, as indicated by the green 
+horizontal axis.&nbsp; As you can see, even for a 1200-point averaging window, the 
+average value deviates significantly from the ideal.&nbsp; We will see the 
+detrimental impact of 
+this problem later when I perform spectral analysis in an attempt to separate 
+two closely-spaced peaks in the frequency spectrum.</p>
+<p><font color="#FF0000"><b>Some additional examples of average values</b></font></p>
+<p>Figure 8 computes and displays the average value of the third plot 
+down from the top  in Figure 3. This plot was produced by multiplying the 
+two sinusoids in the top two plots in Figure 3.</p>
+<p align="center">
+<img border="0" src="dsp00108figh.gif" width="409" height="431"></p>
+<p align="center">Figure 8 Computed average value of a time series</p>
+<p>As before, the black curve in Figure 8 represents the time series, and the 
+red curve represents the average value of the time series as a function of the 
+number of points included in the average.</p>
+<p>For this case also, the ideal average value is zero, as represented by the 
+green horizontal axis.&nbsp; The positive and negative peaks in the red average 
+value can be seen to approach the ideal value asymptotically within the 
+400 horizontal points plotted in Figure 8.</p>
+<p>Figure 9 computes and displays the average value of the bottom plot in 
+Figure 3. This time series was produced by multiplying the top plot in 
+Figure 3 by the fourth plot in Figure 3.</p>
+<p align="center"><img border="0" src="dsp00108figi.gif" width="409" height="431"></p>
+<p align="center">Figure 9 Computed average value of a time series</p>
+<p>Once again, the black curve in Figure 9 represents the time series, and the 
+red curve represents the average value of the time series as a function of the 
+number of points included in the average.&nbsp; In this case, the average 
+converges on zero rather nicely within the 400 points included on the horizontal 
+axis.</p>
+<p><font color="#FF0000"><b>A short recap before continuing</b></font></p>
+<p>Hopefully, by this point, you understand how multiplying two time series 
+produces a new time series composed of the sum of all the products of the 
+individual sinusoids in the two original time series.</p>
+<p>When each pair of sinusoids is multiplied together, they produce a new time 
+series consisting of two other 
+sinusoids whose frequencies are the sum and difference of the original pair of 
+frequencies.</p>
+<p><font color="#FF0000"><b>The error in the computed average</b></font></p>
+<p>When an average is computed for a fixed number of points on the new time series, the error in the average tends to be greater for 
+cases where the original frequency values were close together.&nbsp; This is because the period of one of the 
+new sinusoids becomes longer as the original frequencies become closer.&nbsp; In 
+general, the longer the period of the sinusoid, the more points are required to 
+get a good estimate of its average value.</p>
+<p><font color="#FF0000"><b>Does this matter?</b></font></p>
+<p>There are many operations in DSP where this matters a lot.&nbsp; As mentioned 
+earlier,  the computational requirements for 
+ 
+DSP frequently boil down to nothing more than multiplying a pair 
+of time series and computing the average of the product.&nbsp; You will see many 
+examples of this as you continue studying the lessons in 
+this series of tutorials on DSP.</p>
+<p><font color="#FF0000"><b>Spectral analysis</b></font></p>
+<p>I am going to illustrate my point by showing you one such example in this 
+lesson.&nbsp; This example will use a Fourier transform in an attempt to perform 
+spectral analysis and to separate two closely-spaced frequency components in a 
+time series.&nbsp; As you will see, errors in the computed average can interfere 
+with this process in a significant way.</p>
+<blockquote>
+<p><i>(This example will illustrate and explain the results using graphs.&nbsp; 
+Future lessons will provide more technical details on the DSP operations 
+involved.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Several steps</b></font></p>
+<p>I will provide this illustration in several steps.&nbsp; </p>
+<p>First, I will show you spectral data for several time series, each consisting 
+of a single sinusoid.&nbsp; The time series will have different lengths but the 
+individual sinusoids will have the same frequency.&nbsp; This will serve as baseline data for the experiments that 
+follow.</p>
+<p><font color="#FF0000"><b>Sum of two sinusoids</b></font></p>
+<p>Then I will show you spectral data for several time series, each composed of 
+the sum of two sinusoids.&nbsp; These time series will have different lengths.&nbsp; 
+The sinusoids in each time series will have the same frequencies.&nbsp; I will 
+show you two cases that fall under this description.&nbsp; The 
+frequency difference for the two sinusoids in each time series will be small in 
+one case, and greater in another case.</p>
+<p><font color="#FF0000"><b>Sinusoids with different frequency differences</b></font></p>
+<p>Finally, I will show you spectral data for several time series, each composed 
+of the sum of two sinusoids.&nbsp; These time series will be different lengths, 
+and the sinusoids in each time series will have different frequencies.&nbsp; In 
+particular, the frequency difference between the two sinusoids in each time 
+series will be equal to the theoretical <i>frequency resolution</i> for a time 
+series of that particular length.</p>
+<p><font color="#FF0000"><b>The Fourier transform</b></font></p>
+<p>In order to perform the spectral analysis, I will perform a Fourier transform on the time series to transform that data 
+into the frequency domain.&nbsp; Then I will plot the data in the frequency 
+domain.</p>
+<blockquote>
+<p><i>(This lesson will not provide  technical details on the Fourier 
+transform.&nbsp; That information will be forthcoming in a future lesson.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Keeping it simple</b></font></p>
+<p>To keep this explanation as simple as possible, I will stipulate that all of 
+the sinusoids contained in the time series are cosine functions.&nbsp; There are 
+no sine functions in the time series.</p>
+<blockquote>
+<p><i>(If the time series did contain sine functions, the process would still 
+work, but the explanation would be  more complicated.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>A brief description of the Fourier transform</b></font></p>
+<p>Before I get into the results, I will provide a very brief description of how I performed 
+the Fourier transform for these experiments.</p>
+<p>The following steps were 
+performed at each frequency in a set of 400 uniformly spaced frequencies across the frequency range  from zero to the folding frequency.</p>
+<p>The steps were:</p>
+<ul>
+  <li>If the time series was shorter than 400 points, extend it to 400 points by 
+  appending zero-valued points at the end.</li>
+  <li>Select the next frequency of interest.</li>
+  <li>Generate a cosine function, 400 samples in length, at that frequency.</li>
+  <li>Multiply the cosine function by the time series.</li>
+  <li>Compute the average value of the time series  produced by 
+  multiplying the cosine function by the time series.</li>
+  <li>Save the average value.&nbsp; Call it the <i>real</i> value for later 
+  reference.</li>
+  <li>Generate a sine function, 400 samples in length, at the same frequency.</li>
+  <li>Multiply the sine function by the time series.</li>
+  <li>Compute the average value of the time series  produced by 
+  multiplying the sine function by the time series.</li>
+  <li>Save the average value.&nbsp; Call it the <i>imaginary</i> value for later 
+  reference.</li>
+  <li>Compute the square root of the sum of the squares of the real and 
+  imaginary values.&nbsp; This is the value of interest.&nbsp; Plot it.</li>
+</ul>
+<p><font color="#FF0000"><b>Why does this work?</b></font></p>
+<p>No matter how many sinusoidal components are contained in the time series, 
+only one <i>(if any)</i> of those sinusoidal components will match the selected frequency.&nbsp; 
+ 
+</p>
+<p><font color="#FF0000"><b>Multiply by the cosine and average the product</b></font></p>
+<p>When that matching component is multiplied by the cosine function having the 
+selected frequency, the new time series 
+created by the multiplication will consist of a constant value plus a sinusoid whose frequency is twice the 
+selected frequency.&nbsp; </p>
+<p>The computed average value of this time series will converge on the value of 
+the constant with the quality of the estimate depending on the number of points 
+included in the average.</p>
+<p><font color="#FF0000"><b>Multiply by the sine and average the product</b></font></p>
+<p>Since the sinusoids in the time series are stipulated to be  cosine 
+functions, when the sinusoid with the matching frequency is multiplied by the sine function, the new time series will 
+consist of a constant value of zero plus a sinusoid whose frequency is twice the 
+frequency of the sine function.</p>
+<p>The computed average of this time series will converge on zero with the 
+quality of the estimate depending on the number of points in the average.</p>
+<blockquote>
+<p><i>(As mentioned earlier, this process would work even if the time series contained 
+sinusoids other than cosine functions.&nbsp; However, the explanation would be 
+more complicated.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>What about the other sinusoidal components?</b></font></p>
+<p>Every other sinusoidal component in the time series <i>(whose frequency 
+doesn't match the selected frequency),</i> will produce a new time series containing two sinusoids 
+when multiplied by the sine function or the cosine function.</p>
+<p>The frequency of one of the sinusoids in the new time series will be the sum of the 
+frequencies of the sinusoidal component and the sine or cosine function.&nbsp; The 
+frequency of the other sinusoid will be the difference in the frequencies 
+between the 
+sinusoidal component and the sine or cosine function.</p>
+<p>As you saw earlier, 
+when this difference is very 
+small, the frequency of the new sinusoid will be very near to zero.</p>
+<p><font color="#FF0000"><b>The average value for non-matching components</b></font></p>
+<p>Ideally, the average value of the product should be zero when the frequency 
+of the original sinusoidal component is different from the sine or cosine 
+function by which it is multiplied.&nbsp; The computed average of this time 
+series will converge on zero with the quality of the estimate depending on the 
+number of points in the average.</p>
+<p><font color="#FF0000"><b>Measurement error</b></font></p>
+<p>However, <i>(and this is very important),</i> when the frequency of the original 
+sinusoid is very close to the frequency of the sine or cosine function, the 
+convergence on zero 
+will be poor even for a large number of points in the average.</p>
+<blockquote>
+<p><b>Thus, the computation at those 
+frequencies very near to the frequency of an actual sinusoidal 
+component in the raw data will produce a non-zero average value even when there is no 
+sinusoidal component in the raw data at those frequencies.&nbsp; This is a form of measurement 
+error.</b></p>
+</blockquote>
+<p><font color="#FF0000"><b>Let's see some data</b></font></p>
+<p>With that as a preface, lets look at some graphs <i>(Figures 10 and 11)</i> resulting from spectral 
+analyses.&nbsp; <i>(These two figures show two 
+different views of the same data.)</i></p>
+<p align="center">
+<img border="0" src="dsp00108figj.gif" width="409" height="431"></p>
+<p align="center">Figure 10 Spectrum of five different sinusoids of different 
+lengths</p>
+<p><font color="#FF0000"><b>Five sinusoids, same frequency, different lengths</b></font></p>
+<p>Figure 10 shows the individual spectra computed for five different sinusoids, 
+each 
+having the same frequency, but different lengths.&nbsp; The combination of 
+sampling rate and frequency was such that each sinusoid had 32 samples per 
+cycle.</p>
+<p>Starting at the top in Figure 10, the  lengths of the five sinusoids were 80,
+160,
+240,
+320, and
+400 samples.&nbsp; <i>(The lengths of the five sinusoids were multiples of 80 
+samples.)</i></p>
+<p><font color="#FF0000"><b>Extend to 400 samples for computation</b></font></p>
+<p>As mentioned earlier, for the cases where the actual length of the sinusoid was less than 400 
+samples, the length was extended to 400 samples by appending an appropriate 
+number of samples having zero values.</p>
+<blockquote>
+<p><i>(This made it easy to compute and plot the spectrum for every sinusoid 
+over the same frequency range with the same number of points in each plot.)</i></p>
+</blockquote>
+<p>The spectrum was computed and plotted for each sinusoid at 400 
+individual frequency points between zero and the folding frequency.</p>
+<p><font color="#FF0000"><b>The actual averaging window</b></font></p>
+<p>Even though the Fourier transform program averaged across 400 samples in all 
+cases, the <i>effective</i> averaging length was equal to the 
+length of the sinusoid.&nbsp; All product points outside that length had a value 
+of zero and contributed nothing to the average one way or the other.</p>
+<blockquote>
+<p><i>(I also applied an additional scale factor to the spectral results to 
+compensate for the fact that fewer total samples were included in the average 
+for the short samples.&nbsp; This caused the amplitude of the peak in the 
+spectrum to nominally the same in all five cases.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>A horizontally-expanded plot</b></font></p>
+<p>As you can see in Figure 10, there isn't much in the spectra to the right of 
+about 50 spectral points.&nbsp; That is as it should be since the single sinusoid in 
+each 
+time series was at the low end of the spectrum.</p>
+<p>Figure 11 shows the same data as Figure 10 with only the 
+first 50 frequency points  plotted on the horizontal axis.&nbsp; The remaining 
+350 frequency points were simply ignored.&nbsp; This provides a much better view 
+of the structure of the peaks in the different spectra.</p>
+<p align="center">
+<img border="0" src="dsp00108figk.gif" width="409" height="431"></p>
+<p align="center">Figure 11 Spectrum of five different sinusoids of different 
+lengths</p>
+<p>I will begin the discussion with the bottom plot in Figure 11, which is the computed 
+spectrum for the single sinusoid having a length of 400 samples.</p>
+<p><font color="#FF0000"><b>A spectral line</b></font></p>
+<p>Ideally, since the time series was a single sinusoid, the spectrum should 
+consist of a single non-zero value at the frequency of the sinusoid, <i>(often 
+referred to as a spectral line)</i> and every 
+other value in the spectrum should be zero.</p>
+<p>However, because the computation of the 
+spectrum involves the computation of average values resulting from the products 
+of sinusoids, the ideal is not always achieved.&nbsp; In order to achieve the ideal, it 
+would be necessary to multiply and average over an infinite number of points.&nbsp; 
+Anything short of that will result in some measurement error, as exhibited by 
+the bottom plot in Figure 11.</p>
+<blockquote>
+<p><i>(The bottom plot in Figure 11 has a large peak in the center with every 
+second point to the left and right of center having a  zero value.&nbsp; I 
+will explain this structure in more detail later.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Spectra of shorter sinusoids</b></font></p>
+<p>Moving from the bottom to the top in Figure 11, each individual plot shows 
+the result of shorter and shorter averaging windows.&nbsp; As a result, the 
+measurement error increases and the peak broadens for each successive plot going 
+from the bottom to the top in Figure 11.&nbsp; 
+The plot at the top, with an averaging window of only 80 samples, exhibits the 
+most measurement error and the broadest peak.</p>
+<blockquote>
+<p><i>(It should be noted, however, that even the spectra for the shorter 
+averaging windows have some zero-valued points.&nbsp; Once you understand the 
+reason for the zero-valued points, you can correlate the positions of those 
+points to the length of the averaging windows in Figure 11.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Impact of spectral measurement errors</b></font></p>
+<p>Now I'm going to show you the detrimental impact of such spectral measurement 
+errors.&nbsp; In particular, the failure of the average to converge on zero for 
+short averaging windows limits the spectral resolution of the Fourier transform.</p>
+<p><font color="#FF0000"><b>Five time series with two sinusoids each</b></font></p>
+<p>I will create five new time series, each consisting of the sum of two 
+sinusoids with fairly closely-spaced frequencies.&nbsp; One sinusoid has 32 
+samples per cycle as in Figures 10 and 11.&nbsp; The other sinusoid has 26 
+samples per cycle.</p>
+<p>As before, the lengths of the individual time series will be 80, 160, 240, 
+320, and 400 samples respectively.</p>
+<p><font color="#FF0000"><b>Spectral analysis using Fourier transform</b></font></p>
+<p>I will perform a Fourier transform on each of the time series in an attempt 
+to show that the spectrum of each time series consists of two peaks, with one 
+peak 
+corresponding to each of the sinusoids added together to create the time series.&nbsp; 
+The five spectra are shown in Figure 12.</p>
+<p align="center">
+<img border="0" src="dsp00108figl.gif" width="409" height="431"></p>
+<p align="center">Figure 12 Spectrum of five different time series of different 
+lengths</p>
+<p><font color="#FF0000"><b>Discuss the longest time series first</b></font></p>
+<p>Once again, let's begin with the plot at the bottom of Figure 12.&nbsp; As 
+you can see, this spectrum shows two very distinct spectral peaks.&nbsp; Thus, 
+for this amount of frequency separation and a length of 400 samples, the Fourier 
+transform did a good job of separating the two peaks.</p>
+<p><font color="#FF0000"><b>Resolution for shorter averaging windows</b></font></p>
+<p>Moving upward in Figure 12, we see that the Fourier transform on the time 
+series with a length of 320 samples <i>(the fourth plot from the top)</i> also did a good job of separating the 
+two peaks.</p>
+<p>However, separation the process began to deteriorate for&nbsp;lengths of 240 samples 
+and 160 samples.</p>
+<p><font color="#FF0000"><b>No peak separation for 80-sample average</b></font></p>
+<p>For a length of 80 samples, the two peaks merged 
+completely.</p>
+<p><font color="#FF0000"><b>A horizontally-expanded view of the spectra</b></font></p>
+<p>Figure 13 shows a horizontally-expanded view of the same spectral data to 
+give you a better idea of the structure of the peaks.&nbsp; The plots in Figure 
+13 show only the first fifty frequency values.</p>
+<p align="center">
+<img border="0" src="dsp00108figm.gif" width="409" height="431"></p>
+<p align="center">Figure 13 Spectrum of five different time series of different 
+lengths</p>
+<p>You may find it interesting to make a side-by-side comparison of Figures 13 
+and 11 in separate browser windows.</p>
+<p><font color="#FF0000"><b>Zero-valued points in the spectra</b></font></p>
+<p>Before leaving this topic, there are a few more things that I want to show 
+you.&nbsp; If you go back and look at the bottom plot in Figure 11, you will 
+note an interesting characteristic of that plot.&nbsp; In particular, starting 
+at the peak and moving outward in both directions, every second plotted value is 
+zero.&nbsp; I'm going to  explain the reason for and the significance of this 
+characteristic.</p>
+<blockquote>
+<p><i>(As I mentioned earlier, there are also zero-valued points in the spectra 
+of the time series with the shorter averaging windows.&nbsp; Once you understand 
+the reason for the zero-valued points, you can correlate the positions of those 
+points to the length of the averaging window.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>400 spectral values were computed</b></font></p>
+<p>To begin with, the Fourier transform program that was used to compute this 
+spectrum computed 400 values at equally spaced points between zero and the 
+folding frequency <i>(only the first 50 values are shown in Figure 11).</i>&nbsp; 
+Thus, each of the side-by-side rectangles in Figure 11 represents the spectral 
+value computed at one of the 400 frequency points.</p>
+<p><font color="#FF0000"><b>Sampling frequency was one sample per second</b></font></p>
+<p>The sinusoid that was used as the target for this spectral analysis had 32 
+samples per cycle.&nbsp; Since this sinusoid was generated mathematically 
+instead of being the result of sampling an analog signal, we can consider the 
+sampling frequency to be anything that we want.&nbsp; </p>
+<p>For simplicity, let's assume that the sampling frequency was one sample per 
+second.&nbsp; This causes the sinusoid to have a period of 32 seconds and a 
+frequency of 0.03125 cycles per second.&nbsp; <i>(Remember this number.&nbsp; It 
+will be important later.)</i></p>
+<p>At a sampling rate of one sample per second, the folding frequency occurs at 
+0.5 cycles per second.</p>
+<p><font color="#FF0000"><b>The computational frequency interval</b></font></p>
+<p>Dividing the folding frequency by 400 we conclude that the Fourier transform 
+program computed a spectral value every 0.00125 cycles per second.&nbsp; Given 
+that every second spectral value is zero, the zero values occur every 0.00250 
+cycles per second.</p>
+<p><font color="#FF0000"><b>Let's compute the average of some products</b></font></p>
+<p>The top plot in Figure 14 shows the result of multiplying a cosine function 
+having a frequency of 0.03125 cycles per second <i>(the frequency of the 
+sinusoid in the previous spectral analysis experiment)</i> by a sine function having a 
+frequency of 0.02875 cycles per second.</p>
+<blockquote>
+<p> <i>(This replicates one of the steps in the computation of the imaginary value in the Fourier 
+transform).</i></p>
+</blockquote>
+<p>The difference between the  frequencies of the cosine function and the sine 
+function is 0.00250 cycles per second.</p>
+<blockquote>
+<p><i>(Note that this frequency difference is the reciprocal of the actual number of samples in the 
+earlier time series, which contained 400 samples.&nbsp; This is also the 
+frequency interval on which the Fourier transform produced zero-valued points 
+for the bottom plot in Figure 11.)</i></p>
+</blockquote>
+<p align="center">
+<img border="0" src="dsp00108fign.gif" width="409" height="431"></p>
+<p align="center">Figure 14 Average values of sinusoid products</p>
+<p><font color="#FF0000"><b>The average of the product time series</b></font></p>
+<p>The second plot in Figure 14 shows the average value of the time series in 
+the first plot versus the number of samples included in the averaging window.&nbsp; </p>
+<blockquote>
+<p> <i>(This replicates another step in the computation of the imaginary value in the Fourier 
+transform).</i></p>
+</blockquote>
+<p>It is very important to note that this average plot goes to zero when 400 
+samples are included in the average.</p>
+<p><font color="#FF0000"><b>Product of two cosine functions</b></font></p>
+<p>Similarly, the third plot in Figure 14 shows the product of the same cosine 
+function as above and another cosine function having the same frequency as the 
+sine function described above.</p>
+<blockquote>
+<p> <i>(This replicates a step in the computation of the real value in the Fourier 
+transform).</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>The average of the product time series</b></font></p>
+<p>The fourth plot in Figure 14 shows the average value of the time series in the third plot.</p>
+<blockquote>
+<p> <i>(This replicates another step in the computation of the real value in the Fourier 
+transform).</i></p>
+</blockquote>
+<p>This average plot goes to zero at an averaging window of about 200 samples, and again at 
+an averaging window of 400 samples.</p>
+<p><font color="#FF0000"><b>Where do the zero values match?</b></font></p>
+<p>The first point at which both average plots go to zero at the same point on the horizontal axis is at an averaging 
+window of 400 samples.</p>
+<blockquote>
+<p><i>(Both the real and imaginary values must go to zero in order 
+for the spectral value produced by the Fourier transform to go to zero.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Zero values in the spectrum for a sinusoid</b></font></p>
+<p>Thus, the values produced by performing a Fourier transform on a single 
+sinusoid go through zero at regular frequency intervals out from the peak in 
+both directions.&nbsp; The frequency intervals between the zero values are multiples of the reciprocal of the 
+actual length of the sinusoid on which the transform is performed.</p>
+<blockquote>
+<p><i>(Note however, that you may not see the zero-valued points in the spectrum 
+if you don't compute the spectral values at exactly those frequency values.&nbsp; 
+This is the case for some of the plots in Figure 11.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>The frequency resolution of the Fourier transform</b></font></p>
+<p>Some regard the frequency interval equal to the reciprocal of the length of 
+the time series as being the useful resolution of the spectrum analysis process.</p>
+<p>In other words, two peaks in the spectrum cannot be resolved if the frequency 
+difference between them is less than the reciprocal of the length of the time 
+series.</p>
+<p><font color="#FF0000"><b>Illustration of frequency resolution</b></font></p>
+<p>This is illustrated by the plots in Figure 15.&nbsp; Figure 15 is similar to 
+Figure 13 with one major difference.&nbsp; In Figure 13, the frequency difference 
+between the two sinusoids that made up each of the time series was rather large.&nbsp; In Figure 15, the frequency 
+difference between the two sinusoids that made up each of the time series was reduced to 1/400, 
+<i>(the reciprocal of 
+the length of the longest time series).</i> </p>
+<p align="center">
+<img border="0" src="dsp00108figo.gif" width="409" height="431"></p>
+<p align="center">Figure 15 Illustration of frequency resolution</p>
+<p>Each plot in Figure 15 shows the first 50 points produced by performing a 
+Fourier transform on one of the time series.&nbsp; In each case, the time series 
+consisted of the sum of two sinusoids with a frequency separation of 1/400.</p>
+<p><font color="#FF0000"><b>A match for the frequency resolution</b></font></p>
+<p>The length of the time series for the bottom plot was 400 samples.&nbsp; 
+Thus, the separation of the two sinusoids matched the <i>frequency resolution</i> 
+available by performing a Fourier transform on that time series.</p>
+<p>As you can see, the two peaks in the spectrum were resolved by the bottom 
+plot in Figure 15.</p>
+<p><font color="#FF0000"><b>Insufficient frequency resolution</b></font></p>
+<p>The other 
+four time series were shorter, having lengths of 80, 160, 240, and 320 samples 
+respectively, from top to bottom.</p>
+<p>The important thing to note in Figure 15 is that the spectrum analysis 
+performed on the 
+400-sample time series was successful in separating the two peaks.</p>
+<p>However, even though the spectrum analysis on the 320-sample time series hinted at a 
+separation of the peaks, none of the spectrum analyses on the other four shorter time series 
+successfully separated the peaks.</p>
+<p>This illustrates that the frequency resolution of the Fourier transform is the 
+reciprocal of the length of the time series.</p>
+<p><font color="#FF0000"><b>Sufficient resolution in all five cases</b></font></p>
+<p>I'm going to show you one more picture and then call it a wrap for this 
+lesson.&nbsp; Figure 16 is similar to Figure 15 with one major difference.</p>
+<p align="center">
+<img border="0" src="dsp00108figp.gif" width="409" height="431"></p>
+<p align="center">Figure 16 Illustration of frequency resolution</p>
+<p>As before, the five plots in Figure 16 show the first 50 points produced 
+by performing a Fourier transform on five different time series.&nbsp; Starting 
+at the top, the lengths of the time series were 80, 160, 240, 320, and 400 
+samples.</p>
+<p><font color="#FF0000"><b>Adequate frequency resolution in all cases</b></font></p>
+<p>Also as before, each time series was the sum of two sinusoids with 
+closely-spaced frequencies.&nbsp; However, in Figure 16, the difference between 
+the sinusoidal frequencies was different from one time series to the next.&nbsp; </p>
+<p>In Figure 16, the frequency difference for the sinusoids contained in each 
+time series was the reciprocal of the length of that particular time series.&nbsp; 
+Therefore, the frequency difference for each case matched the frequency 
+resolution of the Fourier transform.</p>
+<p><font color="#FF0000"><b>The frequency difference was achieved by ...</b></font></p>
+<p>The frequency of the lower-frequency peak was the same in all five cases.&nbsp; 
+Therefore, this peak should line up vertically for the five plots in Figure 16.</p>
+<p>The frequency difference between the sinusoids was achieved by increasing the 
+higher frequency by an amount equal to the reciprocal of the length of the time 
+series.</p>
+<p><font color="#FF0000"><b>Peaks were resolved in all five cases</b></font></p>
+<p>If you examine Figure 16, you will see that the peaks corresponding to the 
+two sinusoids were resolved for all five time series.</p>
+<p>As would be expected, the peaks appear to be broader for the shorter time 
+series having the lower frequency resolution.</p>
+<center>
+<h2>
+<a NAME="Summary"></a>Summary</h2></center>
+<p>This lesson has presented a completely non-mathematical discussion of issues 
+involving the averaging of time series, and the impact of those issues on 
+spectrum analysis.</p>
+<p>Those averaging issues have an impact on other areas of DSP as well, but the 
+detrimental effect is probably more obvious in spectrum analysis than in other areas.</p>
+<hr size=3 width="100%" align=center>
+<p>Copyright 2002, Richard G. Baldwin.&nbsp; Reproduction in whole or in
+part in any form or medium without express written permission from Richard
+Baldwin is prohibited.
+<h4>
+<a NAME="About the author"></a>About the author</h4>
+<b><a href="mailto:baldwin@DickBaldwin.com">Richard Baldwin</a></b><i>
+is a college professor (at Austin Community College in Austin, TX) and
+private consultant whose primary focus is a combination of Java, C#, and
+XML. In addition to the many platform and/or language independent benefits
+of Java and C# applications, he believes that a combination of Java, C#,
+and XML will become the primary driving force in the delivery of structured
+information on the Web.</i>
+<p><i>Richard has participated in numerous consulting projects and he
+frequently provides onsite training at the high-tech companies located
+in and around Austin, Texas.&nbsp; He is the author of Baldwin's Programming
+<a href="http://DickBaldwin.com">Tutorials</a>,
+which has gained a worldwide following among experienced and aspiring programmers.
+He has also published articles in JavaPro magazine.</i>
+<p><i>In addition to his programming expertise, Richard has many years
+of practical experience in Digital Signal Processing (DSP).&nbsp; His first
+job after he earned his Bachelor's degree was doing DSP in the Seismic
+Research Department of Texas Instruments.&nbsp; (TI is still a world leader
+in DSP.)&nbsp; In the following years, he applied his programming and DSP
+expertise to other interesting areas including sonar and underwater acoustics.</i>
+<p><i>Richard holds an MSEE degree from Southern Methodist University and
+has many years of experience in the application of computer technology
+to real-world problems.</i>
+<p><i><a href="mailto:baldwin@DickBaldwin.com">baldwin@DickBaldwin.com</a></i><p>-end-
+</body>
+</html>

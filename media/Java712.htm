@@ -1,0 +1,479 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>... in Java by Richard G Baldwin</TITLE>
+<META NAME="Template" CONTENT="C:\PROGRAM FILES\MICROSOFT OFFICE\OFFICE\html.dot">
+</HEAD>
+<BODY LINK="#0000ff" VLINK="#800080" BGCOLOR="#ffffff">
+
+<P><!--start--></P>
+<I><H3 ALIGN="CENTER">Richard G Baldwin (512) 223-4758, </I><A HREF="mailto:baldwin@austin.cc.tx.us"><I>baldwin@austin.cc.tx.us</I></A><I>, </I><A HREF="http://www2.austin.cc.tx.us/baldwin/"><I>http://www2.austin.cc.tx.us/baldwin/</I></A></H3>
+<H2 ALIGN="CENTER"><!--title-->Security, Message Digest Streams<!--endtitle--></H2>
+<P>Java Programming, Lecture Notes # 712, Revised 5/13/99. </P>
+
+<UL>
+<LI><A HREF="#Preface">Preface</A> </LI>
+<LI><A HREF="#Disclaimer">Disclaimer</A> </LI>
+<LI><A HREF="#Introduction">Introduction</A> </LI>
+<LI><A HREF="#Discussion">Discussion</A> </LI>
+<LI><A HREF="#ProgramSecurity07A">Program Security08A</A> </LI>
+
+<UL>
+<LI><A HREF="#Security07ACodeFragments">Security08A Code Fragments</A></LI></UL>
+
+<LI><A HREF="#ProgramSecurity07B">Program Security08B</A> </LI>
+
+<UL>
+<LI><A HREF="#Security07BCodeFragments">Security08B Code Fragments</A></LI></UL>
+
+<LI><A HREF="#program_listing">Program Listings </A></LI></UL>
+
+<P><HR></P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Preface">Preface</A></H2>
+</FONT><P>Students in Prof. Baldwin's <B><U>Advanced Java Programming</B></U> classes at ACC will be responsible for knowing and understanding all of the material in this lesson beginning with the spring semester of 1999. </P>
+<P>This lesson was originally written on April 24, 1999 and has been revised several times since then. </P>
+<P>The programs in this lesson were tested using JDK 1.2 under Win95</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Disclaimer">Disclaimer</A></H2>
+</FONT><P>I claim absolutely no expertise in the area of security. I am simply a college professor attempting to gather information about Java on one hand and present it to my students on the other. I disclaim any responsibility for any security problems that may occur as a result of anyone using any of the material in any of my tutorial lessons.</P>
+<P>You are responsible for your own actions. With regard to security, you should study not only the material that I will present, but also material provided by others who possess expertise in the security area. Hopefully my material will be useful in getting you started in that direction.</P>
+<P>Two good books on security published by O'Reilly &amp; Associates are:</P>
+
+<UL>
+<U><LI>Java Security</U> by Scott Oaks </LI>
+<U><LI>Java Cryptography</U> by Jonathan Knudsen</LI></UL>
+
+<P>I highly recommend both of these books.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Introduction">Introduction</A></H2>
+</FONT><P>Previous lessons introduced you to message digests and the protection of message digests using a secret passphrase. This lesson will show you how to exchange passphrase-protected message digests using <I>message digest streams</I>.</P>
+<B><FONT COLOR="#ff0000"><P>Writing the protected file</P>
+</B></FONT><P>Two sample programs are presented. The first program shows you how to use a message digest output stream to create a message digest combining a message and a passphrase. The message and the passphrase-protected digest value are written into an output file as serialized objects.</P>
+<B><FONT COLOR="#ff0000"><P>Reading the protected file</P>
+</B></FONT><P>The second program shows how to use a message digest input stream, the received message, and the secret passphrase to confirm the integrity of the received message.</P>
+<B><FONT COLOR="#ff0000"><P>Objective of the lesson</P>
+</B></FONT><P>The primary objective of this lesson is to illustrate message digest streams and not passphrase protection. </P>
+<P>Therefore, a program was not provided to show that corruption of the message during transmission will cause the second program to fail to confirm the integrity of the message. </P>
+<P>However, that could easily be accomplished by modifying and using the program named <B>Security07C</B> from an earlier program to corrupt the message after the file is written by <B>Security08A</B> and before it is read by <B>Security08B</B>.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Discussion">Discussion</A></H2>
+</FONT><P>An earlier lesson suggested that when exchanging data electronically, the parties to the communication might be interested in the following three aspects of that communication:</P>
+
+<UL>
+<B><LI>Authentication</B>: Confirming the identities of the parties involved. </LI>
+<B><LI>Confidentiality</B>: Making certain that only authorized parties can understand the communication, even if it is intercepted by unauthorized persons. </LI>
+<B><LI>Integrity</B>: Confirming that the content of the communication wasn't modified during transmission.</LI></UL>
+
+<P>This lesson deals with only the first and third items: <I>authentication</I> and <I>integrity</I>. Generally, some type of encryption is required to achieve <I>confidentiality</I>. Encryption is the topic of a different lesson.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="ProgramSecurity07A">Program Security08A</H2>
+</FONT><P></A>This program works in conjunction with <B>Security08B</B>. These two programs illustrate passphrase protected message digests <U>using message digest streams</U>.</P>
+<B><FONT COLOR="#ff0000"><P>Operational procedures</P>
+</B></FONT><P>A file is written to the disk containing two serialized objects: </P>
+
+<UL>
+<LI>A message </LI>
+<LI>A digest value corresponding to the message plus a secret passphrase</LI></UL>
+
+<P>The digest value for the message is computed <U>on the fly</U> as the message is serialized and written into the disk file.</P>
+<P>The program named <B>Security08B</B> is designed to read the two serialized objects and to use the digest value along with the secret passphrase to determine if the message in the serialized message object was corrupted after the original digest value was computed and placed in the file.</P>
+<B><FONT COLOR="#ff0000"><P>No need to invoke the update() method</P>
+</B></FONT><P>Note that the <B>update()</B> method of the <B>MessageDigest</B> class is never used in this program. The message digest stream effectively invokes the <B>update()</B> method on the <B>MessageDigest</B> object as each byte of the serialized message object is written into the output stream.</P>
+<P>The program was tested using JDK 1.2 under Win95.</P>
+<B><FONT COLOR="#ff0000"><P>Program output</P>
+</B></FONT><P>When the two programs were run in succession, the output produced by the two programs was as shown in the following box:</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<PRE><B>Security08A
+</B>The Message:
+ABCDEFG
+The Digest:
+Ntkdyp5IdghfsFNZk0VjxArq/30=
+
+<B>Security08B
+</B>The Message:
+ABCDEFG
+Original Digest:
+Ntkdyp5IdghfsFNZk0VjxArq/30=
+New Digest:
+Ntkdyp5IdghfsFNZk0VjxArq/30=
+<B>Valid message</PRE></B></TD>
+</TR>
+</TABLE>
+
+<P>As you can see from the boldface output, when the procedures of <B>Security08B</B> were applied to the original message and digest produced by <B>Security08A</B>, the integrity of the message was verified. </P>
+<P>The digest values are also shown in Base 64 format so that you can see what the verification process has to work with.</P>
+<FONT COLOR="#ff0000"><H3 ALIGN="CENTER"><A NAME="Security07ACodeFragments">Security08A Code Fragments</A></H3>
+</FONT><P>The first fragment shows the beginning of the <B>main()</B> method which includes the generation of a passphrase (<B>The Pass Phrase</B>) and the message (<B>ABCDEFG</B>). </P>
+<B><FONT COLOR="#ff0000"><P>Keeping it simple</P>
+</B></FONT><P>Both the passphrase and the message were <U>hard coded</U> into the program to keep it simple. In a real program, the passphrase would be provided as a user input and the message would most likely be extracted from a file on the disk.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>class Security08A {
+  public static void <B>main</B>(String[] args) {
+    try{
+      System.out.println("Security08A");
+
+      byte[] <B>passPhrase</B> = "The Pass Phrase".getBytes();
+      String <B>message</B> = "ABCDEFG";//create message
+      System.out.println("The Message:\n" + message);</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Get an ObjectOutputStream object</P>
+</B></FONT><P>The next fragment prepares an <B>ObjectOutputStream</B>. The stream will be used for writing the message as a serialized object and computing a digest value for the serialized message object on the fly as the serialized object is written to the output stream.</P>
+<B><FONT COLOR="#ff0000"><P>The DigestOutputStream</P>
+</B></FONT><P>The new material here is the statement showing the instantiation of the <B>DigestOutputStream</B> object, which takes a <B>FileOutputStream</B> and a <B>MessageDigest</B> as parameters to the constructor.</P>
+<P>The <B>DigestOutputStream</B> object is then wrapped in an <B>ObjectOutputStream</B> to produce the stream object that writes a serialized object and <U>computes a digest value on the serialized object as it is written</U>.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      FileOutputStream <B>fileOut</B> = 
+                    new FileOutputStream("Security08.obj");
+      MessageDigest <B>messageDigest</B> = 
+                          MessageDigest.getInstance("SHA");
+<B>      DigestOutputStream digestOut = 
+             new DigestOutputStream(fileOut,messageDigest);
+</B>      ObjectOutputStream objectOut = 
+                         new ObjectOutputStream(<B>digestOut</B>);</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Write the message</P>
+</B></FONT><P>The next fragment serializes the message and writes it to the output stream, <U>computing a digest value on the fly</U>.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      objectOut.<B>writeObject</B>(message);</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Can be turned on or off</P>
+</B></FONT><P>The process of computing the digest value on the fly can be turned <I>on</I> and <I>off</I> by invoking the <B>on()</B> method of the <B>DigestOutputStream</B> with a boolean parameter (it is on by default when the output stream is instantiated). </P>
+<P>Here is what the JDK 1.2 documentation has to say about the <B>on()</B> method.</P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=486>
+<TR><TD VALIGN="TOP" BGCOLOR="#00ffff">
+<P>Turns the digest function on or off. The default is on. When it is on, a call to one of the write methods results in an update on the message digest. But when it is off, the message digest is not updated.</TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Turn it off</P>
+</B></FONT><P>The following fragment turns digestion <I>off</I> after the serialized message object has been fed into the <B>MessageDigest</B> object.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      digestOut.<B>on(false)</B>;</PRE></TD>
+</TR>
+</TABLE>
+
+<P>If we were not providing passphrase protection, we could simply serialize the <B>MessageDigest</B> object and write the serialized object into the output file at this point. </P>
+<B><FONT COLOR="#ff0000"><P>Incorporating the passphrase</P>
+</B></FONT><P>However, since we are protecting the process using a secret passphrase, we need to update the <B>MessageDigest</B> object with the passphrase. This is accomplished in the next fragment.</P>
+<P>Note that this fragment uses an <U>overloaded version</U> of the <B>digest()</B> method to update the digest value and return the final digest value in a single statement (rather than using separate calls to the <B>update()</B> and <B>digest()</B> methods).</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      byte[] theDigest = messageDigest.<B>digest</B>(passPhrase);</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Serialize and write the digest value</P>
+</B></FONT><P>The next fragment serializes the byte array containing the final digest value and writes the serialized object into the output file. The fragment also displays the digest value in Base 64.</P>
+<P>The method to display the data in Base 64 can be viewed in the listing of the program that is provided near the end of the lesson.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      objectOut.<B>writeObject</B>(theDigest);
+<B>      displayBase64</B>("The Digest:",theDigest);</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>File contains two serialized objects</P>
+</B></FONT><P>At this point, an output file has been written containing two serialized objects. One object is a serialized version of the message. The other object is a serialized byte array containing a digest value produced using a combination of the serialized message object and a secret passphrase.&nbsp;</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="ProgramSecurity07B">Program Security08B</A></H2>
+</FONT><P>This program works in conjunction with <B>Security08A</B>. These two programs together illustrate passphrase protected message digests <U>using message digest streams</U>.</P>
+<B><FONT COLOR="#ff0000"><P>Operational procedures</P>
+</B></FONT><P>The program reads a file produced by <B>Security08A</B>, extracting two serialized objects: </P>
+
+<UL>
+<LI>A message </LI>
+<LI>A digest value</LI></UL>
+
+<P>The program uses the message, the digest value, and a secret passphrase to determine if the message has been corrupted since the digest value was computed and placed in the file along with the message.</P>
+<B><FONT COLOR="#ff0000"><P>The update() method is not required</P>
+</B></FONT><P>Note that the <B>update()</B> method of the <B>MessageDigest</B> class is not used in this program. The contents of the <B>MessageDigest</B> object are automatically updated as the bytes comprising the serialized message object are read from the disk file.</P>
+<P>Verification of the integrity of the message is accomplished by computing a new digest value combining the incoming message and the known passphrase, and then comparing the new digest value with the original digest value extracted from the file. </P>
+<P>If the two are the same, this is a very strong indication that either the original message has not been corrupted, or that the passphrase has been compromised. (Another person who has gained knowledge of the passphrase could corrupt the original message and use the passphrase along with the corrupted message to compute a new digest value that would pass the test.)</P>
+<P>Therefore, the security of the process depends on the ability of the parties involved to keep the passphrase secret.</P>
+<P>The program was tested using JDK 1.2 under Win95.</P>
+<FONT COLOR="#ff0000"><H3 ALIGN="CENTER"><A NAME="Security07BCodeFragments">Security08B Code Fragments</A></H3>
+</FONT><P>The first fragment shows the beginning of the main method and includes a <U>hard-coded</U> passphrase. As explained earlier, the passphrase would normally be provided as a user input in a real program. It was hard coded in this sample program just to keep the program simple.</P>
+<P>The fragment also declares a byte array that will be used later in the program.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>class Security08B {
+  public static void main(String[] args) {
+    System.out.println("Security08B");
+    try{
+      byte[] <B>passPhrase</B> = "The Pass Phrase".getBytes();
+      byte[] originalDigest = null;</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Get an ObjectInputStream</P>
+</B></FONT><P>The next fragment uses a <B>DigestInputStream</B> to prepare an <B>ObjectInputStream</B> that will be used to read the serialized message object from the disk file and compute the digest value for that object on the fly.</P>
+<B><FONT COLOR="#ff0000"><P>Using the DigestInputStream class</P>
+</B></FONT><P>The new material here is the statement that instantiates the <B>DigestInputStream</B> object, passing a <B>FileInputStream</B> object and a <B>MessageDigest</B> object as parameters to the constructor.</P>
+<P>This <B>DigestInputStream</B> object is then wrapped in an <B>ObjectInputStream</B> to produce the reader that will be used to read the serialized message object.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      FileInputStream <B>fileIn</B> = 
+                     new FileInputStream("Security08.obj");
+      MessageDigest <B>messageDigest</B> = 
+                          MessageDigest.getInstance("SHA");
+<B>      DigestInputStream digestIn = 
+               new DigestInputStream(fileIn,messageDigest);
+</B>      ObjectInputStream objIn = 
+                           new ObjectInputStream(<B>digestIn</B>);</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Compute the message digest on the fly</P>
+</B></FONT><P>The next fragment reads the serialized message object while updating the <B>MessageDigest</B> object on the fly.</P>
+<P>Then the digestion process is turned <I>off</I> to prevent the data contained in the <B>MessageDigest</B> object from being contaminated during the reading of the serialized object containing the original digest value that follows.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      String message = (String)objIn.<B>readObject</B>();
+      digestIn.<B>on(false)</B>;</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Get the original message digest</P>
+</B></FONT><P>The next fragment reads the serialized object containing the original digest value and saves the original digest value in a byte array. Then it closes the input stream and displays the received message and the original digest value. </P>
+<P>The original digest value is displayed in Base 64. You can view the method used to display in Base 64 in the listing of the program near the end of the lesson.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      originalDigest = (byte[])objIn.<B>readObject</B>();
+      objIn.<B>close</B>();
+
+      System.out.println("The Message:\n" + message);
+      <B>displayBase64</B>("Original Digest:",originalDigest);</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Incorporate the passphrase</P>
+</B></FONT><P>Because the process is passphrase protected, it is necessary to update the <B>MessageDigest</B> object to include the passphrase. This is accomplished with a single call to the <B>digest()</B> method passing a byte array containing the passphrase as a parameter. </P>
+<P>The newly computed digest value is also displayed in Base 64.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      byte[] theDigest = messageDigest.<B>digest</B>(passPhrase);
+      <B>displayBase64</B>("New Digest:",theDigest);</PRE></TD>
+</TR>
+</TABLE>
+
+<B><FONT COLOR="#ff0000"><P>Compare the two message digests</P>
+</B></FONT><P>The following fragment uses the <B>isEqual()</B> method of the <B>MessageDigest</B> class to compare the newly computed digest value against the original digest value extracted earlier from the file. </P>
+<P>The comparison is made to determine if the message has been corrupted since the original digest value was written into the file.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      <B>if</B>(MessageDigest.<B>isEqual</B>(theDigest,originalDigest)){
+        System.out.println("<B>Valid message</B>");
+      }else{
+        System.out.println("<B>Corrupted message</B>");
+      }//end else
+
+    }catch(Exception e){System.out.println(e);}
+  }//end main</PRE></TD>
+</TR>
+</TABLE>
+
+<FONT COLOR="#ff0000"><H3 ALIGN="CENTER"><A NAME="program_listing"></A>Program Listings</H3>
+</FONT><P>Complete listings of both programs are contained in this section.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Security08A.java Copyright 1999, R.G.Baldwin
+Rev 4/24/99
+
+Message Digest Streams
+
+This program works in conjunction with Security08B.
+
+These two programs illustrate passphrase protected message
+digests using digest streams.
+
+A file is written to the disk containing two serialized
+objects: a message and a digest value corresponding to the
+message plus a secret passphrase
+
+The program named Security08B is designed to read the
+two serialized objects and to use the digest value along 
+with the secret passphrase to determine if the message in 
+the object was corrupted after the original digest value 
+was computed and placed in the file.
+
+Note that the update() method of the MessageDigest class
+is never used in this program.
+
+Tested using JDK 1.2 under Win95.
+
+When the two programs were run in succession, the
+output produced by the two programs was:
+  
+Security08A
+The Message:
+ABCDEFG
+The Digest:
+Ntkdyp5IdghfsFNZk0VjxArq/30=
+
+Security08B
+The Message:
+ABCDEFG
+Original Digest:
+Ntkdyp5IdghfsFNZk0VjxArq/30=
+New Digest:
+Ntkdyp5IdghfsFNZk0VjxArq/30=
+Valid message 
+**********************************************************/
+
+import java.io.*;
+import java.security.*;
+import sun.misc.*;
+
+class Security08A {
+
+  public static void main(String[] args) {
+    try{
+      
+      System.out.println("Security08A");
+      //Hard code the pass phrase and the message to keep
+      // the program simple
+      byte[] passPhrase = "The Pass Phrase".getBytes();
+      String message = "ABCDEFG";//create message
+      System.out.println("The Message:\n" + message);
+
+      //Write the message and a digest of the message plus
+      // the pass phrase into a disk file as serialized 
+      // objects.  Perform the digestion of the message on
+      // the fly.
+      FileOutputStream fileOut = 
+                    new FileOutputStream("Security08.obj");
+      MessageDigest messageDigest = 
+                          MessageDigest.getInstance("SHA");
+      DigestOutputStream digestOut = 
+             new DigestOutputStream(fileOut,messageDigest);
+      ObjectOutputStream objectOut = 
+                         new ObjectOutputStream(digestOut);
+    
+      objectOut.writeObject(message);
+      //Turn stream digestion off
+      digestOut.on(false);
+      //Digest the secret pass phrase into the digest of
+      // the message.
+      byte[] theDigest = messageDigest.digest(passPhrase);
+      objectOut.writeObject(theDigest);
+    
+      displayBase64("The Digest:",theDigest);
+    
+    }catch(Exception e){System.out.println(e);}
+  }//end main
+  //-----------------------------------------------------//
+
+  //Method to display an array of bytes in base 64 format
+  static void displayBase64(String title,byte[] data){
+    System.out.println(title);
+    BASE64Encoder encoder = new BASE64Encoder();
+    String encoded = encoder.encodeBuffer(data);
+    System.out.print(encoded);
+  }//end base64Display()
+  //-----------------------------------------------------//
+}//end class Security08A</PRE></TD>
+</TR>
+</TABLE>
+
+<P>.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Security08B.java Copyright 1999, R.G.Baldwin
+Rev 4/24/99
+Message digest streams
+
+This program works in conjunction with Security08A.
+
+These program illustrate passphrase protected message
+digests using digest streams.
+
+The program reads a file produced by Security08A, 
+extracting two serialized objects: a message and a digest 
+value,
+
+The program uses the message, the digest value, and a
+secret passphrase to determine if the message has become
+corrupted since the digest value was computed and placed
+in the object along with the message.
+
+Note that the update() method of the MessageDigest class
+is never used in this program.
+
+Tested using JDK 1.2 under Win95.
+**********************************************************/
+
+import java.io.*;
+import java.security.*;
+import sun.misc.*;
+
+class Security08B {
+
+  public static void main(String[] args) {
+    System.out.println("Security08B");
+    try{
+      //Hard code the pass phrase to keep the 
+      // program simple
+      byte[] passPhrase = "The Pass Phrase".getBytes();
+      byte[] originalDigest = null;
+
+      //Read the two serialized objects from the file, 
+      // digesting the message object on the fly to create
+      // a verification digest for the message.
+      FileInputStream fileIn = 
+                     new FileInputStream("Security08.obj");
+      MessageDigest messageDigest = 
+                          MessageDigest.getInstance("SHA");
+      DigestInputStream digestIn = 
+               new DigestInputStream(fileIn,messageDigest);
+      ObjectInputStream objIn = 
+                           new ObjectInputStream(digestIn);
+                             
+      String message = (String)objIn.readObject();
+      //Turn stream digestion off
+      digestIn.on(false);
+      originalDigest = (byte[])objIn.readObject();
+      objIn.close();
+
+      System.out.println("The Message:\n" + message);
+      displayBase64("Original Digest:",originalDigest);
+
+      //Digest the secret pass phrase into the digest
+      // of the incoming message.
+      byte[] theDigest = messageDigest.digest(passPhrase);
+      displayBase64("New Digest:",theDigest);
+    
+      //Test the newly computed digest value against the
+      // original digest value to determine if the message
+      // has become corrupted.
+      if(MessageDigest.isEqual(theDigest,originalDigest)){
+        System.out.println("Valid message");
+      }else{
+        System.out.println("Corrupted message");
+      }//end else
+
+    }catch(Exception e){System.out.println(e);}
+
+  }//end main
+  //-----------------------------------------------------//
+
+  //Method to display an array of bytes in base 64 format
+  static void displayBase64(String title,byte[] data){
+    System.out.println(title);
+    BASE64Encoder encoder = new BASE64Encoder();
+    String encoded = encoder.encodeBuffer(data);
+    System.out.print(encoded);
+  }//end base64Display()
+  //-----------------------------------------------------//
+}//end class Security08B</PRE></TD>
+</TR>
+</TABLE>
+
+<P>-end-<!--end--></P></BODY>
+</HTML>

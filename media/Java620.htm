@@ -1,0 +1,433 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>... in Java by Richard G Baldwin</TITLE>
+<META NAME="Template" CONTENT="C:\PROGRAM FILES\MSOFFICE\OFFICE\html.dot">
+</HEAD>
+<BODY LINK="#0000ff" VLINK="#800080" BGCOLOR="#ffffff">
+
+<P><!--start--></P>
+<I><H3 ALIGN="CENTER">Richard G Baldwin (512) 223-4758, </I><A HREF="mailto:baldwin@austin.cc.tx.us"><I>baldwin@austin.cc.tx.us</I></A><I>, </I><A HREF="http://www2.austin.cc.tx.us/baldwin/"><I>http://www2.austin.cc.tx.us/baldwin/</I></A></H3>
+<H2 ALIGN="CENTER"><!--title-->CORBA, Introduction to Common Object Request Broker Architecture<!--endTitle--></H2>
+<P>Java Programming, Lecture Notes 620, Revised 2/13/99. </P>
+
+<UL>
+<LI><A HREF="#Preface">Preface</A> </LI>
+<LI><A HREF="#Introduction">Introduction</A> </LI>
+<LI><A HREF="#Overview">Overview</A> </LI>
+<LI><A HREF="#Sample_Program">Sample Program</A> </LI>
+<LI><A HREF="#The_Interface_Definition_Language">The Interface Definition Language (IDL) File</A> </LI>
+<LI><A HREF="#The_Batch_file">The Batch File</A> </LI>
+<LI><A HREF="#The_Server_File">The Server File</A> </LI>
+<LI><A HREF="#The_Client_File">The Client File</A> </LI>
+<LI><A HREF="#Summary">Summary</A> </LI>
+<LI><A HREF="#Program_Listings">Program Listings</A> </LI></UL>
+
+<P><HR></P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Preface">Preface</A></H2>
+</FONT><P>Students in Prof. Baldwin's <B><U>Advanced Java Programming</B></U> classes at ACC will be responsible for knowing and understanding all of the material in this lesson beginning with the spring semester of 1999. </P>
+<P>This lesson was originally written on October 23, 1998. The sample program was tested using the JDK 1.2beta4 download package. The purpose of this lesson is to illustrate CORBA using a very simple example program. </P>
+<P>In February 1999, the sample program in this lesson was successfully tested using the released version of JDK 1.2.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Introduction">Introduction</A></H2>
+</FONT><P>As you learned in an earlier lesson, Java's Remote Method Invocation (RMI) makes it possible for code in an object running in one Java Virtual Machine (JVM) to invoke methods on an object running in another JVM.&nbsp; The two JVMs may be running as separate processes on the same computer, or may be running on different computers connected by a TCP/IP network. </P>
+<P>However, RMI is not the only approach to distributed objects in common use as of October 1998. Two other common approaches are the <EM>DCOM</EM> approach from Microsoft, and the <EM>Common Object Request Broker Architecture (CORBA)</EM> approach from the Object Management Group (OMG).</P>
+<P>As of October 1998, Java JDK 1.2beta4 supports CORBA with some limitations. As far as I know, Java from JavaSoft does not support DCOM, at least not to the degree that it supports RMI and CORBA. It seems fairly safe to assume that Microsoft's blend of Java does support DCOM, but as of this writing, I haven't investigated that possibility.</P>
+<P>As you are aware, RMI is platform independent, but is not language independent. The code on both the client and server must be written in Java.</P>
+<P>As of October 1998, DCOM is language independent, but is not platform independent. Although the programs can be written in many different languages, the scheme only works with the Microsoft family of operating systems.</P>
+<P>CORBA, on the other hand, is both platform independent and language independent. The code at either end may be written in any language for which there is an OMG Interface Definition Language (IDL) mapping. This includes most of the major programming languages in use today. Client software written in any of the available languages can invoke methods on server objects (servants) written in any of the available languages.</P>
+<P>Since this is a Java tutorial, I will concentrate on the use of Java with CORBA. You need to be aware, however, that the same programs could be written and executed successfully across a network in other languages as well.</P>
+<P>This means that a client machine anywhere in the world has the capability of invoking methods on an object on a server anywhere in the world, and the programs at the two ends can be developed using different programming languages.&nbsp; The potential benefits of such operation are very significant. </P>
+<P>The roles of client and server can switch back and forth between the two machines. The machine with the object whose methods are invoked remotely is the server, and the machine invoking the methods on the remote object is the client. </P>
+<P>Special code is required in the program on the client side to get a reference to the remote object.&nbsp; Once the client code has a reference to the remote object, the invocation of methods on the remote object is very similar to the invocation of methods on local objects. </P>
+<P>The code on the server side must define the class and instantiate the remote object of that class.&nbsp; Beyond this, special code is required on the server side to register the object and expose its methods to client machines so that those methods can be invoked remotely. </P>
+<P>Both the client code and the server code have access to an IDL file, which declares the methods that can be invoked remotely. This is the key to the whole process and the glue that holds it all together.</P>
+<P>If all of this sounds very similar to what you learned about RMI, it is. The implementation of CORBA in Java is very similar to the implementation of RMI in Java. However, the implementation of CORBA is a little more complicated than the implementation of RMI.</P>
+<P>When invoking methods on the remote object using RMI, the client can pass objects as parameters, and the method on the remote object can return objects.&nbsp; This is accomplished through the object serialization capability of Java. CORBA doesn't support object serialization, so with CORBA, parameter passing can only be accomplished by reference.</P>
+<P>This lesson attempts to explain <U>how to use</U> CORBA with Java, but does not attempt to explain how and why it works.&nbsp; Subsequent lessons will attempt to provide some insight into how it works.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Overview">Overview</A></H2>
+</FONT><P>The implementation of CORBA for this minimal application requires you to write three short source code files and to execute two different utility programs.&nbsp; Executing one of the utility programs produces several additional Java source files including stub and skeleton files similar to those used with RMI.</P>
+<P>It is necessary to compile all of the source files and make the class files available to the client code and the server code.</P>
+<P>The entire process can be tedious, so I prefer to encapsulate the process in a batch file. Then I don't have to remember from one run to the next exactly what I need to do and the order in which I need to do it. </P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Sample_Program">Sample Program</A></H2>
+</FONT><P>Thinking in terms of the Java Virtual Machine, CORBA makes it possible for a method in an object running under one virtual machine to invoke a method in an object running under a different virtual machine just as if it were a method in a local object.&nbsp; The two virtual machines can be running as different processes on the same hardware platform.&nbsp; Or, they can be running on different machines, of the same or different types, on different parts of the Earth, connected by a TCP/IP network. </P>
+<P>This is a Java/CORBA application that makes it possible for code in a client object running under one JVM to access a method in a servant object running under a different JVM on the same platform to get the date and time. It is a minimal program.&nbsp; It requires three separate source files and two utility programs to compile and execute.&nbsp; The source files are: </P>
+
+<UL>
+<LI>An IDL file that declares the signature of the method on the servant object that can be invoked by the client. </LI>
+<LI>A file that serves as the server program. </LI>
+<LI>A file that serves as the client program. </LI></UL>
+
+<P>The two utility programs are: </P>
+
+<UL>
+<B><LI>idltojava.exe</B> - a program that converts the IDL file to several java files, producing stub and skeleton source files and some other source files used by the client and the server. </LI>
+<B><LI>tnameserv.exe</B> - a program that creates and maintains a name service allowing for the registration of objects on a server whose methods can be invoked remotely by clients. </LI></UL>
+
+<P>As mentioned earlier, given so many files and utility programs and a complex sequencing requirement associated with compiling and executing them, I decided to make the process semi-automatic by encapsulating the process in an MS-DOS batch file.&nbsp; If you are not running under Windows or NT, you will need to figure out how to produce an equivalent script file for the platform that you are running on. </P>
+<P>I also find that having this batch file available makes it easier to explain the mechanics of making the whole process work. </P>
+<P>I am going to discuss the batch file and the sequence of events and explain how you can run this CORBA application on a single hardware platform by running the name server in one process, the server in a second process, and the client in a third process.&nbsp; </P>
+<P>Here is the scenario.&nbsp; I have a folder on my computer that contains the following four source files:</P>
+
+<UL>
+<LI>Corba02.bat </LI>
+<LI>Corba02.idl </LI>
+<LI>Corba02Server.java </LI>
+<LI>Corba02Client.java </LI></UL>
+
+<P>Only the last three files are required. The batch file is optional, but is useful for managing the whole process.</P>
+<P>Initially, this folder doesn't have any sub folders. However, execution of the program <STRONG>idltojava</STRONG> creates a package to contain the source files that it generates. By default, it makes that package reside in a sub folder of the folder from which it is executed. To avoid cluttering up my disk with generated files (or more properly to make it easier to find and delete the generated files), I forced the package to be in a tree that begins with a folder named <STRONG>junk</STRONG>. As a result, a <STRONG>junk</STRONG> folder is automatically generated that contains another folder named <STRONG>TheDateApp,</STRONG> which is the actual package name.</P>
+<P>As the programmer for both the client and the server, it was my responsibility to write the code in the IDL file as well as the code in the two Java source files in the above list. I will have more to say about IDL files later.</P>
+<P>Normally, the code in the IDL file and the server file is written by the server programmer. A copy of the IDL file is provided to the client programmer whose job it is to write the code in the client file</P>
+<P>I will discuss the overall operation of this system running in separate processes on a single platform when I discuss the batch file later.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="The_Interface_Definition_Language"><A NAME="The_Interface_Definition_Language__IDL__">The Interface Definition Language (IDL) File</A></A></H2>
+</FONT><P>The IDL file is the glue that holds the system of programs together and makes it possible for code in a client to invoke methods in a remote object on a basis that is both platform and language independent.</P>
+<P>I will begin by showing you the source code contained in the IDL file for this simple application.</P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Corba02.idl
+**********************************************************/
+module TheDateApp{
+<STRONG>  interface TheDate{
+    string getTheDate();
+  };</STRONG>//end interface TheDate
+};//end module TheDateApp</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The OMG Interface Definition Language is not a language that is intended to be compiled into executable code. Rather, it is a language that is used to declare the interface to one or more <EM>operations</EM> (similar to methods in Java) on an object. The programmer is then responsible for translating the declaration of those operations into another language such as Java or C++, and then implementing the operations in that language.</P>
+<P>Fortunately for Java programmers, an executable program named <STRONG>idltojava</STRONG> became available with JDK 1.2 that automates the process of translating the declarations from the IDL file into Java source code, thus relieving us of that burdensome responsibility. (Note that as of October 1998, the <STRONG>idltojava</STRONG> program must be downloaded separately from the JDK 1.2 download.)</P>
+<P>It is doubtful that I will have the time to go into any detail regarding the format requirements of the OMG IDL in any of these lessons. A host of documentation on the IDL can be found at the following URL: <A HREF="http://www.omg.org/corba/">http://www.omg.org/corba/</A></P>
+<P>Now let's turn our attention to the simple IDL file used for this application. Again, fortunately for Java programmers, the concept involved here isn't much different from the concept of the interface used routinely in Java. The <STRONG>module</STRONG> specification in the above file translates into a package specification in Java. Hence, the source files produced by the <STRONG>idltojava</STRONG> program will be stored in a package (folder) named <STRONG>TheDateApp</STRONG>. When you run the program, you can specify the path to that folder as a command-line parameter. If you don't provide a path, it will default into creating a sub folder of the folder from which the program is run.</P>
+<P>Inside the module, and highlighted in boldface, we see a single interface specification named <STRONG>TheDate</STRONG>. Again, particularly for this simple case, this is very similar to an interface in Java. This CORBA interface declares a single operation (method) named <STRONG>getTheDate()</STRONG> which receives no parameters and returns a string. </P>
+<P>From its name, we might surmise that the string that is returned contains date information, but there is no technical requirement for this. All that is technically required is that the implementation of this interface into a Java method (or a C++ function or whatever) receives no parameters when called and returns a string. That also is similar to the declaration of a method in a Java interface. The Java interface simply declares the interface to a method and says nothing about the behavior of that method.</P>
+<P>In this application, the Java method corresponding to this CORBA interface will return date information as a <STRONG>String</STRONG> object.</P>
+<P>During the discussion of the operational steps executed by the batch file, I will show and partially explain to you the results of running the <STRONG>idltojava</STRONG> program against this IDL file.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="The_Batch_file">The Batch file</A></H2>
+</FONT><P>The name of the batch file is <B>Corba02.bat</B>.&nbsp; A complete listing of the file is provided near the end of this lesson.&nbsp; I will show and discuss the individual parts in this section and you can refer to the entire file later. In this discussion, I have omitted statements in the batch file that simply display progress on the screen.</P>
+<P>The first statement in the batch file executes the <STRONG>idltojava</STRONG> program against the file named <STRONG>Corba02.idl</STRONG>.</P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE><STRONG>idltojava</STRONG> -fno-cpp -p junk <STRONG>Corba02.idl</PRE></STRONG></TD>
+</TR>
+</TABLE>
+
+<P>The <STRONG>idltojava</STRONG> program will accept several optional command-line parameters. I am simply going to ask that you accept the need for providing<STRONG> -fno-cpp</STRONG> to cause the program to run successfully. Briefly, this parameter overrides a default requirement for the availability of a C++ style header file.</P>
+<P>I use the optional <STRONG>-p junk</STRONG> argument to cause the package/folder created by the program to be a sub folder of a folder named <STRONG>junk</STRONG>. As mentioned earlier, this makes it easy for me to search the disk for folders named <STRONG>junk</STRONG> and delete them rather than to let my disk fill up with generated source files during development and experimentation. You can either leave this in or take it out. For this application, the name of the package/folder that will contain the generated files is <STRONG>TheDateApp</STRONG> (because that was the name of the module in the IDL file).</P>
+<P>For this application, the following Java source files are created in the folder named <STRONG>TheDateApp</STRONG> by execution of this statement.</P>
+
+<UL>
+<STRONG><LI>_TheDateStub.java</STRONG> - This source file produces the class that functions as the client stub, providing CORBA functionality for the client. It implements the <EM>TheDate.java</EM> interface </LI>
+<STRONG><LI>_TheDateImplBase.java</STRONG> - This source file produces an abstract class that functions as the server skeleton. It provides basic CORBA functionality for the server implementing the <EM>TheDate.java</EM> interface. The server class <EM>TheDateServant</EM> extends <EM>_TheDateImplBase</EM>. </LI>
+<STRONG><LI>TheDate.java</STRONG> - This interface contains the Java version of the IDL interface. It contains the single method <EM>getTheDate()</EM>. The <EM>TheDate.java</EM> interface extends <EM>org.omg.CORBA.Object</EM>, providing standard CORBA object functionality as well. </LI>
+<STRONG><LI>TheDateHolder.java</STRONG> - This source file produces a final class that holds a public instance member of type <EM>TheDate</EM>. It provides operations for <EM>out</EM> and <EM>inout</EM> arguments, which CORBA has but which do not map easily to Java's semantics. </LI>
+<STRONG><LI>TheDateHelper.java</STRONG> - This source file produces a final class that provides auxiliary functionality, notably the <EM>narrow()</EM> method required to cast CORBA object references to their proper types. </LI></UL>
+
+<P>Similar files will always be created by execution of <STRONG>idltojava</STRONG>, but their names will be different. Some of the descriptive information for these files will make a lot more sense when we discuss the overall process in much more detail in a subsequent lesson.</P>
+<P>The next statement in the batch file simply compiles all of the source files including those in the package/folder named <STRONG>junk.TheDateApp</STRONG>. There should be no surprises here.</P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>javac Corba02*.java junk/TheDateApp/*.java</PRE></TD>
+</TR>
+</TABLE>
+
+<P>A client object can learn of a server object and its methods in several different ways. This application uses a name server that is delivered as an executable program named <STRONG>tnameserv</STRONG> in the JDK 1.2 download package. I will discuss this in more detail and will also discuss other ways of doing the same thing in subsequent lessons. </P>
+<P>For now, suffice it to say that the following statement in the batch file executes <STRONG>tnameserv</STRONG> in a separate process that makes the name server available. Under Win95, this will cause a new MS-DOS window to appear, and after a short pause, some fairly cryptic text will be displayed in that window by the program.</P>
+<P>Note that it is necessary to manually terminate this program (Ctrl-C under Win95) when you are finished with it.</P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>start <STRONG>tnameserv</STRONG> -ORBInitialPort 1050</PRE></TD>
+</TR>
+</TABLE>
+
+<P>By default, this name server operates on port 900. The above usage overrides the default and specifies that it operates on port 1050.</P>
+<P>The next statement starts the server program running in a process of its own, and as you have probably surmised, causes it to use port 1050 for certain aspects of its communication. Under Win95, this also will cause a new MS-DOS window to appear, and after a short pause, a message will appear in that window indicating that the server is ready. </P>
+<P>When we examine the code for the server, you will see that it goes into an infinite wait state waiting for requests from clients. Therefore, it is necessary to manually terminate it when you are finished with it.</P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>start java Corba02Server -ORBInitialPort 1050</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The final statement in the batch file starts the client running in a process of its own. Under Win95, this will cause a new MS-DOS window to appear. After a short pause, the date and time will be displayed, having been obtained from the servant object on the server by the code in the client program. </P>
+<P>Then a message will appear asking you to press Ctrl-Z to terminate the program. Without this last step, the client program will terminate automatically as soon as it displays the date and time. This causes the MS-DOS window to close and makes it very difficult to see what is happening.</P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>start java Corba02Client -ORBInitialPort 1050</PRE></TD>
+</TR>
+</TABLE>
+
+<P>Note that on my Win95 system, after each of the new MS-DOS windows appear, it is necessary for me to click on and return focus to the main MS-DOS window to cause the next statement in the batch file to execute. Note also that occasionally the entire system simply hangs up while executing these programs and it is necessary for me to reboot to restore it to operational condition.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="The_Server_File">The Server File</A></H2>
+</FONT><P>The name of the file containing the server code is <STRONG>Corba02Server.java</STRONG>.</P>
+<P>Of necessity, the code for a CORBA server or a CORBA client includes quite a bit of code that is essentially the same from one application to the next. This is the code that is necessary to get everything initially set up so that all the pieces work together in a cooperative manner. In this lesson, I am going to ignore that code and discuss only the code that may differ from one application to the next. You can view a complete listing of the program near the end of this lesson. Also, I will come back and discuss this <EM>boilerplate</EM> code in a subsequent lesson.</P>
+<P>I will discuss this file in fragments. The first fragment shows the import statements that are required. The first import statement was required to access the class files produced by compiling the source code files in the package named <STRONG>TheDateApp</STRONG>. These are the files that were discussed earlier, produced by running <STRONG>idltojava</STRONG> on the IDL file.</P>
+<P>The next three import statements were required to incorporate various CORBA libraries into the program. These are libraries that are part of the JDK 1.2 download package.</P>
+<P>The last import statement was required because this program instantiates a Java <STRONG>Date</STRONG> object.</P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Corba02Server.java
+**********************************************************/
+import junk.<STRONG>TheDateApp</STRONG>.*;
+import org.omg.CosNaming.*;
+import org.omg.CosNaming.NamingContextPackage.*;
+import org.omg.CORBA.*;
+import java.util.Date;</PRE></TD>
+</TR>
+</TABLE>
+
+<P>CORBA documentation and books abound in the use of acronyms and jargon. I have been trying very hard to spare you the need to deal with that up to this point. However, the time always comes when you have to learn the language to understand the conversation.</P>
+<P>On a couple of occasions I have used both the words server and servant. In CORBA-speak, the server is the program that owns one or more objects whose operations (methods) can be invoked by code in other objects running in a different process. Each of those objects is referred to as a servant. In other words, servers provide servants whose methods can be invoked by code in other objects in other processes. </P>
+<P>This simple application has only one servant object. The class definition, named <STRONG>TheDateServant</STRONG>, from which this servant object was instantiated is shown below. As you can see, this class extends one of the classes that resulted from compiling one of the source files that was automatically generated by executing <STRONG>idltojava</STRONG> on the IDL file as discussed above.</P>
+<P>This is the class that implements the method named <STRONG>getTheDate()</STRONG> that was declared in the interface in the IDL file. Hence, this is the method that the code in the remote client objects can invoke. They know about it because they also have access to the IDL file.</P>
+<P>This method is very simple in this application, simply returning the date and time as a <STRONG>String</STRONG> object. However, the method could be as complex as it needs to be to accomplish its objectives.</P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>class <STRONG>TheDateServant</STRONG> extends _TheDateImplBase{
+  public String <STRONG>getTheDate</STRONG>(){
+    return new Date() + "\n";
+  }//end getTheDate()
+}//end TheDateServent class</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The next fragment shows the definition of the class named <STRONG>Corba02Server</STRONG> from which the server object was instantiated. All of the code in this class is contained in the <STRONG>main()</STRONG> method. As explained earlier, I have omitted quite a lot of the boilerplate code from this fragment and replaced it by comments. </P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>public class <STRONG>Corba02Server</STRONG>{
+ 
+  public static void <STRONG>main</STRONG>(String args[]){
+    try{
+      //Create and initialize the Object Request 
+      // Broker (ORB) object
+ 
+      //Instantiate servant object 
+     <STRONG> TheDateServant theDateRef =</STRONG> <STRONG>new TheDateServant()</STRONG>;
+
+      //Register the servant object with the ORB
+
+      //Do everything necessary to register and expose
+      // the servant object with the name service under
+      // the name "<STRONG>TheDate</STRONG>".
+
+      System.out.println("<STRONG>Server is running</STRONG>");
+ 
+      //Wait indefinitely for invocations from clients
+ 
+    }catch (Exception e) {//Exception handler goes here
+    }//End catch block
+  }//end main()
+}//end Corba02Server class</PRE></TD>
+</TR>
+</TABLE>
+
+<P>As you can see, once I eliminated the boilerplate code that essentially repeats from one application to the next, there wasn't very much to the server code. About all that differs from one application to the next is the instantiation of the servant object (or objects), and the usage of a reference to that object inside the boilerplate code. Once you learn the scheme, this is <EM>cut and paste</EM> programming. </P>
+<P>Most of the functionality that differs from one application to the next goes into writing the methods that implement the interfaces in the IDL file. In practice, you could write a lot of CORBA applications without ever understanding the boilerplate code that I omitted from the above listing. However, since it is usually better to understand what you are doing than to work in the blind, I will try to provide an understanding of the omitted code in a subsequent lesson. You can view the code that was omitted in the listing of the server file that is provided near the end of this lesson.&nbsp; </P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="The_Client_File">The Client File</A></H2>
+</FONT><P>The file containing the client code is named <STRONG>Corba02Client.java</STRONG>.</P>
+<P>As is the case with the server code, quite a lot of boilerplate code is required when writing a client that is essentially unchanged from one application to the next. As before, I will not discuss the details of the boilerplate code in this lesson. Rather, I will discuss that code in a subsequent lesson.</P>
+<P>Also as before, it is necessary to import class files resulting from the execution of <STRONG>idltojava</STRONG> and the compilation of source files generated by that program. It is also necessary to import packages from the CORBA libraries.</P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Corba02Client.java
+**********************************************************/
+import junk.TheDateApp.*;
+import org.omg.CosNaming.*;
+import org.omg.CORBA.*;</PRE></TD>
+</TR>
+</TABLE>
+
+<P>Most of the code in this client is contained inside the <STRONG>main()</STRONG> method. I have omitted code that changes little from one application to the next and replaced it with comments.</P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE> 
+public class Corba02Client{
+  public static void main(String args[]){
+    try{
+      //Create and initialize the ORB for the client
+ 
+      //Do everything necessary to get a reference to the
+      // servant object with the name <STRONG>theDateRef
+</STRONG> 
+      //Use <STRONG>theDateRef</STRONG> to invoke the method on the 
+      // remote object
+<STRONG>      String theDate = theDateRef.getTheDate();
+      </STRONG>//Display the value returned by the method
+<STRONG>      System.out.println(theDate);
+</STRONG>
+      //Delay program termination so that the console
+      // won't disappear from the screen when running
+      // under control of a batch file.
+      
+    }catch (Exception e) {//Exception handler goes here
+    }//End catch block
+  }//end main() method
+}//end Corba02Client class</PRE></TD>
+</TR>
+</TABLE>
+
+<P>As before, once I eliminated the boilerplate code that repeats from one application to the next, there wasn't very much to the code for this client object. Of course, a great deal more functionality could be programmed into this client, since all this client does is to invoke the method on the remote object and display the <STRONG>String</STRONG> object that is returned.</P>
+<P>Again, however, the boilerplate code can almost be implemented on a "cut and paste" basis, and once you know the scheme, you could write a lot of CORBA applications without even understanding the boilerplate code.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Summary">Summary</A></H2>
+</FONT><P>Here are the steps for writing a CORBA application using Java under JDK 1.2 that runs as separate processes on the same platform using the name service. It is also possible to build a system that doesn't use a name service. I will discuss that possibility in a subsequent lesson.</P>
+
+<UL>
+<LI>Write the IDL file that declares the necessary information about the servant objects. In this lesson, we concentrated on servant object methods. However, other information about those objects can also be declared in the IDL file. </LI>
+<LI>Process the IDL file as a command-line parameter to the program named <STRONG>idltojava</STRONG>. This will generate one or more new packages with several Java source files in each package. </LI>
+<LI>Write the Java source code for the server and all of its servant classes. The servant classes implement the declarations in the IDL file. </LI>
+<LI>Write the Java source code for the client that will invoke methods on the servant objects. </LI>
+<LI>Compile all of the Java source files. </LI>
+<LI>Start the name server program named <STRONG>tnameserv</STRONG> in its own process. </LI>
+<LI>Start the server in its own process. </LI>
+<LI>Start the client in its own process. </LI></UL>
+
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Program_Listings">Program Listings</A></H2>
+</FONT><P>Complete listings for the IDL file, the batch file and the source code files that you must create are provided in this section. Listings are not provided for the Java source code files that are automatically generated by the <STRONG>idltojava</STRONG> program.</P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Corba02.idl
+**********************************************************/
+module TheDateApp{
+<STRONG>  interface TheDate{
+    string getTheDate();
+  };</STRONG>//end interface TheDate
+};//end module TheDateApp</PRE></TD>
+</TR>
+</TABLE>
+
+<FONT COLOR="#ff0000"><P>.</P></FONT>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>rem File Corba02.bat
+rem See Corba02Server.java for description of program
+
+echo off
+
+echo Convert the idl file to the required set of java files
+idltojava -fno-cpp -p junk Corba02.idl
+
+echo Compile all of the java files
+javac Corba02*.java junk/TheDateApp/*.java
+
+echo Start the transient name server on port 1050 as
+echo  a new process
+start tnameserv -ORBInitialPort 1050
+
+echo Start the server as a new process
+start java Corba02Server -ORBInitialPort 1050
+
+echo Start the client as a new process
+start java Corba02Client -ORBInitialPort 1050</PRE></TD>
+</TR>
+</TABLE>
+
+<P>. </P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Corba02Server.java
+This is a simple CORBA server that provides a servent
+object to return the date and time as a string.
+**********************************************************/
+import junk.TheDateApp.*;
+import org.omg.CosNaming.*;
+import org.omg.CosNaming.NamingContextPackage.*;
+import org.omg.CORBA.*;
+import java.util.Date;
+ 
+class TheDateServant extends _TheDateImplBase{
+  public String getTheDate(){
+    return new Date() + "\n";
+  }//end getTheDate()
+}//end TheDateServent class
+//=======================================================//
+ 
+public class Corba02Server   {
+ 
+  public static void main(String args[]){
+    try{
+      // create and initialize the ORB
+      ORB orb = ORB.init(args, null);
+ 
+      // create servant and register it with the ORB
+      TheDateServant theDateRef = new TheDateServant();
+      orb.connect(theDateRef);
+ 
+      // get the root naming context
+      org.omg.CORBA.Object objRef = 
+             orb.resolve_initial_references("NameService");
+      NamingContext ncRef 
+                      = NamingContextHelper.narrow(objRef);
+ 
+      // bind the Object Reference in Naming
+      NameComponent nc = new NameComponent("TheDate", "");
+      NameComponent path[] = {nc};
+      ncRef.rebind(path, theDateRef);
+
+      System.out.println("Server is running");
+ 
+      // wait for invocations from clients
+      java.lang.Object sync = new java.lang.Object();
+      synchronized (sync) {
+        sync.wait();
+      }//end synchronized block
+ 
+    }catch (Exception e) {
+       System.err.println("ERROR: " + e);
+       e.printStackTrace(System.out);
+    }//end catch block
+  }//end main()
+}//end Corba02Server class</PRE></TD>
+</TR>
+</TABLE>
+
+<P>. </P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Corba02Client.java
+See Corba02Server.java for information on this program.
+**********************************************************/
+import junk.TheDateApp.*;
+import org.omg.CosNaming.*;
+import org.omg.CORBA.*;
+ 
+public class Corba02Client{
+  public static void main(String args[]){
+    try{
+      // create and initialize the ORB
+      ORB orb = ORB.init(args, null);
+ 
+      // get the root naming context
+      org.omg.CORBA.Object objRef = 
+             orb.resolve_initial_references("NameService");
+      NamingContext ncRef = 
+                        NamingContextHelper.narrow(objRef);
+
+      // resolve the Object Reference in Naming
+      NameComponent nc = new NameComponent("TheDate", "");
+      NameComponent path[] = {nc};
+      TheDate theDateRef = 
+                   TheDateHelper.narrow(ncRef.resolve(path));
+ 
+      // call the TheDate server object and print results
+      String theDate = theDateRef.getTheDate();
+      System.out.println(theDate);
+      
+      
+      //Delay program termination so that the console
+      // won't disappear from the screen when running
+      // under control of a batch file.
+      int ch1 = '0';
+      System.out.println("Press Ctrl-z to terminate");
+      while( (ch1 = System.in.read() ) != -1);      
+    }catch (Exception e) {
+      System.out.println("ERROR : " + e) ;
+      e.printStackTrace(System.out);
+    }//end catch block
+  }//end main() method
+}//end Corba02Client class</PRE></TD>
+</TR>
+</TABLE>
+
+<P>-end- </P>
+<P><!--end--></P></BODY>
+</HTML>

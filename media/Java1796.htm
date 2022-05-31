@@ -1,0 +1,834 @@
+<!doctype html public "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+   <meta name="GENERATOR" content="Microsoft FrontPage 5.0">
+   <title>... in Java by Richard G Baldwin</title>
+</head>
+<body link="#DD0000" vlink="#0000FF" alink="#FF0000" lang="EN-US">
+<h2>
+Java, Memory-Mapped IO for data of mixed types</h2>
+<i>Baldwin shows you how to do memory-mapped IO for data 
+records containing mixed types of data.&nbsp; He also shows you how to 
+manipulate memory maps using view buffers such as FloatBuffer.</i><p><b>Published:</b>&nbsp; 
+January 7, 2003<br><b>By <a href="mailto:Baldwin@DickBaldwin.com">Richard G. Baldwin</a></b>
+<p>Java Programming Notes # 1796<ul >
+<li>
+<a href="#Preface">Preface</a></li>
+
+<li>
+<a href="#Discussion and Sample Programs">Discussion and Sample Code</a></li>
+
+<li>
+<a href="#Run the program">Run the Program</a></li>
+
+<li>
+<a href="#Summary">Summary</a></li>
+
+<li>
+<a href="#Whats Next">What's Next?</a></li>
+
+<li>
+<a href="#Complete Program Listings">Complete Program Listing</a></li>
+</ul>
+
+<hr size=3 width="100%" align=center>
+<center>
+<h2>
+<a NAME="Preface"></a>Preface</h2></center>
+<p>
+<b><font color="#FF0000">New features in SDK Version 1.4.0</font></b> </p>
+<p>The recently released Java<sup>TM</sup> 2 SDK, Standard Edition Version 1.4 contains a 
+large number of new features, including the concept
+of  IO <i>channels.&nbsp; </i>The first lesson in this miniseries, entitled
+<a href="http://www.developer.com/java/article.php/1473151">FileChannel Objects 
+in Java, Background Information</a>, introduced you to the concept of channels 
+from a read/write IO viewpoint.&nbsp; 
+<p><b><font color="#FF0000">Memory-mapped IO</font></b></p>
+<p>The previous lesson, entitled
+<a href="http://www.developer.com/java/other/article.php/1548681">Introduction 
+to Memory-Mapped IO in Java</a>, introduced 
+you to the basics of memory-mapped IO and showed you how to perform <i>memory-mapped</i> IO for data of type <b>byte</b>.</p>
+<p>In this lesson, I will show you how to do memory-mapped IO for data 
+records containing mixed types of data.&nbsp; I will also show you how to 
+manipulate memory maps using view buffers such as <b>FloatBuffer</b>.</p>
+<p>
+<b><font color="#FF0000">Viewing tip</font></b>
+<p>You may find it useful to open another copy of this lesson in a separate
+browser window.&nbsp; That will make it easier for you to scroll back and
+forth among the different listings and figures while you are reading about
+them.
+<p><b><font color="#FF0000">Supplementary material</font></b>
+<p>I recommend that you also study the other lessons in my extensive collection
+of online Java tutorials.&nbsp; You will find those lessons published at
+<a href="http://softwaredev.earthweb.com/java">Gamelan.com</a>.&nbsp;
+However, as of the date of this writing, Gamelan doesn't maintain a consolidated
+index of my Java tutorial lessons, and sometimes they are difficult to
+locate there.&nbsp; You will find a consolidated index at <font color="#000000">
+<a href="http://www.DickBaldwin.com">www.DickBaldwin.com</a>.</font>
+<p><b><font color="#FF0000">What is a FileChannel?</font></b>
+<p>Sun describes an object of the <b>FileChannel</b> class simply as <i>"A
+channel for reading, writing, mapping, and manipulating a file."</i><center>
+<h2>
+<a NAME="Discussion and Sample Programs"></a><font color="#000000">Discussion
+and Sample Code</font></h2></center>
+<p>Once you map a file into memory, changes that you make to the memory map are 
+automatically propagated to the file.&nbsp; 
+<p><font color="#FF0000"><b>Methods of the ByteBuffer class apply</b></font><p>
+Because the memory map is an object instantiated from a subclass of the <b>
+ByteBuffer</b> class, you can use the methods of the <b>ByteBuffer</b> class to 
+manipulate the data in the memory map, and hence to manipulate the data in the file.<p>
+The <b>ByteBuffer</b> class provides numerous methods that allow you to treat 
+the contents of the buffer as different data types.&nbsp; This includes methods 
+such as:<ul>
+  <li>The method named <b>asFloatBuffer</b>, which returns a <b>
+  float</b> view of the data in the <b>ByteBuffer</b> object.&nbsp; This <b>
+  float</b> view is provided via an object of the <b>FloatBuffer </b>class,<b>
+  </b>and allows you to manipulate the data in the <b>ByteBuffer</b> object as 
+  type <b>float</b>.</li>
+  <li>The methods named <b>getFloat</b> and <b>putFloat</b>, which allow you to 
+  manipulate the data in the <b>ByteBuffer</b> object as though it were type <b>float </b>rather 
+  than type <b>byte</b>.</li>
+  </ul>
+  <p>
+<font color="#FF0000"><b>Will discuss sample program in fragments</b></font><p>
+I will illustrate memory-mapped IO for data of mixed types<b> </b>using<b> </b>the sample program named <b>
+Channel05</b>.&nbsp; As usual, I will discuss this program in fragments.&nbsp; 
+You will find a complete listing of the program in Listing 11 near the end of the lesson.<p>
+<font color="#FF0000"><b>Description of the program</b></font><p>This program, 
+  which was tested using JDK 1.4.0 under Win2000, illustrates memory-mapped IO for data of mixed types.<p>
+  The program begins by creating and populating a disk file named <b>junk.txt
+  </b>with data of mixed types.</p>
+  <p>Then the program creates a memory map of the file and modifies the map.&nbsp; 
+  This, in turn, modifies the contents of the file.</p>
+  <p>Then the program reads and displays the modified file, demonstrating that 
+  it was modified when the contents of the map were modified.&nbsp; </p>
+  <p>The code to this point illustrates the use of methods such as <b>putDouble</b>,
+  <b>getDouble</b>, <b>putInt</b>, and <b>getInt</b> to manipulate memory-map 
+  data of mixed types.</p>
+  <p>Following this, the program modifies the map <i>(and hence the disk file)</i> to contain only data of type
+  <b>float</b>.&nbsp; This portion of the program illustrates the use of methods such as <b>
+  asFloatBuffer</b> to get a <b>float</b> view of the buffer, and to manipulate 
+  the data in the map <i>(and the disk file)</i> as type <b>float</b>.</p>
+  <p>Then the program reads and displays the modified file, the entire 
+  contents of which have now been converted to data of type <b>float</b>.</p>
+  <p><font color="#FF0000"><b>The main method</b></font></p>
+  <p>For simplicity, this 
+program consists of a <b>main</b> method and a couple of static convenience 
+  methods for displaying data.<p>
+The first fragment in Listing 1 shows the beginning of the <b>main</b> method.</p><table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>  public static void <b>main</b>(
+                        String[] args){
+    ByteBuffer buf =
+               ByteBuffer.allocate(16);
+    buf.putDouble(1.0/3);
+    buf.putInt(16000*16000);
+    buf.putInt(-32000*32000);
+
+    showMixedData(buf,
+        "Display raw buffer contents");
+
+<b><font face="Courier New,Courier">Listing 1</font></b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>Create, populate, and display</b></font></p>
+<p>The code in Listing 1 creates, populates, and displays a <b>ByteBuffer</b> 
+object with one <b>double</b> value and two <b>int</b> values.&nbsp; If you have 
+been studying this series of lessons from the beginning <i>(<a href="http://www.developer.com/java/other/article.php/1367031">Understanding 
+the Buffer class in Java</a>),</i> this code should be familiar to you.</p>
+  <blockquote>
+<p><i>(The method named <b>showMixedData</b> is a convenience method of my own 
+design, whose purpose is to display the contents of the <b>ByteBuffer</b> 
+object.&nbsp; This method, which can be viewed in Listing 11 near the end of the 
+lesson, is very similar to methods that I have explained in previous lessons.&nbsp; 
+Therefore, I won't discuss it in detail here.)</i></p>
+  </blockquote>
+<p><font color="#FF0000"><b>The output</b></font></p>
+<p>The output produced by the code in Listing 1 is shown in Figure 1.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Display raw buffer contents
+0.3333333333333333
+256000000
+-1024000000
+
+<b>Figure 1</b></pre>
+</td>
+</tr>
+</table>
+<p>As you can see, the output consists of one <b>double</b> value and two <b>int</b> 
+values.</p>
+<p>The code in Listing 2 creates a file named <b>junk.txt</b> and writes the 
+contents of the <b>ByteBuffer </b>object into the file.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      FileOutputStream fos =
+                  new FileOutputStream(
+                           "<b>junk.txt</b>");
+      FileChannel fChan =
+                      fos.<b>getChannel</b>();
+      buf.<b>position</b>(0);
+      System.out.println(
+                    "Bytes written: " +
+                     fChan.<b>write</b>(buf));
+      System.out.println("File size: "
+                + fChan.<b>size</b>() + "\n");
+
+<b><font face="Courier New,Courier">Listing 2</font></b></pre>
+</td>
+</tr>
+</table>
+<p>All of this code should also be familiar to you if you have been studying the 
+lessons in this miniseries from the beginning.</p>
+<p><font color="#FF0000"><b>The output</b></font></p>
+<p>The code in Listing 2 produces the output shown in Figure 2.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Bytes written: 16
+File size: 16
+
+<b>Figure 2</b></pre>
+</td>
+</tr>
+</table>
+<p>A file size of sixteen bytes is what we would expect for one <b>double</b> 
+value, <i>(which requires eight bytes), </i>and two <b>int</b> values, <i>(which 
+require four bytes each).</i></p>
+<p><font color="#FF0000"><b>Close streams, etc.</b></font></p>
+<p>The code in Listing 3 closes streams and channels, and turns objects over to 
+the garbage collector.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      fos.close();
+      fChan.close();
+      fos = null;
+      fChan = null;
+      buf = null;
+
+<b><font face="Courier New,Courier">Listing 3</font></b></pre>
+</td>
+</tr>
+</table>
+<p>Following the execution of the code in Listing 3, the original data is 
+available to the program only by way of the disk file that now contains it.</p>
+<p><font color="#FF0000"><b>Get FileChannel object</b></font></p>
+<p>The code in Listing 4 gets a <i>read/write</i> <b>FileChannel</b> object, 
+connected to the file<b> </b>named <b>junk.txt</b>, which contain the data.&nbsp; 
+The <b>FileChannel </b>object will be used  to map the 
+contents of the file into a memory map.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      FileChannel rwCh =
+                  new <b>RandomAccessFile</b>(
+                      "junk.txt","rw").
+                          <b>getChannel</b>();
+
+<b><font face="Courier New,Courier">Listing 4</font></b></pre>
+</td>
+</tr>
+</table>
+<blockquote>
+<p><i>(By now, you are probably getting tired of me telling you that you should 
+already understand the code with no further discussion on my part.&nbsp; From 
+this point on, if I present code and don't discuss it, I will be assuming that 
+you already understand the code with no further discussion on my part.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Map the file to memory and display the map</b></font></p>
+<p>The code in Listing 5:</p>
+  <ul>
+    <li>Maps the contents of the file named <b>junk.txt</b> into a read/write 
+    memory map.</li>
+    <li>Closes the channel used to perform the mapping operation.</li>
+    <li>Displays the contents of the memory map.</li>
+  </ul>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      long fileSize = rwCh.size();
+      ByteBuffer mapBuf = rwCh.<b>map</b>(
+        FileChannel.MapMode.READ_WRITE,
+                          0, fileSize);
+      rwCh.<b>close</b>();
+
+      showMixedData(mapBuf,
+                       "Map contents");
+
+<b><font face="Courier New,Courier">Listing 5</font></b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>The output</b></font></p>
+<p>The output produced by the code in Listing 5 is shown in Figure 3.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Map contents
+0.3333333333333333
+256000000
+-1024000000
+
+<b>Figure 3</b></pre>
+</td>
+</tr>
+</table>
+<p>Figure 3 shows the contents of the memory map.&nbsp; Happily, the output values in Figure 3 match the original values originally 
+written to the file, confirming that no data modification or corruption has 
+taken place up to this point in the program.</p>
+<p><font color="#FF0000"><b>Modify the map and  the file</b></font></p>
+<p>The code in Listing 6 invokes the relative <b>putInt</b> method on the map object's 
+reference to change the value of the first <b>int</b> value in the map.&nbsp; <i>
+(This will also change the value in the first <b>int</b> value stored in the 
+disk file.)</i></p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      //Modify one value in the middle
+      // of the map buffer
+      mapBuf.position(8);
+      mapBuf.putInt(127);
+      showMixedData(mapBuf,
+              "Modified map contents");
+
+<b><font face="Courier New,Courier">Listing 6</font></b></pre>
+</td>
+</tr>
+</table>
+<p>The code in Listing 6 causes the <b>int</b> value to be changed from 256000000 
+to 127.</p>
+<p><font color="#FF0000"><b>The output</b></font></p>
+<p>This is illustrated by Figure 4, which shows the output produced by the code 
+in Listing 6.&nbsp; Figure 4 confirms that the first <b>int</b> value in the 
+memory map has been modified as described above.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Modified map contents
+0.3333333333333333
+127
+-1024000000
+
+<b>Figure 4</b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>Read and display the modified contents of the disk 
+file</b></font></p>
+<p>The code in Listing 7 reads the contents of 
+the disk file into a new <b>ByteBuffer</b> object and  displays that data.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      //Get new channel for read only
+      FileChannel newInCh =
+                  new RandomAccessFile(
+                       "junk.txt","r").
+                          getChannel();
+
+      //Allocate a new ByteBuffer
+      ByteBuffer newBuf =
+                   ByteBuffer.allocate(
+                        (int)fileSize);
+
+      //Read file data into the new
+      // buffer, close the channel, and
+      // display the data.
+      System.out.println(
+               "Bytes read = "
+               + newInCh.read(newBuf));
+      newInCh.close();
+
+      showMixedData(newBuf,
+             "Modified file contents");
+
+<b><font face="Courier New,Courier">Listing 7</font></b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>The output</b></font></p>
+<p>The output produced by the code in Listing 7 is shown in Figure 5.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Bytes read = 16
+Modified file contents
+0.3333333333333333
+127
+-1024000000
+
+<b>Figure 5</b></pre>
+</td>
+</tr>
+</table>
+<p>Figure 5 confirms that the change made to the first <b>int</b> value in the 
+memory map was automatically propagated to the associated disk file.</p>
+<p><font color="#FF0000"><b>Recap</b></font></p>
+<p>A disk file containing one <b>double</b> value and two <b>int</b> values was 
+mapped to a <b>ByteBuffer</b> object.&nbsp; The <b>putInt</b> method of the <b>
+ByteBuffer</b> class was used to modify the first of the two <b>int</b> values.&nbsp; 
+This change was automatically propagated to the associated disk file.</p>
+<p>The disk file was read and displayed, confirming that the change to the 
+memory map 
+was automatically propagated to the disk file.</p>
+<p><font color="#FF0000"><b>Memory-mapped IO for single-type data</b></font></p>
+<p>That completes the illustration of the use of memory-mapped IO for mixed data 
+types.&nbsp; The remainder of this lesson will concentrate on the use of 
+memory-mapped IO for data of a single type other than type <b>byte</b>.</p>
+<p><font color="#FF0000"><b>Change to type float</b></font></p>
+<p>The code in Listing 8 gets a <b>FloatBuffer</b> view of the <b>ByteBuffer</b> 
+object containing the memory map of the data in the disk file.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      mapBuf.position(0);
+      <b>FloatBuffer</b> fBuf =
+                mapBuf.<b>asFloatBuffer</b>();
+
+<b><font face="Courier New,Courier">Listing 8</font></b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>Manipulate the map data as type float</b></font></p>
+<p>Having gotten a <b>FloatBuffer</b> view of the map, the program can 
+manipulate the contents of the map <i>(and hence the contents of the disk file)</i> 
+as type <b>float</b>.</p>
+<p>The code in Listing 9 sets the position property of the <b>FloatBuffer</b> 
+object to zero, and then uses the relative <b>put</b> method of the <b>
+FloatBuffer </b>class to store four <b>
+float</b> values in the map.&nbsp; <i>(This causes the same four <b>float</b> values to 
+be stored in the associated disk file.)</i></p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      fBuf.position(0);
+      fBuf.put((float)1.0/6);
+      fBuf.put((float)2.0/6);
+      fBuf.put((float)3.0/6);
+      fBuf.put((float)4.0/6);
+
+      showFloatData(fBuf,
+              "Modified map contents");
+
+<b><font face="Courier New,Courier">Listing 9</font></b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>The output</b></font></p>
+<p>Having stored the four <b>float</b> values in the memory map, the code in 
+Listing 9 invokes the <b>showFloatData</b> method to display the contents of the 
+map as <b>float</b> data.&nbsp; This produces the four<b> float</b> values<b>
+</b>shown in Figure 6.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Modified map contents
+0.16666667
+0.33333334
+0.5
+0.6666667
+
+<b>Figure 6</b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>Display the file contents</b></font></p>
+<p>All that now remains is to display the current contents of the file to confirm that 
+the file now contains four <b>float</b> values matching the four <b>float</b> 
+values in the memory map.</p>
+<p>This is accomplished by the code in Listing 10.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      //Read and display the modified
+      // file data
+      //Get new channel for read only
+      FileChannel floatInCh =
+                  new RandomAccessFile(
+                       "junk.txt","r").
+                          getChannel();
+
+      //Allocate a new ByteBuffer
+      ByteBuffer anotherBuf =
+                   ByteBuffer.allocate(
+                        (int)fileSize);
+
+      //Read file data into the new
+      // buffer, close the channel, and
+      // display the data.
+      System.out.println(
+         "Bytes read = "
+         + floatInCh.read(anotherBuf));
+      floatInCh.close();
+
+      anotherBuf.position(0);
+      FloatBuffer fileBuf =
+            anotherBuf.asFloatBuffer();
+      showFloatData(fileBuf,
+             "Modified file contents");
+
+    }catch(Exception e){
+      System.out.println(e);}
+
+<b><font face="Courier New,Courier">Listing 10</font></b></pre>
+</td>
+</tr>
+</table>
+<p><font color="#FF0000"><b>The final output</b></font></p>
+<p>The contents of the disk file, as displayed by the code in Listing 10, are 
+shown in Figure 7.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Bytes read = 16
+Modified file contents
+0.16666667
+0.33333334
+0.5
+0.6666667
+
+<b>Figure 7</b></pre>
+</td>
+</tr>
+</table>
+<p>As you can see, the sixteen bytes in the disk file no longer represent one <b>
+double</b> value followed by two <b>int</b> values.&nbsp; Now the sixteen bytes 
+represent four <b>float</b> values.</p>
+<p><font color="#FF0000"><b>A sequence of bytes</b></font></p>
+<p>The contents of a disk file are, after all, simply a sequence of bytes.&nbsp; 
+We can cause those bytes to represent anything that we want them to represent.</p>
+<p>The methods of the <b>FileChannel</b> class, and the methods of the <b>Buffer</b> 
+class and its subclasses make it relatively easy for us to cause the sequence of 
+bytes in a disk file to represent any combination of any of the primitive types,
+<i>(other than <b>boolean</b>).</i></p>
+<p>Those methods also make it possible for us to manipulate primitive data in a 
+memory map and to have all changes made to the memory map automatically 
+propagated to the associated disk file.</p>
+
+<p><b><font color="#FF0000">That's it for now</font></b>
+<p>By now you should understand a quite a lot about creating and manipulating memory maps of disk files for any combination of primitive 
+types other than <b>boolean</b>.<center>
+<h2>
+<a NAME="Run the program"></a>Run the Program</h2></center>
+If you haven't already done so, I encourage you to copy the code from Listing 11 into your text editor, compile it, and execute it.&nbsp; Experiment
+with it, making changes, and observing the results of your changes.
+<p>Remember, however, that you must be running Java version 1.4.0 or later
+to compile and execute this program.
+<h2 align="center"><a name="Summary">Summary</a></h2>
+<p>In this lesson, I have taught you how to do memory-mapped IO for data 
+records containing mixed types of data.&nbsp; I have also taught you how to 
+manipulate memory maps using view buffers such as <b>FloatBuffer</b>.<h2 align="center"><a name="Whats Next">What's Next?</a></h2>
+<p>As time goes on, I plan to publish additional lessons that will help
+you learn to use other new IO features including:
+<ul>
+<li>
+File locks</li>
+
+<li>
+Character-set encoders and decoders</li>
+
+<li>
+Pattern matching on files using regular expressions</li>
+
+<li>
+Socket channels for both clients and servers</li>
+
+<li>
+Non-blocking reads</li>
+
+<li>
+Non-blocking servers</li>
+</ul>
+<center>
+<h2>
+<a NAME="Complete Program Listings"></a>Complete Program Listing</h2></center>
+A complete listing of the program discussed in this lesson is shown in Listing 
+11 below.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>/* File Channel05.java
+Copyright 2002, R.G.Baldwin
+
+Illustrates use of FileChannel objects
+for mapped-memory IO for data of mixed
+types.
+
+First creates and populates a disk
+file with data of mixed types.
+
+Then creates a memory map of the
+existing file, and modifies the map,
+which modifies the contents of the
+file.
+
+Then reads and displays the modified
+file.
+
+Then modifies the map to contain only
+data of type float.
+
+Then reads and modifies the modified
+file.
+
+Tested using JDK 1.4.0 under Win2000
+
+The output is:
+
+Display raw buffer contents
+0.3333333333333333
+256000000
+-1024000000
+
+Bytes written: 16
+File size: 16
+
+Map contents
+0.3333333333333333
+256000000
+-1024000000
+
+Modified map contents
+0.3333333333333333
+127
+-1024000000
+
+Bytes read = 16
+Modified file contents
+0.3333333333333333
+127
+-1024000000
+
+Modified map contents
+0.16666667
+0.33333334
+0.5
+0.6666667
+
+Bytes read = 16
+Modified file contents
+0.16666667
+0.33333334
+0.5
+0.6666667
+**************************************/
+
+import java.io.*;
+import java.nio.channels.*;
+import java.nio.*;
+
+class Channel05{
+  public static void main(
+                        String[] args){
+    //Create and populate a ByteBuffer
+    // object with data of mixed types
+
+    ByteBuffer buf =
+               ByteBuffer.allocate(16);
+    buf.putDouble(1.0/3);
+    buf.putInt(16000*16000);
+    buf.putInt(-32000*32000);
+
+    showMixedData(buf,
+        "Display raw buffer contents");
+
+    //Write buffer to disk file
+    try{
+      FileOutputStream fos =
+                  new FileOutputStream(
+                           "junk.txt");
+      FileChannel fChan =
+                      fos.getChannel();
+      buf.position(0);
+      System.out.println(
+                    "Bytes written: " +
+                     fChan.write(buf));
+      System.out.println("File size: "
+                + fChan.size() + "\n");
+
+      //Close stream and channel and
+      // make objects eligible for
+      // garbage collection
+      fos.close();
+      fChan.close();
+      fos = null;
+      fChan = null;
+      buf = null;
+
+      //Get a new FileChannel object
+      // for reading and writing the
+      // existing file
+      FileChannel rwCh =
+                  new RandomAccessFile(
+                      "junk.txt","rw").
+                          getChannel();
+
+      //Map entire file to memory and
+      // close the channel
+      long fileSize = rwCh.size();
+      ByteBuffer mapBuf = rwCh.map(
+        FileChannel.MapMode.READ_WRITE,
+                          0, fileSize);
+      rwCh.close();
+
+      showMixedData(mapBuf,
+                       "Map contents");
+
+      //Modify one value in the middle
+      // of the map buffer
+      mapBuf.position(8);
+      mapBuf.putInt(127);
+      showMixedData(mapBuf,
+              "Modified map contents");
+
+      //Read and display the contents
+      // of the file
+      //Get new channel for read only
+      FileChannel newInCh =
+                  new RandomAccessFile(
+                       "junk.txt","r").
+                          getChannel();
+
+      //Allocate a new ByteBuffer
+      ByteBuffer newBuf =
+                   ByteBuffer.allocate(
+                        (int)fileSize);
+
+      //Read file data into the new
+      // buffer, close the channel, and
+      // display the data.
+      System.out.println(
+               "Bytes read = "
+               + newInCh.read(newBuf));
+      newInCh.close();
+
+      showMixedData(newBuf,
+             "Modified file contents");
+
+      //Now change the type of data in
+      // the map and in the file to all
+      // float
+      mapBuf.position(0);
+      FloatBuffer fBuf =
+                mapBuf.asFloatBuffer();
+      fBuf.position(0);
+      fBuf.put((float)1.0/6);
+      fBuf.put((float)2.0/6);
+      fBuf.put((float)3.0/6);
+      fBuf.put((float)4.0/6);
+      showFloatData(fBuf,
+              "Modified map contents");
+
+      //Read and display the modified
+      // file data
+      //Get new channel for read only
+      FileChannel floatInCh =
+                  new RandomAccessFile(
+                       "junk.txt","r").
+                          getChannel();
+
+      //Allocate a new ByteBuffer
+      ByteBuffer anotherBuf =
+                   ByteBuffer.allocate(
+                        (int)fileSize);
+
+      //Read file data into the new
+      // buffer, close the channel, and
+      // display the data.
+      System.out.println(
+         "Bytes read = "
+         + floatInCh.read(anotherBuf));
+      floatInCh.close();
+
+      anotherBuf.position(0);
+      FloatBuffer fileBuf =
+            anotherBuf.asFloatBuffer();
+      showFloatData(fileBuf,
+             "Modified file contents");
+
+    }catch(Exception e){
+      System.out.println(e);}
+
+  }// end main
+  //---------------------------------//
+
+  static void showMixedData(
+        ByteBuffer buf, String label){
+    //Displays byte buffer contents
+
+    //Save position
+    int pos = buf.position();
+    //Set position to zero
+    buf.position(0);
+    System.out.println(label);
+    System.out.println(
+                      buf.getDouble());
+    System.out.println(buf.getInt());
+    System.out.println(buf.getInt());
+    System.out.println();//new line
+    //Restore position and return
+    buf.position(pos);
+  }//end showBufferData
+  //---------------------------------//
+
+  static void showFloatData(
+        FloatBuffer buf, String label){
+    //Displays byte buffer contents
+    //Save position
+    int pos = buf.position();
+    //Set position to zero
+    buf.position(0);
+    System.out.println(label);
+    System.out.println(buf.get());
+    System.out.println(buf.get());
+    System.out.println(buf.get());
+    System.out.println(buf.get());
+    System.out.println();//new line
+    //Restore position and return
+    buf.position(pos);
+  }//end showBufferData
+  //---------------------------------//
+
+}//end class Channel05 definition
+
+
+<b><font face="Courier New,Courier">Listing 11</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>
+<hr size=3 width="100%" align=center>
+<p>Copyright 2002, Richard G. Baldwin.&nbsp; Reproduction in whole or in
+part in any form or medium without express written permission from Richard
+Baldwin is prohibited.
+<h4>
+<a NAME="About the author"></a>About the author</h4>
+<b><a href="mailto:Baldwin@DickBaldwin.com">Richard Baldwin</a></b><i>
+is a college professor (at Austin Community College in Austin, TX) and
+private consultant whose primary focus is a combination of Java, C#, and
+XML. In addition to the many platform and/or language independent benefits
+of Java and C# applications, he believes that a combination of Java, C#,
+and XML will become the primary driving force in the delivery of structured
+information on the Web.</i>
+<p><i>Richard has participated in numerous consulting projects, and he
+frequently provides onsite training at the high-tech companies located
+in and around Austin, Texas.&nbsp; He is the author of Baldwin's Programming
+<a href="http://www.DickBaldwin.com">Tutorials</a>,
+which has gained a worldwide following among experienced and aspiring programmers.
+He has also published articles in JavaPro magazine.</i>
+<p><i>Richard holds an MSEE degree from Southern Methodist University and
+has many years of experience in the application of computer technology
+to real-world problems.</i>
+<p><i><a href="mailto:Baldwin@DickBaldwin.com">Baldwin@DickBaldwin.com</a></i>
+<p>-end-
+<br>&nbsp;
+</body>
+</html>

@@ -1,0 +1,2593 @@
+<!DOCTYPE doctype PUBLIC "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+  <meta http-equiv="Content-Type"
+ content="text/html; charset=iso-8859-1">
+  <title>... in Java by Richard G Baldwin</title>
+</head>
+<body link="#0000ff" vlink="#666666" alink="#ff0000" lang="EN-US">
+<h2>Understanding the 2D Discrete Cosine Transform in Java</h2>
+<i>Learn how to use the forward two-dimensional Discrete Cosine Transform 
+(2D-DCT) to compute and display the wave-number spectrum of an image.&nbsp; Also 
+learn how to apply the inverse 2D-DCT to the spectral data to reconstruct and 
+display a replica of the original image.</i>
+<p><b>Published:</b>&nbsp; September 5, 2006<br>
+<b>By <a href="mailto:Baldwin@DickBaldwin.com">Richard G. Baldwin</a></b>
+</p>
+<p>Java Programming Notes # 2446</p>
+<ul>
+  <li> <a href="#Preface">Preface</a></li>
+  <li> <a href="#General%20Background%20Information">General
+Background Information</a></li>
+  <li> <a href="#Preview">Preview</a></li>
+  <li> <a href="#Discussion%20and%20Sample%20Programs">Discussion and
+Sample Code</a></li>
+  <li> <a href="#Run%20the%20program">Run the Program</a></li>
+  <li> <a href="#Summary">Summary</a></li>
+  <li> <a href="#Whats%20Next">What's Next?</a></li>
+	<li> <a href="#References">References</a></li>
+  <li> <a href="#Complete%20Program%20Listings">Complete Program
+Listings</a></li>
+</ul>
+<hr size="3" width="100%" align="center">
+<center>
+<h2> <a name="Preface"></a>Preface</h2>
+</center>
+<p> This lesson is one in a series designed to teach you about the inner 
+workings of data and image compression.&nbsp; The first lesson in the series was
+<a href="http://www.developer.com/java/data/article.php/3586396">Understanding the Lempel-Ziv Data Compression Algorithm in Java</a>.&nbsp; 
+The previous lesson was
+<a href="http://www.developer.com/java/other/article.php/3619081">Understanding the Discrete Cosine Transform in Java</a>.</p>
+<p> The previous lesson dealt with one-dimensional Discrete Cosine Transforms.&nbsp; This 
+lesson is the first part of a two-part lesson on two-dimensional Discrete 
+Cosine Transforms <i>(2D-DCT)</i>.</p>
+<p><font color="#ff0000"><b>JPEG image compression</b></font></p>
+<p>One of the objectives of this series is to teach you about the inner workings 
+of JPEG image compression.&nbsp; According to
+<a href="http://en.wikipedia.org/wiki/JPEG">Wikipedia</a>, </p>
+<blockquote>
+	<p><i>&quot;... <b>JPEG</b> ... is a commonly used standard method of
+	<a title="Lossy compression" href="http://en.wikipedia.org/wiki/Lossy_compression">
+	lossy compression</a> for photographic images. ... JPEG/JFIF is the most 
+	common format used for storing and transmitting photographs on the
+	<a title="World Wide Web" href="http://en.wikipedia.org/wiki/World_Wide_Web">
+	World Wide Web</a>.&quot;</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Central components</b></font></p>
+<p>One of the central components of JPEG compression is
+<a href="http://en.wikipedia.org/wiki/Entropy_coding">entropy encoding</a>.&nbsp; 
+Huffman encoding, which was the primary topic of the earlier lesson entitled
+<a href="http://www.developer.com/java/other/article.php/3603066">Understanding the Huffman Data Compression Algorithm in Java</a> is a common 
+form of entropy encoding.</p>
+<p>Another central component of JPEG compression is the two-dimensional
+<a href="http://www.cmlab.csie.ntu.edu.tw/cml/dsp/training/coding/transform/dct.html">
+Discrete Cosine Transform</a>, which is the primary topic of this lesson.&nbsp; 
+In this lesson, I will teach you how to use the <i>forward</i> 2D-DCT to compute 
+and display the wave-number spectrum of an image.&nbsp; I will also teach you 
+how to apply the <i>inverse</i> 2D-DCT to the spectral data to reconstruct a 
+replica of the original image.</p>
+<p>A third central component of JPEG is selective spectral re-quantization.&nbsp; 
+This will be the primary topic of a future lesson.</p>
+<p><font color="#ff0000"><b>In order to understand JPEG ...</b></font></p>
+<p>In order to understand JPEG image compression, you must understand Huffman 
+encoding, the Discrete Cosine Transform, selective spectral re-quantization, and 
+perhaps some other topics as well.&nbsp; I plan to teach you about the different 
+components of JPEG in separate lessons, and then to provide a lesson that 
+teaches you how they work together to produce &quot;<i><a href="http://en.wikipedia.org/wiki/JPEG">the 
+most common format</a> used for storing and transmitting photographs on the 
+World Wide Web.</i>&quot;</p>
+<p> <b><font color="#ff0000">Viewing tip</font></b> </p>
+<p>You may find it useful to open another copy of this lesson in a
+separate browser window.&nbsp; That will make it easier for you to
+scroll back
+and forth among the different listings and figures while you are
+reading
+about them.</p>
+<p><b><font color="#ff0000">Supplementary material</font></b> </p>
+<p>I recommend that you also study the other lessons in my extensive
+collection of online Java tutorials.&nbsp; You will find those lessons
+published
+at <a href="http://softwaredev.earthweb.com/java">Gamelan.com</a>.&nbsp;
+However, as of the date of this writing, Gamelan doesn't maintain a
+consolidated index of my Java tutorial lessons, and sometimes they are
+difficult to locate there.&nbsp; You will find a consolidated index at <font
+ color="#000000"> <a href="http://www.dickbaldwin.com/">www.DickBaldwin.com</a>.</font></p>
+<p>In preparation for understanding the material in this lesson, I also 
+recommend that you also study the lessons referred to in the
+<a href="Java2444.htm#References">References</a> section. </p>
+<h2 align="center"><font color="#000000"> <a
+ name="General Background Information">General Background Information</a></font></h2>
+<p>One of the main reasons that we are studying 2D Discrete Cosine Transforms <i>
+(2D-DCT)</i> is to further our understanding of JPEG image 
+compression.&nbsp; The 2D-DCT is a central component in JPEG.</p>
+<p><font color="#FF0000"><b><a name="An_analogy_">An analogy</a></b></font></p>
+<p>I will begin my discussion with an analogy to a portion of the JPEG 
+image compression algorithm.</p>
+<p>Assume that you have been charged with the task of transporting all the water in a 
+twenty-gallon tank from one building to a twenty-gallon tank in 
+another building approximately three miles away.&nbsp; Unfortunately, you don't have 
+any watertight containers in which to transport the water.&nbsp; All that is 
+available for use in transporting the water is a sack made out of cloth.&nbsp; 
+If you pour water into the sack, it simply runs through and out onto the floor.</p>
+<p><font color="#FF0000"><b>How can you accomplish your assigned task?</b></font></p>
+<p>Fortunately, the tank is mounted on small wheels that allow you to roll it around 
+inside the 
+building <i>(but not outside the building)</i>.&nbsp; You search the building, 
+and are happy to find a large walk-in freezer with a doorway large enough to 
+accommodate the tank of water.</p>
+<p><font color="#FF0000"><b>Transform the water into ice</b></font></p>
+<p>So, you roll the tank into the freezer.&nbsp; When all of the water has 
+frozen into ice, you use an ice pick that you found nearby and you chop the ice 
+up into pieces.&nbsp; You fill your sack with ice and run as fast as you can to 
+the other building where you empty the sack into the other tank.&nbsp; You keep 
+making trips from one building to the next until you have transported all of the 
+ice from the original tank to the tank in the other building.&nbsp; You let the ice melt 
+in the tank in the other building, and you have 
+accomplished your task.</p>
+<p><font color="#FF0000"><b>Is this a lossless process?</b></font></p>
+<p>Unfortunately, a small quantity of the ice melts during the trips to 
+transport it from one building to the other, so you end up with a little less 
+than twenty-gallons of water in the second tank.&nbsp; <i>(This is not a 
+lossless process.)</i></p>
+<p><font color="#FF0000"><b>Transformation is the key to success</b></font></p>
+<p>What you have done is to transform the state of the water from one form to 
+another to make it possible to transport it in a leaky cloth sack.</p>
+<p><font color="#FF0000"><b>How does this apply to JPEG?</b></font></p>
+<p>JPEG image compression does something similar, but not for exactly the same 
+reasons.&nbsp; When an image is compressed using JPEG, 
+the form of the image that is stored, and possibly transported from one machine 
+to another, is not the form 
+that you are probably accustomed to seeing.&nbsp; Rather, the information that 
+constitutes the image is transformed from the image or space domain into the 
+frequency or wave-number domain.&nbsp; The information is compressed, stored, 
+and transported in the frequency domain.&nbsp; Later on, the information is 
+transformed back into the image domain for presentation to a human consumer.</p>
+<blockquote>
+	<p><i>(Image information in the wave-number domain is typically not very 
+	useful to most human consumers of that information.&nbsp; See the bottom 
+	panel of <a href="#Figure_9">Figure 9</a> for an example of image 
+	information in the frequency domain.)</i></p>
+</blockquote>
+<p>The transformation to and from the frequency domain is accomplished using 
+a 2D-DCT.</p>
+<p><font color="#FF0000"><b>Image information looks totally different</b></font></p>
+<p>As you will see later, the information that constitutes the image looks 
+totally different when in the frequency domain than when it is in the image 
+domain.&nbsp; <i>(Once again, see <a href="#Figure_9">Figure 9</a> for an 
+example.)</i></p>
+<p><font color="#FF0000"><b>An <i>almost lossless</i> process</b></font></p>
+<p>If the image were simply transformed from the image domain into the 
+frequency domain and back into the image domain, the process would be almost
+<a href="http://en.wikipedia.org/wiki/Lossless_data_compression">lossless</a>.</p>
+<blockquote>
+	<p>&nbsp;<i>(There would probably be a small amount of image distortion as a result of 
+	tiny errors resulting from computational inaccuracy.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Lossless compression is not the primary objective</b></font></p>
+<p>Generally speaking, however, the primary objective in JPEG image compression is 
+usually not to 
+implement a lossless process.&nbsp; Rather, the primary objective is to compress 
+the image to make it smaller to store and to transport.&nbsp; A certain amount of 
+distortion in the reconstructed image is 
+usually considered tolerable.</p>
+<blockquote>
+	<p><i>(On the other hand, the earlier lessons entitled
+	<a href="http://www.developer.com/java/data/article.php/3586396">
+	Understanding the Lempel-Ziv Data Compression Algorithm in Java</a> and
+	<a href="http://www.developer.com/java/other/article.php/3603066">Understanding the Huffman Data 
+Compression Algorithm in Java</a> introduced you to two lossless data compression 
+algorithms.)</i></p>
+</blockquote>
+<p><font color="#ff0000"><b>The Lempel-Ziv algorithm</b></font></p>
+<p>LZ77 is the name commonly given to a lossless data compression algorithm 
+published in papers by Abraham Lempel and Jacob Ziv in 1977.&nbsp; LZ77 is a <i>
+lossless</i> compression data algorithm.</p>
+<p><font color="#FF0000"><b>What is a lossless data compression algorithm?</b></font></p>
+<p>If you compress a document using the LZ77 algorithm, 
+and then decompress the compressed version, the result will be an exact copy of 
+the original document.</p>
+<blockquote>
+	<p><i>(Not all data compression algorithms are lossless.&nbsp; The JPEG 
+image compression algorithm, for example, does not produce an exact copy of an 
+image that has been compressed using the algorithm.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>D</b></font><font color="#ff0000"><b>ictionary 
+and/or entropy encoding algorithms</b></font></p>
+<p>LZ77 is known as a <i>dictionary</i> encoding algorithm, as opposed for 
+example to the Huffman encoding algorithm, which is a statistical or <i>entropy</i> 
+encoding algorithm.</p>
+<p>Compression in the LZ77 algorithm is based on the notion that strings of 
+characters <i>(words, phrases, etc.)</i> occur repeatedly in the message being 
+compressed.&nbsp; Compression with the Huffman encoding algorithm is based on the 
+probability of occurrence of individual characters in the message.</p>
+<p><font color="#FF0000"><b>Not very effective for image data</b></font></p>
+<p>Apparently neither of these compression algorithms is particularly effective when applied directly to the 
+pixel color data that makes up an image.&nbsp; However, it has been determined 
+that if an image is 
+first transformed into the frequency domain, a form of 
+frequency filtering can be applied to the frequency-domain data without having a 
+serious adverse impact on the quality of the image when it is reconstructed.</p>
+<p><font color="#FF0000"><b>What kind of frequency filtering?</b></font></p>
+<p>The frequency filtering involves re-quantizing the 
+frequency-domain data values at the higher wave-number frequencies.&nbsp; 
+Re-quantization 
+makes the frequency-domain data much more susceptible to the benefits of entropy 
+encoding.</p>
+<blockquote>
+	<p><i>(Apparently it has been determined that substantial corruption of the 
+	higher wave-number spectral data can be tolerated without seriously 
+	damaging the visual quality of the reconstructed image.)</i></p>
+</blockquote>
+<p>This is where the major compression benefits of JPEG image compression occur.&nbsp; 
+This is also what prevents the reconstructed image from being a nearly exact 
+match for the original image, thus causing JPEG to be a <i>
+<a href="http://en.wikipedia.org/wiki/Lossy_compression">lossy</a></i> image 
+compression algorithm.</p>
+<p><font color="#FF0000"><b>A brief look at JPEG image compression</b></font></p>
+<p>That has been a brief look into the overall process of JPEG image compression so that 
+you will know where the 2D-DCT fits into the process.&nbsp; I will get into the 
+details in a future lesson.&nbsp; For now, the objective is to isolate and to 
+understand the 2D-DCT portion of the process.</p>
+<p><font color="#FF0000"><b>An <i>(almost lossless)</i> example</b></font></p>
+<p>Before getting into a detailed discussion of the 2D-DCT, I want to show you 
+an <i>(almost)</i> lossless example along with some backup information.&nbsp; The bottom image in
+<a href="#Figure_1">Figure 1</a> shows the results of performing a forward 2D-DCT 
+on the top image and then turning around and performing an inverse 2D-DCT on the 
+spectrum that was produced by the forward <a name="Figure_1">transform</a>.</p>
+
+<p>
+<table border="1" cols="1" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><img border="0" src="java2446a0.jpg" width="242" height="522"><br></pre>
+      <pre><b><a href="#Figure_1">Figure 1</a></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Re-quantization was applied</b></font></p>
+<p>However, to partially simulate the behavior of the JPEG image compression 
+algorithm, the spectral data was uniformly re-quantized so that it could be 
+stored in an eleven-bit twos complement 
+integer format <i>(-1024 to +1023)</i>.</p>
+<blockquote>
+	<p><i>(Note that this is not the type of frequency-dependent re-quantization 
+	that is performed in the JPEG algorithm for the purpose of data 
+	compression.)</i></p>
+</blockquote>
+<p>Otherwise, nothing was done to compress, or otherwise corrupt the spectral 
+data prior to transforming that data back into the image domain. 
+Therefore, the output image should be almost as good as the input image, with 
+the only deterioration being the result of the re-quantization noise and arithmetic errors in the forward and 
+inverse transforms.</p>
+<p><font color="#FF0000"><b>Quantization noise is visible</b></font></p>
+<p>It looks to me like the background areas, such as the large white areas in 
+the image are grainier on the bottom image than the top image.&nbsp; 
+This graininess did not exist in my original version which treated the spectral 
+data strictly in <b>double</b> format.&nbsp; The graininess became evident at 
+the point in time that I inserted the re-quantization of the spectral data to 
+make it fit into eleven bits.</p>
+<p><font color="#FF0000"><b>More difficult than Discrete Fourier Transform</b></font></p>
+<p>Others may disagree, but in my opinion, it is more difficult to comprehend 
+the Discrete <i><b>Cosine</b></i> Transform process than it is to comprehend the Discrete 
+<i><b>Fourier</b></i> Transform process.&nbsp; </p>
+<blockquote>
+	<p><i>(See the earlier lesson entitled
+	<a href="http://www.developer.com/java/other/article.php/3374611">Fun with 
+	Java, How and Why Spectral Analysis Works</a>, for an introduction to the 
+	Discrete Fourier Transform.)</i></p>
+</blockquote>
+<p>To paraphrase a popular comedian named Flip Wilson from 
+my younger days, when you work with the DCT, <i>&quot;What you see is not what you get.&quot;</i></p>
+<p><font color="#FF0000"><b>DFT is linear with superposition</b></font></p>
+<p>With the DFT, which is a linear transform for which superposition applies, 
+many of us with Digital Signal Processing <i>(DSP)</i> experience can look at a 
+simple 2D space-domain function and have a pretty good idea what the wave-number 
+spectrum for that function will look like.&nbsp; We do that by breaking the 
+space-domain function down into familiar components, transforming the familiar 
+components in our heads, and then reconstructing the individual transforms in 
+our heads to produce an idea of the wave-number spectrum.</p>
+<p><font color="#FF0000"><b>More difficult with the DCT</b></font></p>
+<p>This is much more difficult to do with the 2D-DCT.&nbsp; The reason is that 
+the DCT is not applied directly to the given space-domain function.&nbsp; Rather, the 
+given space-domain function is implicitly expanded through mirror-imaging to produce a new 
+space-domain function.&nbsp; Then, to a very close approximation, a Discrete 
+Fourier Transform is applied to 
+the new expanded space-domain function.&nbsp; Thus, there is an added degree of 
+complexity involving the implicit modification of the original space-domain 
+function.&nbsp; I will illustrate this by providing some comparisons 
+between the Discrete Fourier Transform and the Discrete Cosine Transform.</p>
+<p><font color="#FF0000"><b>A simple diagonal line</b></font></p>
+<p>Consider first the case of a simple diagonal line in the space domain as 
+shown in the left panel of <a name="Figure_2"><a href="#Figure_2">Figure 2</a></a>.</p>
+
+<p>
+<table border="1" bgcolor="#ccffff">
+	<tr>
+		<td><img border="0" src="java2446a1.jpg" width="132" height="169"></td>
+		<td><img border="0" src="java2446a2.jpg" width="132" height="169"></td>
+	</tr>
+	<tr>
+	<td colspan="2" >
+<pre><b><a href="#Figure_2">Figure 2</a></b></pre></td>
+	</tr>
+</table>
+<blockquote>
+	<p><i>(This example was resurrected from <a href="#Figure_9">Figure 9</a> in the earlier lesson 
+	entitled <a href="http://www.developer.com/java/other/article.php/3526241">
+	2D Fourier Transforms using Java, Part 2</a></i>.<i>)</i></p>
+</blockquote>
+<p>I explained this example in the earlier lesson, so I won't repeat 
+that explanation here.&nbsp; Suffice it at this point to say that the left panel 
+in <a href="#Figure_2">Figure 2</a> shows a diagonal line in the space domain.&nbsp; The right panel 
+shows the wave-number spectrum for that line produced by performing a 2D 
+Discrete Fourier Transform <i>(2D-DFT)</i> on the image in the left panel.</p>
+<p><font color="#FF0000"><b>The important attribute</b></font></p>
+<p>Without getting into the details, the important thing to note is that the 
+lines in the Fourier wave-number spectrum are perpendicular to the line in the space domain.</p>
+<p><font color="#FF0000"><b>A similar 2D-DCT example</b></font></p>
+<p>On the other hand, the top panel in <a href="#Figure_3">Figure 3</a> shows an image with a similar 
+diagonal line.&nbsp; The bottom panel in <a href="#Figure_3">Figure 3</a> shows 
+the result of performing a 2D-DCT on the image.&nbsp; <i>(We might refer to this 
+as the DCT <a name="Figure_3">spectrum</a>.)</i></p>
+<table border="1" cols="1" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><img border="0" src="java2446a3.jpg" width="113" height="182"><br></pre>
+      <pre><b><a href="#Figure_3">Figure 3</a></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<blockquote>
+	<p><i>(Note that the entire bottom panel in <a href="#Figure_3">Figure 3</a> corresponds only to the 
+	upper-left quadrant in the right panel in <a href="#Figure_2">Figure 2</a>.&nbsp; In other words, 
+	the spectrum shown in <a href="#Figure_2">Figure 2</a> extends from a wave-number of zero at the 
+	upper left corner to a wave-number corresponding to the sampling frequency 
+	in space on the right and the bottom.&nbsp; On the other hand, the bottom 
+	panel in <a href="#Figure_3">Figure 3</a> extends from a wave-number of zero at the upper left 
+	corner to the
+	<a href="http://www.developer.com/java/other/article.php/3380031#Sampling_Frequency_and_Nyquist_Folding_Frequency">
+	Nyquist folding frequency</a> at the right and bottom.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Something looks very wrong here!</b></font></p>
+<p>Something looks wrong when we compare the DCT spectrum in <a href="#Figure_3">
+Figure 3</a> with the Fourier spectrum in <a href="#Figure_2">Figure 2</a>.&nbsp; The line in the DCT spectrum is not 
+perpendicular to the line in the space domain.&nbsp; Rather, it is parallel to 
+the line in the space domain.</p>
+<blockquote>
+	<p><i>(It took me quite a lot of head scratching to conclude that this is 
+	probably correct.&nbsp; I believe that I finally understand the reason for the difference 
+	and I will share that knowledge with you.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>And the problem is ...</b></font></p>
+<p>The problem is that there is no such thing as a single diagonal line in a 
+DCT.&nbsp; True, we started with the single diagonal line shown in the top panel 
+of <a href="#Figure_3">Figure 3</a>.&nbsp; However, the DCT process implicitly 
+quadrupled the size of our 
+sample.&nbsp; <i>(The size was doubled in both dimensions.)</i></p>
+<p>For example, the DCT process created a mirror image of the 
+original area across its upper boundary producing an area twice as tall as what 
+we started with.&nbsp; </p>
+<p>Then it produced a mirror image of the entire double-high area across the 
+left boundary.&nbsp; This resulted in a new area four times as large as the 
+original area with the original line being reflected into the new areas in a 
+mirror-image fashion.</p>
+<p>Then it effectively performed a DFT on the new surface containing the 
+original line plus the mirror images of the original line.</p>
+<p><font color="#FF0000"><b>What does the expanded area look like?</b></font></p>
+<p>If you draw that out on paper, you will see that the image that was actually 
+transformed using the DFT contained two lines, each twice as long as the 
+original and arranged in a cross or X with the center of the cross at the 
+original origin.&nbsp; Each of the legs on the cross was on a diagonal.</p>
+<p><font color="#FF0000"><b>A similar 2D-DFT</b></font></p>
+<p><a href="#Figure_4">Figure 4</a> shows the results of applying a 2D-DFT to two 
+lines similarly arranged to form a <a name="Figure_4">cross</a>.</p>
+
+
+
+<p>
+<table border="1" bgcolor="#ccffff">
+	<tr>
+		<td><img border="0" src="java2446a4.jpg" width="132" height="169"></td>
+		<td><img border="0" src="java2446a5.jpg" width="132" height="169"></td>
+	</tr>
+	<tr>
+	<td colspan="2" >
+<pre><b><a href="#Figure_4">Figure 4</a></b></pre></td>
+	</tr>
+</table>
+<p>As before, the image in the space domain is shown in the left panel of Figure 
+4, and the Fourier spectrum of that image is shown in the right panel.</p>
+<p>Taking into account that the bottom panel in <a href="#Figure_3">Figure 3</a> corresponds to only the 
+upper-left quadrant in the Fourier spectrum in <a href="#Figure_4">Figure 4</a>, the two look remarkably similar.</p>
+<blockquote>
+	<p><i>(Note that the plotting approach used in <a href="#Figure_4">Figure 4</a> shows a lot more 
+	detail than the plotting approach used in <a href="#Figure_3">Figure 3</a>.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>A diagonal line in both cases</b></font></p>
+<p>Both spectra show a diagonal line extending from the origin at a wave-number 
+of zero down to the
+<a href="http://www.developer.com/java/other/article.php/3380031#Sampling_Frequency_and_Nyquist_Folding_Frequency">
+Nyquist folding frequency</a> at the opposite corner.</p>
+<p>I believe that the reason for the spectral line in <a href="#Figure_3">Figure 3</a> being parallel to 
+the time-domain line instead of being perpendicular to that line is that the 
+2D-DCT shown in <a href="#Figure_3">Figure 3</a> actually performed a 2D-DFT on two intersecting time-domain 
+lines that form a cross.</p>
+
+<p><font color="#FF0000"><b>A vertical line</b></font></p>
+<p>The bottom image in <a href="#Figure_5">Figure 5</a> shows the results of performing a 2D-DCT on the 
+top <a name="Figure_5">image</a>.</p>
+<p>
+<table border="1" cols="1" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><img border="0" src="java2446b1.jpg" width="113" height="182"><br></pre>
+      <pre><b><a href="#Figure_5">Figure 5</a></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>At first glance, it appears that there is no output in the bottom image.&nbsp; 
+However, if you look very carefully, you will see a broken line at the top of 
+the bottom image next to the area that separates the two images.</p>
+<p><font color="#FF0000"><b>Does this 
+make sense?</b></font></p>
+<p>Once again, the top image has been implicitly expanded to a size that is four times as large as that 
+shown.&nbsp; The expansion is accomplished by creating mirror images as 
+described earlier.&nbsp; As a result, the input image no longer contains a single 
+vertical line.&nbsp; Rather, it contains two parallel vertical lines and a DFT 
+is performed on those parallel vertical lines.</p>
+<p><font color="#FF0000"><b>A similar DFT example</b></font></p>
+<p>The right panel in <a href="#Figure_6">Figure 6</a> shows the results of performing an ordinary 
+2D-DFT on the pair of parallel vertical lines in the left <a name="Figure_6">panel</a>.</p>
+
+<p>
+<table border="1" bgcolor="#ccffff">
+	<tr>
+		<td><img border="0" src="java2446b2.jpg" width="132" height="169"></td>
+		<td><img border="0" src="java2446b3.jpg" width="132" height="169"></td>
+	</tr>
+	<tr>
+	<td colspan="2" >
+<pre><b><a href="#Figure_6">Figure 6</a></b></pre></td>
+	</tr>
+</table>
+<p>Considering the Fourier spectrum in the upper-left quadrant of the right 
+panel, we see 
+that the output consists mainly of a broken line along the top of the spectrum, 
+beginning at a wave-number of zero and extending to the right all the way to the 
+sampling frequency <i>(twice the distance shown in <a href="#Figure_5">Figure 5</a>)</i>.</p>
+<p>So, it does make sense to have the DCT spectrum shown in <a href="#Figure_5">Figure 5</a> 
+consist mostly of a broken line along the top edge of the DCT spectrum from a 
+wave number of zero to the
+<a href="http://www.developer.com/java/other/article.php/3380031#Sampling_Frequency_and_Nyquist_Folding_Frequency">
+Nyquist folding frequency</a> at the right edge.</p>
+<p><font color="#FF0000"><b>A horizontal line</b></font></p>
+
+<p>The bottom image in <a href="#Figure_7">Figure 7</a> shows the results of performing a 2D-DCT on the 
+top image containing the single horizontal <a name="Figure_7">line</a>.</p><p>
+<table border="1" cols="1" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><img border="0" src="java2446b4.jpg" width="113" height="182"><br></pre>
+      <pre><b><a href="#Figure_7">Figure 7</a></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>As before, because of the implicit expansion of the input image through the 
+creation of mirror images, the mage that actually got transformed consisted of 
+two parallel horizontal lines.</p>
+<p>Also as before, the output is difficult to see.&nbsp; If you look very closely, 
+you will see a vertical broken line along the left edge of the bottom image.&nbsp; 
+I could go through the same steps as before, performing a 2D-DCT on a pair of 
+parallel horizontal lines to show that we should expect the output to be a 
+broken vertical line along the left edge, beginning at a wave number of zero and 
+extending downward to the
+<a href="http://www.developer.com/java/other/article.php/3380031#Sampling_Frequency_and_Nyquist_Folding_Frequency">
+Nyquist folding frequency</a> at the bottom edge.</p>
+<p><font color="#FF0000"><b>So what?</b></font></p>
+<p>By now you are probably wondering why I am going to all of this trouble to 
+convince you of what you should expect to see.&nbsp; For that, I am going to 
+give you a preview of the next lesson.</p>
+<p><font color="#FF0000"><b>A preview</b></font></p>
+<p>In the next lesson, you will learn that rather than to perform the 2D-DCT on 
+the entire image, the JPEG image compression algorithm sub-divides the image into 8x8 blocks and 
+performs the 2D-DCT on each block independently.&nbsp; At this point, I won't 
+go into what the algorithm does with the spectra produced through that process, 
+but I will show you a preview of what the spectra can look like.</p>
+<p><font color="#FF0000"><b>Spectrum of a sub-divided image</b></font></p>
+<p>The bottom panel in <a href="#Figure_8">Figure 8</a> shows the results of performing a separate 2D-DCT 
+on several hundred contiguous 8x8-pixel blocks that make up the image shown in 
+the top <a name="Figure_8">panel</a>.</p>
+
+<p>
+<table border="1" cols="1" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><img border="0" src="java2446b5.jpg" width="242" height="522"><br></pre>
+      <pre><b><a href="#Figure_8">Figure 8</a></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Each spectrum represents an 8x8-pixel image</b></font></p>
+<p>When performed in this fashion, each spectrum represents only one 8x8-pixel 
+portion of the original image.&nbsp; In most cases, the upper-left corner of 
+each spectrum, <i>(representing a wave-number of zero)</i>, is identified by a bright 
+dot.&nbsp; The spectral values for higher-frequency wave numbers appear to the 
+right and down from that dot.</p>
+<p><font color="#FF0000"><b>The constant-color areas</b></font></p>
+<p>In those areas of the image where there are little or no color details, <i>(such as in the white 
+portion of the image or the portion behind President Lincoln's head)</i>, each spectrum consists of a single bright 
+dot only.&nbsp; This is because the spectrum consists of a zero-frequency 
+component only with a significant lack of energy at other frequencies.</p>
+<p><font color="#FF0000"><b>Areas with lots of color details</b></font></p>
+<p>In areas where there is a lot of detail, such as in President Lincoln's hair 
+for example, the 8x8 spectral blocks tends to be gray, indicating lots of energy 
+at the higher frequencies.</p>
+<p><font color="#FF0000"><b>Some particularly interesting areas</b></font></p>
+<p>There are several areas that I find particularly interesting.&nbsp; For 
+example, on the left and right edges of the penny where the circular edge is 
+tangent to a vertical line, you can see a tendency for the spectra to exhibit 
+strong horizontal lines.&nbsp; 
+This agrees with the results shown earlier in <a href="#Figure_5">Figure 5</a>.</p>
+<p><font color="#FF0000"><b>Vertical spectral lines</b></font></p>
+<p>At the top and the bottom of the penny where the circular edge is tangent to 
+a horizontal line, 
+there is a tendency for the spectra to exhibit strong vertical lines.&nbsp; This 
+agrees with the results shown earlier in <a href="#Figure_7">Figure 7</a>.</p>
+<p><font color="#FF0000"><b>Diagonal spectral lines</b></font></p>
+<p>At the four edges of the penny where the slope is tangent to a line that is 
+at an angle of forty-five degrees to the horizontal <i>(northeast, southeast, southwest, and 
+northwest)</i> there is a tendency for the spectra to exhibit strong diagonal 
+lines sloping down and to the right.</p>
+<blockquote>
+	<p><i>(Note that the slope of the spectral lines is always down and to the 
+	right regardless of the slope of the tangential lines.)</i></p>
+</blockquote>
+<p>We also see this behavior at the lower-left edge of President Lincoln's beard 
+near his ear, and at the edge of his collar where the lines in the image tend to 
+be diagonal.&nbsp; In those areas also, there is a tendency for the spectra to 
+exhibit strong diagonal lines sloping down and to the right.</p>
+<p>This agrees with the results shown earlier in <a href="#Figure_3">Figure 3</a>.&nbsp; </p>
+<p>I will discuss this in much more detail in the next lesson where I address 
+the procedure of sub-dividing the image into 8x8-pixel blocks.</p>
+<p><font color="#FF0000"><b>Now back to the main topic of this lesson</b></font></p>
+<p>For the remainder of this lesson I will concentrate on applying the 2D-DCT to 
+the entire image rather than applying the 2D-DCT to a sub-divided image.&nbsp; I 
+will get back to the sub-divided image in Part 2 of this lesson, which I will 
+publish in a few weeks.</p>
+<p>The bottom panel in <a href="#Figure_9">Figure 9</a> shows the 2D-DCT spectrum computed for the 
+entire image in the top panel of <a name="Figure_9">Figure 9</a>.</p>
+
+<p>
+<table border="1" cols="1" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><img border="0" src="java2446b6.jpg" width="242" height="522"><br></pre>
+      <pre><b><a href="#Figure_9">Figure 9</a></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Not much to look at</b></font></p>
+<p>Unlike the case in <a href="#Figure_8">Figure 8</a>, there is nothing in the spectrum in <a href="#Figure_9">Figure 9</a> 
+that would lead an ordinary human to suspect that this spectrum represents an 
+image of a United States penny.&nbsp; Rest assured, however, that the spectrum 
+shown in <a href="#Figure_9">Figure 9</a> does contain all of the information necessary to reconstruct 
+the original image.&nbsp; The bottom image in <a href="#Figure_1">Figure 1</a> was produced by 
+performing an inverse 2D-DCT on this spectral data.</p>
+<p><font color="#FF0000"><b>Two representations of the same information</b></font></p>
+<p>Thus, the top and bottom panels in <a href="#Figure_9">Figure 9</a> contain the same information.&nbsp; 
+They simply contain that information in different forms.&nbsp; The form in the 
+top panel of <a href="#Figure_9">Figure 9</a> is the one that we humans are most accustomed to seeing.&nbsp; 
+We might think of that as the water in my earlier <a href="#An_analogy_">analogy</a>.&nbsp; The form in the 
+bottom panel of <a href="#Figure_9">Figure 9</a> might be thought of as the ice in my earlier 
+<a href="#An_analogy_">analogy</a>.&nbsp; 
+As it turns out, it is very easy to transform that information back and forth 
+between the two forms.</p>
+<p>I will explain two programs in the remainder of this lesson that illustrate 
+how to transform the data back and forth between the two forms.</p>
+<h2 align="center"><font color="#000000"><a name="Preview">Preview</a></font></h2>
+<p>I am going to present and explain two different, but similar programs in this 
+part of this 
+lesson.&nbsp; <i>(I will present a couple more programs in Part 2 later when I 
+publish it.)</i>&nbsp; The first program, named <b>ImgMod34a</b> performs a forward 
+2D-DCT on an image, and then displays the original image along with the DCT 
+spectrum of that image <i>(as shown in <a href="#Figure_9">Figure 9</a>)</i>.</p>
+<p>The second program named <b>ImgMod34</b> also performs a forward 2D-DCT on an 
+image.&nbsp; However, rather than stopping at that point and displaying the DCT 
+spectrum, this program re-quantizes the spectral data to eleven bits, and then 
+performs an inverse 2D-DCT on the re-quantized spectral data to produce and 
+display a replica of the original image <i>(as shown in <a href="#Figure_1">Figure 1</a>)</i>.</p>
+<center>
+<h2> <a name="Discussion and Sample Programs"></a><font color="#000000">Discussion
+and Sample Code</font></h2>
+</center>
+<font color="#FF0000"><b>The program named ImgMod34a</b></font><p>I will discuss 
+this program in fragments.&nbsp; A complete listing of the program is shown in 
+<a href="#Listing_23">Listing 23</a>.</p>
+<p>The purpose of this program is to compute and display the wave-number 
+spectrum of an image using a 2D-DCT.</p>
+<p><font color="#FF0000"><b>A forward transform</b></font></p>
+<p>This program performs a forward 2D-DCT on each color plane belonging to an 
+image producing a wave-number spectrum that describes each color plane in the 
+image.&nbsp; Then it converts the wave-number spectrum to log base 10 to 
+preserve the dynamic range of the display and normalizes the results to cover 
+the range from 0 to 255.&nbsp; This makes the results suitable for being 
+displayed as an image.</p>
+<p><font color="#FF0000"><b>Display the wave-number spectrum</b></font></p>
+<p>Then the program returns the wave-number spectrum for each color plane in an 
+image format.</p>
+<blockquote>
+	<p><i>(When I refer to an image format here, I am speaking of the classical 
+	image format consisting of an array of pixels wherein each pixel contains 
+	different contributions the colors red, green, and blue.&nbsp; This is 
+	accomplished through three color planes where each plane is a rectangular 
+	surface consisting of elevation values between 0 and 255 inclusive.)</i></p>
+</blockquote>
+<p>When displayed as an image, the visual result is the composite of 
+the normalized wave number spectra of all three color planes being displayed.</p>
+<p><font color="#FF0000"><b>The capability to isolate specific colors</b></font></p>
+<p>The program provides the capability to enable statements that will effectively eliminate 
+one, two, or all three of the color planes from the computation and the 
+resulting display.&nbsp; <i>(This 
+requires modification of the source code and recompilation of the program.)</i></p>
+<p><font color="#FF0000"><b>Runs under control of ImgMod02a</b></font></p>
+<p>The program is designed to run under the control of the class named <b>ImgMod02a</b>.&nbsp; 
+Enter the following at the command line to run this program:</p>
+<b><pre><font size="3">java ImgMod02a ImgMod34a ImageFileName</font></pre></b></p>
+<p>where <i>ImageFileName</i> is the name of a .gif or .jpg file, including the 
+extension.</p>
+<p><font color="#FF0000"><b>Class files required</b></font></p>
+<p>This 
+program requires access to the following class files plus some inner classes 
+that are defined inside the following 
+classes:</p>
+<ul>
+	<li>ImgMod34a.class</li>
+	<li>ImgIntfc02.class</li>
+	<li>ImgMod02a.class</li>
+	<li>ForwardDCT01.class</li>
+</ul>
+<p>The source code for <b>ImgMod34a</b> is presented in <a href="#Listing_23">Listing 23</a>.&nbsp; 
+The source code for <b>ForwardDCT01</b> was developed and explained in the 
+previous lesson entitled
+<a href="http://www.developer.com/java/other/article.php/3619081">Understanding the Discrete Cosine Transform 
+in Java</a>.</p>
+<p>The source code for <b>ImgMod02a</b> and <b>ImgIntfc02</b> can be found in the 
+earlier lessons entitled
+<a href="http://www.developer.com/java/other/article.php/3441391">Processing 
+Image Pixels Using Java: Controlling Contrast and Brightness</a> and
+<a href="http://developer.com/java/other/article.php/3403921">Processing Image 
+Pixels using Java, Getting Started</a>.</p>
+<p><font color="#FF0000"><b>Program testing</b></font></p>
+<p>The program was tested 
+using J2SE 5.0 and WinXP.&nbsp; J2SE 5.0 or later is required due to the use of static 
+imports.</p>
+<p><font color="#FF0000"><b>Source code for the ImgMod34a class</b></font></p>
+<p>The source code for the <b>ImgMod34a</b> class and the method named <b>processImg</b> begins 
+in <a name="Listing_1" href="#Listing_1">Listing 1</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>class ImgMod34a implements ImgIntfc02{
+  
+  //This method is required by ImgIntfc02.  It is called at
+  // the beginning of the run and each time thereafter that
+  // the user clicks the Replot button on the Frame
+  // containing the images.
+  public int[][][] <b>processImg</b>(int[][][] threeDPix,
+                              int imgRows,
+                              int imgCols){
+
+    //Create an empty output array of the same size as the
+    // incoming array.
+    int[][][] output = new int[imgRows][imgCols][4];
+
+    //Make a working copy of the 3D pixel array as type
+    // double to avoid making permanent changes to the
+    // original image data.  Also, all processing will be
+    // performed as type double.
+    double[][][] working3D = copyToDouble(threeDPix);<br><br><b><font face="Courier New,Courier"><a href="#Listing_1">Listing 1</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Need to understand ImgMod02a</b></font></p>
+<p>In order to understand this program, you will need to understand how it 
+interacts with the class named <b>ImgMod02a</b>, as described in the earlier 
+lessons entitled <a href="http://developer.com/java/other/article.php/3403921">
+Processing Image Pixels using Java, Getting Started</a> and
+<a href="http://www.developer.com/java/other/article.php/3441391">Processing 
+Image Pixels Using Java: Controlling Contrast and Brightness</a>.&nbsp; Once you 
+understand that interaction, the code in <a href="#Listing_1">Listing 1</a> should be straightforward.</p>
+<p><font color="#FF0000"><b>One color plane at a time</b></font></p>
+<p>The code in <a href="#Listing_2">Listing 2</a> is provided to make it easy for you to experiment with 
+only one color plane at <a name="Listing_2">time</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>
+    for(int row = 0;row &lt; imgRows;row++){
+      for(int col = 0;col &lt; imgCols;col++){
+//        working3D[row][col][1] = 0;//red
+//        working3D[row][col][2] = 0;//green
+//        working3D[row][col][3] = 0;//blue
+      }//end inner loop
+    }//end outer loop<br><br><b><font face="Courier New,Courier"><a href="#Listing_2">Listing 2</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>To experiment with only one color plane, enable two of the statements in 
+<a href="#Listing_2">Listing 2</a>, causing the color values for those two planes to be set to zero.&nbsp; 
+Following that, the program output will contain a contribution only from the 
+color plane corresponding to the statement that you did not enable.</p>
+<p><font color="#FF0000"><b>Process the red plane</b></font></p>
+<p><a href="#Listing_3">Listing 3</a> extracts the red color plane from the 3D pixel image array, 
+processes it, and inserts it back into the 3D pixel image array in the form of a 
+wave-number <a name="Listing_3">spectrum</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    //Extract and process the red plane
+    double[][] redPlane = extractPlane(working3D,1);
+    <b>processPlane</b>(redPlane);
+    //Insert the plane back into the 3D array
+    insertPlane(working3D,redPlane,1);<br><br><b><font face="Courier New,Courier"><a href="#Listing_3">Listing 3</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The code in the methods named <b>extractPlane</b> and <b>insertPlane</b> is 
+straightforward and shouldn't require an explanation.&nbsp; You can view the 
+source code for those methods in <a href="#Listing_23">Listing 23</a>.</p>
+<p><font color="#FF0000"><b>The processPlane method</b></font></p>
+<p>The <b>processPlane</b> method, on the other hand, is the workhorse of this 
+entire program and does deserve a thorough explanation.&nbsp; Therefore, I will 
+set the <b>processImg</b> method aside for awhile and explain the <b>
+processPlane</b> method.</p>
+<p><font color="#FF0000"><b>Perform a forward 2D-DCT</b></font></p>
+<p>This method processes a color plane received as an incoming parameter.&nbsp; 
+First it performs a forward 2D-DCT on the color plane producing the DCT spectrum 
+for the plane.</p>
+<p><font color="#FF0000"><b>Convert to log base 10 and normalize</b></font></p>
+<p>Then it normalizes the spectral values in the plane to make them compatible 
+with being displayed as an image.&nbsp; First it converts the spectral 
+data to log base 10 in order to preserve the dynamic range of the display 
+system.&nbsp; Then it causes the logarithmic spectral data to fall in the range 
+0 to 255 which is a requirement for being displayed as an image.</p>
+<p><font color="#FF0000"><b>A separable transform</b></font></p>
+<p>One of the significant attributes of the two-dimensional Discrete Cosine 
+Transform <i>(2D-DCT)</i> is that it is
+<a href="http://documents.wolfram.com/applications/digitalimage/UsersGuide/ImageTransforms/ImageProcessing8.4.html">
+separable</a>.&nbsp; What this means in practice is that to compute the DCT for 
+a single color plane of a 2D image, you can begin by performing a <i>one-dimensional</i> DCT 
+on each row of the color plane, creating a new 2D structure where each row of 
+the new structure contains the DCT of the corresponding row of the color plane.&nbsp; 
+Then you can perform a one-dimensional DCT on each column of the new 2D 
+structure creating a third 2D structure containing the 2D-DCT of the original 
+image.</p>
+<p><font color="#FF0000"><b>An in-place transform</b></font></p>
+<p>Also important, at least from a memory utilization viewpoint, is the fact that you can perform the transforms <i>&quot;in-place&quot;</i> 
+using the original color plane for intermediate and final data storage without a 
+requirement to allocate memory for the new structures.</p>
+<p><font color="#FF0000"><b>Don't need a new DCT program</b></font></p>
+<p>What this means for me is that I don't need to develop a new DCT program to 
+handle the 2D case.&nbsp; Rather, I can perform all the necessary DCT 
+transforms that I need using the static one-dimensional forward DCT method named&nbsp; <b>
+transform</b> belonging to the class named <b>ForwardDCT01</b>.&nbsp; I 
+developed and explained that class in the earlier lesson entitled
+<a href="http://www.developer.com/java/other/article.php/3619081">Understanding the Discrete Cosine 
+Transform in Java</a>.</p>
+<p><font color="#FF0000"><b>Code for the processPlane method</b></font></p>
+<p>The <b>processPlane</b> method begins in <a name="Listing_4"><a href="#Listing_4">Listing 4</a></a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  void <b>processPlane</b>(double[][] colorPlane){
+    
+    int imgRows = colorPlane.length;
+    int imgCols = colorPlane[0].length;<br><br><b><font face="Courier New,Courier"><a href="#Listing_4">Listing 4</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The code in <a href="#Listing_4">Listing 4</a> determines the number of rows and the number of columns 
+in the 2D plane to be processed.</p>
+<p><font color="#FF0000"><b><a name="Transform_one_row_at_a_time">Transform one row at a time</a></b></font></p>
+<p><a href="#Listing_5">Listing 5</a> shows the beginning of a<b> for</b> loop that:</p>
+<ul>
+	<li>Extracts each row of image data from the color plane.</li>
+	<li>Performs a forward one-dimensional DCT on the row.</li>
+	<li>Inserts the spectral data for that row back into the corresponding row 
+	of the color plane, thereby using the color plane array to store the 
+	spectral data for the <a name="Listing_5">row</a>.</li>
+</ul>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    for(int row = 0;row &lt; imgRows;row++){
+      double[] theRow = extractRow(colorPlane,row);<br><br><b><font face="Courier New,Courier"><a href="#Listing_5">Listing 5</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The code in the <b>extractRow</b> method is straightforward and shouldn't 
+require a further explanation.&nbsp; You can view the <b>extractRow</b> method 
+in its entirety in <a href="#Listing_23">Listing 23</a>.</p>
+<p><font color="#FF0000"><b>Perform the one-dimensional Discrete Cosine 
+Transform on the row</b></font></p>
+<p><a href="#Listing_6">Listing 6</a> invokes the static <b>transform</b> method of the <b>ForwardDCT01</b> 
+class to perform the one-dimensional DCT on the row of image <a name="Listing_6">data</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>      double[] theXform = new double[theRow.length];
+      ForwardDCT01.<b>transform</b>(theRow,theXform);
+<br><b><font face="Courier New,Courier"><a href="#Listing_6">Listing 6</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Assuming that you have studied the earlier lesson entitled
+<a href="http://www.developer.com/java/other/article.php/3619081">Understanding the Discrete Cosine Transform in Java</a>, there is nothing in Listing 
+6 that should require a further explanation.</p>
+<p>The results of the transform are temporarily stored in the one-dimensional 
+array referred to by <b>theXform</b> before being inserted back into the 
+corresponding row of the color plane.</p>
+<p><font color="#FF0000"><b>Insert the spectral data into the color plane</b></font></p>
+<p><a href="#Listing_7">Listing 7</a> invokes the method named <b>insertRow</b> to insert the spectral 
+data back into the corresponding row in the color plane.&nbsp; From this point 
+forward, that row contains spectral data and not image color <a name="Listing_7">data</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>      insertRow(colorPlane,theXform,row);
+    }//end for loop<br><br><b><font face="Courier New,Courier"><a href="#Listing_7">Listing 7</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>You can view the method named <b>insertRow</b> in its entirety in 
+<a href="#Listing_23">Listing 23</a>.</p>
+<p><a href="#Listing_7">Listing 7</a> also signals the end of the <b>for</b> loop, operating on rows that 
+began in <a href="#Listing_5">Listing 5</a>.</p>
+<p><font color="#FF0000"><b>Transform the column data</b></font></p>
+<p><a href="#Listing_8">Listing 8</a> shows the complete<b> for</b> loop that:</p>
+<ul>
+	<li>Extracts each column now containing spectral data from the color plane.</li>
+	<li>Performs a forward one-dimensional DCT on the column.</li>
+	<li>Inserts the spectral data for that column back into the corresponding 
+	column of the color plane, thereby using the color plane array to store the 
+	spectral data for the <a name="Listing_8">column</a>.</li>
+</ul>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    //Extract each col from the color plane and perform a
+    // forward DCT on the column.  Then insert it back into
+    // the color plane.
+    for(int col = 0;col &lt; imgCols;col++){
+      double[] theCol = extractCol(colorPlane,col);
+
+      double[] theXform = new double[theCol.length];
+      ForwardDCT01.transform(theCol,theXform);
+
+      insertCol(colorPlane,theXform,col);
+    }//end for loop
+<br><b><font face="Courier New,Courier"><a href="#Listing_8">Listing 8</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>The color plane now contains spectral data</b></font></p>
+<p>When the <b>for</b> loop in <a href="#Listing_8">Listing 8</a> terminates, the 2D array referred to as
+<b>colorPlane</b> no longer contains image color data.&nbsp; Instead, it now 
+contains the results of the 2D-DCT of the original image data for that color 
+plane.&nbsp; In other words the data in the 2D array has now been transformed 
+from image or space-domain data to frequency or wave-number spectral data.</p>
+<p><font color="#FF0000"><b>Problems with displaying the results</b></font></p>
+<p>The objective of this program is to display the 2D spectral data in the form 
+of a standard image.&nbsp; This presents some problems that are not new to this 
+program.&nbsp; In particular, the results of the 2D-DCT contain both positive 
+and negative values.&nbsp; Furthermore, the magnitude of some of those values <i>
+(particularly at or near a wave-number of zero)</i> can be quite large.</p>
+<p>Standard image data, on the other hand must be unsigned data in the range 
+from 0 through 255 inclusive.&nbsp; This almost always presents problems 
+involving the methodology for converting the bipolar data to that value range.&nbsp; 
+The methodology that I developed for this program isn't perfect, but it seems to 
+work pretty well.</p>
+<p><font color="#FF0000"><b>Normalize the spectral data</b></font></p>
+<p><a name="Listing_9" href="#Listing_9">Listing 9</a> invokes the <b>normalize</b> method to prepare the 2D spectral data 
+for being displayed as an image.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    normalize(colorPlane);
+  }//end processPlane
+<br><b><font face="Courier New,Courier"><a href="#Listing_9">Listing 9</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><a href="#Listing_9">Listing 9</a> also signals the end of the <b>processPlane</b> method.</p>
+<p><font color="#FF0000"><b>The normalize method</b></font></p>
+<p>Before returning to the discussion of the <b>processImg</b> method <i>(last 
+seen in <a href="#Listing_3">Listing 3</a>)</i> I will explain the <b>normalize</b> method.</p>
+<p>This method is fairly complex and implements the results of several decisions 
+that I had to make 
+regarding the best way to display the spectral data.</p>
+<p>This method normalizes the data in a 2D array containing data of type <b>
+double</b> to make it compatible with being displayed as an image plane.</p>
+<p><font color="#FF0000"><b>Eliminate negative values</b></font></p>
+<p>Normally, when viewing standard Fourier spectral data, unless we are 
+specifically interested in phase angles, we usually compute and view the <i>
+amplitude spectrum</i>.&nbsp; The amplitude spectrum is computed by computing 
+the square root of the sum of the squares of the real and imaginary parts of 
+each complex spectral value <i>(the length of the hypotenuse of a right triangle 
+formed by the real and imaginary vectors)</i>.</p>
+<p>For the case of the DCT, there are no imaginary values.&nbsp; Therefore, the 
+same results can be achieved simply by changing the sign on all negative 
+spectral values making them positive instead of negative.&nbsp; The <b>normalize</b> method begins by converting all 
+negative spectral values to positive values.</p>
+<p><font color="#FF0000"><b>Coping with a limited dynamic range for the display</b></font></p>
+<p>The dynamic range of the 2D-DCT spectral data is very large.&nbsp; The 
+spectral values at and near the zero wave-number origin are much larger than 
+values elsewhere in the spectrum.</p>
+<p><font color="#FF0000"><b>Seven shades of gray</b></font></p>
+<p>I learned at one point in my digital signal processing <i>(DSP)</i> career that a 
+typical human can 
+only distinguish between seven levels of gray with white and black representing 
+two of those levels.&nbsp; Thus, a gray scale 2D display of the type shown in 
+the bottom panel of <a href="#Figure_9">Figure 9</a> has a very limited dynamic range.</p>
+<p><font color="#FF0000"><b>A log base 10 transform</b></font></p>
+<p>One common way to take better advantage of the available dynamic range of a display 
+system when viewing spectral data is to convert the spectral data to 
+<a href="http://en.wikipedia.org/wiki/Decibels">decibels</a>.&nbsp; 
+This involves transforming the spectral values through a log base 10 transform 
+and applying specific a specific scale factor to the resulting values.&nbsp; Although this program 
+doesn't apply the specific scale factor required to qualify as a decibel scale, 
+this program does apply a log base 10 transform to all of the spectral values.&nbsp; 
+This results in a set of spectral values requiring less dynamic range in the 
+display.</p>
+<p><font color="#FF0000"><b>Can produce negative values</b></font></p>
+<p>However, this transformation can result in negative values for very low spectral values; 
+so once again, I am forced to deal with negative values.&nbsp; 
+In this program the negative logarithmic values are simply set to zero.</p>
+<p><font color="#FF0000"><b>Making the data fit between 0 and 255</b></font></p>
+<p>This still leaves us with the problem of how to squeeze the  
+logarithmic data into the value range from 0 to 255 inclusive to satisfy the 
+fundamental image pixel value requirement.</p>
+<p>One approach would be to scale all of the values such that the largest value 
+becomes 255 and the smallest value becomes 0.&nbsp; I tried this, but even with 
+the log transform, the values at and near the origin still overwhelmed the 
+remaining portions of the spectrum, so this wasn't very satisfactory.&nbsp; </p>
+<p><font color="#FF0000"><b>Simply discard the lower-level values</b></font></p>
+<p>What I ended up doing was to simply 
+discard all values below X-percent of the maximum by artificially setting all of those values 
+to X-percent of the maximum.&nbsp; This created a floor at X-percent of the 
+maximum.&nbsp; Then I shifted the floor down to a value of zero <i>(black)</i>, and scaled the 
+resulting data so that the maximum value ended up at 
+255 <i>(bright red, bright green, or bright blue)</i>.</p>
+<p><font color="#FF0000"><b>What should the level of the floor be?</b></font></p>
+<p>Harking back to my <i>&quot;seven levels of gray&quot;</i> rule, I decided to put the 
+floor at one-seventh of the maximum value.&nbsp; That is the value for the floor 
+that produced the spectral display in the bottom panel of <a href="#Figure_9">Figure 9</a>.</p>
+<p>Raising the floor so as to make it closer to the maximum would cause the 
+display in <a href="#Figure_9">Figure 9</a> to become more sparse with more black area <i>(a smaller 
+percentage of the actual spectral data is actually being displayed)</i>.&nbsp; 
+For example, if the floor is adjusted upward to fifty-percent of the maximum 
+value, the spectrum for the image in <a href="#Figure_9">Figure 9</a> shows only the bright spot at the 
+origin plus a few light gray specs near the origin.</p>
+<p>If the floor is 
+adjusted downward to one-percent of the maximum value, the spectrum for the 
+image in <a href="#Figure_9">Figure 9</a> shows quite a bit more light gray and quite a bit less black.</p>
+<p><font color="#FF0000"><b>Change the sign of the negative spectral values</b></font></p>
+<p>The code for the <b>normalize</b> method begins in 
+<a name="Listing_10" href="#Listing_10">Listing 10</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  void <b>normalize</b>(double[][] plane){
+    int rows = plane.length;
+    int cols = plane[0].length;
+    
+    //Begin by converting all negative values to positive
+    // values.  This is equivalent to the computation of
+    // the magnitude for purely real data.
+    for(int row = 0;row &lt; rows;row++){
+      for(int col = 0;col &lt; cols;col++){
+        if(plane[row][col] &lt; 0){
+          plane[row][col] = - plane[row][col];
+        }//end if
+      }//end inner loop
+    }//end outer loop
+<br><b><font face="Courier New,Courier"><a href="#Listing_10">Listing 10</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><a href="#Listing_10">Listing 10</a> gets the size of the incoming 2D array, and then changes the sign 
+of all negative values stored in the array.</p>
+<p><font color="#FF0000"><b>Convert to log base 10</b></font></p>
+<p><a name="Listing_11" href="#Listing_11">Listing 11</a> converts all of the values to log base 10 to preserve the dynamic range of the plotting system.&nbsp; 
+Negative log values are then set to zero.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    //First eliminate or change any values that are
+    // incompatible with log10 method.
+    for(int row = 0;row &lt; rows;row++){
+      for(int col = 0;col &lt; cols;col++){
+        if(plane[row][col] == 0.0){
+          plane[row][col] = 0.0000001;
+        }else if(plane[row][col] == Double.NaN){
+          plane[row][col] = 0.0000001;
+        }else if(plane[row][col] == 
+                                 Double.POSITIVE_INFINITY){
+          plane[row][col] = 9999999999.0;
+        }//end else
+      }//end inner loop
+    }//end outer loop
+
+    //Now convert the data to log base 10 setting all
+    // negative results to 0.
+    for(int row = 0;row &lt; rows;row++){
+      for(int col = 0;col &lt; cols;col++){
+        plane[row][col] = log10(plane[row][col]);
+        if(plane[row][col] &lt; 0){
+          plane[row][col] = 0;
+        }//end if
+      }//end inner loop
+    }//end outer loop
+<br><b><font face="Courier New,Courier"><a href="#Listing_11">Listing 11</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Establish the floor</b></font></p>
+<p><a name="Listing_12" href="#Listing_12">Listing 12</a> sets all values below X-percent of the maximum value to X-percent of the maximum value where X is determined by the value of scale.&nbsp; 
+<a href="#Listing_12">Listing 12</a> also slides all values down to cause the floor to be 0.0.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    double scale = 1.0/7.0;
+    //First find the maximum value.
+    double max = Double.MIN_VALUE;
+    for(int row = 0;row &lt; rows;row++){
+      for(int col = 0;col &lt; cols;col++){
+        if(plane[row][col] &gt; max){
+          max = plane[row][col];
+        }//end if
+      }//end inner loop
+    }//end outer loop
+
+    //Now set everything below X-percent of the maximum to
+    // X-percent of the maximum value and slide
+    // everything down to cause the new minimum to be
+    // at 0.0
+    for(int row = 0;row &lt; rows;row++){
+      for(int col = 0;col &lt; cols;col++){
+        if(plane[row][col] &lt; scale * max){
+          plane[row][col] = scale * max;
+        }//end if
+        plane[row][col] -= scale * max;
+      }//end inner loop
+    }//end outer loop
+<br><b><font face="Courier New,Courier"><a href="#Listing_12">Listing 12</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Scale to accommodate the 0 to 255 rule</b></font></p>
+<p><a name="Listing_13" href="#Listing_13">Listing 13</a> scales the data so that the maximum value becomes 255.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    //First find the maximum value
+    max = Double.MIN_VALUE;
+    for(int row = 0;row &lt; rows;row++){
+      for(int col = 0;col &lt; cols;col++){
+        if(plane[row][col] &gt; max){
+          max = plane[row][col];
+        }//end if
+      }//end inner loop
+    }//end outer loop
+    //Now scale the data.
+    for(int row = 0;row &lt; rows;row++){
+      for(int col = 0;col &lt; cols;col++){
+        plane[row][col] = plane[row][col] * 255.0/max;
+      }//end inner loop
+    }//end outer loop
+
+  }//end normalize
+<br><b><font face="Courier New,Courier"><a href="#Listing_13">Listing 13</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><a href="#Listing_13">Listing 13</a> also signals the end of the <b>normalize</b> method.</p>
+<p><font color="#FF0000"><b>Process green and blue color planes</b></font></p>
+<p>That brings us back to the <b>processImg</b> method, which we last saw in 
+<a href="#Listing_3">Listing 3</a>.&nbsp; When the code in <a href="#Listing_3">Listing 3</a> finishes execution, the red color 
+plane has been transformed to spectral format and is ready to be displayed.</p>
+<p><a name="Listing_14" href="#Listing_14">Listing 14</a> applies exactly the same process to the green and blue color 
+planes.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>//Back in the <b>processImg</b> method
+
+    //Extract and process the green plane
+    double[][] greenPlane = extractPlane(working3D,2);
+    processPlane(greenPlane);
+    //Insert the plane back into the 3D array
+    insertPlane(working3D,greenPlane,2);
+    
+    //Extract and process the blue plane
+    double[][] bluePlane = extractPlane(working3D,3);
+    processPlane(bluePlane);
+    //Insert the plane back into the 3D array
+    insertPlane(working3D,bluePlane,3);<br><br><b><font face="Courier New,Courier"><a href="#Listing_14">Listing 14</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>When the code in <a href="#Listing_14">Listing 14</a> finishes execution, all three color planes have 
+been transformed to spectral format, and are ready to be displayed.</p>
+<p><font color="#FF0000"><b>Return to the plotting program</b></font></p>
+<p><a name="Listing_15" href="#Listing_15">Listing 15</a> converts the results to a 3D array containing data of type <b>int</b> 
+and returns that array to the calling method in the class named <b>ImgMod02a</b>, 
+where it will be plotted in the format shown in <a href="#Figure_9">Figure 9</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    output = copyToInt(working3D);
+
+    return output;
+
+  }//end processImg method<br><br><b><font face="Courier New,Courier"><a href="#Listing_15">Listing 15</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><a href="#Listing_15">Listing 15</a> also signals the end of the <b>processImg</b> method and the end 
+of the class named <b>ImgMod34a</b>.</p>
+<p>Now let's turn our attention from the program named <b>ImgMod34a</b> to the 
+program named <b>ImgMod34</b>.</p>
+<p><font color="#FF0000"><b>The program named ImgMod34</b></font></p>
+<p>This program performs a forward 2D-DCT on an image followed by an inverse 
+2D-DCT on the spectral data produced by the forward DCT.&nbsp; The result is to 
+use the spectral data to reconstruct a replica of the original image as shown in
+<a href="#Figure_1">Figure 1</a>.</p>
+<p><font color="#FF0000"><b>Re-quantize to eleven bits</b></font></p>
+<p>To partially simulate the behavior of the JPEG image compression algorithm, 
+all of the spectral results produced by 
+the forward transform are re-quantized so that the data could be stored in an 
+eleven-bit twos complement format <i>(-1024 to +1023)</i>.&nbsp; Although the 
+re-quantized data is 
+never actually stored in an eleven-bit integer format, this process should create the 
+same re-quantization noise that would be experienced if the data were actually 
+stored in eleven bits.</p>
+<p><font color="#FF0000"><b>Otherwise, nothing is done to the spectral data</b></font></p>
+<p>Other than the re-quantization to eleven bits mentioned above, nothing is 
+done to the spectral data following the forward DCT and before the inverse 
+DCT.&nbsp; However, additional processing, such as selective high-frequency 
+re-quantization and entropy compression, followed by decompression could be 
+inserted at that point in the program for demonstration purposes.</p>
+<p><font color="#FF0000"><b>Also runs under control of ImgMod02a</b></font></p>
+<p>As with the earlier program, this program is designed to run under control of the class named <b>ImgMod02a</b>.&nbsp; Enter 
+the following at the command line to run this program:</p>
+<b><pre><font size="3">java ImgMod02a ImgMod34 ImageFileName</font></pre></b></p>
+<p>where <i>ImageFileName</i> is the name of a .gif or .jpg file, including the 
+extension.</p>
+<p><font color="#FF0000"><b>Other class files required</b></font></p>
+<p>This program requires access to the following class files plus some inner 
+classes that are defined inside the following classes:</p>
+<ul>
+	<li>ImgMod34.class</li>
+	<li>ImgIntfc02.class</li>
+	<li>ImgMod02a.class</li>
+	<li>InverseDCT01.class</li>
+	<li>ForwardDCT01.class</li>
+</ul>
+<p>The source code for the first class in the list is presented in 
+<a href="#Listing_24">Listing 24</a>.&nbsp; The source code for the last two 
+classes in the list was developed and explained in the previous lesson entitled
+<a href="http://www.developer.com/java/other/article.php/3619081">Understanding the Discrete Cosine Transform 
+in Java</a>.&nbsp; The source code for the other two classes can be found in the 
+earlier lessons entitled
+<a href="http://developer.com/java/other/article.php/3403921">Processing Image 
+Pixels using Java, Getting Started</a> and
+<a href="http://www.developer.com/java/other/article.php/3441391">Processing 
+Image Pixels Using Java: Controlling Contrast and Brightness</a>.</p>
+<p><font color="#FF0000"><b>Program testing</b></font></p>
+<p>This program was tested using J2SE 5.0 and WinXP.&nbsp; J2SE 5.0 or later is required due to the use 
+of static imports.</p>
+<p><font color="#FF0000"><b>Code is very similar to earlier program</b></font></p>
+<p>Much of the code in this program is the same as, or very similar to the code 
+in the program named <b>ImgMod34a</b>, which I explained earlier in this lesson.&nbsp; 
+I won't repeat that explanation, but rather will simply refer you to 
+<a href="#Listing_24">Listing 24</a> 
+where you can find a complete listing of <b>ImgMod34</b>.&nbsp; I will 
+concentrate on the code that is different between the two programs.</p>
+<p><font color="#FF0000"><b>The beginning of the ImgMod34 class</b></font></p>
+<p><a name="Listing_16" href="#Listing_16">Listing 16</a> shows the beginning of the class definition 
+for <b>ImgMod34</b>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>class ImgMod34 implements ImgIntfc02{
+
+  //This method is required by ImgIntfc02.  It is called at
+  // the beginning of the run and each time thereafter that
+  // the user clicks the Replot button on the Frame
+  // containing the images.
+  public int[][][] <b>processImg</b>(int[][][] threeDPix,
+                              int imgRows,
+                              int imgCols){
+                                        
+//Code deleted for brevity
+    
+    //Extract and process the red plane
+    double[][] redPlane = extractPlane(working3D,1);
+    <b>processPlane</b>(redPlane);
+    //Insert the plane back into the 3D array
+    insertPlane(working3D,redPlane,1);<br><br><b><font face="Courier New,Courier"><a href="#Listing_16">Listing 16</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Note that 
+because of the similarity of the code in this portion of the program to the code 
+that I explained earlier, I deleted most of the code from
+<a href="#Listing_16">Listing 16</a>, leaving just enough code to keep us in synch with the execution 
+of the program.</p>
+<p>At this point, I will set the discussion of the method named <b>processImg</b> 
+aside and explain the method named <b>processPlane</b>, which is invoked near 
+the bottom of <a href="#Listing_16">Listing 16</a>.</p>
+<p><font color="#FF0000"><b>The processPlane method</b></font></p>
+<p>The code for the <b>processPlane</b> method begins in 
+<a name="Listing_17" href="#Listing_17">Listing 17</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  void <b>processPlane</b>(double[][] colorPlane){
+    
+//Code deleted for brevity.
+
+      insertCol(colorPlane,theXform,col);
+    }//end for loop
+<br><b><font face="Courier New,Courier"><a href="#Listing_17">Listing 17</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>This method processes a color plane received as an incoming parameter.</p>
+<ul>
+	<li>First it performs a forward 2D-DCT on the color plane producing spectral results.</li>
+	<li>Then it re-quantizes the spectral data such that it could be stored in 
+an eleven-bit twos complement integer format.</li>
+	<li>Following that, the method&nbsp;performs an inverse 2D-DCT on the spectral plane producing an image color plane.</li>
+</ul>
+<p>Once 
+again, for the reasons given earlier, I deleted most of the code from <a href="#Listing_17">Listing 17</a> for brevity.&nbsp; See 
+<a href="#Listing_24">Listing 24</a> for the 
+missing code.</p>
+<p><font color="#FF0000"><b>Re-quantization to eleven bits</b></font></p>
+<p>Although I'm not absolutely certain at this point as to the exact format that JPEG 
+uses to represent numeric spectral values, I'm reasonably confident that it is 
+not a Java <b>double</b> format, but instead is an integer format.&nbsp; One 
+source on the web, entitled
+<a href="http://stargate.ecn.purdue.edu/~ips/tutorials/jpeg/jpgdct1.html">The 
+JPEG Tutorial</a>, implies that the spectral values can range from -1024 to 
++1023.&nbsp; This strongly suggests an eleven-bit twos complement integer 
+format.</p>
+<p>To approximate this apparent characteristic of JPEG, 
+<a name="Listing_18" href="#Listing_18">Listing 18</a> 
+invokes the method named <b>requanToElevenBits</b> to re-quantize the data such 
+that it would fit into eleven bits <i>(-1024 to +1023)</i> as a twos complement integer type.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    //Get, save, and display the max value.
+    double max = getMax(colorPlane);
+    System.out.println(max);
+    <b>requanToElevenBits</b>(colorPlane,max/1023);
+    //Display requantized max value. (Should be 1023.)
+    System.out.println(getMax(colorPlane));
+<br><b><font face="Courier New,Courier"><a href="#Listing_18">Listing 18</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>This is probably not exactly how it is done in JPEG, but hopefully it is a 
+good approximation.</p>
+<blockquote>
+	<p><i>(Note that I am assuming that the maximum spectral value for the plane 
+	can be saved along with the spectral data until the time comes to perform 
+	the inverse transform.&nbsp; Exactly how that all is accomplished is still 
+	to be determined by my ongoing research into the details of the JPEG 
+	algorithm.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Not stored in an integer format</b></font></p>
+<p>In this program, even though the spectral data is re-quantized so that it 
+will fit into an eleven-bit integer format, the data is never actually stored in 
+an eleven-bit integer format.&nbsp; Rather, immediately after being 
+re-quantized, each value is converted back to type <b>double</b> for storage in 
+the array of type <b>double</b>.</p>
+<p><font color="#FF0000"><b>The method named requanToElevenBits</b></font></p>
+<p>You can view the method named <b>requanToElevenBits</b> in 
+<a href="#Listing_24">Listing 24</a>.&nbsp; 
+I am not going to explain that method in this lesson, but will explain 
+re-quantization in a general sense in a future lesson.</p>
+<blockquote>
+	<p><i>(Re-quantization plays a much more significant role in JPEG than the 
+	role that it plays in this program.&nbsp; In fact, re-quantization is one of 
+	the central components of JPEG compression, and for that reason, it will be 
+	the primary topic of a future lesson in its own right.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Image is currently in eleven-bit spectral format</b></font></p>
+<p>At this point, the image has been transformed from the image or space domain 
+into the frequency or wave-number domain.&nbsp; In addition, the spectral data 
+has been re-quantized so that it could be converted to an eleven-bit integer 
+format and stored in that format if there were a need to do so.</p>
+<blockquote>
+	<p><i>(According to my earlier <a href="#An_analogy_">analogy</a>, it has 
+	been transformed from water to ice.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Restore the spectral magnitude</b></font></p>
+<p>Now I will convert the spectral data back into image data.&nbsp; First I will 
+restore the magnitude of the spectral data that has been re-quantized to the 
+range -1024 to +1023.&nbsp; This is necessary so that the relative magnitudes 
+among the spectra for the three color planes will be correct.</p>
+<blockquote>
+	<p><i>(Note, however, that the spectral data may have been corrupted by the 
+	introduction of quantization noise as a result of having been re-quantized, 
+	and the following operation will not eliminate such quantization noise.&nbsp; 
+	Once the re-quantization noise is there, it is there to stay.)</i></p>
+</blockquote>
+<p><a name="Listing_19" href="#Listing_19">Listing 19</a> invokes the method named <b>
+restoreSpectralMagnitude</b> in order to restore the magnitude of the spectral 
+data.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    <b>restoreSpectralMagnitude</b>(colorPlane,max/1023);
+    //Display restored max value.
+    System.out.println(getMax(colorPlane));
+<br><b><font face="Courier New,Courier"><a href="#Listing_19">Listing 19</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The method named <b>restoreSpectralMagnitude</b> is straightforward and 
+shouldn't require an explanation.&nbsp; The method can be viewed in its entirety 
+in <a href="#Listing_24">Listing 24</a>.</p>
+<p><font color="#FF0000"><b>Perform the inverse 2D Discrete Cosine Transform</b></font></p>
+<p><a href="#Listing_20">Listing 20</a> uses the static method named <b>transform</b> 
+belonging to the class named <b>InverseDCT01</b> to perform the reverse of the 
+operation explained <a href="#Transform_one_row_at_a_time">earlier</a> that 
+began <a name="Listing_20">in</a> <a href="#Listing_5">Listing 5</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    //Extract each col from the spectral plane and perform
+    // an inverse DCT on the column.  Then insert it back
+    // into the color plane.
+    for(int col = 0;col &lt; imgCols;col++){
+      double[] theXform = extractCol(colorPlane,col);
+      
+      double[] theCol = new double[theXform.length];
+      //Now transform it back
+      InverseDCT01.transform(theXform,theCol);
+      
+      //Insert it back into the color plane.
+      insertCol(colorPlane,theCol,col);
+    }//end for loop
+
+    //Extract each row from the plane and perform an
+    // inverse DCT on the row. Then insert it back into the
+    // color plane.
+    for(int row = 0;row &lt; imgRows;row++){
+      double[] theXform = extractRow(colorPlane,row);
+      
+      double[] theRow = new double[theXform.length];
+      //Now transform it back
+      InverseDCT01.transform(theXform,theRow);
+      
+      //Insert it back in
+      insertRow(colorPlane,theRow,row);
+    }//end for loop
+    //End inverse transform code<br><br><b><font face="Courier New,Courier"><a href="#Listing_20">Listing 20</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>The transform method</b></font></p>
+<p>The static method named <b>transform</b> belonging to the class named <b>
+InverseDCT01</b> was explained in the previous lesson in this series.&nbsp; 
+Assuming that you have studied the earlier lesson entitled
+<a href="http://www.developer.com/java/other/article.php/3619081">Understanding 
+the Discrete Cosine Transform in Java</a>, there is nothing in <a href="#Listing_20">Listing 20</a> that 
+should require a further explanation.</p>
+<p><font color="#FF0000"><b>Clip at 0 and 255</b></font></p>
+<p>At this point, the spectral data has been converted back into image color 
+data and we are faced with the familiar problem of guaranteeing that the values 
+are compatible with representation as unsigned eight-bit values <i>(0 to 255).&nbsp;
+</i>In this case, I elected not to do anything fancy.&nbsp; 
+<a name="Listing_21" href="#Listing_21">Listing 21</a> invokes two methods that clip the values at 0 and 255 
+respectively, simply discarding any values that fall outside those bounds.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    clipToZero(colorPlane);
+    clipTo255(colorPlane);
+
+  }//end processPlane
+<br><b><font face="Courier New,Courier"><a href="#Listing_21">Listing 21</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Both of the methods invoked in <a href="#Listing_21">Listing 21</a> are straightforward.&nbsp; You can 
+view them in their entirety in <a href="#Listing_24">Listing 24</a>.</p>
+<p><font color="#FF0000"><b>Return control to the processImg method</b></font></p>
+<p><a href="#Listing_21">Listing 21</a> also signals the end of the <b>processPlane</b> method, returning 
+control to the code in the <b>processImg</b> method shown in <a href="#Listing_22">Listing 22</a>.</p>
+<p><a name="Listing_22" href="#Listing_22">Listing 22</a> shows the remaining code in the <b>
+processImg</b> method.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>//Back in the processImg method
+
+    //Extract and process the green plane
+    double[][] greenPlane = extractPlane(working3D,2);
+    processPlane(greenPlane);
+    //Insert the plane back into the 3D array
+    insertPlane(working3D,greenPlane,2);
+    
+    //Extract and process the blue plane
+    double[][] bluePlane = extractPlane(working3D,3);
+    processPlane(bluePlane);
+    //Insert the plane back into the 3D array
+    insertPlane(working3D,bluePlane,3);
+
+    //Convert the image color planes to type int and return
+    // the array of pixel data to the calling method.
+    output = copyToInt(working3D);
+    //Return a reference to the output array.
+    return output;
+
+  }//end processImg method<br><br><b><font face="Courier New,Courier"><a href="#Listing_22">Listing 22</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><a href="#Listing_22">Listing 22</a> processes the green and blue color planes in a manner identical to 
+the previous processing of the red color plane.</p>
+<p>Then <a href="#Listing_22">Listing 22</a> converts the resulting image data to the required <b>int</b> 
+format and returns the array reference to the calling method in the class named
+<b>ImgMod029a</b>.</p>
+<p><font color="#FF0000"><b>That's a wrap!</b></font></p>
+<p>So there you have it, </p>
+<ul>
+	<li>Transformation of an image into the frequency domain using a 2D Discrete 
+	Cosine Transform.</li>
+	<li>Re-quantization of the spectral data to fit in eleven bits.</li>
+	<li>Transformation of the re-quantized spectral data back into an image.</li>
+</ul>
+<p>The results for one image are shown in <a href="#Figure_1">Figure 1</a>.&nbsp; As mentioned earlier, 
+there appears to be some noise in the large empty areas of the image in 
+<a href="#Figure_1">Figure 1</a>, <i>(such as the empty white areas)</i>, which I believe is the result of the 
+introduction of quantization noise into the spectral data when re-quantizing the 
+spectral data to force it to fit in eleven bits.</p><center>
+<h2><a name="Run the program"></a>Run the Program</h2>
+</center>
+<p>I encourage you to copy and compile the code from <a href="#Listing_23">Listing 23</a> and 
+<a href="#Listing_24">Listing 24</a>.&nbsp; Experiment with 
+the code, making
+changes, and observing the results of your changes.</p>
+<p>For example, try eliminating the code in <b>ImgMod034</b> that re-quantizes 
+the spectral data to see if it makes any difference in the quality of the 
+resulting image.</p>
+<p>Try running <b>ImgMod34a</b> on a variety of different images to see if you 
+can reach any conclusions regarding the appearance of the wave-number 
+spectrum and the appearance of the image, as shown in <a href="#Figure_3">Figure 3</a>, 
+<a href="#Figure_5">Figure 5</a>, <a href="#Figure_7">Figure 
+7</a>, and <a href="#Figure_9">Figure 9</a> for example.</p>
+<h2 align="center"><a name="Summary">Summary</a></h2>
+<p>In this lesson, I taught you how to use the <i>forward</i> 2D-DCT to compute 
+and to display the wave-number spectrum of an image.&nbsp; I also taught you how 
+to apply the <i>inverse</i> 2D-DCT to the spectral data to reconstruct and 
+display a replica of the original image.</p>
+<h2 align="center"><a name="Whats Next">What's Next?</a></h2>
+<p>The next publication in this series will be the second part of this two-part 
+lesson on two-dimensional Discrete Cosine Transforms <i>(2D-DCT)</i>. </p>
+<p>Future lessons in this series will explain the inner workings behind several 
+data and image compression schemes, including the following:</p>
+<ul>
+	<li>Run-length data encoding</li>
+	<li>GIF image compression</li>
+	<li>JPEG image compression</li>
+</ul>
+<h2 align="center"><a name="References">References</a></h2>
+<p><font color="#ff0000"><b>General</b></font></p>
+<p><a href="http://www.developer.com/java/data/article.php/3586396">2440</a> Understanding the Lempel-Ziv Data Compression Algorithm in Java<br>
+<a href="http://www.developer.com/java/other/article.php/3603066">2442</a> Understanding the Huffman Data Compression Algorithm in Java<br>
+<a href="http://www.developer.com/java/other/article.php/3619081">2444</a> Understanding the Discrete Cosine Transform in Java<br>
+<a href="http://www.developer.com/java/other/article.php/10936_1554511_1">1468</a> 
+Plotting Engineering and Scientific Data using Java<br>
+<a href="http://www.developer.com/java/other/article.php/3374611">1478</a> Fun 
+with Java, How and Why Spectral Analysis Works <br>
+<a href="http://www.developer.com/java/other/article.php/3380031">1482</a> 
+Spectrum Analysis using Java, Sampling Frequency, Folding Frequency, and the FFT 
+Algorithm <br>
+<a href="http://www.developer.com/java/other/article.php/3392871">1483</a> 
+Spectrum Analysis using Java, Frequency Resolution versus Data Length <br>
+<a href="http://www.developer.com/java/other/article.php/3411041">1484</a> 
+Spectrum Analysis using Java, Complex Spectrum and Phase Angle <br>
+<a href="http://www.developer.com/java/other/article.php/3436341">1485</a> 
+Spectrum Analysis using Java, Forward and Inverse Transforms, Filtering in the 
+Frequency Domain <br>
+<a href="http://www.developer.com/java/other/article.php/3457251">1486</a> Fun 
+with Java, Understanding the Fast Fourier Transform (FFT) Algorithm<br>
+<a href="http://www.developer.com/java/other/article.php/3508706">1489</a> 
+Plotting 3D Surfaces using Java <br>
+<a href="http://www.developer.com/java/other/article.php/3519441">1490</a> 2D 
+Fourier Transforms using Java <br>
+<a href="http://www.developer.com/java/other/article.php/3526241">1491</a> 2D 
+Fourier Transforms using Java, Part 2</p>
+<p><font color="#ff0000"><b>Discrete Cosine Transform equations</b></font></p>
+<p><a href="http://en.wikipedia.org/wiki/Discrete_cosine_transform#DCT-II">
+Discrete cosine transform</a> - Wikipedia, the free encyclopedia<br>
+The Data Analysis Briefbook -
+<a href="http://rkb.home.cern.ch/rkb/AN16pp/node61.html">Discrete Cosine 
+Transform</a><br>
+<a href="http://www.ntu.edu.tw/">National Taiwan University</a> -
+<a href="http://www.cmlab.csie.ntu.edu.tw/cml/dsp/">DSP Group</a> -
+<a href="http://www.cmlab.csie.ntu.edu.tw/cml/dsp/training/coding/transform/dct.html">
+Discrete Cosine Transform</a></p>
+<center>
+<h2> <a name="Complete Program Listings"></a>Complete Program Listings</h2>
+</center>
+Complete listings of the programs discussed in this lesson are shown in
+<a name="Listing_23" href="#Listing_23">Listing 23</a> and <a href="#Listing_24">Listing 24</a> below. <br>
+&nbsp;
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>/*File ImgMod34a.java
+Copyright 2006, R.G.Baldwin
+
+This program is a modification of ImgMod34.  The purpose of
+this program is to compute and to display the wave-number 
+spectrum of an image using a Discrete Cosine Transform.
+
+This program performs a forward DCT on each color plane 
+belonging to an image producing a wave-number spectrum that
+describes each color plane in the image.
+
+Then it converts the wave-number spectrum to decibels and 
+normalizes the result to cover the range from 0 to 255.
+This makes it suitable for being displayed as an image.
+
+Then it returns the wave-number spectrum for each color 
+plane in an image format.
+
+When displayed as an image, the result is the composite of
+the normalized wave number spectra of all three color 
+planes.
+
+The capability is provided to enable statements that will
+effectively eliminate one, two, or all three of the color 
+planes from the computation.  This requires modification
+of the source code and recompilation of the program.
+
+The class is designed to be driven by the class named 
+ImgMod02a.  
+
+Enter the following at the command line to run this
+program:
+
+java ImgMod02a ImgMod34a ImageFileName
+
+where ImageFileName is the name of a .gif or .jpg file, 
+including the extension.
+
+When you click the Replot button, the process will be 
+repeated and the results will be re-displayed.  Because
+there is no opportunity for user input after the program is
+started, the Replot button is of little value to this 
+program.
+ 
+This program requires access to the following class files 
+plus some inner classes that are defined inside the
+following classes:
+
+ImgIntfc02.class
+ImgMod02a.class
+ImgMod34a.class
+ForwardDCT01.class
+
+Tested using J2SE 5.0 and WinXP.  J2SE 5.0 or later is 
+required due to the use of static imports.
+**********************************************************/
+import java.awt.*;
+import java.io.*;
+import static java.lang.Math.*;
+
+class ImgMod34a implements ImgIntfc02{
+  
+  //Note that many of the comments in this source code are
+  // left over from the class named ImgMod34, which was the
+  // class from which this class was created.
+                                        
+  //This method is required by ImgIntfc02.  It is called at
+  // the beginning of the run and each time thereafter that
+  // the user clicks the Replot button on the Frame
+  // contaning the images.
+  public int[][][] processImg(int[][][] threeDPix,
+                              int imgRows,
+                              int imgCols){
+
+    //Create an empty output array of the same size as the
+    // incoming array.
+    int[][][] output = new int[imgRows][imgCols][4];
+
+    //Make a working copy of the 3D pixel array as type
+    // double to avoid making permanent changes to the
+    // original image data.  Also, all processing will be
+    // performed as type double.
+    double[][][] working3D = copyToDouble(threeDPix);
+    
+    //The following code can be enabled to set any of the
+    // three colors to black, thus removing them from the
+    // output.
+    for(int row = 0;row &lt; imgRows;row++){
+      for(int col = 0;col &lt; imgCols;col++){
+//        working3D[row][col][1] = 0;
+//        working3D[row][col][2] = 0;
+//        working3D[row][col][3] = 0;
+      }//end inner loop
+    }//end outer loop
+    
+    //Extract and process the red plane
+    double[][] redPlane = extractPlane(working3D,1);
+    processPlane(redPlane);
+    //Insert the plane back into the 3D array
+    insertPlane(working3D,redPlane,1);
+    
+    //Extract and process the green plane
+    double[][] greenPlane = extractPlane(working3D,2);
+    processPlane(greenPlane);
+    //Insert the plane back into the 3D array
+    insertPlane(working3D,greenPlane,2);
+    
+    //Extract and process the blue plane
+    double[][] bluePlane = extractPlane(working3D,3);
+    processPlane(bluePlane);
+    //Insert the plane back into the 3D array
+    insertPlane(working3D,bluePlane,3);
+
+    //Convert the image color planes to type int and return
+    // the array of pixel data to the calling method.
+    output = copyToInt(working3D);
+    //Return a reference to the output array.
+    return output;
+
+  }//end processImg method
+  //-----------------------------------------------------//
+
+  //The purpose of this method is to extract a specified
+  // row from a double 2D plane and to return it as a one-
+  // dimensional array of type double.
+  double[] extractRow(double[][] colorPlane,int row){
+    int numCols = colorPlane[0].length;
+    double[] output = new double[numCols];
+    for(int col = 0;col &lt; numCols;col++){
+      output[col] = colorPlane[row][col];
+    }//end outer loop
+    return output;
+  }//end extractRow
+  //-----------------------------------------------------//
+
+  //The purpose of this method is to insert a specified
+  // row of double data into a double 2D plane.
+  void insertRow(double[][] colorPlane,
+                 double[] theRow,
+                 int row){
+    int numCols = colorPlane[0].length;
+    double[] output = new double[numCols];
+    for(int col = 0;col &lt; numCols;col++){
+      colorPlane[row][col] = theRow[col];
+    }//end outer loop
+  }//end insertRow
+  //-----------------------------------------------------//
+
+  //The purpose of this method is to extract a specified
+  // col from a double 2D plane and to return it as a one-
+  // dimensional array of type double.
+  double[] extractCol(double[][] colorPlane,int col){
+    int numRows = colorPlane.length;
+    double[] output = new double[numRows];
+    for(int row = 0;row &lt; numRows;row++){
+      output[row] = colorPlane[row][col];
+    }//end outer loop
+    return output;
+  }//end extractCol
+  //-----------------------------------------------------//
+
+  //The purpose of this method is to insert a specified
+  // col of double data into a double 2D color plane.
+  void insertCol(double[][] colorPlane,
+                 double[] theCol,
+                 int col){
+    int numRows = colorPlane.length;
+    double[] output = new double[numRows];
+    for(int row = 0;row &lt; numRows;row++){
+      colorPlane[row][col] = theCol[row];
+    }//end outer loop
+  }//end insertCol
+  //-----------------------------------------------------//
+
+  //The purpose of this method is to extract a color plane
+  // from the double version of an image and to return it
+  // as a 2D array of type double.
+  public double[][] extractPlane(
+                              double[][][] threeDPixDouble,
+                              int plane){
+    
+    int numImgRows = threeDPixDouble.length;
+    int numImgCols = threeDPixDouble[0].length;
+    
+    //Create an empty output array of the same
+    // size as a single plane in the incoming array of
+    // pixels.
+    double[][] output =new double[numImgRows][numImgCols];
+
+    //Copy the values from the specified plane to the
+    // double array.
+    for(int row = 0;row &lt; numImgRows;row++){
+      for(int col = 0;col &lt; numImgCols;col++){
+        output[row][col] =
+                          threeDPixDouble[row][col][plane];
+      }//end loop on col
+    }//end loop on row
+    return output;
+  }//end extractPlane
+  //-----------------------------------------------------//
+  
+  //The purpose of this method is to insert a double 2D
+  // plane into the double 3D array that represents an
+  // image.  This method also trims off any extra rows and
+  // columns in the double 2D plane.
+  public void insertPlane(
+                              double[][][] threeDPixDouble,
+                              double[][] colorPlane,
+                              int plane){
+    
+    int numImgRows = threeDPixDouble.length;
+    int numImgCols = threeDPixDouble[0].length;
+    
+    //Copy the values from the incoming color plane to the
+    // specified plane in the 3D array.
+    for(int row = 0;row &lt; numImgRows;row++){
+      for(int col = 0;col &lt; numImgCols;col++){
+        threeDPixDouble[row][col][plane] = 
+                                      colorPlane[row][col];
+      }//end loop on col
+    }//end loop on row
+  }//end insertPlane
+  //-----------------------------------------------------//
+
+  //This method copies an int version of a 3D pixel array
+  // to an new pixel array of type double.
+  double[][][] copyToDouble(int[][][] threeDPix){
+    int imgRows = threeDPix.length;
+    int imgCols = threeDPix[0].length;
+    
+    double[][][] new3D = new double[imgRows][imgCols][4];
+    for(int row = 0;row &lt; imgRows;row++){
+      for(int col = 0;col &lt; imgCols;col++){
+        new3D[row][col][0] = threeDPix[row][col][0];
+        new3D[row][col][1] = threeDPix[row][col][1];
+        new3D[row][col][2] = threeDPix[row][col][2];
+        new3D[row][col][3] = threeDPix[row][col][3];
+      }//end inner loop
+    }//end outer loop
+    return new3D;
+  }//end copyToDouble
+  //-----------------------------------------------------//
+  
+  //This method copies double version of a 3D pixel array
+  // to a new pixel array of type int.
+  int[][][] copyToInt(double[][][] threeDPixDouble){
+    int imgRows = threeDPixDouble.length;
+    int imgCols = threeDPixDouble[0].length;
+    
+    int[][][] new3D = new int[imgRows][imgCols][4];
+    for(int row = 0;row &lt; imgRows;row++){
+      for(int col = 0;col &lt; imgCols;col++){
+        new3D[row][col][0] = 
+                         (int)threeDPixDouble[row][col][0];
+        new3D[row][col][1] = 
+                         (int)threeDPixDouble[row][col][1];
+        new3D[row][col][2] = 
+                         (int)threeDPixDouble[row][col][2];
+        new3D[row][col][3] = 
+                         (int)threeDPixDouble[row][col][3];
+      }//end inner loop
+    }//end outer loop
+    return new3D;
+  }//end copyToInt
+  //-----------------------------------------------------//
+  
+  //This method processes a color plane received as an
+  // incoming parameter.  First it performs a 2D-DCT on
+  // the color plane producing spectral results.  Then it
+  // normalizes the spectral values in the plane to make
+  // them compatible with being displayed as an image.  In
+  // so doing, it converts the spectral data to decibels in
+  // order to preserve the plotting dynamic range.
+
+  void processPlane(double[][] colorPlane){
+    
+    int imgRows = colorPlane.length;
+    int imgCols = colorPlane[0].length;
+    
+    //Extract each row from the color plane and perform a
+    // forward DCT on the row.  Then insert it back into
+    // the color plane.
+    for(int row = 0;row &lt; imgRows;row++){
+      double[] theRow = extractRow(colorPlane,row);
+      
+      double[] theXform = new double[theRow.length];
+      ForwardDCT01.transform(theRow,theXform);
+      
+      //Insert the transformed row into the color plane.
+      // The row now contains spectral data.
+      insertRow(colorPlane,theXform,row);
+    }//end for loop
+    
+    //Extract each col from the color plane and perform a
+    // forward DCT on the column.  Then insert it back into
+    // the color plane.
+    for(int col = 0;col &lt; imgCols;col++){
+      double[] theCol = extractCol(colorPlane,col);
+
+      double[] theXform = new double[theCol.length];
+      ForwardDCT01.transform(theCol,theXform);
+
+      insertCol(colorPlane,theXform,col);
+    }//end for loop
+    
+    //At this point, the image has been transformed from
+    // image or space data to spectral data in both
+    // dimensions.
+    
+    //Normalize the spectral values to the range 0 - 255.
+    normalize(colorPlane);
+  }//end processPlane
+  //-----------------------------------------------------//
+  //Normalizes the data in a 2D double plane to make it
+  // compatible with being displayed as an image plane.
+  //First all negative values are converted to positive
+  // values.
+  //Then all values are converted to log base 10 to
+  // preserve the dynamic range of the plotting system. 
+  // All negative values are set to 0 at this point.
+  //Then all values that are below X-percent of the maximum
+  // value are set to X-percent of the maximum value
+  // producing a floor for the values.
+  //Then all values are biased so that the minimum value
+  // (the floor) becomes 0.
+  //Then all values are scaled so that the maximum value
+  // becomes 255.
+  void normalize(double[][] plane){
+    int rows = plane.length;
+    int cols = plane[0].length;
+    
+    //Begin by converting all negative values to positive
+    // values.  This is equivalent to the computation of
+    // the magnitude for purely real data.
+    for(int row = 0;row &lt; rows;row++){
+      for(int col = 0;col &lt; cols;col++){
+        if(plane[row][col] &lt; 0){
+          plane[row][col] = - plane[row][col];
+        }//end if
+      }//end inner loop
+    }//end outer loop
+    
+    //Convert the values to log base 10 to preserve the
+    // dynamic range of the plotting system.  Set negative
+    // values to 0.
+
+    //First eliminate or change any values that are
+    // incompatible with log10 method.
+    for(int row = 0;row &lt; rows;row++){
+      for(int col = 0;col &lt; cols;col++){
+        if(plane[row][col] == 0.0){
+          plane[row][col] = 0.0000001;
+        }else if(plane[row][col] == Double.NaN){
+          plane[row][col] = 0.0000001;
+        }else if(plane[row][col] == 
+                                 Double.POSITIVE_INFINITY){
+          plane[row][col] = 9999999999.0;
+        }//end else
+      }//end inner loop
+    }//end outer loop
+
+    //Now convert the data to log base 10 setting all
+    // negative results to 0.
+    for(int row = 0;row &lt; rows;row++){
+      for(int col = 0;col &lt; cols;col++){
+        plane[row][col] = log10(plane[row][col]);
+        if(plane[row][col] &lt; 0){
+          plane[row][col] = 0;
+        }//end if
+      }//end inner loop
+    }//end outer loop
+
+
+    //Now set everything below X-percent of the maximum
+    // value to X-percent of the maximum value where X is
+    // determined by the value of scale.
+    double scale = 1.0/7.0;
+    //First find the maximum value.
+    double max = Double.MIN_VALUE;
+    for(int row = 0;row &lt; rows;row++){
+      for(int col = 0;col &lt; cols;col++){
+        if(plane[row][col] &gt; max){
+          max = plane[row][col];
+        }//end if
+      }//end inner loop
+    }//end outer loop
+
+    //Now set everything below X-percent of the maximum to
+    // X-percent of the maximum value and slide
+    // everything down to cause the new minimum to be
+    // at 0.0
+    for(int row = 0;row &lt; rows;row++){
+      for(int col = 0;col &lt; cols;col++){
+        if(plane[row][col] &lt; scale * max){
+          plane[row][col] = scale * max;
+        }//end if
+        plane[row][col] -= scale * max;
+      }//end inner loop
+    }//end outer loop
+    
+    //Now scale the data so that the maximum value is 255.
+
+    //First find the maximum value
+    max = Double.MIN_VALUE;
+    for(int row = 0;row &lt; rows;row++){
+      for(int col = 0;col &lt; cols;col++){
+        if(plane[row][col] &gt; max){
+          max = plane[row][col];
+        }//end if
+      }//end inner loop
+    }//end outer loop
+    //Now scale the data.
+    for(int row = 0;row &lt; rows;row++){
+      for(int col = 0;col &lt; cols;col++){
+        plane[row][col] = plane[row][col] * 255.0/max;
+      }//end inner loop
+    }//end outer loop
+
+  }//end normalize
+  //-----------------------------------------------------//
+
+}//end class ImgMod34a<br><br><b><font face="Courier New,Courier"><a href="#Listing_23">Listing 23</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<p> </p>
+<p><a name="Listing_24"><a href="#Listing_24">Listing 24</a></a></p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>/*File ImgMod34.java
+Copyright 2006, R.G.Baldwin
+
+This program performs a forward DCT on an image followed by
+an inverse DCT on the spectral planes produced by the 
+forward DCT.
+
+To partially simulate the behavior of JPEG, the spectral
+results produced by the forward transform are requantized
+so that the data could be stored in an eleven-bit twos
+complement format (-1024 to +1023).  However, the data is
+never actually stored in an integer format.  However, this
+process should create the same requantization noise that
+would be experienced if the data were actually stored in
+eleven bits.
+
+Other than the requantization to eleven bits mentioned 
+above, nothing is done to the spectral planes following the
+forward DCT and before the inverse DCT.  However, 
+additional processing, such as high-frequency 
+requantization and entropy compression, followed by 
+decompression could be inserted at that point in the 
+program for demonstration purposes.
+
+This program runs significantly slower than ImgMod35,
+which sub-divides the image into 8x8-pixel subplanes and 
+processes the subplanes separately.
+
+The class is designed to be driven by the class named 
+ImgMod02a.  
+
+Enter the following at the command line to run this
+program:
+
+java ImgMod02a ImgMod34 ImageFileName
+
+where ImageFileName is the name of a .gif or .jpg file, 
+including the extension.
+
+
+When you click the Replot button, the process will be 
+repeated and the results will be re-displayed.  Because
+there is no opportunity for user input after the program is
+started, the Replot button is of little value to this 
+program.
+ 
+This program requires access to the following class files 
+plus some inner classes that are defined inside the
+following classes:
+
+ImgIntfc02.class
+ImgMod02a.class
+ImgMod34.class
+InverseDCT01.class
+ForwardDCT01.class
+
+Tested using J2SE 5.0 and WinXP.  J2SE 5.0 or later is 
+required due to the use of static imports.
+**********************************************************/
+import java.awt.*;
+import java.io.*;
+import static java.lang.Math.*;
+
+class ImgMod34 implements ImgIntfc02{
+                                        
+  //This method is required by ImgIntfc02.  It is called at
+  // the beginning of the run and each time thereafter that
+  // the user clicks the Replot button on the Frame
+  // contaning the images.
+  public int[][][] processImg(int[][][] threeDPix,
+                              int imgRows,
+                              int imgCols){
+
+    //Create an empty output array of the same size as the
+    // incoming array.
+    int[][][] output = new int[imgRows][imgCols][4];
+
+    //Make a working copy of the 3D pixel array as type
+    // double to avoid making permanent changes to the
+    // original image data.  Also, all processing will be
+    // performed as type double.
+    double[][][] working3D = copyToDouble(threeDPix);
+    
+    //The following code can be enabled to set any of the
+    // three colors to black, thus removing them from the
+    // output.
+    for(int row = 0;row &lt; imgRows;row++){
+      for(int col = 0;col &lt; imgCols;col++){
+//        working3D[row][col][1] = 0;
+//        working3D[row][col][2] = 0;
+//        working3D[row][col][3] = 0;
+      }//end inner loop
+    }//end outer loop
+    
+    //Extract and process the red plane
+    double[][] redPlane = extractPlane(working3D,1);
+    processPlane(redPlane);
+    //Insert the plane back into the 3D array
+    insertPlane(working3D,redPlane,1);
+    
+    //Extract and process the green plane
+    double[][] greenPlane = extractPlane(working3D,2);
+    processPlane(greenPlane);
+    //Insert the plane back into the 3D array
+    insertPlane(working3D,greenPlane,2);
+    
+    //Extract and process the blue plane
+    double[][] bluePlane = extractPlane(working3D,3);
+    processPlane(bluePlane);
+    //Insert the plane back into the 3D array
+    insertPlane(working3D,bluePlane,3);
+
+    //Convert the image color planes to type int and return
+    // the array of pixel data to the calling method.
+    output = copyToInt(working3D);
+    //Return a reference to the output array.
+    return output;
+
+  }//end processImg method
+  //-----------------------------------------------------//
+
+  //The purpose of this method is to extract a specified
+  // row from a double 2D plane and to return it as a one-
+  // dimensional array of type double.
+  double[] extractRow(double[][] colorPlane,int row){
+    int numCols = colorPlane[0].length;
+    double[] output = new double[numCols];
+    for(int col = 0;col &lt; numCols;col++){
+      output[col] = colorPlane[row][col];
+    }//end outer loop
+    return output;
+  }//end extractRow
+  //-----------------------------------------------------//
+
+  //The purpose of this method is to insert a specified
+  // row of double data into a double 2D plane.
+  void insertRow(double[][] colorPlane,
+                 double[] theRow,
+                 int row){
+    int numCols = colorPlane[0].length;
+    double[] output = new double[numCols];
+    for(int col = 0;col &lt; numCols;col++){
+      colorPlane[row][col] = theRow[col];
+    }//end outer loop
+  }//end insertRow
+  //-----------------------------------------------------//
+
+  //The purpose of this method is to extract a specified
+  // col from a double 2D plane and to return it as a one-
+  // dimensional array of type double.
+  double[] extractCol(double[][] colorPlane,int col){
+    int numRows = colorPlane.length;
+    double[] output = new double[numRows];
+    for(int row = 0;row &lt; numRows;row++){
+      output[row] = colorPlane[row][col];
+    }//end outer loop
+    return output;
+  }//end extractCol
+  //-----------------------------------------------------//
+
+  //The purpose of this method is to insert a specified
+  // col of double data into a double 2D color plane.
+  void insertCol(double[][] colorPlane,
+                 double[] theCol,
+                 int col){
+    int numRows = colorPlane.length;
+    double[] output = new double[numRows];
+    for(int row = 0;row &lt; numRows;row++){
+      colorPlane[row][col] = theCol[row];
+    }//end outer loop
+  }//end insertCol
+  //-----------------------------------------------------//
+
+  //The purpose of this method is to extract a color plane
+  // from the double version of an image and to return it
+  // as a 2D array of type double.
+  public double[][] extractPlane(
+                              double[][][] threeDPixDouble,
+                              int plane){
+    
+    int numImgRows = threeDPixDouble.length;
+    int numImgCols = threeDPixDouble[0].length;
+    
+    //Create an empty output array of the same
+    // size as a single plane in the incoming array of
+    // pixels.
+    double[][] output =new double[numImgRows][numImgCols];
+
+    //Copy the values from the specified plane to the
+    // double array.
+    for(int row = 0;row &lt; numImgRows;row++){
+      for(int col = 0;col &lt; numImgCols;col++){
+        output[row][col] =
+                          threeDPixDouble[row][col][plane];
+      }//end loop on col
+    }//end loop on row
+    return output;
+  }//end extractPlane
+  //-----------------------------------------------------//
+  
+  //The purpose of this method is to insert a double 2D
+  // plane into the double 3D array that represents an
+  // image.  This method also trims off any extra rows and
+  // columns in the double 2D plane.
+  public void insertPlane(
+                              double[][][] threeDPixDouble,
+                              double[][] colorPlane,
+                              int plane){
+    
+    int numImgRows = threeDPixDouble.length;
+    int numImgCols = threeDPixDouble[0].length;
+    
+    //Copy the values from the incoming color plane to the
+    // specified plane in the 3D array.
+    for(int row = 0;row &lt; numImgRows;row++){
+      for(int col = 0;col &lt; numImgCols;col++){
+        threeDPixDouble[row][col][plane] = 
+                                      colorPlane[row][col];
+      }//end loop on col
+    }//end loop on row
+  }//end insertPlane
+  //-----------------------------------------------------//
+
+  //This method copies an int version of a 3D pixel array
+  // to an new pixel array of type double.
+  double[][][] copyToDouble(int[][][] threeDPix){
+    int imgRows = threeDPix.length;
+    int imgCols = threeDPix[0].length;
+    
+    double[][][] new3D = new double[imgRows][imgCols][4];
+    for(int row = 0;row &lt; imgRows;row++){
+      for(int col = 0;col &lt; imgCols;col++){
+        new3D[row][col][0] = threeDPix[row][col][0];
+        new3D[row][col][1] = threeDPix[row][col][1];
+        new3D[row][col][2] = threeDPix[row][col][2];
+        new3D[row][col][3] = threeDPix[row][col][3];
+      }//end inner loop
+    }//end outer loop
+    return new3D;
+  }//end copyToDouble
+  //-----------------------------------------------------//
+  
+  //This method copies double version of a 3D pixel array
+  // to a new pixel array of type int.
+  int[][][] copyToInt(double[][][] threeDPixDouble){
+    int imgRows = threeDPixDouble.length;
+    int imgCols = threeDPixDouble[0].length;
+    
+    int[][][] new3D = new int[imgRows][imgCols][4];
+    for(int row = 0;row &lt; imgRows;row++){
+      for(int col = 0;col &lt; imgCols;col++){
+        new3D[row][col][0] = 
+                         (int)threeDPixDouble[row][col][0];
+        new3D[row][col][1] = 
+                         (int)threeDPixDouble[row][col][1];
+        new3D[row][col][2] = 
+                         (int)threeDPixDouble[row][col][2];
+        new3D[row][col][3] = 
+                         (int)threeDPixDouble[row][col][3];
+      }//end inner loop
+    }//end outer loop
+    return new3D;
+  }//end copyToInt
+  //-----------------------------------------------------//
+  
+  //The purpose of this method is to clip all negative 
+  // color values in a double color plane to a value of 0.
+  void clipToZero(double[][] colorPlane){
+    int numImgRows = colorPlane.length;
+    int numImgCols = colorPlane[0].length;
+    //Do the clip
+    for(int row = 0;row &lt; numImgRows;row++){
+      for(int col = 0;col &lt; numImgCols;col++){
+        if(colorPlane[row][col] &lt; 0){
+          colorPlane[row][col] = 0;
+        }//end if
+      }//end inner loop
+    }//end outer loop
+  }//end clipToZero
+  //-----------------------------------------------------//
+  //The purpose of this method is to clip all color values
+  // in a double color plane that are greater than 255 to
+  // a value of 255.
+  void clipTo255(double[][] colorPlane){
+    int numImgRows = colorPlane.length;
+    int numImgCols = colorPlane[0].length;
+    //Do the clip
+    for(int row = 0;row &lt; numImgRows;row++){
+      for(int col = 0;col &lt; numImgCols;col++){
+        if(colorPlane[row][col] &gt; 255){
+          colorPlane[row][col] = 255;
+        }//end if
+      }//end inner loop
+    }//end outer loop
+  }//end clipTo255
+  //-----------------------------------------------------//
+  
+  //This method processes a color plane received as an
+  // incoming parameter.  First it performs a 2D-DCT on
+  // the color plane producing spectral results.  Then it
+  // performs an inverse DCT on the spectral plane
+  // producing an image color plane.
+  void processPlane(double[][] colorPlane){
+    
+    int imgRows = colorPlane.length;
+    int imgCols = colorPlane[0].length;
+    
+    //Extract each row from the color plane and perform a
+    // forward DCT on the row.  Then insert it back into
+    // the color plane.
+    for(int row = 0;row &lt; imgRows;row++){
+      double[] theRow = extractRow(colorPlane,row);
+      
+      double[] theXform = new double[theRow.length];
+      ForwardDCT01.transform(theRow,theXform);
+      
+      //Insert the transformed row into the color plane.
+      // The row now contains spectral data.
+      insertRow(colorPlane,theXform,row);
+    }//end for loop
+    
+    //Extract each col from the color plane and perform a
+    // forward DCT on the column.  Then insert it back into
+    // the color plane.
+    for(int col = 0;col &lt; imgCols;col++){
+      double[] theCol = extractCol(colorPlane,col);
+
+      double[] theXform = new double[theCol.length];
+      ForwardDCT01.transform(theCol,theXform);
+
+      insertCol(colorPlane,theXform,col);
+    }//end for loop
+    
+    //To approximate the behavior of JPEG, I need to
+    // re-quantize the data such that it would fit into
+    // eleven bits (-1024 to +1023) as an integer type.
+    // This is probably not exactly how it is done in
+    // JPEG, but hopefully it is a good approximation.
+    // I am assuming that the maximum value for this
+    // plane can be saved along with the spectral data
+    // until time comes to perform the inverse transform.
+    //Note that in this program, even though the spectral
+    // data is requantized so that it will fit into
+    // an eleven-bit integer format, the data is never
+    // actually stored in an eleven-bit integer format.
+    // Rather, immediately after being requantized, each
+    // value is converted back to type double for storage
+    // in the array of type double[][].
+    
+    //Get, save, and display the max value.
+    double max = getMax(colorPlane);
+    System.out.println(max);
+    requanToElevenBits(colorPlane,max/1023);
+    //Display requantized max value. (Should be 1023.)
+    System.out.println(getMax(colorPlane));
+    
+    //At this point, the image has been transformed from
+    // image or space data to spectral data in both
+    // dimensions. In addition, the spectral data has been
+    // requantized so that could be converted to an
+    // eleven-bit integer format and stored in that format
+    // if there were a need to do so. 
+    
+    //Now convert the spectral data back into image data.
+    
+    //First restore the magnitude of the spectral data
+    // that has been requantized to the range -1024 to
+    // +1023.  This is necessary so that the relative
+    // magnitudes among the spectra for the three color
+    // planes will be correct.
+    //Note that the spectral data may have been corrupted
+    // by quantization noise as a result of having
+    // been requantized.
+    restoreSpectralMagnitude(colorPlane,max/1023);
+    //Display restored max value.
+    System.out.println(getMax(colorPlane));
+    
+    //Extract each col from the spectral plane and perform
+    // an inverse DCT on the column.  Then insert it back
+    // into the color plane.
+    for(int col = 0;col &lt; imgCols;col++){
+      double[] theXform = extractCol(colorPlane,col);
+      
+      double[] theCol = new double[theXform.length];
+      //Now transform it back
+      InverseDCT01.transform(theXform,theCol);
+      
+      //Insert it back into the color plane.
+      insertCol(colorPlane,theCol,col);
+    }//end for loop
+
+    //Extract each row from the plane and perform an
+    // inverse DCT on the row. Then insert it back into the
+    // color plane.
+    for(int row = 0;row &lt; imgRows;row++){
+      double[] theXform = extractRow(colorPlane,row);
+      
+      double[] theRow = new double[theXform.length];
+      //Now transform it back
+      InverseDCT01.transform(theXform,theRow);
+      
+      //Insert it back in
+      insertRow(colorPlane,theRow,row);
+    }//end for loop
+    //End inverse transform code
+
+    //At this point, the spectral data has been converted
+    // back into image color data.  Ultimately it will be
+    // necessary to convert it to 8-bit unsigned pixel
+    // color format in order to display it as an image.
+    //  Clip to zero and 255.
+    clipToZero(colorPlane);
+    clipTo255(colorPlane);
+
+  }//end processPlane
+  //-----------------------------------------------------//
+
+  //Purpose: to find and return the maximum value
+  double getMax(double[][] plane){
+    int rows = plane.length;
+    int cols = plane[0].length;
+    double max = Double.MIN_VALUE;
+    for(int row = 0;row &lt; rows;row++){
+      for(int col = 0;col &lt; cols;col++){
+        double value = plane[row][col];
+        if(value &lt; 0){
+          value = -value;
+        }//end if
+        if(value &gt; max){
+          max = value;
+        }//end if
+      }//end inner loop
+    }//end outer loop
+    return max;
+  }//end getMax
+  //-----------------------------------------------------//
+  
+  //Purpose:  To requantize the spectral data such that it
+  // would fit into eleven bits (-1024 to 1023).  Note
+  // that even though the data is rounded to type int in
+  // this method, it is immediately converted back to type
+  // double when it is stored in the array referred to by
+  // plane.  Thus, it is never actually stored in an 
+  // integer format.
+  void requanToElevenBits(double[][] plane,double divisor){
+    int rows = plane.length;
+    int cols = plane[0].length;
+    for(int row = 0;row &lt; rows;row++){
+      for(int col = 0;col &lt; cols;col++){
+        plane[row][col] = round(plane[row][col]/divisor);
+      }//end inner loop
+    }//end outer loop
+  }//end requanToElevenBits
+  //-----------------------------------------------------//
+  
+  //Purpose:  To restore the magnitude of spectral data
+  // that has been requantized to the range from -1024 to
+  // +1023.  This is necessary so that the relative
+  // magnitude among the spectra for the three color planes
+  // will be correct.
+  void restoreSpectralMagnitude(
+                           double[][] plane,double factor){
+    int rows = plane.length;
+    int cols = plane[0].length;
+    for(int row = 0;row &lt; rows;row++){
+      for(int col = 0;col &lt; cols;col++){
+        plane[row][col] = factor * plane[row][col];
+      }//end inner loop
+    }//end outer loop
+  }//end restoreSpectralMagnitude
+  //-----------------------------------------------------//
+}//end class ImgMod34<br><br><b><font face="Courier New,Courier"><a href="#Listing_24">Listing 24</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<p> </p>
+<hr align="center" size="3" width="100%">
+<p>Copyright 2006, Richard G. Baldwin.&nbsp; Reproduction in whole or in part in any 
+form or medium without express written permission from Richard Baldwin is 
+prohibited. </p>
+<h4>About the author</h4>
+<b><a href="mailto:Baldwin@DickBaldwin.com">Richard Baldwin</a></b><i> is a 
+college professor (at Austin Community College in Austin, TX) and private 
+consultant whose primary focus is a combination of Java, C#, and XML. In 
+addition to the many platform and/or language independent benefits of Java and 
+C# applications, he believes that a combination of Java, C#, and XML will become 
+the primary driving force in the delivery of structured information on the Web.</i>    
+<p><i>Richard has participated in numerous consulting projects and he 
+frequently provides onsite training at the high-tech companies located in and 
+around Austin, Texas.&nbsp; He is the author of Baldwin's Programming
+<a href="http://www.dickbaldwin.com">Tutorials</a>, which have gained a 
+worldwide following among experienced and aspiring programmers. He has also 
+published articles in JavaPro magazine.</i> </p>
+<p><i>In addition to his programming expertise, Richard has many years of 
+practical experience in Digital Signal Processing (DSP).&nbsp; His first job after he 
+earned his Bachelor's degree was doing DSP in the Seismic Research Department of 
+Texas Instruments.&nbsp; (TI is still a world leader in DSP.)&nbsp; In the following 
+years, he applied his programming and DSP expertise to other interesting areas 
+including sonar and underwater acoustics.</i> </p>
+<p><i>Richard holds an MSEE degree from Southern Methodist University and has 
+many years of experience in the application of computer technology to real-world 
+problems.</i> </p>
+<p><i><a href="mailto:baldwin@dickbaldwin.com">Baldwin@DickBaldwin.com</a></i>
+</p>
+<p><b>Keywords</b><br>
+java data image compression two-dimensional Discrete Cosine Transform, DCT 
+Huffman Lempel Ziv </p>
+<p>-end- </p>
+<p>&nbsp;</p>
+<p> <br>
+&nbsp; </p>
+<br>
+<br>
+<br>
+<br>
+</body>
+</html>

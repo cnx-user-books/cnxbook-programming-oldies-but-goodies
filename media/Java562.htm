@@ -1,0 +1,1181 @@
+<html><head>
+   <meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
+   <meta name="generator" content="mozilla/4.04 [en] (win95; i) [netscape]">
+   <meta name="author" content="richard g. baldwin">
+   <title>... in Java by Richard G Baldwin</title></head><body><!--start-->
+
+<center><h3><b><i>Richard G Baldwin (512) 223-4758, <a href="mailto:baldwin@austin.cc.tx.us">baldwin@austin.cc.tx.us</a>,
+<a href="http://www2.austin.cc.tx.us/baldwin/">http://www2.austin.cc.tx.us/baldwin/</a></i></b></h3></center>
+
+<center><h2><b><!--title-->Network Programming - Server Sockets<!--endtitle--></b></h2></center>
+Java Programming, Lesson # 562, Revised 01/23/98.
+<ul><li><a href="#preface">Preface</a></li>
+
+<li><a href="#introduction">Introduction</a></li>
+
+<li><a href="#server program">Server Program</a></li>
+
+<ul><li><a href="#code fragments">Code Fragments</a></li>
+
+<ul><li><a href="#security manager">Security Manager</a></li>
+
+<li><a href="#echo server">Echo Server</a></li>
+
+<li><a href="#http server">HTTP Server</a></li></ul>
+
+<li><a href="#program listing">Program Listing</a></li></ul></ul>
+
+<hr width="100%"><center><h2><a name="preface"></a><b><font color="#ff0000">Preface</font></b></h2></center>
+Students in Prof. Baldwin's <b><u>Advanced Java Programming</u></b> classes
+at ACC are responsible for knowing and understanding all of the material
+in this lesson.
+<center><h2><a name="introduction"></a><font color="#ff0000">Introduction</font></h2></center>
+As you are already aware, sockets come in three varieties which are implemented
+by the Java classes named <b>Socket</b>, <b>DatagramSocket</b>, and <b>ServerSocket</b>.
+The first two socket classes represent <b>TCP</b> and <b>UDP</b> communications
+respectively.
+
+<p>Generally, the two socket classes are used to implement both <i>clients
+</i>and <i>servers </i>, while the <b>ServerSocket</b> class is used to
+implement <i>servers</i>.
+
+<p>A previous lesson illustrated how to use the <b>Socket</b> class to
+implement several different types of <i>clients.</i> All of them were relatively
+simple, and we learned that the difficulty in socket programming derives
+from the requirements to implement the application protocol and not from
+the sockets themselves.
+
+<p>In this lesson, we will develop a considerably more substantive program.
+This program will be a TCP/IP <i>server</i>, implemented using <b>Socket</b>
+and <b>ServerSocket</b>, that can support both the <i>echo </i>port protocol
+and part of the HTTP protocol.
+
+<p>In addition, this program will illustrate how to implement a custom
+security manager for a Java application.
+
+<p>We will defer discussion of the <b>DatagramSocket</b> class until a
+subsequent lesson.
+
+<p>Socket programming provides a low-level mechanism by which you can connect
+two computers for the exchange of data. One of those is considered to be
+the <i>client </i>and the other is considered to be the <i>server</i>.
+
+<p>The <i>client </i>initiates a connection with a <i>server.</i> <i>Servers</i>
+wait for a <i>clients</i> to initiate connections.
+
+<p>Socket programming makes it possible for you to cause data to flow in
+a full-duplex mode between a <i>client </i>and a <i>server</i>.
+<center><h2><a name="server program"></a><font color="#ff0000">Server Program</font></h2></center>
+This program uses sockets to implement two different servers on an IP network.
+The program is intended for illustration and experimentation purposes only.
+
+<p><b><u>If you use this program for any purpose, you are using it at your
+own risk</u></b>.
+
+<p>If you use this program, you should tighten the security manager to
+the degree needed by your particular situation. You can tighten the security
+manager by removing the overridden methods that begin with the word <b>check
+</b>(such as <b>checkAccept</b>) in the class named <b>ServerSecurityManager</b>.
+
+<p>This program implements <u>two different servers</u> operating on two
+different ports on the same computer running the same program.
+
+<p>One of the servers is an <i>"echo" </i>server that implemented by using
+a thread object to monitor port 7. This server echoes the string that it
+receives from a client. Port 7 is the standard echo port.
+
+<p>The other server is an abbreviated HTTP server implemented by using
+a thread object to monitor port 80. Port 80 is the standard HTTP port.
+This server has the ability to respond to a <b>GET </b>command from a client
+and deliver a specified file as a stream of bytes.
+
+<p>Two different servers were implemented on two different ports in this
+program to illustrate the manner in which threads can be used to service
+multiple ports within the same program.
+
+<p>A custom security manager is implemented which attempts to prevent the
+server from delivering any files other than those in the current directory
+or in a subdirectory of the current directory. The current directory is
+the directory from which the server program was started.
+
+<p>Otherwise, the security manager is wide open and doesn't enforce any
+security at all.
+
+<p>Please <u>DO NOT</u> install this server on your network and leave it
+unattended because client computers could then connect and have broad access
+to your computer.
+
+<p>This program was tested using JDK 1.1.3 under Win95.
+
+<p>You must be logged onto an appropriate network for this program to run
+properly. Otherwise, it will throw an exception of type <b>UnknownHostException</b>.
+
+<p>To test this program on a Win95 system, simply start the program as
+a normal Java application prior to starting the <i>client</i> program being
+used to test the program (or before causing the <i>client</i> program to
+attempt to contact the server).
+
+<p>The HTTP portion of this program can be tested under Win95 using an
+ordinary browser by constructing a URL using the server name <b>localhost</b>
+and entering that URL in the browser's <i>Location</i> field. Your browser
+should connect to this program and attempt to download the files that you
+specify in the URL.
+
+<p>The HTTP portion of the program can also be tested using the client
+program named <b>Sockets06</b> which was designed specifically for testing
+the security manager installed in this program. A listing of <b>Sockets06</b>
+is provided near the end of this lesson.
+
+<p>You can also test the security manager portion of this program using
+an ordinary browser by specifying illegal file names in the URL.
+
+<p>The echo portion of this program can be tested using the client program
+named <b>Sockets05</b> which was designed specifically for testing this
+program. A listing of this program is also provided near the end of this
+lesson.
+
+<p>I assume that the same, or similar test procedures can also be used
+on other platforms, but since I don't have access to other platforms, I
+have no way to verify that assumption.
+<center><h3><a name="code fragments"></a><font color="#ff0000">Code Fragments</font></h3></center>
+This program has a security manager. However, it is a Java <b>application</b>,
+it is <u>not</u> an <b>applet</b>.
+
+<p>The <b>main()</b> method of the controlling class for this program contains
+three significant statements as shown below.
+
+<p>The first statement <u>establishes a custom security manager</u> for
+the program. I will have more to say about the security manager later.
+
+<p>The second statement instantiates a <u>server object that monitors port
+80</u>. This server object implements part of the HTTP protocol and delivers
+specified files to web browsers.
+
+<p>The third statement instantiates a <u>server object that monitors port
+7</u>. This server object functions as an <i>echo</i> server, echoing strings
+received from TCP/IP clients.
+<table border bgcolor="#ffff80" ><tr><td><pre>public class Server01{
+&nbsp; public static void <b>main</b>(String[] args){
+&nbsp;&nbsp;&nbsp; System.setSecurityManager(new ServerSecurityManager());
+&nbsp;&nbsp;&nbsp; HttpServer httpServerThread = <b>new HttpServer()</b>;
+&nbsp;&nbsp;&nbsp; EchoServer echoServerThread = <b>new EchoServer()</b>;
+&nbsp; }//end main
+}//end class Server01</pre></td></tr></table>
+Note that the two servers are implemented on different threads so that
+they can operate in parallel in an asynchronous manner.
+<center><h4><a name="security manager"></a><font color="#ff0000">Security Manager</font></h4></center>
+Normally when you execute a Java application, there is no security manager,
+of if there is one, it doesn't restrict in any way what the program can
+do. However, when you establish a security manager for an application,
+using the <b>setSecurityManager()</b> method, just the reverse is true.
+
+<p>When you create a security manager for an application, the code in your
+application is prohibited from doing just about everything. The application
+has no privileges at all, and you as the designer of the custom security
+manager, must decide what privileges it should have and arrange for those
+privileges to be provided.
+
+<p>This is a very tedious and complex process. Although it isn't difficult
+to make a privilege available once you decide that it should be available,
+making that decision requires a significant understanding of how privileges
+relate to operations. Sometimes the relationship between privileges and
+operations is not obvious at the surface.
+
+<p>To create a custom security manager, you must extend the <b>SecurityManager</b>
+class. That class contains about 30 methods with names beginning in the
+word <b>check</b> (such as <b>checkAccept</b>). Those methods control access
+to various privileges. Each method controls access to a privilege of a
+type that generally matches the second part of the method name.
+
+<p>The default version of each of these methods is to <u>disallow</u> the
+privilege that it controls. To make that privilege available, you must
+override the method, either with an empty method, or with a method that
+implements a custom version of the privilege.
+
+<p>Deciding which methods to override requires a great deal of knowledge
+as to the relationship between the privileges controlled by the methods
+and the operations that the code in your program needs to perform.
+
+<p>In this program, I have overridden all of the check methods except one
+with an empty method. This causes the privileges associated with each of
+those methods to be available without restriction.
+
+<p>I overrode the <b>checkRead(String str)</b> method to customize the
+privilege that it controls rather than to simply make that privilege available
+without restriction. My intent was to modify this privilege so that the
+HTTP server could only deliver files from the current directory or from
+a subdirectory of the current directory. The code that I provided in the
+overridden version of this method to customize this privilege is shown
+in the next code fragment.
+
+<p>This is accomplished by confirming that the file specification in the
+URL is neither based on an absolute path, nor is in the parent directory
+of the current directory. Recall that the parent directory of the current
+directory is indicated by two periods (..).
+
+<p>If either of these conditions is true, the code in the overridden method
+throws a <b>SecurityException</b>.
+
+<p>The following code fragment also contains a small sampling of the other
+overridden methods of the <b>SecurityManager</b> class. All of these methods
+are overridden with empty methods. This has the effect of disabling the
+default version of the methods.
+
+<p>Many methods were omitted from this listing. You will find those methods
+in the complete listing of the program near the end of this lesson.
+<table border bgcolor="#ffff80" ><tr><td><pre>class <b>ServerSecurityManager</b> extends SecurityManager{
+&nbsp; public void <b>checkRead(String str)</b>{
+&nbsp;&nbsp;&nbsp; if(new File(str).isAbsolute<b>()</b>&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; || (str.indexOf(<b>".."</b>) != -1))
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; throw new SecurityException(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Access to file: " + str + " denied.");
+&nbsp; }//end checkRead()
+
+&nbsp; public void checkAccept(String s, int i){}
+&nbsp; public void checkAccess(Thread t){}
+
+&nbsp; //many methods were <b>omitted </b>from this listing
+
+&nbsp; public void checkWrite(FileDescriptor f){}
+&nbsp; public void checkWrite(String s){}
+}//end class ServerSecurityManager</pre></td></tr></table>
+
+<center><h4><a name="echo server"></a><font color="#ff0000">Echo Server</font></h4></center>
+There are two additional groups of classes that we will be discussing.
+The first group of classes are those classes needed to create and operate
+the <i>echo</i> server on its own thread.
+
+<p>The second group of classes are those classes needed to create and operate
+the HTTP server on its own thread.
+
+<p>The <i>echo </i>server is the simpler of the two, so we will discuss
+it first.
+
+<p>The general operation of both of these servers is as follows. First,
+each server operates on its own thread, listening to its assigned port
+for a <i>client</i> to request a connection. While a server is listening
+for a connection, it is blocked so as to consume minimal resources.
+
+<p>Whenever a <i>client</i> requests a connection on one of the two ports,
+the server for that port <u>spawns another thread</u> to handle that client's
+needs and then goes back to listening on its own thread.
+
+<p>The client-support threads are spawned at a lower priority than the
+server threads to keep them from interfering with the ability of the servers
+to recognize and respond to the fact that another client might be requesting
+a connection.
+
+<p>If many different clients request a connection on one of the ports,
+the server for that port will spawn a new thread to handle each of those
+clients (within the capabilities of the system). Thus, there could be many
+different threads in operation at any given time where each thread is serving
+the needs of a different client.
+
+<p>Let's examine the classes associated with the <i>echo</i> server to
+see how this is accomplished. As we saw in the <b>main()</b> method earlier
+in this lesson, the <i>echo</i> server is implemented as on object of the
+<b>EchoServer</b> class. This class extends <b>Thread</b> and is used to
+instantiate a thread object that monitors port 7 for connection requests
+from <i>clients</i>.
+
+<p>As shown below, the constructor for this class simply invokes its own
+<b>start()</b> method to cause the thread to start running.
+<table border bgcolor="#ffff80" ><tr><td><pre>class <b>EchoServer extends Thread</b>{
+&nbsp;&nbsp;
+&nbsp; EchoServer(){//constructor
+&nbsp;&nbsp;&nbsp; <b>start()</b>; //start the thread and invoke the run() method
+&nbsp; }//end constructor</pre></td></tr></table>
+The <u>key</u> to server operation in Java is the <b>accept()</b> method
+of the <b>ServerSocket</b> class. As you will see below, the <b>ServerSocket</b>
+constructor has a single parameter: the number of the port that will be
+monitored by the <b>ServerSocket</b> object being constructed.
+
+<p>When you instantiate a <b>ServerSocket</b> object and invoke the <b>accept()</b>
+method on that object, the method blocks and waits until a <i>client</i>
+requests a connection on the specified port. When this happens, a <b>Socket</b>
+object is automatically instantiated and returned by the <b>accept()</b>
+method.
+
+<p>This <b>Socket</b> object is automatically connected to the <b>Socket</b>
+being used by the <i>client</i> that requested the connection, and can
+be used to communicate with the <i>client</i>.
+
+<p><u>This is very important</u>. Think about it some more.
+
+<p>No data transfer takes place by way of the <b>ServerSocket</b> object.
+Rather, the <b>accept() </b>method of that object simply blocks and monitors
+for a connection request from a <i>client</i> on the specified port. When
+a request is received, a <b>Socket</b> object is automatically instantiated
+and automatically connected to the <b>Socket</b> through which the <i>client</i>
+requested the connection. The new <b>Socket</b> object is returned by the
+<b>accept()</b> method and can be used to communicate with the <b>Socket</b>
+owned by the <i>client</i>.
+
+<p>So the first thing that we will do in the <b>run()</b> method of our
+<b>EchoServer</b> class is to instantiate a <b>ServerSocket</b> object
+tied to port 7.
+
+<p>Then we will enter an infinite loop and invoke the <b>accept()</b> method
+on that object as the only statement in the loop.
+
+<p>The <b>accept()</b> method will block, consuming few if any resources,
+until a connection request is received from a <i>client</i>.
+
+<p>When a connection request is received, we will <u>spawn a new thread</u>
+object of type <b>EchoConnection</b> to deal with that specific <i>client.</i>
+We will pass the new <b>Socket</b> object as a parameter to the constructor
+for the <b>EchoConnection</b> object, and the <b>EchoConnection</b> object
+will be able to use that <b>Socket</b> object to communicate with that
+client. The communication protocol for the service provided by this port
+will be incorporated into the <b>run()</b> method of the <b>EchoConnection</b>
+class.
+
+<p>Recall that the thread on which the <b>EchoServer</b> object is running
+is in the middle of an infinite loop. Once the new <b>EchoConnection</b>
+thread is successfully spawned, the <b>EchoServer</b> object will go back
+to listening for a connection request from another <i>client.</i><table border bgcolor="#ffff80" ><tr><td><pre>&nbsp;&nbsp;
+&nbsp; public void run(){//run method of EchoServer class
+&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp; ServerSocket serverSocket = new ServerSocket(7);
+&nbsp;&nbsp;&nbsp; while(true)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>new EchoConnection(serverSocket.accept())</b>;
+&nbsp;&nbsp;&nbsp; }catch(IOException e){System.out.println(e);}
+&nbsp; }//end run</pre></td></tr></table>
+That brings us to the class from which we spawn the new thread to deal
+with the <i>client</i> object. This class is named <b>EchoConnection</b>
+and it extends <b>Thread</b> as shown below.
+
+<p>This thread knows nothing about <i>servers </i>or <i>clients</i>. All
+it knows is that it is connected by way of a TCP/IP socket to another socket
+on another computer (or possibly another process on the same computer).
+
+<p>The constructor for this object receives a <b>Socket</b> object as a
+parameter and saves it as an instance variable. This is the <b>Socket</b>
+object that is connected to the <b>Socket</b> object on the <i>client</i>
+machine.
+
+<p>We need to make certain that the threads monitoring the ports are not
+prevented from doing their job by the threads servicing the clients, particularly
+on platforms that don't provide time slicing for threads of equal priority.
+Therefore, we will reduce the priority of this new thread to a level that
+is below the priority level of the threads monitoring the ports. That way,
+the threads monitoring the ports can always preempt the threads servicing
+<i>clients</i> whenever a new connection request is received from another
+client.
+
+<p>Once we have saved the <b>Socket</b> object and adjusted the priority,
+we invoke the <b>start()</b> method to get this thread up and running.
+As usual, the <b>start()</b> method will invoke the <b>run()</b> method
+on this thread.
+<table border bgcolor="#ffff80" ><tr><td><pre>class <b>EchoConnection</b> extends Thread{
+&nbsp; Socket socket;
+
+&nbsp; EchoConnection(Socket socket){//constructor
+&nbsp;&nbsp;&nbsp; <b>this.socket</b> = socket;//save the incoming socket
+&nbsp;&nbsp;&nbsp; <b>setPriority</b>( NORM_PRIORITY-1 );
+&nbsp;&nbsp;&nbsp; <b>start();//start</b> this thread and invoke the run method
+&nbsp; }//end constructor</pre></td></tr></table>
+The <b>run()</b> method for this thread looks a lot like the code that
+we saw in a previous lesson where we were doing socket programming from
+the <i>client</i> side.
+
+<p>We will get input and output streams on the <b>Socket</b> object exactly
+as we did when programming from the <i>client</i> side. I have removed
+that code from the following code fragment for brevity. I have also removed
+the exception handling code for brevity.
+
+<p>The purpose of the <i>server </i>on this port is to receive a string
+from a <i>client</i> and to echo it exactly as received.
+
+<p>We will read a line of text from the input stream on the <b>Socket</b>
+object and then print that same line to the output stream on the same <b>Socket</b>
+object. The incoming line of text comes from the <i>client</i> and the
+outgoing line of text goes to the <i>client</i>.
+
+<p>Then we close the socket and that satisfies the protocol requirements
+for this simple <i>echo server</i> thread.
+<table border bgcolor="#ffff80" ><tr><td><pre>&nbsp; public void <b>run()</b>{
+&nbsp;&nbsp;&nbsp; //Code to get input and output streams and exception
+&nbsp;&nbsp;&nbsp; // handling code removed for brevity.&nbsp;&nbsp;&nbsp;&nbsp;
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; String input = <b>inputStream.readLine()</b>;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>outputStream.println(input</b>);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; socket.close<b>()</b>;
+&nbsp; }//end run method</pre></td></tr></table>
+That wraps up the discussion of the <i>echo server</i>.
+<center><h4><a name="http server"></a><font color="#ff0000">HTTP Server</font></h4></center>
+Next we will discuss the class from which objects are instantiated to take
+care of HTTP-protocol <i>clients</i> who request a connection. Although
+this is a considerably more complex case, much of the code is identical
+to that for the simple <i>echo</i> <i>server </i>case above.
+
+<p>Note that this abbreviated HTTP server is designed to respond only to
+the <b>GET</b> command from the HTTP protocol. Other HTTP commands are
+ignored and an error message is sent to the <i>client</i>.
+
+<p>Code in <b>main()</b> instantiates an object of type <b>HttpServer</b>.
+This is a thread object that instantiates a <b>ServerSocket</b> tied to
+port 80 which is the standard HTTP port.
+
+<p>Except for being tied to port 80, the operation of this server is identical
+to the operation of the simple <i>echo</i> <i>server </i>up to the point
+where protocol becomes important.
+
+<p>The <b>accept() </b>method is invoked on the <b>ServerSocket</b> object
+inside an infinite loop to block and monitor port 80, listening for a connection
+request from a <i>client. </i>When such a request occurs, the <b>accept()</b>
+method instantiates and returns a <b>Socket</b> object, already connected
+to the <b>Socket</b> on the <i>client </i>machine.
+
+<p>This <b>Socket</b> object is passed as a parameter to the constructor
+of a new thread object of type <b>HttpConnection</b>. I have not shown
+any of this preliminary code here because it is virtually identical to
+the corresponding code in the <i>echo</i> server discussed above. You can
+view it in the complete program listing near the end of this lesson.
+
+<p>The <b>HttpConnection</b> class is used to spawn a new thread that will
+communicate with the <i>client</i> and implement an abbreviated version
+of the HTTP protocol.
+
+<p>The constructor for this class is essentially the same as for the <i>echo</i>
+server. It saves the incoming <b>Socket</b> object, adjusts the priority
+of the thread downward as explained earlier, and invokes the <b>start()</b>
+method which in turn invokes the <b>run()</b> method. Since you have seen
+code like this earlier in this lesson, I did not include it here.
+
+<p>That brings to the <b>run()</b> method where the work of a thread is
+always done (or at least where it is controlled).
+
+<p>In the interest of brevity, I am going to remove exception handling
+code from the following fragments. I am also going to remove code that
+is the same as what you have seen previously and replace that code with
+comments.
+
+<p>Most of our previous programs on this topic have created input and output
+streams to move <u>text data</u> across the socket, and this program does
+the same. I have removed that code from the following fragment and replaced
+it with a comment.
+
+<p>However, this program also creates and uses an output stream to <u>transmit
+an array of bytes</u> to the <i>client</i>. We haven't seen that before
+in this series of lessons, so the following code fragment will begin with
+the creation of this new type of output stream object.
+<table border bgcolor="#ffff80" ><tr><td><pre>&nbsp; public void <b>run()</b>{
+&nbsp;&nbsp;&nbsp; //Remove exception handling code.
+&nbsp;&nbsp;&nbsp; //Remove code used to get input and output streams
+&nbsp;&nbsp;&nbsp; // that are used to handle text data transfers.&nbsp;&nbsp;&nbsp;
+
+&nbsp;&nbsp;&nbsp; //Get stream to transmit an array of bytes&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<b>&nbsp;&nbsp;&nbsp; byteOutput = new DataOutputStream(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; socket.getOutputStream());</b></pre></td></tr></table>
+Continuing inside the <b>run()</b> method of the HTTP protocol class, the
+next thing that we expect to happen is to receive a request from the <i>client</i>.
+We will use the <b>readLine()</b> method on our input stream to read this
+request and store it in a <b>String</b> object as shown below.
+<table border bgcolor="#ffff80" ><tr><td><pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; String <b>request </b>= inputStream.readLine();</pre></td></tr></table>
+Now we are faced with the challenge of analyzing this request to determine
+what the <i>client</i> is requesting, and whether or not we can comply.
+Recall that the only request that this program can accommodate is a request
+to <b>GET</b> a file.
+
+<p>We begin the analysis by creating a new <b>StringTokenizer</b> object
+named <b>stringTokenizer</b> that represents the <b>String</b> object named
+<b>request</b>. You might need to go back and review the use of <b>StringTokenizer</b>
+in order to fully understand some of this code.
+
+<p>First we need to confirm that the request is a <b>GET</b> request. We
+use an <b>if</b> statement to make this test as shown below.
+<table border bgcolor="#ffff80" ><tr><td><pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; StringTokenizer stringTokenizer =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new StringTokenizer(request);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if((stringTokenizer.countTokens() >= 2)&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &amp;&amp; stringTokenizer.nextToken().equals("GET")){</pre></td></tr></table>
+Later we will see that if the request is not a <b>GET</b> request, we will
+create an HTML document on the fly containing an error message and send
+it to the client.
+
+<p>The following code fragment is executed if the request is a <b>GET</b>
+request.
+
+<p>Basically what we are trying to do here is to provide a default file
+name of <b>index.html</b> in the event that the <i>client </i>didn't specify
+a file name. It is common practice among web servers to try to send a file
+having that name when you don't specify the name of the file in your request.
+
+<p>First we will eliminate the possibility that the request contains an
+extra "/" character, and if so, we will strip it off and discard it.
+<table border bgcolor="#ffff80" ><tr><td><pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if((request = stringTokenizer.nextToken()).
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; startsWith("/")){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; request = request.substring(1);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end if on startsWith("/")</pre></td></tr></table>
+If the request string as it exists at this point ends with a "/" or is
+an empty string, we will assume that the <i>client</i> wants to download
+the file named <b>index.html.</b> In that case, we will append that filename
+to the request string.
+<table border bgcolor="#ffff80" ><tr><td><pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(request.endsWith("/") || request.equals("")){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; request = request + "index.html";
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</pre></td></tr></table>
+At this point, we believe that we know the name of the requested file and
+the path to that file so we will attempt to find and read it.
+
+<p>We attempt to open a <b>FileInputStream</b> object tied to the specified
+file name and path. If it doesn't exist, an exception will be thrown at
+this point and processed in a <i>catch</i> block further down the page.
+
+<p>If the file does exist and can be read, we create a byte array named
+<b>data</b> whose size equals the number of bytes that can be read from
+the file. Then we read the file into that array.
+<table border bgcolor="#ffff80" ><tr><td><pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; FileInputStream fileInputStream =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>new FileInputStream(request)</b>;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; byte[] data =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>new byte[fileInputStream.available()]</b>;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; fileInputStream.read(data<b>)</b>;</pre></td></tr></table>
+Now we have identified, located, and read the file into an array in memory.
+The next step is to use the output stream that we instantiated earlier
+to transmit the entire contents of this array to the <i>client</i> as shown
+below. We finish up by flushing this output stream.
+<table border bgcolor="#ffff80" ><tr><td><pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; byteOutput.write(data<b>)</b>;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; byteOutput.flush<b>()</b>;</pre></td></tr></table>
+The next fragment is the code that is executed in the event that the client
+request was not a <b>GET</b> request. In this case, we create an HTML document
+on the fly containing an error message and send it to the <i>client</i>.
+<table border bgcolor="#ffff80" ><tr><td><pre>else
+&nbsp; outputStream.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "&lt;HTML>&lt;BODY>&lt;P>400<b> Bad Request&lt;P>&lt;/BODY>&lt;/HTML></b>");</pre></td></tr></table>
+Assuming that no exceptions have been thrown, the last thing that we do
+is to close the socket and allow the thread to terminate naturally as shown
+below.
+<table border bgcolor="#ffff80" ><tr><td><pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; socket.close<b>()</b>;</pre></td></tr></table>
+If exceptions have been thrown, there are several exception handlers to
+deal with those exceptions as shown below.
+
+<p>Note that for brevity, I have removed the code from these handlers that
+displays diagnostic information on the <i>server</i> console.
+
+<p>In fact, I have been removing code that displays status information
+on the <i>server</i> console throughout this discussion. You can view that
+code in the complete listing of the program that follows shortly.
+
+<p>Two of these event handlers create an HTML page containing an error
+message and send it to the <i>client</i>.
+<table border bgcolor="#ffff80" ><tr><td><pre>&nbsp;&nbsp;&nbsp; <b>catch(FileNotFoundException</b> e){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; outputStream.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "&lt;HTML>&lt;BODY>&lt;P>404 <b>Not Found&lt;P>&lt;/BODY>&lt;/HTML></b>");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; socket.close();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }catch(IOException evt){System.out.println(evt);}
+&nbsp;&nbsp;&nbsp; }//end catch
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; <b>catch(SecurityException</b> e){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; outputStream.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "&lt;HTML>&lt;BODY>&lt;P>403 <b>Forbidden&lt;P>&lt;/BODY>&lt;/HTML></b>");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; outputStream.println(e);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; socket.close();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }catch(IOException evt){System.out.println(evt);}
+&nbsp;&nbsp;&nbsp; }//end catch SecurityException
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; <b>catch</b>( <b>IOException </b>e){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println( "I/O error " + e );
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; socket.close<b>()</b>;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }catch(<b>IOException </b>evt){System.out.println(evt);}
+&nbsp;&nbsp;&nbsp; }//end catch
+&nbsp; }//end run method</pre></td></tr></table>
+The numbers that you see in these error messages come from a standard list
+of errors for the HTTP protocol.
+
+<p>The structure of the last one of these exception handlers is a little
+bothersome. In particular, we need to close the socket inside the exception
+handler for an <b>IOException</b>. However, the <b>close()</b> method throws
+an <b>IOException</b> so we have the possibility of throwing an <b>IOException
+</b>inside a handler of the same type.
+
+<p>I don't know how to force an <b>IOException</b> while a previous <b>IOException</b>
+is being handled, so I don't have any way to test this handler to see exactly
+how it will behave.
+<center><h3><a name="program listing"></a><font color="#ff0000">Program Listing</font></h3></center>
+A complete listing of the program follows. In addition, listings are also
+given for two short <i>client </i>programs that were specially designed
+to test certain aspects of this program.
+<table border bgcolor="#ffff80" ><tr><td><pre>/*File Server01.java Copyright 1998, R.G.Baldwin
+This program uses sockets to implement two different&nbsp;
+servers on an IP network.&nbsp; The program is intended for&nbsp;
+illustration and experimentation purposes only.&nbsp;&nbsp;
+
+If you use this program for any purpose, you use it at&nbsp;
+your own risk.
+
+If you use this program, you should tighten the security&nbsp;
+manager to the degree needed by your situation.&nbsp; You can
+tighten the security manager by removing the overridden
+methods that begin with the word check (such as&nbsp;
+checkAccept) in the class named ServerSecurityManager.
+
+This program implements two different servers.&nbsp; One of the
+servers is an "echo" server implemented by a thread
+monitoring port 7.&nbsp; This server simply echoes the
+string that it receives from a client.&nbsp; Port 7 is the
+standard echo port.
+
+The other server is an abbreviated HTTP server implemented
+by a thread monitoring port 80.&nbsp; Port 80 is the standard
+HTTP port.&nbsp; This server has the ability to respond to a
+GET command from a web browser and serve a file as a stream
+of bytes.
+
+Two different servers were implemented on two different
+ports to illustrate the manner in which threads can be&nbsp;
+used in Java to service multiple ports.
+
+A custom security manager is implemented which attempts
+to prevent the server from serving files other than those
+in the current directory or in a subdirectory of the&nbsp;
+current directory.&nbsp; Otherwise, the security manager is&nbsp;
+wide open and doesn't enforce any security at all.
+
+DO NOT install this server on your network and leave it
+unattended because client computers could connect and
+have broad access to your computer.
+
+This program was tested using JDK 1.1.3 under Win95.
+
+The HTTP portion of this program can be tested using an&nbsp;
+ordinary browser with the server name localhost.&nbsp; It can&nbsp;
+also be tested using the program named Sockets06 which was
+designed specifically for testing the security manager
+installed in this program.&nbsp; However, you can also test
+the security manager using an ordinary browser.
+
+The echo portion of this program can be tested using
+the program named Sockets05 which was designed&nbsp;
+specifically for testing this program.
+**********************************************************/
+
+import java.net.*;
+import java.io.*;
+import java.util.*;
+
+public class Server01{
+&nbsp; public static void main(String[] args){
+&nbsp;&nbsp;&nbsp; //Instantiate a new custom security manager.
+&nbsp;&nbsp;&nbsp; System.setSecurityManager(new ServerSecurityManager());
+&nbsp;&nbsp;&nbsp; //Instantiate a server object to listen on port 80
+&nbsp;&nbsp;&nbsp; HttpServer httpServerThread = new HttpServer();
+&nbsp;&nbsp;&nbsp; //Instantiate a server object to listen on port 7
+&nbsp;&nbsp;&nbsp; EchoServer echoServerThread = new EchoServer();
+&nbsp; }//end main
+}//end class Server01
+//=======================================================//
+//=======================================================//
+
+//This class is used to instantiate a security manager
+// that confirms that files can be downloaded only from
+// the current directory or a subdirectory of that
+// directory. Note that other than checking for file
+// downloading, this is a wide open security manager. DO&nbsp;
+// NOT install it on your network without considering the
+// need to implement tighter security features.&nbsp; This
+// security manager class was tested using JDK 1.1.3
+// under Win95.
+class ServerSecurityManager extends SecurityManager{
+&nbsp; //This overridden method attempts to allow the server
+&nbsp; // to deliver files only from the current directory or
+&nbsp; // from a subdirectory of that directory.
+&nbsp; public void checkRead(String str){
+
+&nbsp;&nbsp;&nbsp; if(new File(str).isAbsolute()&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; || (str.indexOf("..") != -1))
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; throw new SecurityException(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Access to file: " + str + " denied.");
+&nbsp; }//end checkRead()
+
+&nbsp; //The following list of overridden methods causes the
+&nbsp; // security manager to be wide open and eliminates all
+&nbsp; // security checks other than the one provided by the
+&nbsp; // previous overridden method.
+&nbsp; public void checkAccept(String s, int i){}
+&nbsp; public void checkAccess(Thread t){}
+&nbsp; public void checkAccess(ThreadGroup g){}&nbsp;
+&nbsp; public void checkAwtEventQueueAccess(){}
+&nbsp; public void checkConnect(String s, int i){}&nbsp;
+&nbsp; public void checkConnect(String s, int i, Object o){}
+&nbsp; public void checkCreateClassLoader(){}
+&nbsp; public void checkDelete(String s){}
+&nbsp; public void checkExec(String s){}
+&nbsp; public void checkExit(int i){}
+&nbsp; public void checkLink(String s){}
+&nbsp; public void checkListen(int i){}
+&nbsp; public void checkMemberAccess(Class c, int i){}
+&nbsp; public void checkMulticast(InetAddress a){}
+&nbsp; public void checkMulticast(InetAddress a, byte b){}
+&nbsp; public void checkPackageAccess(String s){}
+&nbsp; public void checkPackageDefinition(String s){}
+&nbsp; public void checkPrintJobAccess(){}
+&nbsp; public void checkPropertiesAccess(){}
+&nbsp; public void checkPropertyAccess(String s){}
+&nbsp; public void checkRead(FileDescriptor f){}
+//public void checkRead(String s){}//overridden above
+&nbsp; public void checkRead(String s, Object o){}
+&nbsp; public void checkSecurityAccess(String s){}
+&nbsp; public void checkSetFactory(){}
+&nbsp; public void checkSystemClipboardAccess(){}
+&nbsp; public boolean checkTopLevelWindow(Object o)
+&nbsp;&nbsp;&nbsp; {return true;}
+&nbsp; public void checkWrite(FileDescriptor f){}
+&nbsp; public void checkWrite(String s){}
+}//end class ServerSecurityManager
+//=======================================================//
+//=======================================================//
+
+//This class is used to instantiate a server thread that
+// listens on port 7 which is the echo port.
+class EchoServer extends Thread{
+&nbsp;&nbsp;
+&nbsp; EchoServer(){//constructor
+&nbsp;&nbsp;&nbsp; start(); //start the thread and invoke the run() method
+&nbsp; }//end constructor
+&nbsp; //-----------------------------------------------------//
+&nbsp;&nbsp;
+&nbsp; public void run(){
+&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp; //Instantiate a serverSocket on port 7 (echo port)
+&nbsp;&nbsp;&nbsp; ServerSocket serverSocket = new ServerSocket(7);
+&nbsp;&nbsp;&nbsp; System.out.println("Server Listening on port 7");
+&nbsp;&nbsp;&nbsp; //Loop and listen to port 7.&nbsp; If a call is
+&nbsp;&nbsp;&nbsp; // received, spawn an EchoConnection thread to
+&nbsp;&nbsp;&nbsp; // deal with it.
+&nbsp;&nbsp;&nbsp; while(true)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //This statement blocks on the accept() method
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // and returns a socket if a call is received.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // The socket is passed as a parameter to the
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // new thread that is spawned.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new EchoConnection(serverSocket.accept());
+&nbsp;&nbsp;&nbsp; }catch(IOException e){System.out.println(e);}
+&nbsp; }//end run
+&nbsp;&nbsp;
+}//end class EchoServer
+//=======================================================//
+
+//This class is used to spawn a thread to deal with a
+// call that is received on port 7 which is the echo
+// port.
+class EchoConnection extends Thread{
+&nbsp; Socket socket;
+
+&nbsp; EchoConnection(Socket socket){//constructor
+&nbsp;&nbsp;&nbsp; System.out.println("Received a call on port 7");
+&nbsp;&nbsp;&nbsp; this.socket = socket;
+&nbsp;&nbsp;&nbsp; //Operate at a priority that is below the threads
+&nbsp;&nbsp;&nbsp; // listening on the ports.
+&nbsp;&nbsp;&nbsp; setPriority( NORM_PRIORITY-1 );
+&nbsp;&nbsp;&nbsp; start();//start this thread and invoke the run method
+&nbsp; }//end constructor
+&nbsp; //-----------------------------------------------------//
+&nbsp;&nbsp;
+&nbsp; public void run(){
+&nbsp;&nbsp;&nbsp; System.out.println("Running thread for port 7");
+&nbsp;&nbsp;&nbsp; BufferedReader inputStream = null;
+&nbsp;&nbsp;&nbsp; PrintWriter outputStream = null;
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Get an input stream from the socket
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; inputStream =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new BufferedReader(new InputStreamReader(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; socket.getInputStream()));
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Get&nbsp; an output stream to the socket.&nbsp; Note
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // that this stream is supposed to autoflush.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; outputStream =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new PrintWriter(new OutputStreamWriter(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; socket.getOutputStream()),true);
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Get input from the browser and echo it to&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // the browser
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; String input = inputStream.readLine();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; outputStream.println(input);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Got Input: "+ input);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; socket.close();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Socket closed");
+&nbsp;&nbsp;&nbsp; }//end&nbsp;
+&nbsp;&nbsp;&nbsp; catch( IOException e)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {System.out.println( "I/O error " + e );}
+&nbsp; }//end run method
+}//end class EchoConnection
+//=======================================================//
+//=======================================================//
+
+//This class is used to instantiate a server thread that
+// listens on port 80 which is the http port.
+class HttpServer extends Thread{
+&nbsp;&nbsp;
+&nbsp; HttpServer(){//constructor
+&nbsp;&nbsp;&nbsp; start(); //start the thread and invoke the run() method
+&nbsp; }//end constructor
+&nbsp; //-----------------------------------------------------//
+&nbsp;&nbsp;
+&nbsp; public void run(){
+&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp; //Instantiate a serverSocket on port 80 (http port)
+&nbsp;&nbsp;&nbsp; ServerSocket serverSocket = new ServerSocket(80);
+&nbsp;&nbsp;&nbsp; System.out.println("Server Listening on port 80");
+&nbsp;&nbsp;&nbsp; //Loop and listen to port 80.&nbsp; If a call is
+&nbsp;&nbsp;&nbsp; // received, spawn an HttpConnection thread to
+&nbsp;&nbsp;&nbsp; // deal with it.
+&nbsp;&nbsp;&nbsp; while(true)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //This statement blocks on the accept() method
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // and returns a socket if a call is received.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // The socket is passed as a parameter to the
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // new thread that is spawned.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new HttpConnection(serverSocket.accept());
+&nbsp;&nbsp;&nbsp; }catch(IOException e){System.out.println(e);}
+&nbsp; }//end run
+&nbsp;&nbsp;
+}//end class HttpServer
+//=======================================================//
+
+//This class is used to spawn a thread to deal with a
+// call that is received on port 80 which is the http
+// port.
+class HttpConnection extends Thread{
+&nbsp; Socket socket;
+&nbsp;&nbsp;&nbsp; BufferedReader inputStream = null;
+&nbsp;&nbsp;&nbsp; PrintWriter outputStream = null;
+&nbsp;&nbsp;&nbsp; DataOutputStream byteOutput = null;
+
+&nbsp; HttpConnection(Socket socket){//constructor
+&nbsp;&nbsp;&nbsp; System.out.println("Received a call on port 80");
+&nbsp;&nbsp;&nbsp; this.socket = socket;
+&nbsp;&nbsp;&nbsp; //Operate at a priority that is below the threads
+&nbsp;&nbsp;&nbsp; // listening on the ports.
+&nbsp;&nbsp;&nbsp; setPriority( NORM_PRIORITY-1 );
+&nbsp;&nbsp;&nbsp; start();//start this thread and invoke the run method
+&nbsp; }//end constructor
+&nbsp; //-----------------------------------------------------//
+&nbsp;&nbsp;
+&nbsp; public void run(){
+&nbsp;&nbsp;&nbsp; System.out.println("Running thread for port 80");
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Get an input stream from the socket
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; inputStream =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new BufferedReader(new InputStreamReader(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; socket.getInputStream()));
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Get&nbsp; an output stream to the socket to use for
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // sending text strings.&nbsp; Note that this stream&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // will autoflush.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; outputStream =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new PrintWriter(new OutputStreamWriter(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; socket.getOutputStream()),true);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Get an output stream to the socket to use for
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // sending an array of byte data to a client.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; byteOutput = new DataOutputStream(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; socket.getOutputStream());
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Get request from the browser
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; String request = inputStream.readLine();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Got Request: "+ request);
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Now analyze and attempt to respond to the request.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // Note that this program supports only the GET
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // request.&nbsp; Any other request will be ignored.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; StringTokenizer stringTokenizer =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new StringTokenizer(request);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if((stringTokenizer.countTokens() >= 2)&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &amp;&amp; stringTokenizer.nextToken().equals("GET")){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("First token is GET");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if((request = stringTokenizer.nextToken()).
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; startsWith("/")){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Next token starts with /, strip it off");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; request = request.substring(1);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end if on startsWith("/")
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(request.endsWith("/") || request.equals("")){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Request endsWith / or " +
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "blank, append index.html");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; request = request + "index.html";
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Modified request: " + request);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end if on / or ""
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Try to read: " + request);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; FileInputStream fileInputStream =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new FileInputStream(request);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Instantiate a byte array whose size is equal to
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // the number of bytes that can be read from this
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // fileInputStream without blocking. Then read the
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // file into the byte array.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; byte[] data =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new byte[fileInputStream.available()];
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; fileInputStream.read(data);
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Send the bytes in the array to the client.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; byteOutput.write(data);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; byteOutput.flush();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end if stringTokenizer.countTokens...
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; else
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //This happens when the request is not GET
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; outputStream.println("&lt;HTML>&lt;BODY>&lt;P>400 Bad " +
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Request&lt;P>&lt;/BODY>&lt;/HTML>");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; socket.close();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Socket closed");
+&nbsp;&nbsp;&nbsp; }//end&nbsp;
+&nbsp;&nbsp;&nbsp; catch(FileNotFoundException e){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; outputStream.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "&lt;HTML>&lt;BODY>&lt;P>404 Not Found&lt;P>&lt;/BODY>&lt;/HTML>");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; socket.close();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Socket closed");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }catch(IOException evt){System.out.println(evt);}
+&nbsp;&nbsp;&nbsp; }//end catch
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; catch(SecurityException e){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(e);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; e.printStackTrace();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; outputStream.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "&lt;HTML>&lt;BODY>&lt;P>403 Forbidden&lt;P>&lt;/BODY>&lt;/HTML>");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; outputStream.println(e);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; socket.close();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Socket closed");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }catch(IOException evt){System.out.println(evt);}
+&nbsp;&nbsp;&nbsp; }//end catch SecurityException
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; catch( IOException e){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println( "I/O error " + e );
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; socket.close();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Socket closed");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }catch(IOException evt){System.out.println(evt);}
+&nbsp;&nbsp;&nbsp; }//end catch
+&nbsp; }//end run method
+}//end class HttpConnection
+//=======================================================//</pre></td></tr></table>
+The following client program was designed to test certain aspects of the
+server program listed above.
+<table border bgcolor="#ffff80" ><tr><td><pre>/*File Sockets05.java Copyright 1998, R.G.Baldwin
+Revised 01/20/98
+
+This program is just like Sockets03 except that it
+opens a socket to localhost.&nbsp; It is used to test the
+echo portion of the server in the program named
+Server01.
+
+This program performs a simple echo test with a server
+by sending a line of text to the echo port, port 7.
+
+You must be logged onto an appropriate network for this
+program to run properly.&nbsp; Otherwise, it will throw
+an exception of type UnknownHostException.
+
+Most of the program is enclosed in a try/catch block to
+deal with possible exceptions.
+
+The program begins by instantiating a String object
+containing the name of an echo server that you are
+using to test the program.
+
+This is followed by declaration and initialization of
+an int variable containing the standard echo port number.
+The standard echo port is number 7.
+
+Than the program gets a socket connection to port 7
+on the echo server.
+
+Then the program gets input and output streams from the
+socket and wraps them in the new reader classes.
+
+Once the input and output streams are ready to use, the
+sends a line of text to the echo port on the server.
+
+The echo server sends the same line of text back to
+the client.
+
+Then the program reads the line of text that is&nbsp;
+received and displays it.
+
+Then the program closes the socket and terminates.
+
+This program was tested using JDK 1.1.3 under Win95.
+
+The output from this program is:
+&nbsp;&nbsp;
+This is an echo test
+**********************************************************/
+
+import java.net.*;
+import java.io.*;
+import java.util.*;
+
+class Sockets05{
+&nbsp; public static void main(String[] args){
+&nbsp;&nbsp;&nbsp; String server = "localhost";
+&nbsp;&nbsp;&nbsp; int port = 7; //echo port
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Get a socket, connected to the specified server
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // on the specified port.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Socket socket = new Socket(server,port);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Get an input stream from the socket
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; BufferedReader inputStream =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new BufferedReader(new InputStreamReader(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; socket.getInputStream()));
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Get&nbsp; an output stream to the socket.&nbsp; Note
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // that this stream will autoflush.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; PrintWriter outputStream =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new PrintWriter(new OutputStreamWriter(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; socket.getOutputStream()),true);
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Send line of text to the server
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; outputStream.println("This is an echo test");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Get echoed line back from server and display it
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(inputStream.readLine());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Close the socket
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; socket.close();
+&nbsp;&nbsp;&nbsp; }//end try
+&nbsp;&nbsp;&nbsp; catch(UnknownHostException e){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(e);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Must be online to run properly.");
+&nbsp;&nbsp;&nbsp; }//end catch UnknownHostException
+&nbsp;&nbsp;&nbsp; catch(IOException e){System.out.println(e);}
+&nbsp; }//end main
+}//end class Sockets05
+//=======================================================//</pre></td></tr></table>
+The following client program was designed to test certain aspects of the
+server program listed above.
+<table border bgcolor="#ffff80" ><tr><td><pre>/*File Sockets06.java Copyright 1998, R.G.Baldwin
+Revised 01/20/98
+
+The sole purpose of this program is to test the custom&nbsp;
+security manager implemented in the program named Server01.
+
+This program is the same as Sockets01 except that
+it connects to localhost and attempts to download
+a file protected by the security manager in the program
+named Server01.
+
+This program is a simple http client (web browser)
+implemented using sockets.
+
+The program implements just enough of the http protocol
+to make it capable of getting an html page from an
+http server (assuming that access to the requested file
+is allowed by the security manager on the server).
+
+You must be logged onto an appropriate network for this
+program to run properly.&nbsp; Otherwise, it will throw
+an exception of type UnknownHostException.
+
+Most of the program is enclosed in a try/catch block to
+deal with possible exceptions.
+
+The program begins by defining the name of a server and
+the number of the http port on that server.&nbsp; The standard
+port number for http servers is 80.
+
+Then the program opens a socket to the specified server
+on the specified port.
+
+Then it uses the new BufferedReader class along with the
+new InputStreamReader class to open an input stream from
+the socket.&nbsp; These classes are wrapped around an input
+stream provided by the Socket class.
+
+Then it uses the new PrintWriter class along with the
+new OutputStreamWriter class to open an output stream to
+the socket.&nbsp; These classes are also wrapped around an&nbsp;
+output stream provided by the Socket class.
+
+The output stream will autoflush, which is critical.&nbsp; If
+the output stream isn't flushed, the server will not
+respond (presumably it doesn't receive all of the&nbsp;
+output data until the stream is flushed).
+
+Then the program, acting as an http client, sends a GET
+command to the server specifying a particular path and&nbsp;
+file name. Two versions of this statement are included.
+One statement attempts to get a file using an absolute
+pathname.&nbsp; The other statement attempts to get a file
+from the parent directory.&nbsp; Both of these two possibilities
+are prohibited by the custom security manager in the&nbsp;
+program named Server01.
+
+This causes the server to attempt to fetch the specified&nbsp;
+file and send it to the client.
+
+Since access to these files is not allowed, a&nbsp;
+SecurityException is thrown in Server01 which causes
+error messages to be sent to the client.
+
+Then this program reads lines from the input stream and&nbsp;
+displays them on the standard output device.&nbsp; In this
+case, they will be error messages.
+
+When there are no more lines to be read, a null is&nbsp;
+received.&nbsp; This causes the client to exit the input
+loop and to close the socket.
+
+This program was tested using JDK 1.1.3 under Win95.
+**********************************************************/
+
+import java.net.*;
+import java.io.*;
+
+class Sockets06{
+&nbsp; public static void main(String[] args){
+&nbsp;&nbsp;&nbsp; String server = "localhost";//server name
+&nbsp;&nbsp;&nbsp; int port = 80; //http port
+&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Get a socket, connected to the specified server
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // on the specified port.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Socket socket = new Socket(server,port);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Get an input stream from the socket
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; BufferedReader inputStream =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new BufferedReader(new InputStreamReader(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; socket.getInputStream()));
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Get&nbsp; an output stream to the socket.&nbsp; Note
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // that this stream will autoflush.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; PrintWriter outputStream =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new PrintWriter(new OutputStreamWriter(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; socket.getOutputStream()),true);
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Send a GET command to the server.&nbsp; Either of the
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // following statements will cause the program named
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // Server01 to throw a SecurityException.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Test ability to get file from parent directory
+//&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; outputStream.println("GET ../baldwin/Test01.html");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Test ability to get file using absolute pathname
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; outputStream.println("GET C:/index.html");
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Declare a String to read lines into.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; String line = null;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Loop reading and displaying lines until null&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // is received.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; while((line = inputStream.readLine()) != null)&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(line);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Close the socket
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; socket.close();
+&nbsp;&nbsp;&nbsp; }//end try
+&nbsp;&nbsp;&nbsp; catch(UnknownHostException e){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(e);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Must be online to run properly.");
+&nbsp;&nbsp;&nbsp; }//end catch UnknownHostException
+&nbsp;&nbsp;&nbsp; catch(IOException e){System.out.println(e);}
+&nbsp; }//end main
+}//end class Sockets06
+//=======================================================//</pre></td></tr></table>
+.
+
+<p>-end-<!--end--></body></html>

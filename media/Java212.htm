@@ -1,0 +1,541 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>... in Java by Richard G Baldwin</TITLE>
+<META NAME="Template" CONTENT="C:\PROGRAM FILES\MSOFFICE\OFFICE\html.dot">
+</HEAD>
+<BODY LINK="#0000ff" VLINK="#800080" BGCOLOR="#ffffff">
+
+<P><!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN"><!--start--></P>
+<I><H3 ALIGN="CENTER">Richard G Baldwin (512) 223-4758, </I><A HREF="mailto:baldwin@austin.cc.tx.us"><I>baldwin@austin.cc.tx.us</I></A><I>, </I><A HREF="http://www2.austin.cc.tx.us/baldwin/"><I>http://www2.austin.cc.tx.us/baldwin/</I></A></H3>
+<H2 ALIGN="CENTER">Swing, <!--title-->Custom List Selection Model for JList Objects<!--endTitle--></H2>
+<P>Java Programming, Lecture Notes # 212, Revised 08/22/99. </P>
+
+<UL>
+<LI><A HREF="#Preface">Preface</A> </LI>
+<LI><A HREF="#Introduction">Introduction</A> </LI>
+<LI><A HREF="#Discussion">Discussion</A> </LI>
+<LI><A HREF="#Sample_Program">Sample Program</A> </LI>
+
+<UL>
+<LI><A HREF="#Interesting_Code_Fragments">Interesting Code Fragments</A> </LI>
+<LI><A HREF="#Program_Listing">Program Listing</A> </LI></UL>
+</UL>
+
+<P><HR></P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Preface"></A>Preface</H2>
+</FONT><P>Students in Prof. Baldwin's <B><U>Advanced Java Programming</B></U> classes at ACC will be responsible for knowing and understanding all of the material in this lesson beginning with the spring semester of 1999. </P>
+<P>This lesson was originally written on October 3, 1998, using the JDK 1.1.6 download package along with Swing 1.0.3. The purpose of this lesson is to illustrate the use of MVC models with Swing components.</P>
+<P>Upgraded for JDK 1.2 compatibility on 3/22/99.<BR>
+&nbsp; </P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Introduction"></A>Introduction</H2>
+</FONT><P>The material in this lesson assumes that you have studied my earlier lesson on <U>Understanding Component MVC Models</U> as well as my lesson on <U>Swing, Custom Rendering of JList Cells</U>. </P>
+<P>The sample program in this lesson is a modification of the sample program in the rendering lesson.&nbsp; In this lesson, I will discuss only the new material in the program.&nbsp; To understand the entire program, you may need to refer to the discussion of the original program in the earlier lesson.&nbsp; It will also be helpful if you have studied my earlier lesson on using the <B>JList</B> class to create simple lists. </P>
+<P>Swing gives you the ability to control </P>
+
+<UL>
+<LI>how widgets look, </LI>
+<LI>how they&nbsp; respond to input, </LI>
+<LI>in some cases, how their data is represented. </LI></UL>
+
+<P>The lessons mentioned above discuss in detail the first and third capabilities involving how widgets look and their data representation. </P>
+<P>The primary topic of this lesson is the second capability in the list:&nbsp; controlling how widgets respond to input.&nbsp; I will show you how you can control the rules for selection of elements in a <B>JList</B> component by defining and installing a <I>custom list selection model</I>. </P>
+<P>You will also need to go back to the lesson entitled <U>Swing, Hidden Buttons with Icons, Icon Images, Borders, Tool Tips, Nested Buttons, and Other Fun Stuff</U> and extract the code from that lesson for the class named <B>PlafPanel02.java</B>.&nbsp; You will need that code in this lesson if you plan to compile and run the sample program. <BR>
+&nbsp; </P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Discussion"></A>Discussion</H2>
+</FONT><P>I will use an object of the <B>JList</B> class as the vehicle for this discussion, although the general concepts discussed here apply to several of the more complex Swing components including: </P>
+
+<UL>
+<LI>JList </LI>
+<LI>JTree </LI>
+<LI>JComboBox </LI></UL>
+
+<P>Swing widgets, such as <B>JList</B>, are subclasses of <B>JComponent</B>. At any given point in time, a <B>JComponent</B> object is associated with a single data model and a single delegate.&nbsp; We have been discussing these associations in previous lessons.&nbsp; Some components, such as <B>JList</B>, are also associated with models of other types, such as list selection models, which manage the rules of selection within the list.&nbsp; This lesson shows you how to define and install a custom list selection model to modify the selection rules. </P>
+<P>A list selection model for a <B>JList</B> must be an object of a class that implements the <B>ListSelectionModel</B> interface.&nbsp; Starting from scratch and defining a complete implementation of that interface would be a challenge because it contains several fields and a large number of methods including the methods to add and remove <B>ListSelectionListener </B>objects. </P>
+<P>Most of the methods declared in the interface are shown in the following table to illustrate my point. <BR>
+&nbsp; </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#00ffff">
+<BLOCKQUOTE><B>addListSelectionListener(ListSelectionListener x)</B> - Add a listener to the list that's notified each time a change to the selection occurs. </BLOCKQUOTE>
+<B><BLOCKQUOTE>addSelectionInterval(int index0, int index1)</B> - Change the selection to be the set union of the current selection and the indices between index0 and index1 inclusive.&nbsp; </BLOCKQUOTE>
+<B><BLOCKQUOTE>clearSelection()</B> - Change the selection to the empty set.&nbsp; </BLOCKQUOTE>
+<B><BLOCKQUOTE>getAnchorSelectionIndex()</B> - Return the first index argument from the most recent call to <I>setSelectionInterval()</I> or <I>addSelectionInterval()</I>. </BLOCKQUOTE>
+<B><BLOCKQUOTE>getLeadSelectionIndex()</B> - Return the second index argument from the most recent call to <I>setSelectionInterval()</I> or <I>addSelectionInterval()</I>. </BLOCKQUOTE>
+<B><BLOCKQUOTE>getMaxSelectionIndex()</B> - Returns the last selected index or -1 if the selection is empty. </BLOCKQUOTE>
+<B><BLOCKQUOTE>getMinSelectionIndex()</B> - Returns the first selected index or -1 if the selection is empty. </BLOCKQUOTE>
+<B><BLOCKQUOTE>setValueIsAdjusting(boolean valueIsAdjusting)</B> - This property is true if upcoming changes to the value of the model should be considered a single event.&nbsp; </BLOCKQUOTE>
+<B><BLOCKQUOTE>getValueIsAdjusting()</B> - Returns a boolean indicating whether the value is currently being adjusted. </BLOCKQUOTE>
+<B><BLOCKQUOTE>insertIndexInterval(int index, int length, boolean before)</B> - Insert length indices beginning before/after index.&nbsp; </BLOCKQUOTE>
+<B><BLOCKQUOTE>isSelectedIndex(int index)</B> - Returns true if the specified index is selected. </BLOCKQUOTE>
+<B><BLOCKQUOTE>isSelectionEmpty()</B> - Returns true if no indices are selected. </BLOCKQUOTE>
+<B><BLOCKQUOTE>removeIndexInterval(int index0, int index1)</B> - Remove the indices in the interval index0,index1 (inclusive) from the selection model.&nbsp; </BLOCKQUOTE>
+<B><BLOCKQUOTE>removeListSelectionListener(ListSelectionListener x)</B> - Remove a listener from the list that's notified each time a change to the selection occurs. </BLOCKQUOTE>
+<B><BLOCKQUOTE>removeSelectionInterval(int index0, int index1)</B> - Change the selection to be the set difference of the current selection and the indices between index0 and index1 inclusive.&nbsp; </BLOCKQUOTE>
+<B><BLOCKQUOTE>setAnchorSelectionIndex(int index)</B> - Set the anchor selection index. </BLOCKQUOTE>
+<B><BLOCKQUOTE>setLeadSelectionIndex(int index)</B> - Set the lead selection index. </BLOCKQUOTE>
+<B><BLOCKQUOTE>setSelectionInterval(int index0, int index1)</B> - Change the selection to be between index0 and index1 inclusive.&nbsp; </BLOCKQUOTE>
+<B><BLOCKQUOTE>setSelectionMode(int selectionMode)</B> - The following selectionMode values are allowed:&nbsp; </BLOCKQUOTE><DIR>
+
+<B><BLOCKQUOTE>SINGLE_SELECTION</B> Only one list index can be selected at a time. In this mode the setSelectionInterval and addSelectionInterval methods are equivalent, and only the second index argument (the "lead index") is used.&nbsp; <B>SINGLE_INTERVAL_SELECTION</B> One contiguous index interval can be selected at a time. In this mode setSelectionInterval and addSelectionInterval are equivalent.&nbsp; MULTIPLE_INTERVAL_SELECTION In this mode, there's no restriction on what can be selected.&nbsp; </BLOCKQUOTE>
+<B><BLOCKQUOTE>getSelectionMode()</B> - Returns an&nbsp; integer defining the current selection mode. </BLOCKQUOTE></DIR>
+</TD>
+</TR>
+</TABLE>
+
+<P>You have two options for defining a class that will serve as a list selection model for a <B>Jlist</B>.&nbsp; One option is to implement the interface described above. </P>
+<P>Swing provides a default list selection model class that can be used with <B>JList</B>.&nbsp; The second option is to extend the default model class taking advantage some of the existing methods, and overriding others. </P>
+<P>Unlike the data model discussed in a previous lesson, Swing does not provide an abstract implementation of the <B>ListSelectionModel </B>interface that can be extended to define your own model.&nbsp; However, you can extend the default model class named <B>DefaultListSelectionModel </B>to define your new model, which is a very practical approach.&nbsp; With this approach, you only override those methods for which you want to modify the selection rules, and you leave the remaining methods alone. </P>
+<P>There are basically two steps involved in defining and using a custom list selection model.&nbsp; First you must define a class that implements the <B>ListSelectionModel</B> interface (or extend the <B>DefaultListSelectionModel</B> class overriding methods as appropriate). </P>
+<P>The second step is to invoke the following method on the <B>JList</B> object passing an object of your new <B>ListSelectionModel</B> class as a parameter. <BR>
+&nbsp; </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#00ffff">
+<P>public void <B>setSelectionModel</B>(ListSelectionModel selectionModel) </P><DIR>
+<DIR>
+
+<P>Set the selectionModel for the list to a non-null <B>ListSelectionModel</B> implementation. </P>
+<P>The selection model handles the task of making single selections, selections of contiguous ranges, and non-contiguous selections.&nbsp;</DIR>
+</DIR>
+</TD>
+</TR>
+</TABLE>
+
+<P>Once you have done these two things, the selection of elements in your <B>JList</B> object will follow the new rules defined in your model. <BR>
+&nbsp; </P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Sample_Program"></A>Sample Program</H2>
+</FONT><P>The name of this program is <B>SwingList04.java</B>. It is a modification of the program named SwingList03. </P>
+<P>The purpose of the program is to illustrate the definition and use of a custom list selection model for a Swing <B>JList</B> component.&nbsp; It also illustrates some other features as well: </P>
+
+<UL>
+<LI>Custom cell rendering for <B>JList</B> components. </LI>
+<LI>Use of the <B>ListSelectionListener</B> interface to instantiate listener objects that listen for the selection of an element in the list. </LI></UL>
+
+<P>The program populates two <B>JList</B> objects with identical data.&nbsp; The two lists are identical except for their appearance and the manner in which elements can be selected in the list. </P>
+<P>One of the lists renders each element simply as text.&nbsp; For this list, the background for an element changes to a different color when the element is selected.&nbsp; This list incorporates normal rules for selecting an element in the list using the mouse or the arrow keys. </P>
+<P>The other list renders each list element as an icon and some text.&nbsp; When an element is selected, the icon is a small red ball.&nbsp; When an element is not selected, the icon is a small blue ball.&nbsp; You will need to furnish your own images for the icons, so your images will probably be different. </P>
+<P>Further, and this is the <U>primary purpose</U> of this lesson, the list with the icons uses a custom list selection model that provides a selection rule that is different from the normal selection rules. </P>
+<BLOCKQUOTE>The selection rule for this list causes the item actually selected to be the one immediately above the one that you click with the mouse or select with an arrow key unless it is the top element in the list.</BLOCKQUOTE>
+<P>This is accomplished by providing an overridden <B>setSelectionInterval()</B> method in the custom selection model that decrements the index limits of the selection unless they already have a value of zero. </P>
+<P>Note that this effectively disables the down-arrow key for the purpose of selecting an element in the list.&nbsp; When you press the down arrow to select the next element, the selection pops back up to the original element.&nbsp; When you use the up-arrow key to select elements in the list, the actual selections occur on every other element. </P>
+<P>The purpose of this custom list selection model is <U>not</U> to create confusion in the selection process.&nbsp; Rather, the purpose is to illustrate that the <B>JList</B> component uses a separate model to execute the selection rules, and you can modify those rules by defining and installing a custom version of the selection model if that suits your needs. </P>
+<P>Both lists use the <B>DefaultListModel</B> as a data model that has the ability to remove an element from the list. Both will throw an exception if you attempt to remove an element from an empty list. Also, both will throw an exception if you attempt to remove an element with an invalid index value in the associated text field. </P>
+<P>The data to populate the two lists is automatically obtained from the file and directory names in the root directory on the C-drive.&nbsp; When the program starts, the two populated lists, two buttons, and two text fields appear on the screen.&nbsp; The buttons and text fields should appear to the right of the list with which they are associated. </P>
+<P>To remove an element from a list, enter the index in the associated text field and click the associated button. </P>
+<P>To determine the index value of an element, simply select it with the mouse or an arrow key (keeping in mind the modified selection rule discussed above).&nbsp; The index number of the element actually selected will be placed in the text field.&nbsp; Clicking the associated button at that point will cause the selected element to be removed from the list.&nbsp; You can also manually enter an index value into the text field causing an element other than the selected element to be removed. </P>
+<P>A <I>Pluggable Look and Feel</I> (PLAF) control panel is also displayed on the screen.&nbsp; You can change the look and feel by clicking a button on the control panel. </P>
+<P>This program was tested using JDK 1.1.6 and Swing 1.0.3 under Win95. A modified version was tested using JDK 1.2.  Modification required changing import directives to match Swing requirements under JDK 1.2.<BR>
+&nbsp; </P>
+<FONT COLOR="#ff0000"><H3 ALIGN="CENTER"><A NAME="Interesting_Code_Fragments"></A>Interesting Code Fragments</H3>
+</FONT><P>This program, named <B>SwingList04</B>, is a modification of the program named SwingList03 from a previous lesson.&nbsp; Most of the code is identical to, or very similar to the code in that program.&nbsp; In this lesson, I will discuss only the code that is new or significantly different from the earlier program.&nbsp; You can view all of the code in the listing of the program that follows later. </P>
+<P>The first fragment shows the instantiation of the two <B>JList</B> objects using the <B>DefaultListModel</B> as their data model. </P>
+<P>More importantly, this fragment invokes the <B>setSelectionModel()</B> method on the first list to cause the custom list selection model to be used on that list.&nbsp; Note that the list selection model for the second list remains the default model for comparison. <BR>
+&nbsp; </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; listA = new <B>JList</B>(new <B>DefaultListModel</B>());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; listA.<B>setCellRenderer</B>(new CustomCellRenderer());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Put a custom selection model on this list.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; listA.<B>setSelectionModel</B>(new <B>CustomSelectionModel</B>());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; listB = new <B>JList</B>(new <B>DefaultListModel</B>());</PRE></TD>
+</TR>
+</TABLE>
+
+<P>Now I am going to skip all the way down to the definition of the class used to instantiate the custom list selection model object.&nbsp; Note that this class extends the <B>DefaultListSelectionModel</B> class which in turn implements the <B>ListSelectionModel</B> interface. </P>
+<P>The new class overrides the <B>setSelectionInterval()</B> method in the superclass to provide the modified selection rules discussed earlier.&nbsp; Once an object of this class is defined as the list selection model for a list (as in the previous fragment) this overridden method is invoked in place of the original method in the superclass.&nbsp; As you can see, if the index values are not zero, they are decremented, and then the same method in the superclass is invoked with the modified index values. </P>
+<P>This results in the behavior that the element actually selected is immediately above the one clicked with the mouse (index value is decremented) whenever the user attempts to select an element in the list. <BR>
+&nbsp; </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>&nbsp; class <B>CustomSelectionModel</B>&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; extends <B>DefaultListSelectionModel</B>{
+&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; public void <B>setSelectionInterval</B>(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int index0,int index1){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(index0 != 0) index0--;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(index1 != 0) index1--;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <B>super</B>.setSelectionInterval(index0,index1);&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; }//end setSelectionInterval()
+&nbsp; }//end class CustomSelectionModel</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The code in the program that was not highlighted in the fragments above can be viewed in the complete listing of the program that follows in the next section. <BR>
+&nbsp; </P>
+<FONT COLOR="#ff0000"><H3 ALIGN="CENTER"><A NAME="Program_Listing"></A>Program Listing</H3>
+</FONT><P>This section contains a complete listing of the program.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File SwingList04.java</PRE>
+<FONT FACE="Courier" SIZE=1><P>Rev 03/24/99</P>
+<P>Upgraded for JDK1.2 compatibility on 3/24/99.</P>
+</FONT><PRE>This is a modification of the program named SwingList03.
+This is a modification of the program named SwingList03.
+
+The purpose of the program is to illustrate the definition
+and use of a custom list selection model for a Swing
+JList component.
+
+It also illustrates custom cell rendering for JList&nbsp;
+components.
+
+It also illustrates the use of the ListSelectionListener
+interface to instantiate listener objects that monitor
+for the selection of an element in the list, retrieve the
+index value of the element, and display the value.
+
+This program should be discussed only after the student
+understands how to create and use JList objects as
+described in SwingList01.java.
+
+This program populates two JList objects with identical
+data. The data used to populate the two lists is obtained
+from the names of the files and directories in the root
+directory of the C-drive.
+
+Both of the JList objects are based on the&nbsp;
+DefaultListModel.
+
+The two lists are identical except for their appearance&nbsp;
+and the manner in which elements can be selected in the
+list.
+
+One of the lists renders each element simply as text.&nbsp; For
+this list, the background for an element changes to a
+different color when the element is selected. This list
+incorporates normal rules for selecting an element in the
+list using the mouse or the arrow keys.
+
+The other list renders each list element as an icon and
+some text.&nbsp; When an element is selected, the icon is a
+small red ball.&nbsp; When an element is not selected, the icon
+is a small blue ball.&nbsp; You will need to furnish your own
+images for the icons, so your images will probably be
+different.
+
+Further, the list with the icons uses a custom list&nbsp;
+selection model that provides a different set of selection
+rules.&nbsp;&nbsp;
+
+The selection rule for this list causes the item actually&nbsp;
+selected to be the one immediately above the one that you&nbsp;
+click with the mouse or select with an arrow key unless it
+is the top element in the list.&nbsp; This is accomplished by
+providing an overridden method in the custom selection&nbsp;
+model that subtracts a value of one from the index limits&nbsp;
+of the selection unless they already have a value of zero.
+
+Note that this effectively disables the down-arrow key for&nbsp;
+the purpose of selecting an element in the list.&nbsp; When you&nbsp;
+use the up-arrow key to select elements in the list, the&nbsp;
+actual selections occur on every other element.
+
+The purpose is not to create confusion in the selection
+process.&nbsp; Rather, the purpose is to illustrate
+that the JList component uses a separate model to execute
+the selection rules, and you can modify those rules by
+defining and installing a custom version of the selection&nbsp;
+model.
+
+Both lists use the DefaultListModel which has the ability
+to remove an element from the list. Both will throw an&nbsp;
+exception if you attempt to remove an element from an&nbsp;
+empty list. Also, both will throw an exception if you
+attempt to remove an element with an invalid index value
+in the associated text field.
+
+The data to populate the two lists is automatically
+obtained from the root directory on the C-drive.&nbsp; When the
+program starts, the two populated lists, two buttons, and&nbsp;
+two text fields appear on the screen.&nbsp; The buttons and&nbsp;
+text fields should appear to the right of the list with&nbsp;
+which they are associated.
+
+To remove an element from a list, enter the index in the
+associated text field and click the associated button.
+
+To determine the index value of an element, simply select
+it with the mouse or an arrow key.&nbsp; The index number will
+be placed in the text field.&nbsp; Clicking the associated&nbsp;
+button at that point will cause the selected element to be
+removed from the list.&nbsp; You can also manually enter an&nbsp;
+index value into the text field causing an element other
+than the selected element to be removed.
+
+(The program runs under JDK 1.1.6 whether compiled using
+the JDK or the Microsoft jvc.&nbsp; However, it won't run
+under my current version of Microsoft jview even when&nbsp;
+compiled using jvc.&nbsp; It throws an exception in the area
+of populating the Vector object.)
+&nbsp;&nbsp;
+A PLAF control panel is also displayed on the screen.&nbsp;&nbsp;
+You can change the look and feel by clicking a button on
+the control panel.&nbsp;
+
+Tested using JDK 1.1.6 and Swing 1.0.3 under Win95.
+**********************************************************/
+import java.io.*;
+import java.util.*;
+import java.awt.*;
+import java.awt.event.*;
+//import com.sun.java.swing.*; //JDK1.1/Swing1.0.3 version
+//import com.sun.java.swing.tree.*;
+//import com.sun.java.swing.event.*;
+import javax.swing.*; //JDK1.2 version
+<FONT FACE="Courier" SIZE=1>import javax.swing.tree.*;
+import javax.swing.event.*;
+
+</FONT>//=======================================================//
+public class SwingList04 extends JFrame{
+&nbsp; JList listA;
+&nbsp; JList listB;
+&nbsp; JScrollPane scrollPaneA;
+&nbsp; JScrollPane scrollPaneB;
+&nbsp; MyListSelectionListener listSelectionListenerA;
+&nbsp; MyListSelectionListener listSelectionListenerB;
+&nbsp; JPanel panelA = new JPanel();
+&nbsp; JPanel panelB = new JPanel();
+&nbsp; JButton buttonA;
+&nbsp; JButton buttonB;
+&nbsp; JTextField fieldA;
+&nbsp; JTextField fieldB;
+&nbsp;&nbsp;
+&nbsp; Dimension prefSize;
+&nbsp;&nbsp;
+&nbsp; //The following is a reference to the top-level JFrame
+&nbsp; // which contains everything else.
+&nbsp; SwingList04 thisObj;
+&nbsp;&nbsp;
+&nbsp; //-----------------------------------------------------//
+&nbsp;&nbsp;
+&nbsp; public static void main(String args[]) {
+&nbsp;&nbsp;&nbsp; //Instantiate the top-level JFrame object.
+&nbsp;&nbsp;&nbsp; new SwingList04();
+&nbsp; }//end main
+&nbsp; //-----------------------------------------------------//
+
+&nbsp; public SwingList04 () {//constructor
+&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; //Instantiate and link to a Programmable Look &amp; Feel
+&nbsp;&nbsp;&nbsp; // control panel.
+&nbsp;&nbsp;&nbsp; new PlafPanel02(this);
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; getContentPane().setLayout(new FlowLayout());
+
+&nbsp;&nbsp;&nbsp; //Create a Vector object containing data for
+&nbsp;&nbsp;&nbsp; // populating two JList objects.
+&nbsp;&nbsp;&nbsp; Vector theFileNames = new Vector();
+&nbsp;&nbsp;&nbsp; String dir = "c:/";
+&nbsp;&nbsp;&nbsp; String[] fileList = new File(dir).list();//dir listing
+
+&nbsp;&nbsp;&nbsp; //Loop and process each file in the directory
+&nbsp;&nbsp;&nbsp; for(int fileCnt = 0;fileCnt&lt;fileList.length;fileCnt++){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(new File(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; dir + "/" + fileList[fileCnt]).isDirectory()){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theFileNames.addElement("dir: " +&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; fileList[fileCnt]);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }else{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theFileNames.addElement("file: " +&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; fileList[fileCnt]);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end else
+&nbsp;&nbsp;&nbsp; }//end for loop
+
+&nbsp;&nbsp;&nbsp; if(theFileNames != null){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Create and populate two JList objects&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; listA = new JList(new DefaultListModel());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Put a custom cell renderer on this list.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; listA.setCellRenderer(new CustomCellRenderer());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Put a custom selection model on this list.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; listA.setSelectionModel(new CustomSelectionModel());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; listB = new JList(new DefaultListModel());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Give them names to be used in event handler
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; listA.setName("MyNameIsListA");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; listB.setName("MyNameIsListB");
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Populate the list
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Enumeration theEnum = theFileNames.elements();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; while(theEnum.hasMoreElements()){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Object theObject = theEnum.nextElement();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ((DefaultListModel)listA.getModel()).
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; addElement(theObject);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ((DefaultListModel)listB.getModel()).
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; addElement(theObject);
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end while loop
+&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Display listA, its button, and its textField
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; scrollPaneA = new JScrollPane(listA);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; panelA.add(scrollPaneA);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; listSelectionListenerA =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new MyListSelectionListener();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; listA.addListSelectionListener(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; listSelectionListenerA);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; listA.setVisibleRowCount(6);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Allow selection of one element index at a time.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; listA.setSelectionMode(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ListSelectionModel.SINGLE_SELECTION);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Get size of list and adjust JPanel accordingly
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; prefSize =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; listA.getPreferredScrollableViewportSize();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; panelA.setBounds(0,0,prefSize.width,prefSize.height);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; getContentPane().add(panelA);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; buttonA = new JButton("A");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; getContentPane().add(buttonA);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; fieldA = new JTextField("Field A");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; getContentPane().add(fieldA);
+&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Listener to remove elements from listA
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; buttonA.addActionListener(new ActionListener() {
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; public void actionPerformed(ActionEvent e) {
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int theElement =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Integer.parseInt(fieldA.getText());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ((DefaultListModel)listA.getModel()).
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; removeElementAt(theElement);}});
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Display listB
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; scrollPaneB = new JScrollPane(listB);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; panelB.add(scrollPaneB);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; listSelectionListenerB =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new MyListSelectionListener();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; listB.addListSelectionListener(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; listSelectionListenerB);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; listB.setVisibleRowCount(6);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Allow selection of one element index at a time.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; listB.setSelectionMode(ListSelectionModel.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; SINGLE_SELECTION);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Get size of list and adjust JPanel accordingly
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; prefSize =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; listB.getPreferredScrollableViewportSize();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; panelB.setBounds(0,0,prefSize.width,prefSize.height);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; getContentPane().add(panelB);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; buttonB = new JButton("B");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; getContentPane().add(buttonB);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; fieldB = new JTextField("Field B");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; getContentPane().add(fieldB);
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Listener to remove elements from listA
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; buttonB.addActionListener(new ActionListener() {
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; public void actionPerformed(ActionEvent e) {
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int theElement =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Integer.parseInt(fieldB.getText());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ((DefaultListModel)listB.getModel()).
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; removeElementAt(theElement);}});
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; }//end if(theFileNames != null)
+
+&nbsp;&nbsp;&nbsp; //Save a reference to the top-level JFrame object
+&nbsp;&nbsp;&nbsp; // in an instance variable for later use.
+&nbsp;&nbsp;&nbsp; thisObj = this;
+&nbsp;&nbsp;&nbsp; setTitle("Copyright 1998, R.G.Baldwin");&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; setSize(400,350);
+&nbsp;&nbsp;&nbsp; setVisible(true);
+
+&nbsp;&nbsp;&nbsp; //An anonymous inner class to terminate the program
+&nbsp;&nbsp;&nbsp; // when the
+&nbsp;&nbsp;&nbsp; // user clicks the close button on the frame.
+&nbsp;&nbsp;&nbsp; this.addWindowListener(new WindowAdapter() {
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; public void windowClosing(WindowEvent e) {
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.exit(0);}
+&nbsp;&nbsp;&nbsp; });
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp; }//end constructor
+&nbsp;&nbsp;
+&nbsp; //=====================================================//
+&nbsp;&nbsp;
+&nbsp; //Inner class to monitor for selection events on the
+&nbsp; // JList object and store the index of the selected
+&nbsp; // element in the JTextField associated with the JList.
+&nbsp; class MyListSelectionListener&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; implements ListSelectionListener{
+&nbsp;&nbsp;&nbsp; public void valueChanged(ListSelectionEvent e){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int selectedIndex =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ((JList)e.getSource()).getSelectedIndex();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Don't allow the list to exist without a selected
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // element giving a selected index of -1.&nbsp; This will&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // throw an exception if the user attempts to remove
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // an element from an empty list, but a negative
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // index will also throw an exception if the user
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // attempts to remove an element with a negative
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // index.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(((Component)e.getSource()).getName().
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; compareTo("MyNameIsListA") == 0){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(selectedIndex &lt; 0) listA.setSelectedIndex(0);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; else fieldA.setText("" + selectedIndex);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }else{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(selectedIndex &lt; 0) listB.setSelectedIndex(0);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; else fieldB.setText("" + selectedIndex);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end if
+&nbsp;&nbsp;&nbsp; }//end valueChanged()
+&nbsp; }//end class MyListSelectionListener
+&nbsp; //=====================================================//
+&nbsp;&nbsp;
+&nbsp; //Inner class to implement a custom cell renderer
+&nbsp; class CustomCellRenderer extends JLabel&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; implements ListCellRenderer{
+&nbsp;&nbsp;&nbsp; ImageIcon selected = new ImageIcon("red-ball.gif");
+&nbsp;&nbsp;&nbsp; ImageIcon unSelected = new ImageIcon("blue-ball.gif");
+
+&nbsp;&nbsp;&nbsp; //This method is declared by the ListCellRenderer
+&nbsp;&nbsp;&nbsp; // interface.&nbsp; Once it is defined as the cell renderer
+&nbsp;&nbsp;&nbsp; // for a list, it is called each time it is necessary
+&nbsp;&nbsp;&nbsp; // to redraw the cell.&nbsp; With this definition, the
+&nbsp;&nbsp;&nbsp; // cell is rendered using a JLabel object containing
+&nbsp;&nbsp;&nbsp; // an icon and some text.&nbsp; The text is the original
+&nbsp;&nbsp;&nbsp; // text.&nbsp; The icon toggles between a red ball when
+&nbsp;&nbsp;&nbsp; // the element is selected and a blue ball when the
+&nbsp;&nbsp;&nbsp; // element is not selected.
+
+&nbsp;&nbsp;&nbsp; public Component getListCellRendererComponent(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; JList list,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // the list being redrawn
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Object value,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // value to display
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int index,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // cell index
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; boolean isSelected,&nbsp; // is the cell selected
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; boolean cellHasFocus)// the list and the cell have&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //&nbsp; the focus
+&nbsp;&nbsp;&nbsp; {//begin getListCellRendererComponent() body
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; String theLabel = value.toString();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; setText(theLabel);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(isSelected){//set the red ball
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; setIcon(selected);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }else{//set the blue ball for not selected
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; setIcon(unSelected);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }//end else
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; return this;//return component used to render
+&nbsp;&nbsp;&nbsp; }//end getListCellRendererComponent()
+&nbsp; }//end class CustomCellRenderer&nbsp;&nbsp;
+&nbsp; //=====================================================//
+
+&nbsp; //Inner class to implement a custom selection model.&nbsp;
+&nbsp; // This custom selection model modifies the selection
+&nbsp; // rules defined by the DefaultListSelectionModel by
+&nbsp; // extending that class and overriding one of the&nbsp;
+&nbsp; // methods of that class.&nbsp; Unless the index values&nbsp;
+&nbsp; // defining a selection interval are equal to zero, they
+&nbsp; // are reduced by a value of 1 and then passed to the
+&nbsp; // same method in the superclass.&nbsp; If the index value is
+&nbsp; // zero, it is not modified.
+&nbsp; class CustomSelectionModel&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; extends DefaultListSelectionModel{
+&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; public void setSelectionInterval(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int index0,int index1){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(index0 != 0) index0--;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(index1 != 0) index1--;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; super.setSelectionInterval(index0,index1);&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; }//end setSelectionInterval()
+&nbsp; }//end class CustomSelectionModel
+&nbsp;&nbsp;
+&nbsp; //=====================================================//
+&nbsp;&nbsp;
+}//end class SwingList04</PRE></TD>
+</TR>
+</TABLE>
+
+<P ALIGN="CENTER">-end- <!--end--></P></BODY>
+</HTML>

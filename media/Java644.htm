@@ -1,0 +1,592 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>... in Java by Richard G Baldwin</TITLE>
+<META NAME="Template" CONTENT="C:\PROGRAM FILES\MSOFFICE\OFFICE\html.dot">
+</HEAD>
+<BODY LINK="#0000ff" VLINK="#800080" BGCOLOR="#ffffff">
+
+<P><!--start--></P>
+<I><H3 ALIGN="CENTER">Richard G Baldwin (512) 223-4758, </I><A HREF="mailto:baldwin@austin.cc.tx.us"><I>baldwin@austin.cc.tx.us</I></A><I>, </I><A HREF="http://www2.austin.cc.tx.us/baldwin/"><I>http://www2.austin.cc.tx.us/baldwin/</I></A></H3>
+<H2 ALIGN="CENTER"><!--title-->CORBA, Passing Parameters to Remote Methods<!--endTitle--></H2>
+<P>Java Programming, Lecture Notes 644, Revised 08/22/99. </P>
+
+<UL>
+<LI><A HREF="#Preface">Preface</A> </LI>
+<LI><A HREF="#Introduction">Introduction</A> </LI>
+<LI><A HREF="#Overview">Overview</A> </LI>
+<LI><A HREF="#Sample_Program">Sample Program</A> </LI>
+<LI><A HREF="#The_Interface_Definition_Language__IDL__">The Interface Definition Language (IDL) File</A> </LI>
+<LI><A HREF="#The_Batch_file">The Batch File</A> </LI>
+<LI><A HREF="#The_Server_File">The Server File</A> </LI>
+<LI><A HREF="#The_Client_File">The Client File</A> </LI>
+<LI><A HREF="#Program_Listings">Program Listings</A> </LI></UL>
+
+<P><HR></P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Preface">Preface</A></H2>
+</FONT><P>Students in Prof. Baldwin's <B><U>Advanced Java Programming</B></U> classes at ACC will be responsible for knowing and understanding all of the material in this lesson beginning with the spring semester of 1999. </P>
+<P>This lesson was originally written on November 1, 1998. The sample program was tested using the JDK 1.2beta4 download package. The purpose of this lesson is to illustrate parameter passing when using an object reference to invoke an operation (method) on a servant object.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Introduction">Introduction</A></H2>
+</FONT><P>Before embarking on this lesson, you need to study and understand all of the previous lessons on CORBA and Java. This lesson builds directly upon those lessons. Unless you understand the material in those lessons, you probably won't understand what is going on here. </P>
+<P>Also, before embarking on this lesson, you need to study and understand material on the OMG Interface Definition Language that is readily available at numerous locations on the web. Although you won't need to have expert knowledge of this material, you will need to understand the meanings of all the elements of the IDL file used with the sample program in this lesson.</P>
+<P>Finally, before embarking on this lesson, you will need to understand how parameters are passed to a normal Java method in order to understand the differences involved in passing parameters to a method on a CORBA servant object.</P>
+<P>Using CORBA, a client machine anywhere in the world has the capability of invoking methods on a servant object on a cooperating server anywhere in the world, and the programs at the two ends can be developed using different programming languages. One of those programming languages is Java.</P>
+<P>Once the client code has a reference to the remote object, the invocation of methods on the remote object is very similar to the invocation of methods on local objects. Note that I said very <EM>similar</EM> and didn't say <EM>identical</EM>. This lesson will expose some of the differences.</P>
+<P>Both the client code and the server code must have access to an IDL file that declares the methods that can be invoked remotely. This is the key to the whole process and the glue that holds it all together. The client and the server must also agree on how the server will provide an object reference to the client. In this lesson, that object reference is provided by storing a stringified version of the reference in a disk file that is accessible to both the client and the server.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Overview">Overview</A></H2>
+</FONT><P>This lesson will expose one of the ways in which CORBA programming differs from ordinary Java programming. When you declare a method signature in an interface in the IDL file, you must declare each parameter as being either <STRONG>in</STRONG>, <STRONG>out</STRONG>, or <STRONG>inout</STRONG>. These names are generally self-explanatory: An <STRONG>in</STRONG> parameter provides input to the method; an <STRONG>out</STRONG> parameter is an output from the method; and an <STRONG>inout</STRONG> parameter serves as an input to and an output from the method. If you forget to include these specifications when you create the method signature in the IDL file, the <STRONG>idltojava</STRONG> program will report a syntax error.</P>
+<P>Since there is nothing in Java to correspond to the specification of <STRONG>in</STRONG>, <STRONG>out</STRONG>, or <STRONG>inout</STRONG> when creating a method signature, the <STRONG>idltojava</STRONG> program does some work on your behalf to accommodate this requirement. We will examine an interface file created by the <STRONG>idltojava</STRONG> program later to better understand this.</P>
+<P>The sample program in this lesson will use the IDL types <STRONG>long</STRONG> and <STRONG>string</STRONG> to indicate the types of parameters being passed. These IDL types map into the Java types <STRONG>int</STRONG> and <STRONG>String</STRONG> respectively.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Sample_Program">Sample Program</A></H2>
+</FONT><P>The application requires three separate source files and one utility program.&nbsp; The source files are: </P>
+
+<UL>
+<LI>An IDL file that declares the signatures of two methods on a servant object on the server that can be invoked by the client. </LI>
+<LI>A file that serves as the server program. </LI>
+<LI>A file that serves as the client program. </LI></UL>
+
+<P>The utility program is: </P>
+<B><BLOCKQUOTE>idltojava.exe</B> - a program that converts the IDL file to several Java files, producing stub and skeleton source files and some other source files used by the client and the server.</BLOCKQUOTE>
+<P>I have a folder on my computer that contains the following four source files:</P>
+
+<UL>
+<LI>Corba08.bat </LI>
+<LI>Corba08.idl </LI>
+<LI>Corba08Server.java </LI>
+<LI>Corba08Client.java </LI></UL>
+
+<P>Only the last three files are required. The batch file is optional, but is useful for managing the whole process.</P>
+<P>Initially, this folder doesn't have any sub folders. However, execution of the program <STRONG>idltojava</STRONG> creates a package to contain the source files that it generates. I forced the package to be in a tree that begins with a folder named <STRONG>junk</STRONG>. As a result, a <STRONG>junk</STRONG> folder is automatically generated which contains another folder named <STRONG>TheDateApp</STRONG>, which is the actual package name.</P>
+<P>This is a Java/CORBA application that illustrates the use of IDL operation parameters of types <STRONG>in</STRONG>, <STRONG>out</STRONG>, and <STRONG>inout</STRONG>.</P>
+<P>This server provides a servant object that has two methods. One of the methods returns the date and time as a <STRONG>string</STRONG>. More importantly, this method receives three IDL <STRONG>long</STRONG> parameters, one each of types <STRONG>in</STRONG>, <STRONG>out</STRONG>, and <STRONG>inout</STRONG>.</P>
+<P>The <STRONG>in</STRONG> parameter is displayed on the MS-DOS screen where the server is running. The <STRONG>in</STRONG> parameter is also sent back to the calling method by way of the <STRONG>out</STRONG> parameter. The <STRONG>inout</STRONG> parameter is multiplied by 4 and then sent back to the calling method by way of the <STRONG>inout</STRONG> parameter. </P>
+<P>The other method of this interface performs similar operations on three <STRONG>string</STRONG> parameters, one each of types <STRONG>in</STRONG>, <STRONG>out</STRONG>, and <STRONG>inout</STRONG>.</P>
+<P>The <STRONG>in</STRONG> parameter is displayed in the MS-DOS screen where the server is running. The <STRONG>in</STRONG> parameter is also sent back to the calling method by way of the <STRONG>out</STRONG> parameter. The <STRONG>inout</STRONG> parameter is concatenated onto "zz" and sent back to the calling method by way of the <STRONG>inout</STRONG> parameter.</P>
+<P>The program was tested using JDK 1.2beta4 under Win95.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="The_Interface_Definition_Language__IDL__">The Interface Definition Language (IDL) File</A></H2>
+</FONT><P>The IDL file is the glue that holds the system of programs together and makes it possible for code in a client to invoke methods in a remote object on a basis that is both platform and language independent. This was discussed in some detail in the earlier lessons.</P>
+<P>The IDL for this sample program is named <STRONG>Corba08.idl</STRONG>. A complete listing of all four files is provided near the end of this lesson. In addition, important parts of the IDL file are highlighted in the following code fragment.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Corba08.idl
+**********************************************************/
+module <STRONG>TheDateApp</STRONG>{
+  interface <STRONG>TheDateInterface</STRONG>{
+    
+    string <STRONG>getTheDateMethod</STRONG>(<STRONG>in</STRONG> long longIn, 
+                            <STRONG>out</STRONG> long longOut, 
+                            <STRONG>inout</STRONG> long longInOut);
+  //-----------------------------------------------------//
+  
+    void <STRONG>passObjects</STRONG>(<STRONG>in</STRONG> string stringIn, 
+                     <STRONG>out</STRONG> string stringOut, 
+                     <STRONG>inout</STRONG> string stringInOut);
+
+  };//end interface TheDateInterface
+};//end module TheDateApp</PRE></TD>
+</TR>
+</TABLE>
+
+<P>This fragment shows the two different operations (methods) named <STRONG>getTheDateMethod </STRONG>and <STRONG>passObjects</STRONG>, and also shows the manner in which each of the parameters to the methods are declared to be either <STRONG>in</STRONG>, <STRONG>out</STRONG>, or <STRONG>inout</STRONG>.</P>
+<P>In previous lessons, I haven't provided much, if any discussion of the files automatically generated by the <STRONG>idltojava</STRONG> program. However, we have now reached the point where a brief discussion of parts of some of those files is necessary.</P>
+<P>Now let's see if we can understand the structure that is required to support <STRONG>in</STRONG>, <STRONG>out</STRONG>, and <STRONG>inout</STRONG> parameters for which there is no direct Java mapping. We learned in a previous lesson that when we define the class from which the servant object will be instantiated, we must begin that definition something like the following:</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>class TheDateInterfaceServant 
+                         extends <STRONG>_TheDateInterfaceImplBase</STRONG>{</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The important point here is that this class definition extends <STRONG>_TheDateInterfaceImplBase</STRONG>, which is a class definition that is generated automatically by the <STRONG>idltojava</STRONG> program. If we are going to extend the <STRONG>_TheDateInterfaceImplBase </STRONG>class, we need to know a little more about it. If we examine the code for this class, we find that it begins as follows:</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>public abstract class _TheDateInterfaceImplBase 
+       extends org.omg.CORBA.DynamicImplementation 
+    <STRONG>          implements junk.TheDateApp.TheDateInterface</STRONG> {</PRE></TD>
+</TR>
+</TABLE>
+
+<P>For our purposes in this discussion, the important point is that this class implements an interface named <STRONG>junk.TheDateApp.TheDateInterface</STRONG>. This is an interface that is also automatically generated by the <STRONG>idltojava</STRONG> program. This means that the class that we define must satisfy the requirements imposed by implementing <STRONG>TheDateInterface</STRONG>. </P>
+<P>The next step is to take a look at the interface definition for <STRONG>junk.TheDateApp.TheDateInterface</STRONG>. The next fragment is a complete listing of that file with some of the comments removed for brevity.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>package junk.TheDateApp;
+public interface TheDateInterface 
+                              extends org.omg.CORBA.Object {
+  String <STRONG>getTheDateMethod</STRONG>(
+      <STRONG>                  int</STRONG> longIn, 
+      <STRONG>                  org.omg.CORBA.IntHolder</STRONG> longOut, 
+                        <STRONG>org.omg.CORBA.IntHolder</STRONG> longInOut);
+  void <STRONG>passObjects</STRONG>(
+      <STRONG>             String</STRONG> stringIn, 
+      <STRONG>             org.omg.CORBA.StringHolder</STRONG> stringOut, 
+                   <STRONG>org.omg.CORBA.StringHolder</STRONG> stringInOut);}</PRE></TD>
+</TR>
+</TABLE>
+
+<P>What we see here are the declarations of the two required methods named <STRONG>getTheDateMethod()</STRONG> and <STRONG>passObjects()</STRONG>. We also see that the types of the first parameter for each method is what we would have expected on the basis of the IDL type to Java type mapping described earlier. IDL<STRONG> long</STRONG> maps to Java <STRONG>int</STRONG> and IDL <STRONG>string</STRONG> maps to Java <STRONG>String</STRONG>.</P>
+<P>The important thing to note is that the types of the second and third parameters for each method are different types, which we previously knew nothing about. The types of the second and third parameters in the first method are <STRONG>org.omg.CORBA.IntHolder</STRONG> and the types of the second and third parameters in the second method are <STRONG>org.omg.CORBA.StringHolder</STRONG>. These are types defined by classes in the JDK 1.2beta4 class library.</P>
+<P>Examining the description of the class <STRONG>org.omg.CORBA.IntHolder</STRONG> in the JDK documentation, we find the following, which is a direct quote from the JDK 1.2beta4 documentation:</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#00ffff">
+<P>"A Holder class for an <STRONG>int</STRONG> that is used to store "<STRONG>out</STRONG>" and "<STRONG>inout</STRONG>" parameters in IDL methods. If an IDL method signature has an IDL long as an "<STRONG>out</STRONG>" or "<STRONG>inout</STRONG>" parameter, the programmer must pass an instance of <STRONG>IntHolder</STRONG> as the corresponding parameter in the method invocation; for "<STRONG>inout</STRONG>" parameters, the programmer must also fill the "<STRONG>in</STRONG>" value to be sent to the server. Before the method invocation returns, the ORB will fill in the value corresponding to the "<STRONG>out</STRONG>" value returned from the server. </P>
+<P>If <STRONG>myIntHolder</STRONG> is an instance of <STRONG>IntHolder</STRONG>, the value stored in its value field can be accessed with <STRONG>myIntHolder.value</STRONG>." </TD>
+</TR>
+</TABLE>
+
+<P>Examination of the class named <STRONG>org.omg.CORBA.StringHolder</STRONG> provides essentially the same information for <STRONG>String</STRONG> instead of <STRONG>int</STRONG>.</P>
+<P>Now we understand the rules. When we define the methods that implement the IDL interface, for each IDL <STRONG>in </STRONG>parameter, we simply pass a parameter of a type that is the proper mapping of IDL types to Java types (<STRONG>long</STRONG> to <STRONG>int</STRONG>, <STRONG>string</STRONG> to <STRONG>String</STRONG>, etc.). </P>
+<P>However, for each IDL <STRONG>out</STRONG> or <STRONG>inout</STRONG> parameter, we need to pass a parameter of a <EM>holder</EM> class that is designed to accommodate that Java type in those categories. The actual class required can be determined by examining the corresponding Java interface file that is automatically generated by the <STRONG>idltojava</STRONG> program.</P>
+<P>If you don't pass the correct type in these cases, you will get a compiler error.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="The_Batch_file">The Batch file</A></H2>
+</FONT><P>The batch file for this application is named <STRONG>Corba08.bat</STRONG>. There is nothing new or significant about it. You will find a listing for the batch file near the end of this lesson.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="The_Server_File">The Server File</A></H2>
+</FONT><P>The name of the file containing the server code is <STRONG>Corba08Server.java</STRONG>. A listing of the file is provided near the end of this lesson. I will discuss a few fragments from this file relative to the previous discussion. Much of the code is similar to code that you have seen before and I will omit a discussion of that code.</P>
+<P>The first fragment shows part of the class definition from which the servant object that implements the IDL interface is instantiated.</P>
+<P>First examine the signature of the method named <STRONG>getTheDateMethod()</STRONG>. You will see that it matches the signature declaration in the interface file discussed previously (as you already knew that it must).</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>class TheDateInterfaceServant 
+                         extends _TheDateInterfaceImplBase{
+  public String <STRONG>getTheDateMethod</STRONG>(
+                    <STRONG>int</STRONG> longIn, 
+                      <STRONG>org.omg.CORBA.IntHolder</STRONG> longOut, 
+                        <STRONG>org.omg.CORBA.IntHolder</STRONG> longInOut){
+    System.out.println("Incoming parameter:" + longIn);
+    longOut.<STRONG>value</STRONG> = longIn;
+    longInOut.<STRONG>value</STRONG> = 4*longInOut.value;
+    return new Date().toString();
+  }//end getTheDateMethod()</PRE></TD>
+</TR>
+</TABLE>
+
+<P>Next examine the operations performed within the method that manipulate the method parameters. As we learned earlier, the first parameter that was declared to be an in parameter in the IDL is simply an <STRONG>int</STRONG>. We can manipulate it in the normal ways. Note, however, that if you assign a new value to that parameter, the new value will <U>not</U> find its way back to the code that invoked the method.</P>
+<P>The IDL <STRONG>out</STRONG> and <STRONG>inout</STRONG> parameters are a little more complicated. Although we know that in the final analysis, all three parameters represent values of Java type <STRONG>int</STRONG>, in order to accommodate the <STRONG>out</STRONG> and <STRONG>inout</STRONG> requirements of the IDL, the values of these parameters must be <EM>wrapped</EM> in an object of type <STRONG>org.omg.CORBA.IntHolder.  </STRONG>That<EM> wrapper</EM> object must be passed to the method (not to be confused with the standard wrapper objects <STRONG>Integer</STRONG>, <STRONG>Float</STRONG>, etc.). </P>
+<P>The wrapper object has a field named <STRONG>value</STRONG> where the actual <STRONG>int</STRONG> value is stored. To manipulate these parameters, we must manipulate the <STRONG>value</STRONG> field of the object. If we assign a new value to the <STRONG>value</STRONG> field of one of these parameters, that new value will find its way back to the code that invoked the method. Thus, these parameters behave a little like <STRONG>var</STRONG> parameters in Pascal or reference parameters in C++, but the analogy is very weak. (We can't simply assign a new value to the parameter; we must assign the new value to the <STRONG>value</STRONG> field of the parameter.)</P>
+<P>This class definition also contains a method named <STRONG>passObjects()</STRONG> which provides similar behavior using <STRONG>String</STRONG> objects instead of primitive <STRONG>int</STRONG> values. Because of the similarity, I will omit a discussion of this method. You can view the method in the complete listing of the program near the end of this lesson.</P>
+<P>The remainder of the server code is essentially the same as code that I have discussed in previous lessons, so I will not repeat that discussion here. After you view the code, if there is something that you don't understand, go back and review the discussion in previous lessons.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="The_Client_File">The Client File</A></H2>
+</FONT><P>The file containing the client code is named <STRONG>Corba08Client.java</STRONG>. I will discuss this code in fragments. A complete listing of the program is provided near the end of the lesson.</P>
+<P>An important aspect of understanding this program derives from understanding its output. The following output is produced on the screen where the client program is running. A small amount of output is also produced on the screen where the server program is running.</P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#00ffff">
+<P>Before the method call:<BR>
+longIn: 5<BR>
+longOut: 0<BR>
+longInOut: 10<BR>
+After the method call:<BR>
+longIn: 5<BR>
+longOut: 5<BR>
+longInOut: 40<BR>
+Sat Oct 31 15:56:45 CST 1998<BR>
+Before the method call:<BR>
+stringIn: stringIn<BR>
+stringOut: stringOut<BR>
+stringInOut: stringInOut<BR>
+After the method call:<BR>
+stringIn: stringIn<BR>
+stringOut: stringIn<BR>
+stringInOut: stringInOutzz<BR>
+Press Ctrl-z to terminate</TD>
+</TR>
+</TABLE>
+
+<P>I will discuss this output further in conjunction with the discussion of the actual code.</P>
+<P>The first fragment shows boilerplate code that you have seen and that I have discussed in previous lessons. I repeat it here solely for completeness.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>public class <STRONG>Corba08Client</STRONG>{
+  public static void main(String args[]){
+    try{
+      ORB orb = ORB.init(args, null);
+      org.omg.CORBA.Object theGenericObjRef = 
+              orb.string_to_object(getStringifiedObjRef());
+      TheDateInterface <STRONG>theRemoteObjRef</STRONG> = 
+           TheDateInterfaceHelper.narrow(theGenericObjRef);</PRE></TD>
+</TR>
+</TABLE>
+
+<P>Beginning at this point, the code will call the <STRONG>getTheDateMethod</STRONG> on <STRONG>TheDateInterface</STRONG> server object and pass three parameters. The code will display the parameter values before and after the call to illustrate how the code in the method modifies those parameter values. The code will also display the date value returned by the method.</P>
+<P>The next fragment creates and initializes three variables that will be passed as parameters to the remote method when it is invoked. The first variable is a primitive <STRONG>int</STRONG> variable. The next two variables are reference variables to objects of type <STRONG>org.omg.CORBA.IntHolder</STRONG>. In the latter two cases, it is the reference variables representing the objects that will be passed to the method.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      <STRONG>int</STRONG> longIn = 5;
+      <STRONG>org.omg.CORBA.IntHolder</STRONG> longOut = 
+                            new org.omg.CORBA.IntHolder(0);
+      <STRONG>org.omg.CORBA.IntHolder</STRONG> longInOut = 
+                           new org.omg.CORBA.IntHolder(10);
+
+      System.out.println("Before the method call:");
+      System.out.println("longIn: " + longIn);
+      System.out.println("longOut: " + longOut.value);
+      System.out.println("longInOut: " + longInOut.value);</PRE></TD>
+</TR>
+</TABLE>
+
+<P>After the variables are created and initialized, their values are displayed which produces the following output on the screen where the client is running:</P>
+<FONT FACE="Courier New"><STRONG><P>Before the method call:<BR>
+longIn: 5<BR>
+longOut: 0<BR>
+longInOut: 10</P>
+</FONT></STRONG><P>The next fragment uses the object reference obtained earlier and named <STRONG>theRemoteObjRef</STRONG> to call the method and pass the three variables as parameters.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      //call the method
+      String theDate = <STRONG>theRemoteObjRef</STRONG>.
+                <STRONG>getTheDateMethod</STRONG>(longIn,longOut,longInOut);
+
+      System.out.println("After the method call:");
+      System.out.println("longIn: " + longIn);
+      System.out.println("longOut: " + longOut.value);
+      System.out.println("longInOut: " + longInOut.value);
+      System.out.println(theDate);</PRE></TD>
+</TR>
+</TABLE>
+
+<P>Following the call, the values of the three variables (and the value of the returned date) are displayed again, producing the following output on the screen where the client is running.</P>
+<FONT FACE="Courier New"><STRONG><P>After the method call:<BR>
+longIn: 5<BR>
+longOut: 5<BR>
+longInOut: 40<BR>
+Sat Oct 31 15:56:45 CST 1998</P>
+</FONT></STRONG><P>As you will recall, the code in the method received the <STRONG>in</STRONG> parameter named <STRONG>longIn</STRONG> having a value of <STRONG>5</STRONG> and assigned it to the <STRONG>out</STRONG> parameter named <STRONG>longOut</STRONG>. The <STRONG>value</STRONG> field of <STRONG>longOut</STRONG> was initialized to 0 when the object was instantiated. However, following the execution of the method, the <STRONG>value</STRONG> field contained <STRONG>5</STRONG>. As indicated earlier, the value assigned to the <STRONG>out</STRONG> parameter in the method found its way back to the code that invoked the method (that's why it is called an <STRONG>out</STRONG> parameter). In other words, the value received by the method as the <STRONG>in</STRONG> parameter was sent back to the calling code by way of the <STRONG>out</STRONG> parameter.</P>
+<P>Similarly, the <STRONG>value</STRONG> field of the object referred to by <STRONG>longInOut</STRONG> was initialized to <STRONG>10</STRONG> when the object was instantiated. The code inside the method multiplied the <STRONG>value</STRONG> field of this <STRONG>inout</STRONG> parameter by a factor of four, and assigned the product back to the <STRONG>value</STRONG> field of the same parameter. Following the invocation of the method, the <STRONG>value</STRONG> field of the object referred to by the reference variable named <STRONG>longInOut</STRONG> contained <STRONG>40</STRONG>. Thus, the code in the method received a value via the <STRONG>inout</STRONG> parameter, multiplied it by a factor of four, and sent it back to the calling code by way of the same <STRONG>inout</STRONG> parameter.</P>
+<P>The method also returned the current date and time via a <STRONG>return</STRONG> statement. Therefore, CORBA methods can return one value via a <STRONG>return</STRONG> statement, and can also <EM>"return"</EM> or send back an unlimited number of values via <STRONG>out</STRONG> or <STRONG>inout</STRONG> parameters.</P>
+<P>The next fragment shows essentially the same behavior applied to <STRONG>String</STRONG> objects rather than primitive <STRONG>int</STRONG> values. The code calls the <STRONG>passObjects()</STRONG> method on <STRONG>TheDateInterface</STRONG> servant object passing three <STRONG>String</STRONG> objects to <STRONG>in</STRONG>, <STRONG>out</STRONG>, and <STRONG>inout</STRONG> parameters respectively. In the latter two cases, the <STRONG>String</STRONG> object is wrapped in an object of type <STRONG>org.omg.CORBA.StringHolder</STRONG> as required. Values of the object are displayed before and after the remote method is invoked, showing the expected behavior.</P>
+<P>The output produced by this code was shown earlier. You should compare the output with the code and make certain that you understand it.</P>
+<P>Beyond this, there is very little that is different from the previous discussion, so I won't discuss this code any further.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>      <STRONG>String</STRONG> stringIn = "stringIn";
+  <STRONG>    org.omg.CORBA.StringHolder</STRONG> stringOut = 
+               new<STRONG> </STRONG>org.omg.CORBA.StringHolder("stringOut");
+    <STRONG>  org.omg.CORBA.StringHolder</STRONG> stringInOut = 
+             new org.omg.CORBA.StringHolder("stringInOut");
+
+      System.out.println("Before the method call:");
+      System.out.println("stringIn: " + stringIn);
+      System.out.println("stringOut: " + stringOut.value);
+      System.out.println("stringInOut: " + 
+                                        stringInOut.value);
+      theRemoteObjRef.<STRONG>passObjects</STRONG>(
+                           stringIn,stringOut,stringInOut);
+      System.out.println("After the method call:");
+      System.out.println("stringIn: " + stringIn);
+      System.out.println("stringOut: " + stringOut.value);
+      System.out.println("stringInOut: " + 
+                                        stringInOut.value);</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The remaining code in the client program is essentially the same as code that I have discussed in previous lessons, so I won't discuss it further. You can view the entire program in the program listings that follow.</P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Program_Listings">Program Listings</A></H2>
+</FONT><P>Complete listings for the IDL file, the batch file and the source code files that you must create are provided in this section. Listings are not provided for the Java source code files that are automatically generated by the <STRONG>idltojava</STRONG> program.</P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Corba08.idl
+See Corba08Server.java for information on this program.
+**********************************************************/
+module TheDateApp{
+  interface TheDateInterface{
+    
+    string getTheDateMethod(in long longIn, 
+                                out long longOut, 
+                                     inout long longInOut);
+  //-----------------------------------------------------//
+  
+    void passObjects(in string stringIn, 
+                            out string stringOut, 
+                                 inout string stringInOut);
+
+  };//end interface TheDateInterface
+};//end module TheDateApp</PRE></TD>
+</TR>
+</TABLE>
+
+<FONT COLOR="#ff0000"><P>.</P></FONT>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>rem File Corba08.bat
+echo off
+rem See Corba08Server.java for description of program
+rem This program does not use a name service. It uses
+rem a stringified object reference instead.
+
+echo off
+
+echo Convert the idl file to the required set of java files
+idltojava -fno-cpp -p junk Corba08.idl
+
+echo Compile all of the java files
+javac Corba08*.java
+
+echo Start the server as a new process. 
+start java Corba08Server
+
+echo Start the client manually to avoid race condition</PRE></TD>
+</TR>
+</TABLE>
+
+<P>. </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Corba08Server.java
+Revised 10/31/98
+
+This is a Java/CORBA server that illustrates the use 
+of IDL operation parameters of types in, out, and inout.
+
+This server provides a servant object that has two methods.
+One of the methods returns the date and time as a string. 
+More importantly, this method receives three IDL long
+parameters, one each of types in, out, and inout.
+
+The in parameter is displayed on the MS-DOS screen where
+the server is running.  The in parameter is also sent
+back to the calling method by way of the out parameter.
+The inout parameter is multiplied by 4 and then sent back
+to the calling method by way of the inout parameter.
+
+The other method of this interface performs similar
+operations on three string parameters, one each of
+types in, out, and inout.
+
+The in parameter is displayed in the MS-DOS screen where
+the server is running.  The in parameter is also sent
+back to the calling method by way of the out parameter.
+The inout parameter is concatenated onto "zz" and sent
+back to the calling method by way of the inout parameter.
+
+This program uses a stringified object reference to the
+server's servant object rather than using the name 
+service.
+
+Tested using JDK 1.2beta4 under Win95.
+**********************************************************/
+import junk.TheDateApp.*;
+import org.omg.CORBA.*;
+import java.util.Date;
+import java.io.*;
+ 
+class TheDateInterfaceServant 
+                         extends _TheDateInterfaceImplBase{
+  public String getTheDateMethod(
+                    int longIn, 
+                      org.omg.CORBA.IntHolder longOut, 
+                        org.omg.CORBA.IntHolder longInOut){
+    System.out.println("Incoming parameter:" + longIn);
+    longOut.value = longIn;
+    longInOut.value = 4*longInOut.value;
+    return new Date().toString();
+  }//end getTheDateMethod()
+  //-----------------------------------------------------//
+
+  public void passObjects(
+               String stringIn, 
+                 org.omg.CORBA.StringHolder stringOut, 
+                   org.omg.CORBA.StringHolder stringInOut){
+    System.out.println("Incoming parameter:" + stringIn);
+    stringOut.value = stringIn;
+    stringInOut.value = stringInOut.value + "zz";
+  }//end passObjects()  
+  
+}//end TheDateInterfaceservant class
+//=======================================================//
+ 
+public class Corba08Server   {
+ 
+  public static void main(String args[]){
+    try{      
+      //Create and initialize the ORB
+      ORB orb = ORB.init(args, null);
+ 
+      //Create servant and register it with the ORB
+      TheDateInterfaceServant theObjectReference = 
+                             new TheDateInterfaceServant();
+      orb.connect(theObjectReference);
+
+      //Convert the object reference to a string and store
+      // it in a common file for access by the client.
+      setStringifiedObjectRef(
+                 orb.object_to_string(theObjectReference));
+
+      System.out.println("Server is running");
+ 
+      // wait for invocations from clients
+      java.lang.Object sync = new java.lang.Object();
+      synchronized (sync) {
+        sync.wait();
+      }//end synchronized block
+ 
+    }catch (Exception e) {
+       System.err.println("ERROR: " + e);
+       e.printStackTrace(System.out);
+    }//end catch block
+  }//end main()
+  //-----------------------------------------------------//
+  
+  static void setStringifiedObjectRef(String stringObjRef){
+    //Write the stringified object ref to a file named
+    // junk.txt in the user's home directory
+    try{
+      String theFile = System.getProperty("user.home")
+      &#9;             + System.getProperty("file.separator")
+      &#9; &#9;                              + "junk.txt";
+      FileOutputStream fileOutputStream = 
+                             new FileOutputStream(theFile);
+      PrintStream printStream = 
+                         new PrintStream(fileOutputStream);
+      printStream.print(stringObjRef);
+      printStream.close();
+      System.out.println("Obj ref stored in: " 
+                     + System.getProperty("user.home")
+      &#9;             + System.getProperty("file.separator")
+      &#9; &#9;                             + "junk.txt");
+    }catch (Exception e) {
+       System.err.println("ERROR: " + e);
+       e.printStackTrace(System.out);
+    }//end catch block
+
+  }//end setStringifiedObjectRef()
+  &#9;
+}//end Corba08Server class</PRE></TD>
+</TR>
+</TABLE>
+
+<P>. </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Corba08Client.java
+See Corba08Server.java for information on this program.
+
+This program produces the following output on the screen
+where the client is running.  Some output is also produced
+on the screen where the server is running as well.
+
+Before the method call:
+longIn: 5
+longOut: 0
+longInOut: 10
+After the method call:
+longIn: 5
+longOut: 5
+longInOut: 40
+Sat Oct 31 15:56:45 CST 1998
+Before the method call:
+stringIn: stringIn
+stringOut: stringOut
+stringInOut: stringInOut
+After the method call:
+stringIn: stringIn
+stringOut: stringIn
+stringInOut: stringInOutzz
+Press Ctrl-z to terminate
+  
+**********************************************************/
+import junk.TheDateApp.*;
+import org.omg.CORBA.*;
+import java.io.*;
+
+public class Corba08Client{
+  public static void main(String args[]){
+    try{
+      // create and initialize the ORB
+      ORB orb = ORB.init(args, null);
+      
+      //Get and convert the stringified object reference 
+      // to a generic CORBA object reference
+      org.omg.CORBA.Object theGenericObjRef = 
+              orb.string_to_object(getStringifiedObjRef());
+
+      //Cast, or narrow the generic object reference to a 
+      // true object reference.
+      TheDateInterface theRemoteObjRef = 
+           TheDateInterfaceHelper.narrow(theGenericObjRef);
+ 
+      //Call the getTheDateMethod on TheDateInterface 
+      // server object and pass three parameters.  Display
+      // parameter values before and after the call.  Also
+      // display the date value returned by the method.
+      int longIn = 5;
+      org.omg.CORBA.IntHolder longOut = 
+                            new org.omg.CORBA.IntHolder(0);
+      org.omg.CORBA.IntHolder longInOut = 
+                           new org.omg.CORBA.IntHolder(10);
+      System.out.println("Before the method call:");
+      System.out.println("longIn: " + longIn);
+      System.out.println("longOut: " + longOut.value);
+      System.out.println("longInOut: " + longInOut.value);
+      //call the method
+      String theDate = theRemoteObjRef.
+                getTheDateMethod(longIn,longOut,longInOut);
+      System.out.println("After the method call:");
+      System.out.println("longIn: " + longIn);
+      System.out.println("longOut: " + longOut.value);
+      System.out.println("longInOut: " + longInOut.value);
+      System.out.println(theDate);
+
+      //Call the passObjects() method on TheDateInterface 
+      // server object and pass three parameters.  Display
+      // parameter values before and after the call.
+      String stringIn = "stringIn";
+      org.omg.CORBA.StringHolder stringOut = 
+               new org.omg.CORBA.StringHolder("stringOut");
+      org.omg.CORBA.StringHolder stringInOut = 
+             new org.omg.CORBA.StringHolder("stringInOut");
+
+      System.out.println("Before the method call:");
+      System.out.println("stringIn: " + stringIn);
+      System.out.println("stringOut: " + stringOut.value);
+      System.out.println("stringInOut: " + 
+                                        stringInOut.value);
+      theRemoteObjRef.passObjects(
+                           stringIn,stringOut,stringInOut);
+      System.out.println("After the method call:");
+      System.out.println("stringIn: " + stringIn);
+      System.out.println("stringOut: " + stringOut.value);
+      System.out.println("stringInOut: " + 
+                                        stringInOut.value);
+      
+      //Delay program termination so that the console
+      // won't disappear from the screen when running
+      // under control of a batch file.
+      int ch1 = '0';
+      System.out.println("Press Ctrl-z to terminate");
+      while( (ch1 = System.in.read() ) != -1);      
+    }catch (Exception e) {
+      System.out.println("ERROR : " + e) ;
+      e.printStackTrace(System.out);
+    }//end catch block
+  }//end main() method
+  //-----------------------------------------------------//
+  
+  //This method gets a stringified object reference 
+  // provided by the server according to a specific
+  // agreement as to how the reference will be delivered.
+  static String getStringifiedObjRef(){
+  &#9;String stringifiedObjectRef = "Failed to get it";
+  &#9;try{
+      //Read the stringified object ref from a file named
+      // junk.txt in the user's home directory
+      String filename = System.getProperty("user.home")
+    &#9;            + System.getProperty("file.separator")
+     &#9;&#9;                              +"junk.txt";
+      FileInputStream fileInputStream = 
+                            new FileInputStream(filename);
+      DataInputStream dataInputStream = 
+                     new DataInputStream(fileInputStream);
+      stringifiedObjectRef = dataInputStream.readLine(); 
+    }catch (Exception e) {
+      System.out.println("ERROR : " + e) ;
+      e.printStackTrace(System.out);
+    }//end catch block
+    return stringifiedObjectRef;
+  }//end getStringifiedObjRef()
+}//end Corba08Client class</PRE></TD>
+</TR>
+</TABLE>
+
+<P>-end- </P>
+<P><!--end--></P></BODY>
+</HTML>

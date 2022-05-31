@@ -1,0 +1,2341 @@
+<!DOCTYPE doctype PUBLIC "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+  <meta http-equiv="Content-Type"
+ content="text/html; charset=iso-8859-1">
+  <title>... in Java by Richard G Baldwin</title>
+</head>
+<body link="#0000ff" vlink="#666666" alink="#ff0000" lang="EN-US">
+<h2>Understanding the Discrete Cosine Transform in Java</h2>
+<i>Learn the basics of the Discrete Cosine Transform, which is used in many 
+applications, including JPEG image compression.</i>
+<p><b>Published:</b>&nbsp; July 11, 2006<br>
+<b>By <a href="mailto:Baldwin@DickBaldwin.com">Richard G. Baldwin</a></b>
+</p>
+<p>Java Programming Notes # 2444</p>
+<ul>
+  <li> <a href="#Preface">Preface</a></li>
+  <li> <a href="#General%20Background%20Information">General
+Background Information</a></li>
+  <li> <a href="#Preview">Preview</a></li>
+  <li> <a href="#Discussion%20and%20Sample%20Programs">Discussion and
+Sample Code</a></li>
+  <li> <a href="#Run%20the%20program">Run the Programs</a></li>
+  <li> <a href="#Summary">Summary</a></li>
+  <li> <a href="#Whats%20Next">What's Next?</a></li>
+	<li> <a href="#References">References</a></li>
+  <li> <a href="#Complete%20Program%20Listings">Complete Program
+Listings</a></li>
+</ul>
+<hr size="3" width="100%" align="center">
+<center>
+<h2> <a name="Preface"></a>Preface</h2>
+</center>
+<p> This lesson is one in a series designed to teach you about the inner 
+workings of data and image compression.&nbsp; The first lesson in the series was
+<a href="http://www.developer.com/java/data/article.php/3586396">Understanding 
+the Lempel-Ziv Data Compression Algorithm in Java</a>.&nbsp; The previous lesson 
+was <a href="http://www.developer.com/java/other/article.php/3603066">Understanding the Huffman Data Compression 
+Algorithm in Java</a>.</p>
+<p> <font color="#FF0000"><b>JPEG image compression</b></font></p>
+<p> One of the objectives of the series is to teach you about the inner workings 
+of JPEG image compression.&nbsp; According to
+<a href="http://en.wikipedia.org/wiki/JPEG">Wikipedia</a>, </p>
+<blockquote>
+	<p><i>&quot;... <b>JPEG</b> (pronounced jay-peg) is a commonly used standard 
+	method of
+	<a title="Lossy compression" href="http://en.wikipedia.org/wiki/Lossy_compression">
+	lossy compression</a> for photographic images. ... The name stands for <b>
+	Joint Photographic Experts Group</b>. JPEG itself specifies only how an 
+	image is transformed into a stream of
+	<a title="Byte" href="http://en.wikipedia.org/wiki/Byte">bytes</a>, but not 
+	how those bytes are encapsulated in any particular storage medium. A further 
+	standard, created by the <b>Independent JPEG Group</b>, called <b>JFIF</b> 
+	(JPEG File Interchange Format) specifies how to produce a file suitable for 
+	computer storage and transmission (such as over the
+	<a title="Internet" href="http://en.wikipedia.org/wiki/Internet">Internet</a>) 
+	from a JPEG stream. ... JPEG/JFIF is the most common format used for storing 
+	and transmitting photographs on the
+	<a title="World Wide Web" href="http://en.wikipedia.org/wiki/World_Wide_Web">
+	World Wide Web</a>.&quot;</i></p>
+</blockquote>
+<p> <font color="#FF0000"><b>Entropy encoding</b></font></p>
+<p> Without getting into the technical details at this point, let me tell you 
+that one of the central components of JPEG compression is
+<a href="http://en.wikipedia.org/wiki/Entropy_coding">entropy encoding</a>.&nbsp; Huffman encoding, 
+which was the primary topic of the 
+<a href="http://www.developer.com/java/other/article.php/3603066">previous lesson</a> 
+is a common form of entropy encoding.</p>
+<p> <font color="#FF0000"><b>The Discrete Cosine Transform</b></font></p>
+<p> Another central component of JPEG compression is the
+<a href="http://www.cmlab.csie.ntu.edu.tw/cml/dsp/training/coding/transform/dct.html">
+Discrete Cosine Transform</a>, which is the primary topic of this lesson.&nbsp; Again, 
+according to <a href="http://en.wikipedia.org/wiki/Discrete_cosine_transform">
+Wikipedia</a>,</p>
+<blockquote>
+	<p><i>&quot;The <b>discrete cosine transform</b> (DCT) is a
+	<a title="List of Fourier-related transforms" href="http://en.wikipedia.org/wiki/List_of_Fourier-related_transforms">
+	Fourier-related transform</a> similar to the
+	<a title="Discrete Fourier transform" href="http://en.wikipedia.org/wiki/Discrete_Fourier_transform">
+	discrete Fourier transform</a> (DFT), but using only
+	<a title="Real number" href="http://en.wikipedia.org/wiki/Real_number">real 
+	numbers</a>.&nbsp; It is equivalent to a DFT of roughly twice the length, 
+	operating on real data with
+	<a title="Even and odd functions" href="http://en.wikipedia.org/wiki/Even_and_odd_functions">
+	even</a> symmetry ...&quot;</i></p>
+</blockquote>
+<p> <font color="#FF0000"><b>In order to understand JPEG ...</b></font></p>
+<p> In order to understand JPEG image compression, you must understand Huffman 
+encoding, the Discrete Cosine Transform, and some other topics as well, such as 
+spectral re-quantization.&nbsp; I 
+plan to teach you about the different components of JPEG in separate 
+lessons, and then to teach you how they work together to produce &quot;<i><a href="http://en.wikipedia.org/wiki/JPEG">the 
+most common format</a> used for storing and transmitting photographs on the 
+World Wide Web</i>&quot;</p>
+<p> <b><font color="#ff0000">Viewing tip</font></b> </p>
+<p>You may find it useful to open another copy of this lesson in a
+separate browser window.&nbsp; That will make it easier for you to
+scroll back
+and forth among the different listings and figures while you are
+reading
+about them.</p>
+<p><b><font color="#ff0000">Supplementary material</font></b> </p>
+<p>I recommend that you also study the other lessons in my extensive
+collection of online Java tutorials.&nbsp; You will find those lessons
+published
+at <a href="http://softwaredev.earthweb.com/java">Gamelan.com</a>.&nbsp;
+However, as of the date of this writing, Gamelan doesn't maintain a
+consolidated index of my Java tutorial lessons, and sometimes they are
+difficult to locate there.&nbsp; You will find a consolidated index at <font
+ color="#000000"> <a href="http://www.dickbaldwin.com/">www.DickBaldwin.com</a>.</font></p>
+<p>In preparation for understanding the material in this lesson, I also 
+recommend that you also study the lessons referred to in the
+<a href="#References">References</a> section.
+</p>
+<h2 align="center"><font color="#000000"> <a
+ name="General Background Information">General Background Information</a></font></h2>
+<p>Although the Discrete Cosine Transform <i>(DCT)</i> may be <i>
+<a href="http://en.wikipedia.org/wiki/Discrete_cosine_transform">&quot;similar to the 
+discrete Fourier transform&quot;</a></i>, it is not a Discrete Fourier Transform <i>
+(DFT)</i> as described in my earlier lesson entitled
+<a href="http://www.developer.com/java/other/article.php/3374611">Fun with Java, 
+How and Why Spectral Analysis Works</a>.&nbsp; There are some major differences 
+between DFT and DCT.&nbsp; Nonetheless, the DCT is very interesting from a technical 
+viewpoint and is a central component of JPEG image compression.</p>
+<p><font color="#FF0000"><b>The DFT and symmetrical real data</b></font></p>
+<p>To get started, I'm going to show you the results of applying the DFT to 
+symmetrical real data.&nbsp; In the earlier lesson entitled
+<a href="http://www.developer.com/java/other/article.php/3436341">Spectrum 
+Analysis using Java, Forward and Inverse Transforms, Filtering in the Frequency 
+Domain</a>, I introduced you to a program named <b>Dsp035</b>, which:</p>
+<blockquote>
+	<p><i>&quot;... illustrates the reversible nature of the Fourier transform.&nbsp; This 
+	program transforms a real time series into a complex spectrum, and then 
+	reproduces the real time series by performing an inverse Fourier transform 
+	on the complex spectrum.&nbsp; This is accomplished using a DFT algorithm.&quot; </i>
+	</p>
+</blockquote>
+<p><font color="#FF0000"><b>The program named Dsp043</b></font></p>
+<p><a href="#Listing_11">Listing 11</a> contains a complete listing of a program named <b>Dsp043</b>, 
+which is designed to demonstrate that the imaginary part of the Fourier transform of a 
+real symmetrical time series is all zeros if the origin is properly located.</p>
+<blockquote>
+	<p><i>(The code in this program is very similar to the code in the program 
+	named <b>Dsp035</b> that I explained
+	<a href="http://www.developer.com/java/other/article.php/3436341">earlier</a>, 
+	so I won't repeat that explanation in this lesson.&nbsp; Rather, I will just 
+	explain the results of executing the program named <b>Dsp043</b>.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>The program output</b></font></p>
+<p><a href="#Figure_1">Figure 1</a> shows the results of executing the program 
+named <b>Dsp043</b> shown in <a name="Figure_1"><a href="#Listing_11">Listing 11</a></a>.</p>
+
+
+
+
+
+
+<p>
+<table border="1" cols="1" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><img border="0" src="java2444a1.jpg" width="409" height="431"><br></pre>
+      <pre><b><a href="#Figure_1">Figure 1</a></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The first graph at the top of <a href="#Figure_1">Figure 1</a> shows a 300-sample symmetrical time 
+series.&nbsp; Note that this time series is symmetrical about its center point.</p>
+<p><font color="#FF0000"><b>The spectral results</b></font></p>
+<p>The DFT was applied to this time series.&nbsp; The next three graphs going 
+down the page in <a href="#Figure_1">Figure 1</a> show the 
+spectral results of applying the DFT to the time series.&nbsp; The three 
+spectral graphs are plotted from a 
+frequency of zero to the sampling frequency.</p>
+<blockquote>
+	<p><i>(Recall that the
+	<a href="http://www.developer.com/java/other/article.php/3380031#Sampling_Frequency_and_Nyquist_Folding_Frequency">
+	Nyquist folding frequency</a> occurs half way between zero and the sampling 
+	frequency, and that the spectrum shown above the folding frequency is the 
+	mirror image of the spectrum below the folding frequency.&nbsp; Therefore, 
+	we are usually interested only in the spectral results below the folding 
+	frequency.&nbsp; Therefore, you can ignore the right half of the spectral graphs.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>What do the five graphs show?</b></font></p>
+<p>The five graphs in <a href="#Figure_1">Figure 1</a> show <i>(in order from top to bottom)</i>:</p>
+<ol>
+	<li>The 300-sample symmetrical real time series to which the DFT was applied.</li>
+	<li>The real part of the output from the DFT.</li>
+	<li>The imaginary part of the output from the DFT.</li>
+	<li>The magnitude of the output from the DFT.</li>
+	<li>The result of applying an inverse DFT to the spectral data in order to 
+	reconstruct the original time series from the spectral data.</li>
+</ol>
+<p><font color="#FF0000"><b>The important points</b></font></p>
+<p>The most important points illustrated by <a href="#Figure_1">Figure 1</a> are:</p>
+<ul>
+	<li>The time series is purely real.</li>
+	<li>The time series is symmetrical about its center point.</li>
+	<li>The imaginary part of the spectrum has all zero values.</li>
+</ul>
+<p>Therefore, <a href="#Figure_1">Figure 1</a> demonstrates that <i>the imaginary part of the Fourier 
+transform of a real symmetrical time series is all zeros if the origin is 
+properly located</i>.&nbsp; This is important because I will use that fact to develop the rationale for 
+the Discrete Cosine Transform, and why it works the way that it does.</p>
+<p><font color="#FF0000"><b>Equations for the DFT</b></font></p>
+<p>Referring back to the equations in my
+<a href="http://www.developer.com/java/other/article.php/3374611#The_Fourier_Transform">
+earlier lesson</a>, you can see that the real part of the output from the DFT 
+results from a <i>sum of products</i> involving a cosine term, and that the imaginary part 
+of the output results from a <i>sum of products</i> involving a sine term.</p>
+<p><font color="#FF0000"><b>Can sometimes avoid the sine computation</b></font></p>
+<p>When 
+computing the DFT, if we already know that the input time series is symmetrical 
+and that the imaginary part of the output will be zero, we can simply forego the 
+computation of the imaginary part that involves the sine term, thereby reducing 
+the computational requirements.</p>
+<p><font color="#FF0000"><b>Can make the cosine computation less burdensome</b></font></p>
+<p>In addition, if we know that the input time series is symmetrical, we can 
+reformulate the computation of the real part of the transform involving the cosine 
+term wherein we perform the computation on one-half of the time series only and 
+then double the result.&nbsp; Thus for a symmetrical time series having a length 
+of 2N+1 samples, we can reduce the number of real-part computations to N+1.</p>
+<p><font color="#FF0000"><b>How does the DCT work?</b></font></p>
+<p>Basically the DCT works by implicitly doubling the length of the input time series by 
+concatenating it to a mirror image of itself.&nbsp; The concatenation of the 
+original time series to the mirror image results in a symmetrical time series.</p>
+<blockquote>
+	<p><i>(You don't actually see the doubling of the time series.&nbsp; Rather, 
+	the doubling is implicit in the formulation of the equations for the DCT.)</i></p>
+</blockquote>
+<p>Because the new time series is symmetrical, it is known in advance that if we were to perform a DFT on the new 
+double-length time series, the imaginary part would be zero.&nbsp; Thus, it is 
+also known in advance that we can forego the computation of the imaginary part 
+that uses the sine term in the DFT.</p>
+<p><font color="#FF0000"><b>No need to double the number of cosine computations</b></font></p>
+<p>In addition, because the new double-length time series is symmetrical, we 
+don't need to double the number of real-part computations involving the cosine 
+term <i>(but we will have to reformulate the real-part computation relative to a 
+straight DFT computation)</i>.</p>
+<p><font color="#FF0000"><b>The definition of the DCT</b></font></p>
+<p>The 
+definition of the DCT is very similar to the definition of the DFT but the 
+computation of the imaginary part using the sine term simply isn't part of the 
+definition.</p>
+<p>In addition to eliminating the computation of the imaginary part, the 
+definition of the DCT also reformulates the DFT to take advantage of the 
+symmetry of the time series relative to the computation of the real part using 
+the cosine term.</p>
+<p><font color="#FF0000"><b>Let's see some equations</b></font>&nbsp; </p>
+<p>Rather than to deal with the somewhat difficult task of producing equations 
+in this HTML document, I have provided three separate <a href="#References">references</a> 
+that contain the equations for the DCT.&nbsp; The equations in these three 
+references are essentially the same <i>(to within a scale factor)</i>.</p>
+<p>I elected to formulate my DCT program for this lesson using the 
+one-dimensional form of the DCT equations that you will find at
+<a href="http://www.cmlab.csie.ntu.edu.tw/cml/dsp/training/coding/transform/dct.html">
+National Taiwan University - DSP Group - Discrete Cosine Transform</a>.</p>
+<blockquote>
+	<p><i>(The next lesson in this series will deal with the two-dimensional 
+	formulation of the DCT.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>No sine term</b></font></p>
+<p>If you examine those equations, you will find that there is no sine term in 
+either the forward or the inverse DCT.&nbsp; Only the cosine term is 
+included, and it is included in such a way as to take advantage of the symmetry 
+of the double-length time series.</p>
+<blockquote>
+	<p><i>(While you are at the site mentioned
+	<a href="http://www.cmlab.csie.ntu.edu.tw/cml/dsp/training/coding/transform/dct.html">
+	above</a>, also note that the author provides an 
+	explanation of the doubling of the length of the time series in order to 
+	produce a new symmetrical time series for which the Fourier Transform is 
+	guaranteed to have a zero imaginary part.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>The forward Discrete Cosine Transform <i>(DCT) </i>
+code</b></font></p>
+<p><a href="#Listing_12">Listing 12</a> provides a class named <b>ForwardDCT01</b>, which is an implementation of 
+the forward DCT equation discussed
+<a href="http://www.cmlab.csie.ntu.edu.tw/cml/dsp/training/coding/transform/dct.html">
+above</a>.</p>
+<p>The code for the forward DCT is amazingly simple, considering what it is 
+capable of accomplishing.</p>
+<blockquote>
+	<p><i>(Perhaps the simplicity of the code had something to do with why the 
+	DCT was selected to be a standard part of JPEG image compression.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>The <i>transform</i> method</b></font></p>
+<p>The static method named <b>transform</b> belonging to the class named <b>ForwardDCT01
+</b>performs a forward Discreet Cosine Transform <i>(DCT)</i> on an incoming 
+time series and returns the DCT spectrum.</p>
+<p><font color="#FF0000"><b>Input and output</b></font></p>
+<p>The incoming parameters are:</p>
+<ul>
+	<li>double[] x - incoming real data</li>
+	<li>double[] y - outgoing real data</li>
+</ul>
+<p>Thus, the input time series is provided by way of a <b>double[]</b> array 
+object referred to by <b>x</b>.&nbsp; The <b>transform</b> method populates an output <b>
+double[]</b> array object referred to by <b>y</b>.</p>
+<blockquote>
+	<p><i>(Insofar as practical, the variable names and terms used in the <b>
+	transform</b> method 
+	match the terms used in the equations discussed
+	<a href="http://www.cmlab.csie.ntu.edu.tw/cml/dsp/training/coding/transform/dct.html">
+	earlier</a>.)</i></p>
+</blockquote>
+<p>Knowing the equation that the method is designed to implement, you should 
+find the code in <a href="#Listing_12">Listing 12</a> to be straightforward.</p>
+<p><font color="#FF0000"><b>The inverse Discrete Cosine Transform <i>(DCT)</i> 
+code</b></font></p>
+<p><a href="#Listing_13">Listing 13</a> provides the code for a class named <b>InverseDCT01</b>, which is 
+an implementation of the inverse DCT equation discussed
+	<a href="http://www.cmlab.csie.ntu.edu.tw/cml/dsp/training/coding/transform/dct.html">
+	earlier</a>.&nbsp; </p>
+<p>The static method named <b>transform</b> of the <b>InverseDCT01 </b>class 
+performs an inverse Discreet Cosine Transform <i>(DCT)</i> on an incoming DCT 
+spectrum and returns the DCT time series.</p>
+<blockquote>
+	<p><i>(As before, insofar as practical, the variable names and terms used in the method 
+	match the terms used in the equations discussed
+	<a href="http://www.cmlab.csie.ntu.edu.tw/cml/dsp/training/coding/transform/dct.html">earlier</a>.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Input and output</b></font></p>
+<p>Incoming parameters to the method are:</p>
+<ul>
+	<li>double[] y - incoming real data</li>
+	<li>double[] x - outgoing real data</li>
+</ul>
+<p>Thus, the DCT spectrum to be transformed is provided by the user in an array 
+object of type <b>double[]</b> referred to by <b>y</b>.&nbsp; The method named
+<b>transform</b> populates an array object of type <b>double[]</b> referred to 
+by <b>x</b> with the time-series resulting from the transform.</p>
+<p>As before, you should find the code in <a href="#Listing_13">Listing 13</a> 
+to be straightforward.</p>
+<h2 align="center"><font color="#000000"><a name="Preview">Preview</a></font></h2>
+<p><font color="#FF0000"><b>The program named Dsp042</b></font></p>
+<p>The program named <b>Dsp042</b> illustrates the application of the forward 
+and inverse Discrete Cosine Transform <i>(DCT) </i>to three different waveforms, 
+all concatenated into a single time series.&nbsp; 
+This program is very similar to <b>Dsp035</b>, which was explained in the 
+earlier lesson entitled
+<a href="http://www.developer.com/java/other/article.php/3436341">Spectrum 
+Analysis using Java, Forward and Inverse Transforms, Filtering in the Frequency 
+Domain</a>.</p>
+<p><font color="#FF0000"><b>The program named Dsp035</b></font></p>
+<p>The program named<b> Dsp035 </b>applies the full forward and inverse Discrete Fourier 
+Transform <i>(DFT)</i> to the same three waveforms producing the output shown in
+<a name="Figure_2"><a href="#Figure_2">Figure 2</a></a>.</p>
+
+<p>
+<table border="1" cols="1" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><img border="0" src="java2444a2.jpg" width="409" height="431"><br></pre>
+      <pre><b><a href="#Figure_2">Figure 2</a></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><a href="#Figure_2">Figure 2</a> does not contain new material.&nbsp; You saw a figure similar to this one in 
+the <a href="http://www.developer.com/java/other/article.php/3436341">earlier</a> 
+lesson.</p>
+<p><font color="#FF0000"><b>What do the five graphs show?</b></font></p>
+<p>The five graphs in <a href="#Figure_2">Figure 2</a> show the following information, in order from top 
+to bottom:</p>
+<ol>
+	<li>A 256-sample input time series consisting of three waveforms in sequence 
+	with values of zero between the waveforms.&nbsp; <i>(Note that even though 
+	the display is 300 points wide, the actual data being plotted on each of the 
+	five graphs ends at 256 samples.)</i></li>
+	<li>The real part of the frequency spectrum produced by the forward DFT, 
+	plotted from a frequency of zero on the left to the sampling frequency <i>
+	(twice the
+	<a href="http://www.developer.com/java/other/article.php/3380031#Sampling_Frequency_and_Nyquist_Folding_Frequency">
+	Nyquist folding frequency</a>)</i> on the right.</li>
+	<li>The imaginary part of the frequency spectrum on the same scale as the 
+	real part of the transform.</li>
+	<li>The magnitude of the frequency spectrum, also on the same scale.</li>
+	<li>The result of applying the inverse DFT to the spectral data in order to 
+	reconstruct the original time series from the spectral data.</li>
+</ol>
+<p>The most important thing to note in <a href="#Figure_2">Figure 2</a> is that the imaginary part of 
+the DFT output is clearly not zero for this time series input.&nbsp; The time 
+series output in the bottom graph can only be produced by performing a complex 
+transform on the real and imaginary parts of the frequency spectrum.</p>
+<p><font color="#FF0000"><b>Back to the program named Dsp042</b></font></p>
+<p>The material shown in <a href="#Figure_3">Figure 3</a>, which is the output 
+produced by the program named <b>Dsp042</b> is new to this <a name="Figure_3">lesson</a>.</p>
+<p>
+<table border="1" cols="1" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><img border="0" src="java2444a3.jpg" width="409" height="293"><br></pre>
+      <pre><b><a href="#Figure_3">Figure 3</a></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The three graphs in <a href="#Figure_3">Figure 3</a> show:</p>
+<ol>
+	<li>A 256-sample input time series consisting of the same three waveforms 
+	shown in <a href="#Figure_2">Figure 2</a>.&nbsp; <i>(As with <a href="#Figure_2">Figure 2</a>, even though 
+	the display is 300 points wide, the actual data being plotted on each of the 
+	three graphs ends at 256 samples.)</i></li>
+	<li>The real frequency spectrum produced by the forward DCT.&nbsp; 
+	In this case, the spectrum is plotted from a frequency of zero on the left 
+	to the
+	<a href="http://www.developer.com/java/other/article.php/3380031#Sampling_Frequency_and_Nyquist_Folding_Frequency">
+	Nyquist folding frequency</a> on the right.</li>
+	<li>The result of applying the inverse DCT to the spectral data in order to 
+	reconstruct the original time series from the spectral data.</li>
+</ol>
+<p><font color="#FF0000"><b>Where is the imaginary part of the spectrum?</b></font></p>
+<p>There is no imaginary part of the spectrum plotted in <a href="#Figure_3">Figure 3</a>, simply 
+because the DCT doesn't produce an imaginary part.&nbsp; Since there is no 
+imaginary part, there is also no need for a plot of the magnitude spectrum for 
+the DCT.&nbsp; <i>(It would look exactly like the real part of the spectrum, 
+with all negative values converted to positive values, if 
+it were computed and plotted.)</i></p>
+<p>If you compare <a href="#Figure_3">Figure 3</a> with <a href="#Figure_2">
+Figure 2</a>, you will see that the DFT and the DCT both appeared to do an 
+equally good job of 
+reproducing the original time series when the inverse transform was applied to the spectral 
+data.&nbsp; The big difference between <a href="#Figure_2">Figure 2</a> and
+<a href="#Figure_3">Figure 3</a> is that this was accomplished with the somewhat 
+more economical DCT in <a href="#Figure_3">Figure 3</a>.</p>
+<p><font color="#FF0000"><b>Water to ice and back to water</b></font></p>
+<p>There is one point that I would like to make here, because it will become 
+very important in a future lesson that deals with the inner workings of JPEG.&nbsp; 
+The second and third graphs in <a href="#Figure_2">Figure 2</a> represent the 
+same information as the first graph in <a href="#Figure_2">Figure 2</a>.&nbsp; 
+Similarly, the second graph in <a href="#Figure_3">Figure 3</a> represents the 
+same information as the first graph in <a href="#Figure_3">Figure 3</a>.&nbsp; 
+In other words, the spectral data represents the same information as the 
+time-series data.&nbsp; They simply represent that information in different 
+forms.</p>
+<p>As an analogy, if we lower the temperature of a container of water to less than 32 degrees 
+Fahrenheit, the form of the water will change from a liquid to a solid.&nbsp; If we warm 
+it back up, the form will change back to a liquid.&nbsp; This is roughly 
+analogous to transforming a time series into the frequency domain and then 
+transforming the frequency spectrum back into the time domain.&nbsp; The same 
+information is represented in both cases.&nbsp; That information is simply 
+represented in different forms.</p>
+<p><font color="#FF0000"><b>Sub-dividing the input</b></font></p>
+
+<p>When performing spectral analysis, it is common practice to perform a DFT <i>
+(or perhaps a DCT)</i> on the entire time series as was the case in
+<a href="#Figure_1">Figure 1</a>, <a href="#Figure_2">
+<a href="#Figure_2">Figure 2</a></a>, and
+<a href="#Figure_3">Figure 3</a>.&nbsp; However, in a future lesson we will 
+learn that this is not the case for JPEG image compression.&nbsp; Instead, the 
+JPEG procedure sub-divides the image into a set of small images where each small 
+image consists of an 8x8 block of 64 pixels.</p>
+<p>Then the DCT is performed on 
+each individual block of 64 pixels.&nbsp; Several additional processing steps are performed 
+on the spectra produced for the set of 8x8 blocks to produce the compressed 
+image.&nbsp; Later on, when the 
+image is reconstructed, the 8x8 blocks are individually reconstructed and are 
+then assembled into a larger image that approximates the original image.</p>
+<p><font color="#FF0000"><b>The program named Dsp044</b></font></p>
+
+<p>The program named <b>Dsp044</b> is designed to 
+investigate the impact of sub-dividing the time series into eight-sample 
+segments and processing those segments individually in order to be more consistent with the 8x8-pixel block concept in JPEG.&nbsp; 
+As it turns out, there appears to be no noticeable impact.&nbsp; As you can see 
+in <a href="#Figure_4">Figure 4</a>, the reconstructed output shown in the second 
+graph is a very good replica of the input shown in the first <a name="Figure_4">graph</a>.</p>
+
+<p>
+<table border="1" cols="1" bgcolor="#ccffff">
+  <tbody>
+    <tr>
+      <td>
+      <pre><img border="0" src="java2444a4.jpg" width="409" height="226"><br></pre>
+      <pre><b><a href="#Figure_4">Figure 4</a></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<blockquote>
+	<p><i>(<a href="#Figure_4">Figure 4</a> shows only the input and output time series.&nbsp; In order 
+	to display the spectral results, it would have been necessary to display 32 
+	individual spectra, one computed for each 8-sample segment of the input time 
+	series.&nbsp; That would have been fairly impractical.)</i></p>
+</blockquote>
+<p><font color="#FF0000"><b>Testing</b></font></p>
+<p>Both programs were tested using J2SE 5.0 under WinXP.&nbsp; <i>(Both programs 
+require J2SE 5.0 or later due to the use of 
+static import of <b>Math</b> class.)</i></p>
+<center>
+<h2> <a name="Discussion and Sample Programs"></a><font color="#000000">Discussion
+and Sample Code</font></h2>
+</center>
+<p><font color="#FF0000"><b>The program named Dsp042</b></font></p>
+<p>&nbsp;The class 
+definition for <b>Dsp042</b> begins in <a href="#Listing_1">Listing 1</a> by declaring 
+and initializing some instance <a name="Listing_1">variables</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>class <b>Dsp042</b> implements GraphIntfc01{
+
+  int len = 256;
+
+  double[] timeDataIn = new double[len];
+  double[] realSpect = new double[len];
+  double[] timeDataOut = new double[len];
+  int zero = 0;<br><br><b><font face="Courier New,Courier"><a href="#Listing_1">Listing 1</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Note that the class named <b>Dsp042</b> implements the interface named <b>GraphIntfc01</b>.</p>
+<p><font color="#FF0000"><b>The constructor for Dsp042</b></font></p>
+<p>The constructor begins in <a name="Listing_2"><a href="#Listing_2">Listing 2</a></a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>  public Dsp042(){//constructor
+
+    //Create the raw data pulses
+    timeDataIn[0] = 0;
+    timeDataIn[1] = 50;
+//code deleted for brevity
+    timeDataIn[20] = -2;
+    timeDataIn[21] = -1;
+
+    timeDataIn[240] = 80;
+    timeDataIn[241] = 80;
+//code deleted for brevity
+    timeDataIn[254] = -80;
+    timeDataIn[255] = -80;<br><br><b><font face="Courier New,Courier"><a href="#Listing_2">Listing 2</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>The code in <a href="#Listing_2">Listing 2</a> creates the first and last waveforms shown in the first 
+graph in <a href="#Figure_3">Figure 3</a>.&nbsp; Note that I deleted quite a lot 
+of code from <a href="#Listing_2">Listing 2</a> for brevity.&nbsp; You can view the code that I deleted 
+in <a href="#Listing_14">Listing 14</a>.</p>
+<p><font color="#FF0000"><b>Create the sinusoidal waveform</b></font></p>
+<p><a href="#Listing_3">Listing 3</a> creates the truncated sinusoidal waveform shown near the center of 
+the first graph 
+<a name="Listing_3">in</a> <a href="#Figure_3">Figure 3</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    for(int x = len/3;x < 3*len/4;x++){
+      timeDataIn[x] = 80.0 * Math.sin(2*PI*(x)*1.0/20.0);
+    }//end for loop<br><br><b><font face="Courier New,Courier"><a href="#Listing_3">Listing 3</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Perform the forward Discrete Cosine Transform</b></font></p>
+<p><a href="#Listing_4">Listing 4</a> invokes the static <b>transform</b> method of the <b>ForwardDCT01</b> 
+class to compute the forward DCT of the time data and to save the results in the 
+array referred to by <b>realSpect</b>, which was created 
+<a name="Listing_4">in</a> <a href="#Listing_1">Listing 1</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    ForwardDCT01.transform(timeDataIn,realSpect);<br><br><b><font face="Courier New,Courier"><a href="#Listing_4">Listing 4</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Perform the inverse Discrete Cosine Transform</b></font></p>
+<p><a href="#Listing_5">Listing 5</a> invokes the static <b>transform</b> method of the <b>InverseDCT01</b> 
+class to compute the inverse DCT of the spectral data and to save the results in 
+the array referred to by <b>timeDataOut</b>, which was created 
+<a name="Listing_5">in</a> 
+<a href="#Listing_1">Listing 1</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    InverseDCT01.transform(realSpect,timeDataOut);
+
+  }//end constructor<br><br><b><font face="Courier New,Courier"><a href="#Listing_5">Listing 5</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><a href="#Listing_5">Listing 5</a> also signals the end of the constructor for the class named <b>
+Dsp042</b>.</p>
+<p><font color="#FF0000"><b>The remaining code</b></font></p>
+<p>The remaining code in the class named <b>Dsp042</b> consists of&nbsp;six methods, 
+which are required by the interface named <b>GraphIntfc01</b>.&nbsp; The purpose 
+of these methods is simply to plot the data contained in three arrays, producing the 
+three graphs shown in <a href="#Figure_3">Figure 3</a>.&nbsp; I explained those 
+six methods in the earlier lesson entitled
+<a href="http://www.developer.com/java/other/article.php/10936_1554511_1">
+Plotting Engineering and Scientific Data using Java</a> and won't repeat that 
+explanation here.&nbsp; You can view the methods in <a href="#Listing_14">
+Listing 14</a>.&nbsp; </p>
+<p><font color="#FF0000"><b>The class named Dsp044</b></font></p>
+<p>This class is a modification of the class named <b>Dsp042</b> designed to investigate the impact of 
+sub-dividing the input time series into eight-sample segments in order to be consistent with the 8x8 blocks in JPEG.</p>
+<p><a href="#Listing_6">Listing 6</a> shows the beginning of the class and the beginning of the 
+<a name="Listing_6">constructor</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>class Dsp044 implements GraphIntfc01{
+
+  int len = 256;
+
+  double[] timeDataIn = new double[len];
+  double[] timeDataOut = new double[len];
+  int zero = 0;
+
+  public Dsp044(){//constructor
+
+    //Create the raw data pulses
+    timeDataIn[0] = 0;
+    timeDataIn[1] = 50;
+//code deleted for brevity
+    timeDataIn[20] = -2;
+    timeDataIn[21] = -1;
+
+    timeDataIn[240] = 80;
+    timeDataIn[241] = 80;
+//code deleted for brevity
+    timeDataIn[254] = -80;
+    timeDataIn[255] = -80;
+
+    //Create raw data sinusoid
+    for(int x = len/3;x &lt; 3*len/4;x++){
+      timeDataIn[x] = 80.0 * Math.sin(2*PI*(x)*1.0/20.0);
+    }//end for loop<br><br><b><font face="Courier New,Courier"><a href="#Listing_6">Listing 6</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Once again, note that the class named <b>Dsp044</b> implements the interface 
+named <b>GraphIntfc01</b>. </p>
+<p>As before, I deleted some of the code from <a href="#Listing_6">Listing 6</a> for brevity.&nbsp; The 
+code in <a href="#Listing_6">Listing 6</a> is very similar to the code that I explained earlier with 
+respect to the class named <b>Dsp042</b>.</p>
+<p><font color="#FF0000"><b>Eight-element array objects</b></font></p>
+<p>The real difference between <b>Dsp042</b> and <b>Dsp044</b> begins in <a href="#Listing_7">Listing 7</a> where I 
+create some eight-element array objects to handle the eight-sample 
+<a name="Listing_7">segments</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    double[] workingArrayIn = new double[8];
+    double[] workingArrayOut = new double[8];
+    double[] realSpect = new double[8];
+
+<br><b><font face="Courier New,Courier"><a href="#Listing_7">Listing 7</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Process eight samples at a time</b></font></p>
+<p><a href="#Listing_8">Listing 8</a> shows the beginning of a <b>while</b> loop, which computes a forward 
+and an inverse DCT on each successive eight-sample segment of the input time 
+series.&nbsp; Code inside 
+the <b>while</b> loop also concatenates the output segments from the inverse DCT 
+to produce the output signal, which is shown by the bottom graph 
+<a name="Listing_8">in</a>
+<a href="#Figure_4">Figure 
+4</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>    int segmentCnt = 0;
+
+    while((segmentCnt + 8) &lt;= len){
+      System.arraycopy(timeDataIn,
+                       segmentCnt,
+                       workingArrayIn,
+                       0,
+                       8);<br><br><b><font face="Courier New,Courier"><a href="#Listing_8">Listing 8</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>During each iteration of the while loop, the code in <a href="#Listing_8">Listing 8</a> copies the 
+next eight samples from the input time series into an eight-element working 
+array.</p>
+<p><font color="#FF0000"><b>Compute the forward and the inverse transforms</b></font></p>
+<p><a href="#Listing_9">Listing 9</a> performs a forward DCT on the contents of the eight-element working 
+array.&nbsp; Then it performs an inverse DCT on the eight-samples of spectral 
+data produced by the forward <a name="Listing_9">transform</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>      ForwardDCT01.transform(workingArrayIn,realSpect);
+  
+      InverseDCT01.transform(realSpect,workingArrayOut);<br><br><b><font face="Courier New,Courier"><a href="#Listing_9">Listing 9</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p><font color="#FF0000"><b>Concatenate the output time-series segments</b></font></p>
+<p><a href="#Listing_10">Listing 10</a> copies the eight samples of output time-series data produced by 
+the inverse transform into the next eight samples of the array designated to 
+hold the final output.&nbsp; This concatenates the eight-sample segments into 
+the time series shown in the bottom graph <a name="Listing_10">in</a> <a href="#Figure_4">Figure 4</a>.</p>
+<p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>      System.arraycopy(workingArrayOut,
+                       0,
+                       timeDataOut,
+                       segmentCnt,
+                       8);
+      
+      segmentCnt += 8;
+    }//end while
+
+  }//end constructor<br><br><b><font face="Courier New,Courier"><a href="#Listing_10">Listing 10</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<p>Then <a href="#Listing_10">Listing 10</a> increments the segment counter by 8 and control is transferred 
+back to the top of the <b>while</b> loop shown in <a href="#Listing_8">Listing 8</a>.</p>
+<p><a href="#Listing_10">Listing 10</a> also signals the end of the constructor.</p>
+<p><font color="#ff0000"><b>The remaining code</b></font></p>
+<p>As before, the remaining code in the class named <b>Dsp044</b> consists of&nbsp;six methods, which are required by the interface named <b>GraphIntfc01</b>.&nbsp; The 
+purpose of these methods is to plot the data contained in two arrays, producing 
+the graphs shown in <a href="#Figure_4">Figure 4</a>.&nbsp; You can view the 
+methods in <a href="#Listing_15">Listing 15</a>.&nbsp; </p>
+<center>
+<h2><a name="Run the program"></a>Run the Programs</h2>
+</center>
+<p>I encourage you to copy, compile, and execute the code from the listings in 
+the section entitled <a href="#Complete Program Listings">Complete Program 
+Listings</a>.&nbsp; Experiment with the code, making
+changes and observing the results of your changes.&nbsp; For example, as one 
+experiment you can see what 
+happens if you make changes to the computed argument for the cosine function in 
+either the forward or the inverse transform.</p>
+<p><font color="#FF0000"><b>Run under control of Graph03</b></font></p>
+<p><b>Dsp042</b>, <b>Dsp043</b>, and <b>Dsp044</b> must all be run under the control of the program named 
+<b>Graph03</b>.</p>
+<blockquote>
+	<p><i>(The program named <b>Graph03</b> is a plotting program.&nbsp; See the 
+	earlier lesson entitled
+	<a href="http://www.developer.com/java/other/article.php/3380031">Spectrum 
+	Analysis using Java, Sampling Frequency, Folding Frequency, and the FFT 
+	Algorithm</a>, which was the first lesson in which the plotting program 
+	named <b>Graph03</b> was used.&nbsp; Also see <b>Graph01</b>, which was a predecessor of 
+	<b>Graph03</b>, in the lesson 
+entitled
+	<a href="http://www.developer.com/java/other/article.php/10936_1554511_1">Plotting Engineering and Scientific Data using Java</a>.)</i></p>
+</blockquote>
+<p>The 
+source code for <b>Graph03</b> is provided in <a href="#Listing_16">Listing 16</a>.</p>
+<p>The source code 
+for the interface named <b>GraphIntfc01</b>, which is required by these 
+programs, 
+is provided in <a href="#Listing_17">Listing 17</a>.</p>
+<p><font color="#FF0000"><b>Running the programs</b></font></p>
+<p>To run these programs, first compile the programs and then enter one of the following statements at the command prompt.</p>
+<b><pre>java Graph03 Dsp042
+java Graph03 Dsp042
+java Graph03 Dsp044</pre></b><font color="#FF0000"><b>Support classes</b></font></p>
+<p>You will need some support classes in order to run these programs.&nbsp; In 
+those cases where the source code for a required support class is not included in this lesson, you should be 
+able to find the source code in the lessons referred to in the
+<a href="#References">References</a> section.</p>
+<p>You can also find the source code by searching for it on
+<a href="http://www.google.com">Google</a>.&nbsp; For example, searching 
+for the following keywords on Google will identify the earlier lesson entitled
+<a href="http://developer.com/java/other/article.php/3380031">Spectrum Analysis 
+using Java, Sampling Frequency, Folding Frequency, and the FFT Algorithm</a>&nbsp; 
+containing the source code for the class named <b>ForwardRealToComplex01</b>.</p>
+<b><pre>java Baldwin "ForwardRealToComplex01.java"</pre></b></p>
+<h2 align="center"><a name="Summary">Summary</a></h2>
+<p>I introduced you to the basics of the Discrete Cosine 
+Transform <i>(DCT)</i> by:</p>
+<ul>
+	<li>Explaining some of the underlying theory behind the transform.</li>
+	<li>Demonstrating the use of the transform in two one-dimensional cases.</li>
+</ul>
+<h2 align="center"><a name="Whats Next">What's Next?</a></h2>
+<p>The next lesson will explain the use of the <i>two-dimensional</i> Discrete Cosine 
+Transform and will illustrate its use to transform images into the wave-number 
+domain and back into the space or image domain.</p>
+<p>Future lessons in this series will explain the inner workings behind several 
+data and image compression schemes, including the following:</p>
+<ul>
+	<li>Run-length data encoding</li>
+	<li>GIF image compression</li>
+	<li>JPEG image compression</li>
+</ul>
+<h2 align="center"><a name="References">References</a></h2>
+<p><font color="#FF0000"><b>General</b></font></p>
+<p><a href="http://www.developer.com/java/data/article.php/3586396">2440</a> Understanding the Lempel-Ziv Data Compression Algorithm in Java<br>
+<a href="http://www.developer.com/java/other/article.php/3603066">2442</a> Understanding the Huffman Data Compression Algorithm in Java<br>
+<a href="http://www.developer.com/java/other/article.php/10936_1554511_1">1468</a> 
+Plotting Engineering and Scientific Data using Java<br>
+<a href="http://www.developer.com/java/other/article.php/3374611">1478</a> Fun 
+with Java, How and Why Spectral Analysis Works <br>
+<a href="http://www.developer.com/java/other/article.php/3380031">1482</a> 
+Spectrum Analysis using Java, Sampling Frequency, Folding Frequency, and the FFT 
+Algorithm <br>
+<a href="http://www.developer.com/java/other/article.php/3392871">1483</a> 
+Spectrum Analysis using Java, Frequency Resolution versus Data Length <br>
+<a href="http://www.developer.com/java/other/article.php/3411041">1484</a> 
+Spectrum Analysis using Java, Complex Spectrum and Phase Angle <br>
+<a href="http://www.developer.com/java/other/article.php/3436341">1485</a> 
+Spectrum Analysis using Java, Forward and Inverse Transforms, Filtering in the 
+Frequency Domain <br>
+<a href="http://www.developer.com/java/other/article.php/3457251">1486</a> Fun 
+with Java, Understanding the Fast Fourier Transform (FFT) Algorithm<br>
+<a href="http://www.developer.com/java/other/article.php/3508706">1489</a> 
+Plotting 3D Surfaces using Java <br>
+<a href="http://www.developer.com/java/other/article.php/3519441">1490</a> 2D 
+Fourier Transforms using Java <br>
+<a href="http://www.developer.com/java/other/article.php/3526241">1491</a> 2D 
+Fourier Transforms using Java, Part 2</p>
+<p><font color="#FF0000"><b>Discrete Cosine Transform equations</b></font></p>
+<p><a href="http://en.wikipedia.org/wiki/Discrete_cosine_transform#DCT-II">Discrete 
+cosine transform</a> - Wikipedia, the free encyclopedia<br>
+The Data Analysis Briefbook -
+<a href="http://rkb.home.cern.ch/rkb/AN16pp/node61.html">Discrete Cosine 
+Transform</a><br>
+<a href="http://www.ntu.edu.tw/">National Taiwan University</a> -
+<a href="http://www.cmlab.csie.ntu.edu.tw/cml/dsp/">DSP Group</a> -
+<a href="http://www.cmlab.csie.ntu.edu.tw/cml/dsp/training/coding/transform/dct.html">
+Discrete Cosine Transform</a></p>
+<center>
+<h2> <a name="Complete Program Listings"></a>Complete Program Listings</h2>
+</center>
+Complete listings of the programs discussed in this lesson are provided in the 
+following listings:<p><b><a name="Listing_11"><a href="#Listing_11">Listing 11</a></a></b></p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>/* File Dsp043.java
+Copyright 2006, R.G.Baldwin
+Revised 01/05/06
+
+The purpose of this program is to demonstrate that the
+imaginary part of the Fourier transform of a symmetrical
+time series is all zeros if the origin is properly located.
+
+Illustrates forward and inverse Fourier transforms on a 
+symmetrical time series using DFT algorithms.
+
+Passes resulting real and complex parts to inverse Fourier
+transform program to reconstruct the original time series.
+
+Run with Graph03. Enter the following to run the program:
+java Graph03 Dsp043
+
+Exection of this program requires access to the following
+class files:
+Dsp043.class
+ForwardRealToComplex01.class
+Graph01.class
+GraphIntfc01.class
+GUI$MyCanvas.class
+GUI.class
+InverseComplexToReal01.class
+
+Tested using J2SE 5.0 under WinXP.
+**********************************************************/
+import java.util.*;
+
+class Dsp043 implements GraphIntfc01{
+  final double pi = Math.PI;
+
+  int len = 300;
+
+  double[] timeDataIn = new double[len];
+  double[] realSpect = new double[len];
+  double[] imagSpect = new double[len];
+  double[] angle = new double[len];//unused
+  double[] magnitude = new double[len];
+  double[] timeDataOut = new double[len];
+  int zero = 0;
+
+  public Dsp043(){//constructor
+
+    //Create raw waveform consisting of mirror image
+    // sinusoidal segments with a sample having a value
+    // of 0 in the center.
+    //Set shift to a nonzero value to cause the imaginary
+    // part of the transform to be non zero.
+    for(int x = 0;x &lt; len/4;x++){
+      timeDataIn[len/2 + x + 1] = 
+                        80.0 * Math.sin(2*pi*(x)*1.0/20.0);
+      timeDataIn[len/2 - x - 1] = 
+                                 timeDataIn[len/2 + x + 1];
+    }//end for loop
+
+    //Compute DFT of the time data and save it in
+    // the output arrays.
+    ForwardRealToComplex01.transform(timeDataIn,
+                                     realSpect,
+                                     imagSpect,
+                                     angle,
+                                     magnitude,
+                                     zero,
+                                     0.0,
+                                     1.0);
+
+    //Compute inverse DFT of the spectal data and
+    // save output time data in output array
+    InverseComplexToReal01.inverseTransform(realSpect,
+                                            imagSpect,
+                                            timeDataOut);
+  }//end constructor
+  //-----------------------------------------------------//
+  
+  //The following six methods are required by the interface
+  // named GraphIntfc01.
+  public int getNmbr(){
+    //Return number of curves to plot.  Must not exceed 5.
+    return 5;
+  }//end getNmbr
+  //-----------------------------------------------------//
+  public double f1(double x){
+    int index = (int)Math.round(x);
+    if(index &lt; 0 || index &gt; timeDataIn.length-1){
+      return 0;
+    }else{
+      return timeDataIn[index];
+    }//end else
+  }//end function
+  //-----------------------------------------------------//
+  public double f2(double x){
+    int index = (int)Math.round(x);
+    if(index &lt; 0 || index &gt; realSpect.length-1){
+      return 0;
+    }else{
+      //scale for convenient viewing
+      return 5*realSpect[index];
+    }//end else
+  }//end function
+  //-----------------------------------------------------//
+  public double f3(double x){
+    int index = (int)Math.round(x);
+    if(index &lt; 0 || index &gt; imagSpect.length-1){
+      return 0;
+    }else{
+      //scale for convenient viewing
+      return 5*imagSpect[index];
+    }//end else
+  }//end function
+  //-----------------------------------------------------//
+  public double f4(double x){
+    int index = (int)Math.round(x);
+    if(index &lt; 0 || index &gt; magnitude.length-1){
+      return 0;
+    }else{
+      //scale for convenient viewing
+      return 5*magnitude[index];
+    }//end else
+  }//end function
+  //-----------------------------------------------------//
+  public double f5(double x){
+    int index = (int)Math.round(x);
+    if(index &lt; 0 ||
+                   index &gt; timeDataOut.length-1){
+      return 0;
+    }else{
+      return timeDataOut[index];
+    }//end else
+  }//end function
+
+}//end sample class Dsp043<br><br><b><font face="Courier New,Courier"><a href="#Listing_11">Listing 11</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<p> </p>
+<p><b><a name="Listing_12"><a href="#Listing_12">Listing 12</a></a></b></p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>/*File ForwardDCT01.java
+Copyright 2006, R.G.Baldwin
+Rev 01/03/06
+
+The static method named transform performs a forward 
+Discreet Cosine Transform (DCT) on an incoming time series
+and returns the DCT spectrum.
+
+See http://en.wikipedia.org/wiki/Discrete_cosine_transform
+#DCT-II and http://rkb.home.cern.ch/rkb/AN16pp/node61.html
+for background on the DCT.
+
+This formulation is from 
+http://www.cmlab.csie.ntu.edu.tw/cml/dsp/training/
+coding/transform/dct.html
+
+
+Incoming parameters are:
+  double[] x - incoming real data
+  double[] y - outgoing real data
+
+Tested using J2SE 5.0 under WinXP.  Requires J2SE 5.0 or
+later due to the use of static import of Math class.
+**********************************************************/
+import static java.lang.Math.*;
+
+public class ForwardDCT01{
+
+  public static void transform(double[] x,
+                               double[] y){
+
+    int N = x.length;
+
+    //Outer loop interates on frequency values.
+    for(int k=0; k &lt; N;k++){
+      double sum = 0.0;
+      //Inner loop iterates on time-series points.
+      for(int n=0; n &lt; N; n++){
+        double arg = PI*k*(2.0*n+1)/(2*N);
+        double cosine = cos(arg);
+        double product = x[n]*cosine;
+        sum += product;
+      }//end inner loop
+
+      double alpha;
+      if(k == 0){
+        alpha = 1.0/sqrt(2);
+      }else{
+        alpha = 1;
+      }//end else
+      y[k] = sum*alpha*sqrt(2.0/N);
+    }//end outer loop
+  }//end transform method
+  //-----------------------------------------------------//
+}//end class ForwardDCT01<br><br><b><font face="Courier New,Courier"><a href="#Listing_12">Listing 12</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<p> </p>
+<p><b><a name="Listing_13"><a href="#Listing_13">Listing 13</a></a></b></p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>/*File InverseDCT01.java
+Copyright 2006, R.G.Baldwin
+Rev 01/03/06
+
+The static method named transform performs an inverse 
+Discreet Cosine Transform (DCT) on an incoming DCT
+spectrum and returns the DCT time series.
+
+See http://en.wikipedia.org/wiki/Discrete_cosine_transform
+#DCT-II and http://rkb.home.cern.ch/rkb/AN16pp/node61.html
+for background on the DCT.
+
+This formulation is from 
+http://www.cmlab.csie.ntu.edu.tw/cml/dsp/training/
+coding/transform/dct.html
+
+Incoming parameters are:
+  double[] y - incoming real data
+  double[] x - outgoing real data
+
+Tested using J2SE 5.0 under WinXP.  Requires J2SE 5.0 or
+later due to the use of static import of Math class.
+**********************************************************/
+import static java.lang.Math.*;
+
+public class InverseDCT01{
+
+  public static void transform(double[] y,
+                               double[] x){
+
+    int N = y.length;
+
+    //Outer loop interates on time values.
+    for(int n=0; n &lt; N;n++){
+      double sum = 0.0;
+      //Inner loop iterates on frequency values
+      for(int k=0; k &lt; N; k++){
+        double arg = PI*k*(2.0*n+1)/(2*N);
+        double cosine = cos(arg);
+        double product = y[k]*cosine;
+        
+      double alpha;
+      if(k == 0){
+        alpha = 1.0/sqrt(2);
+      }else{
+        alpha = 1;
+      }//end else
+        
+      sum += alpha * product;
+
+      }//end inner loop
+
+      x[n] = sum * sqrt(2.0/N);
+      
+    }//end outer loop
+  }//end transform method
+  //-----------------------------------------------------//
+}//end class InverseDCT01<br><br><b><font face="Courier New,Courier"><a href="#Listing_13">Listing 13</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<p> </p>
+<p><b><a name="Listing_14"><a href="#Listing_14">Listing 14</a></a></b></p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>/* File Dsp042.java
+Copyright 2006, R.G.Baldwin
+Revised 01/05/06
+
+Note:  Dsp044 will investigate the impact of breaking the 
+time series into eight-sample segments to be consistent 
+with the 8x8 blocks in JPEG.
+
+Illustrates the application of forward and inverse Discrete
+Cosine Transform (DCT) to three different waveforms.  Very
+similar to Dsp035, which applies full forward and inverse
+Fourier transforms to the same three waveforms
+
+See http://en.wikipedia.org/wiki/Discrete_cosine_transform
+#DCT-II, http://rkb.home.cern.ch/rkb/AN16pp/node61.html,
+and http://www.cmlab.csie.ntu.edu.tw/cml/dsp/training/
+coding/transform/dct.html fortechnical background 
+information on the Discrete Cosine Transform.
+
+Shows a plot of the input time series, the DCT spectrum,
+and the output time series resulting from the inverse DCT.
+
+Run with Graph03.  Enter the following to run the program:
+java Graph03 Dsp042
+
+Execution of this program requires access to the following
+class files:
+Dsp042.class
+ForwardDCT01.class
+Graph01.class
+GraphIntfc01.class
+GUI$MyCanvas.class
+GUI.class
+InverseDCT01.class
+
+Tested using J2SE 5.0 under WinXP.  Requires J2SE 5.0 or
+later due to the use of static import of Math class.
+**********************************************************/
+import java.util.*;
+import static java.lang.Math.*;
+
+class Dsp042 implements GraphIntfc01{
+
+  int len = 256;
+
+  double[] timeDataIn = new double[len];
+  double[] realSpect = new double[len];
+  double[] timeDataOut = new double[len];
+  int zero = 0;
+
+  public Dsp042(){//constructor
+
+    //Create the raw data pulses
+    timeDataIn[0] = 0;
+    timeDataIn[1] = 50;
+    timeDataIn[2] = 75;
+    timeDataIn[3] = 80;
+    timeDataIn[4] = 75;
+    timeDataIn[5] = 50;
+    timeDataIn[6] = 25;
+    timeDataIn[7] = 0;
+    timeDataIn[8] = -25;
+    timeDataIn[9] = -50;
+    timeDataIn[10] = -75;
+    timeDataIn[11] = -80;
+    timeDataIn[12] = -60;
+    timeDataIn[13] = -40;
+    timeDataIn[14] = -26;
+    timeDataIn[15] = -17;
+    timeDataIn[16] = -11;
+    timeDataIn[17] = -8;
+    timeDataIn[18] = -5;
+    timeDataIn[19] = -3;
+    timeDataIn[20] = -2;
+    timeDataIn[21] = -1;
+
+    timeDataIn[240] = 80;
+    timeDataIn[241] = 80;
+    timeDataIn[242] = 80;
+    timeDataIn[243] = 80;
+    timeDataIn[244] = -80;
+    timeDataIn[245] = -80;
+    timeDataIn[246] = -80;
+    timeDataIn[247] = -80;
+    timeDataIn[248] = 80;
+    timeDataIn[249] = 80;
+    timeDataIn[250] = 80;
+    timeDataIn[251] = 80;
+    timeDataIn[252] = -80;
+    timeDataIn[253] = -80;
+    timeDataIn[254] = -80;
+    timeDataIn[255] = -80;
+
+    //Create raw data sinusoid
+    for(int x = len/3;x < 3*len/4;x++){
+      timeDataIn[x] = 80.0 * Math.sin(
+                              2*PI*(x)*1.0/20.0);
+    }//end for loop
+
+    //Compute forward DCT of the time data and save it in
+    // the output array.
+    ForwardDCT01.transform(timeDataIn,realSpect);
+
+    //Compute inverse DCT of the time data and save it in
+    // the output array.
+    InverseDCT01.transform(realSpect,timeDataOut);
+
+  }//end constructor
+
+  //-----------------------------------------------------//
+  //The following six methods are required by the interface
+  // named GraphIntfc01.
+  public int getNmbr(){
+    //Return number of curves to plot.  Must not exceed 5.
+    return 3;
+  }//end getNmbr
+  //-----------------------------------------------------//
+  public double f1(double x){
+    int index = (int)round(x);
+    if(index &lt; 0 || index &gt; timeDataIn.length-1){
+      return 0;
+    }else{
+      return timeDataIn[index];
+    }//end else
+  }//end function
+  //-----------------------------------------------------//
+  public double f2(double x){
+    int index = (int)round(x);
+    if(index &lt; 0 || index &gt; realSpect.length-1){
+      return 0;
+    }else{
+      //Scale for convenient viewing
+      return 0.22*realSpect[index];
+    }//end else
+  }//end function
+  //-----------------------------------------------------//
+  public double f3(double x){
+    int index = (int)round(x);
+    if(index &lt; 0 || index &gt; timeDataOut.length-1){
+      return 0;
+    }else{
+      return timeDataOut[index];
+    }//end else
+  }//end function
+  //-----------------------------------------------------//
+  public double f4(double x){
+    return 0;
+  }//end function
+  //-----------------------------------------------------//
+  public double f5(double x){
+    return 0;
+  }//end function
+  //-----------------------------------------------------//
+}//end sample class Dsp042
+<br><br><b><font face="Courier New,Courier"><a href="#Listing_14">Listing 14</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<p> </p>
+<p><b><a name="Listing_15"><a href="#Listing_15">Listing 15</a></a></b></p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>/* File Dsp044.java
+Copyright 2006, R.G.Baldwin
+Revised 01/03/06
+
+Update of Dsp042 to investigate the impact of breaking the 
+time series into eight-sample segments in order to be
+consistent with the 8x8 blocks in JPEG.  There appears to
+be no impact. The output is a very good replica of the
+input.
+
+Illustrates the application of forward and inverse Discrete
+Cosine Transform (DCT) to three different waveforms.  Very
+similar to Dsp035, which applies full forward and inverse
+Fourier transforms to the same three waveforms
+
+See http://en.wikipedia.org/wiki/Discrete_cosine_transform
+#DCT-II, http://rkb.home.cern.ch/rkb/AN16pp/node61.html,
+and http://www.cmlab.csie.ntu.edu.tw/cml/dsp/training/
+coding/transform/dct.html fortechnical background 
+information on the Discrete Cosine Transform.
+
+Shows a plot of the input time series, and the output 
+time series resulting from the inverse DCT.  Can't show
+the spectrum because a new spectrum is produced every
+eight samples.
+
+Run with Graph03. Enter the following to run the program:
+java Graph03 Dsp044
+
+Execution of this program requires access to the following
+class files:
+Dsp044.class
+ForwardDCT01.class
+Graph01.class
+GraphIntfc01.class
+GUI$MyCanvas.class
+GUI.class
+InverseDCT01.class
+
+Tested using J2SE 5.0 under WinXP.  Requires J2SE 5.0 or
+later due to the use of static import of Math class.
+**********************************************************/
+import java.util.*;
+import static java.lang.Math.*;
+
+class Dsp044 implements GraphIntfc01{
+
+  int len = 256;
+
+  double[] timeDataIn = new double[len];
+  double[] timeDataOut = new double[len];
+  int zero = 0;
+
+  public Dsp044(){//constructor
+
+    //Create the raw data pulses
+    timeDataIn[0] = 0;
+    timeDataIn[1] = 50;
+    timeDataIn[2] = 75;
+    timeDataIn[3] = 80;
+    timeDataIn[4] = 75;
+    timeDataIn[5] = 50;
+    timeDataIn[6] = 25;
+    timeDataIn[7] = 0;
+    timeDataIn[8] = -25;
+    timeDataIn[9] = -50;
+    timeDataIn[10] = -75;
+    timeDataIn[11] = -80;
+    timeDataIn[12] = -60;
+    timeDataIn[13] = -40;
+    timeDataIn[14] = -26;
+    timeDataIn[15] = -17;
+    timeDataIn[16] = -11;
+    timeDataIn[17] = -8;
+    timeDataIn[18] = -5;
+    timeDataIn[19] = -3;
+    timeDataIn[20] = -2;
+    timeDataIn[21] = -1;
+
+    timeDataIn[240] = 80;
+    timeDataIn[241] = 80;
+    timeDataIn[242] = 80;
+    timeDataIn[243] = 80;
+    timeDataIn[244] = -80;
+    timeDataIn[245] = -80;
+    timeDataIn[246] = -80;
+    timeDataIn[247] = -80;
+    timeDataIn[248] = 80;
+    timeDataIn[249] = 80;
+    timeDataIn[250] = 80;
+    timeDataIn[251] = 80;
+    timeDataIn[252] = -80;
+    timeDataIn[253] = -80;
+    timeDataIn[254] = -80;
+    timeDataIn[255] = -80;
+
+    //Create raw data sinusoid
+    for(int x = len/3;x &lt; 3*len/4;x++){
+      timeDataIn[x] = 80.0 * Math.sin(
+                              2*PI*(x)*1.0/20.0);
+    }//end for loop
+    
+    double[] workingArrayIn = new double[8];
+    double[] workingArrayOut = new double[8];
+    double[] realSpect = new double[8];
+    int segmentCnt = 0;
+    
+    //Compute forward and inverse DCTs on the input signal,
+    // eight samples at a time.  Concatenate the output
+    // segments from the DCT to represent the output
+    // signal.
+    while((segmentCnt + 8) &lt;= len){
+      System.arraycopy(timeDataIn,
+                       segmentCnt,
+                       workingArrayIn,
+                       0,
+                       8);
+      
+      //Compute forward DCT of the time data and save it in
+      // the output array.
+      ForwardDCT01.transform(workingArrayIn,realSpect);
+  
+      //Compute inverse DCT of the time data and save it in
+      // the output array.
+      InverseDCT01.transform(realSpect,workingArrayOut);
+      
+      //Concatenate the new output with the old output.
+      System.arraycopy(workingArrayOut,
+                       0,
+                       timeDataOut,
+                       segmentCnt,
+                       8);
+      
+      segmentCnt += 8;
+    }//end while
+
+  }//end constructor
+
+  //-----------------------------------------------------//
+  //The following six methods are required by the interface
+  // named GraphIntfc01.
+  public int getNmbr(){
+    //Return number of curves to plot.  Must not exceed 5.
+    return 2;
+  }//end getNmbr
+  //-----------------------------------------------------//
+  public double f1(double x){
+    int index = (int)round(x);
+    if(index &lt; 0 || index &gt; timeDataIn.length-1){
+      return 0;
+    }else{
+      return timeDataIn[index];
+    }//end else
+  }//end function
+  //-----------------------------------------------------//
+  public double f2(double x){
+    int index = (int)round(x);
+    if(index &lt; 0 || index &gt; timeDataOut.length-1){
+      return 0;
+    }else{
+      return timeDataOut[index];
+    }//end else
+  }//end function
+  //-----------------------------------------------------//
+  public double f3(double x){
+    return 0;
+  }//end function
+  //-----------------------------------------------------//
+  public double f4(double x){
+    return 0;
+  }//end function
+  //-----------------------------------------------------//
+  public double f5(double x){
+    return 0;
+  }//end function
+  //-----------------------------------------------------//
+
+}//end class Dsp044
+<br><br><b><font face="Courier New,Courier"><a href="#Listing_15">Listing 15</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<p> </p>
+<p><b><a name="Listing_16"><a href="#Listing_16">Listing 16</a></a></b></p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>/* File Graph03.java
+Copyright 2002, R.G.Baldwin
+
+This program is very similar to Graph01
+except that it has been modified to
+allow the user to manually resize and
+replot the frame.
+
+Note:  This program requires access to
+the interface named GraphIntfc01.
+
+This is a plotting program.  It is
+designed to access a class file, which
+implements GraphIntfc01, and to plot up
+to five functions defined in that class
+file.  The plotting surface is divided
+into the required number of equally
+sized plotting areas, and one function
+is plotted on cartesian coordinates in
+each area.
+
+The methods corresponding to the
+functions are named f1, f2, f3, f4,
+and f5.
+
+The class containing the functions must
+also define a method named
+getNmbr(), which takes no parameters
+and returns the number of functions to
+be plotted.  If this method returns a
+value greater than 5, a
+NoSuchMethodException will be thrown.
+
+Note that the constructor for the class
+that implements GraphIntfc01 must not
+require any parameters due to the
+use of the newInstance method of the
+Class class to instantiate an object
+of that class.
+
+If the number of functions is less
+than 5, then the absent method names
+must begin with f5 and work down toward
+f1.  For example, if the number of
+functions is 3, then the program will
+expect to call methods named f1, f2,
+and f3.  It is OK for the absent
+methods to be defined in the class.
+They simply won't be invoked.
+
+The plotting areas have alternating
+white and gray backgrounds to make them
+easy to separate visually.
+
+All curves are plotted in black.  A
+cartesian coordinate system with axes,
+tic marks, and labels is drawn in red
+in each plotting area.
+
+The cartesian coordinate system in each
+plotting area has the same horizontal
+and vertical scale, as well as the
+same tic marks and labels on the axes.
+
+The labels displayed on the axes,
+correspond to the values of the extreme
+edges of the plotting area.
+
+The program also compiles a sample
+class named junk, which contains five
+methods and the method named getNmbr.
+This makes it easy to compile and test
+this program in a stand-alone mode.
+
+At runtime, the name of the class that
+implements the GraphIntfc01 interface
+must be provided as a command-line
+parameter.  If this parameter is
+missing, the program instantiates an
+object from the internal class named
+junk and plots the data provided by
+that class.  Thus, you can test the
+program by running it with no
+command-line parameter.
+
+This program provides the following
+text fields for user input, along with
+a button labeled Graph.  This allows
+the user to adjust the parameters and
+replot the graph as many times with as
+many plotting scales as needed:
+
+xMin = minimum x-axis value
+xMax = maximum x-axis value
+yMin = minimum y-axis value
+yMax = maximum y-axis value
+xTicInt = tic interval on x-axis
+yTicInt = tic interval on y-axis
+xCalcInc = calculation interval
+
+The user can modify any of these
+parameters and then click the Graph
+button to cause the five functions
+to be re-plotted according to the
+new parameters.
+
+Whenever the Graph button is clicked,
+the event handler instantiates a new
+object of the class that implements
+the GraphIntfc01 interface.  Depending
+on the nature of that class, this may
+be redundant in some cases.  However,
+it is useful in those cases where it
+is necessary to refresh the values of
+instance variables defined in the
+class (such as a counter, for example).
+
+Tested using JDK 1.4.0 under Win 2000.
+
+This program uses constants that were
+first defined in the Color class of
+v1.4.0.  Therefore, the program
+requires v1.4.0 or later to compile and
+run correctly.
+**************************************/
+
+import java.awt.*;
+import java.awt.event.*;
+import java.awt.geom.*;
+import javax.swing.*;
+import javax.swing.border.*;
+
+class Graph03{
+  public static void main(
+          String[] args)
+          throws NoSuchMethodException,
+                ClassNotFoundException,
+                InstantiationException,
+                IllegalAccessException{
+    if(args.length == 1){
+      //pass command-line paramater
+      new GUI(args[0]);
+    }else{
+      //no command-line parameter given
+      new GUI(null);
+    }//end else
+  }// end main
+}//end class Graph03 definition
+//===================================//
+
+class GUI extends JFrame
+             implements ActionListener{
+
+  //Define plotting parameters and
+  // their default values.
+  double xMin = 0.0;
+  double xMax = 400.0;
+  double yMin = -100.0;
+  double yMax = 100.0;
+
+  //Tic mark intervals
+  double xTicInt = 20.0;
+  double yTicInt = 20.0;
+
+  //Tic mark lengths.  If too small
+  // on x-axis, a default value is
+  // used later.
+  double xTicLen = (yMax-yMin)/50;
+  double yTicLen = (xMax-xMin)/50;
+
+  //Calculation interval along x-axis
+  double xCalcInc = 1.0;
+
+  //Text fields for plotting parameters
+  JTextField xMinTxt =
+             new JTextField("" + xMin);
+  JTextField xMaxTxt =
+             new JTextField("" + xMax);
+  JTextField yMinTxt =
+             new JTextField("" + yMin);
+  JTextField yMaxTxt =
+             new JTextField("" + yMax);
+  JTextField xTicIntTxt =
+          new JTextField("" + xTicInt);
+  JTextField yTicIntTxt =
+          new JTextField("" + yTicInt);
+  JTextField xCalcIncTxt =
+         new JTextField("" + xCalcInc);
+
+  //Panels to contain a label and a
+  // text field
+  JPanel pan0 = new JPanel();
+  JPanel pan1 = new JPanel();
+  JPanel pan2 = new JPanel();
+  JPanel pan3 = new JPanel();
+  JPanel pan4 = new JPanel();
+  JPanel pan5 = new JPanel();
+  JPanel pan6 = new JPanel();
+
+  //Misc instance variables
+  int frmWidth = 408;
+  int frmHeight = 430;
+  int width;
+  int height;
+  int number;
+  GraphIntfc01 data;
+  String args = null;
+
+  //Plots are drawn on the canvases
+  // in this array.
+  Canvas[] canvases;
+
+  //Constructor
+  GUI(String args)throws
+                NoSuchMethodException,
+                ClassNotFoundException,
+                InstantiationException,
+                IllegalAccessException{
+
+    if(args != null){
+      //Save for use later in the
+      // ActionEvent handler
+      this.args = args;
+      //Instantiate an object of the
+      // target class using the String
+      // name of the class.
+      data = (GraphIntfc01)
+                   Class.forName(args).
+                         newInstance();
+    }else{
+      //Instantiate an object of the
+      // test class named junk.
+      data = new junk();
+    }//end else
+
+    //Create array to hold correct
+    // number of Canvas objects.
+    canvases =
+            new Canvas[data.getNmbr()];
+
+    //Throw exception if number of
+    // functions is greater than 5.
+    number = data.getNmbr();
+    if(number &gt; 5){
+      throw new NoSuchMethodException(
+                "Too many functions.  "
+                  + "Only 5 allowed.");
+    }//end if
+
+    //Create the control panel and
+    // give it a border for cosmetics.
+    JPanel ctlPnl = new JPanel();
+    ctlPnl.setLayout(//?rows x 4 cols
+                  new GridLayout(0,4));
+    ctlPnl.setBorder(
+                   new EtchedBorder());
+
+    //Button for replotting the graph
+    JButton graphBtn =
+                  new JButton("Graph");
+    graphBtn.addActionListener(this);
+
+    //Populate each panel with a label
+    // and a text field.  Will place
+    // these panels in a grid on the
+    // control panel later.
+    pan0.add(new JLabel("xMin"));
+    pan0.add(xMinTxt);
+
+    pan1.add(new JLabel("xMax"));
+    pan1.add(xMaxTxt);
+
+    pan2.add(new JLabel("yMin"));
+    pan2.add(yMinTxt);
+
+    pan3.add(new JLabel("yMax"));
+    pan3.add(yMaxTxt);
+
+    pan4.add(new JLabel("xTicInt"));
+    pan4.add(xTicIntTxt);
+
+    pan5.add(new JLabel("yTicInt"));
+    pan5.add(yTicIntTxt);
+
+    pan6.add(new JLabel("xCalcInc"));
+    pan6.add(xCalcIncTxt);
+
+    //Add the populated panels and the
+    // button to the control panel with
+    // a grid layout.
+    ctlPnl.add(pan0);
+    ctlPnl.add(pan1);
+    ctlPnl.add(pan2);
+    ctlPnl.add(pan3);
+    ctlPnl.add(pan4);
+    ctlPnl.add(pan5);
+    ctlPnl.add(pan6);
+    ctlPnl.add(graphBtn);
+
+    //Create a panel to contain the
+    // Canvas objects.  They will be
+    // displayed in a one-column grid.
+    JPanel canvasPanel = new JPanel();
+    canvasPanel.setLayout(//?rows,1 col
+                  new GridLayout(0,1));
+
+    //Create a custom Canvas object for
+    // each function to be plotted and
+    // add them to the one-column grid.
+    // Make background colors alternate
+    // between white and gray.
+    for(int cnt = 0;
+                  cnt &lt; number; cnt++){
+      switch(cnt){
+        case 0 :
+          canvases[cnt] =
+                     new MyCanvas(cnt);
+          canvases[cnt].setBackground(
+                          Color.WHITE);
+          break;
+        case 1 :
+          canvases[cnt] =
+                     new MyCanvas(cnt);
+          canvases[cnt].setBackground(
+                     Color.LIGHT_GRAY);
+          break;
+        case 2 :
+          canvases[cnt] =
+                     new MyCanvas(cnt);
+          canvases[cnt].setBackground(
+                          Color.WHITE);
+          break;
+        case 3 :
+          canvases[cnt] =
+                     new MyCanvas(cnt);
+          canvases[cnt].setBackground(
+                     Color.LIGHT_GRAY);
+          break;
+        case 4 :
+          canvases[cnt] =
+                     new MyCanvas(cnt);
+          canvases[cnt].
+            setBackground(Color.WHITE);
+      }//end switch
+      //Add the object to the grid.
+      canvasPanel.add(canvases[cnt]);
+    }//end for loop
+
+    //Add the sub-assemblies to the
+    // frame.  Set its location, size,
+    // and title, and make it visible.
+    getContentPane().
+                   add(ctlPnl,"South");
+    getContentPane().
+             add(canvasPanel,"Center");
+
+    setBounds(0,0,frmWidth,frmHeight);
+
+    if(args == null){
+      setTitle("Graph03, " +
+                 "Copyright 2002, " +
+                 "Richard G. Baldwin");
+    }else{
+      setTitle("Graph03/" + args +
+                 " Copyright 2002, " +
+                 "R. G. Baldwin");
+    }//end else
+
+    setVisible(true);
+
+    //Set to exit on X-button click
+    setDefaultCloseOperation(
+                        EXIT_ON_CLOSE);
+
+    //Guarantee a repaint on startup.
+    for(int cnt = 0;
+                  cnt &lt; number; cnt++){
+      canvases[cnt].repaint();
+    }//end for loop
+
+  }//end constructor
+  //---------------------------------//
+
+  //This event handler is registered
+  // on the JButton to cause the
+  // functions to be replotted.
+  public void actionPerformed(
+                      ActionEvent evt){
+    //Re-instantiate the object that
+    // provides the data
+    try{
+      if(args != null){
+        data = (GraphIntfc01)Class.
+           forName(args).newInstance();
+      }else{
+        data = new junk();
+      }//end else
+    }catch(Exception e){
+      //Known to be safe at this point.
+      // Otherwise would have aborted
+      // earlier.
+    }//end catch
+
+    //Set plotting parameters using
+    // data from the text fields.
+    xMin = Double.parseDouble(
+                    xMinTxt.getText());
+    xMax = Double.parseDouble(
+                    xMaxTxt.getText());
+    yMin = Double.parseDouble(
+                    yMinTxt.getText());
+    yMax = Double.parseDouble(
+                    yMaxTxt.getText());
+    xTicInt = Double.parseDouble(
+                 xTicIntTxt.getText());
+    yTicInt = Double.parseDouble(
+                 yTicIntTxt.getText());
+    xCalcInc = Double.parseDouble(
+                xCalcIncTxt.getText());
+
+    //Calculate new values for the
+    // length of the tic marks on the
+    // axes.  If too small on x-axis,
+    // a default value is used later.
+    xTicLen = (yMax-yMin)/50;
+    yTicLen = (xMax-xMin)/50;
+
+    //Repaint the plotting areas
+    for(int cnt = 0;
+                  cnt &lt; number; cnt++){
+      canvases[cnt].repaint();
+    }//end for loop
+
+  }//end actionPerformed
+  //---------------------------------//
+
+
+//This is an inner class, which is used
+// to override the paint method on the
+// plotting surface.
+class MyCanvas extends Canvas{
+  int cnt;//object number
+  //Factors to convert from double
+  // values to integer pixel locations.
+  double xScale;
+  double yScale;
+
+  MyCanvas(int cnt){//save obj number
+    this.cnt = cnt;
+  }//end constructor
+
+  //Override the paint method
+  public void paint(Graphics g){
+
+    //Get and save the size of the
+    // plotting surface
+    width = canvases[0].getWidth();
+    height = canvases[0].getHeight();
+
+    //Calculate the scale factors
+    xScale = width/(xMax-xMin);
+    yScale = height/(yMax-yMin);
+
+    //Set the origin based on the
+    // minimum values in x and y
+    g.translate((int)((0-xMin)*xScale),
+               (int)((0-yMin)*yScale));
+    drawAxes(g);//Draw the axes
+    g.setColor(Color.BLACK);
+
+    //Get initial data values
+    double xVal = xMin;
+    int oldX = getTheX(xVal);
+    int oldY = 0;
+    //Use the Canvas obj number to
+    // determine which method to
+    // invoke to get the value for y.
+    switch(cnt){
+      case 0 :
+        oldY = getTheY(data.f1(xVal));
+        break;
+      case 1 :
+        oldY = getTheY(data.f2(xVal));
+        break;
+      case 2 :
+        oldY = getTheY(data.f3(xVal));
+        break;
+      case 3 :
+        oldY = getTheY(data.f4(xVal));
+        break;
+      case 4 :
+        oldY = getTheY(data.f5(xVal));
+    }//end switch
+
+    //Now loop and plot the points
+    while(xVal &lt; xMax){
+      int yVal = 0;
+      //Get next data value.  Use the
+      // Canvas obj number to
+      // determine which method to
+      // invoke to get the value for y.
+      switch(cnt){
+        case 0 :
+          yVal =
+                getTheY(data.f1(xVal));
+          break;
+        case 1 :
+          yVal =
+                getTheY(data.f2(xVal));
+          break;
+        case 2 :
+          yVal =
+                getTheY(data.f3(xVal));
+          break;
+        case 3 :
+          yVal =
+                getTheY(data.f4(xVal));
+          break;
+        case 4 :
+          yVal =
+                getTheY(data.f5(xVal));
+      }//end switch1
+
+      //Convert the x-value to an int
+      // and draw the next line segment
+      int x = getTheX(xVal);
+      g.drawLine(oldX,oldY,x,yVal);
+
+      //Increment along the x-axis
+      xVal += xCalcInc;
+
+      //Save end point to use as start
+      // point for next line segment.
+      oldX = x;
+      oldY = yVal;
+    }//end while loop
+
+  }//end overridden paint method
+  //---------------------------------//
+
+  //Method to draw axes with tic marks
+  // and labels in the color RED
+  void drawAxes(Graphics g){
+    g.setColor(Color.RED);
+
+    //Lable left x-axis and bottom
+    // y-axis.  These are the easy
+    // ones.  Separate the labels from
+    // the ends of the tic marks by
+    // two pixels.
+    g.drawString("" + (int)xMin,
+                 getTheX(xMin),
+                 getTheY(xTicLen/2)-2);
+    g.drawString("" + (int)yMin,
+                  getTheX(yTicLen/2)+2,
+                        getTheY(yMin));
+
+    //Label the right x-axis and the
+    // top y-axis.  These are the hard
+    // ones because the position must
+    // be adjusted by the font size and
+    // the number of characters.
+    //Get the width of the string for
+    // right end of x-axis and the
+    // height of the string for top of
+    // y-axis
+    //Create a string that is an
+    // integer representation of the
+    // label for the right end of the
+    // x-axis.  Then get a character
+    // array that represents the
+    // string.
+    int xMaxInt = (int)xMax;
+    String xMaxStr = "" + xMaxInt;
+    char[] array = xMaxStr.
+                         toCharArray();
+
+    //Get a FontMetrics object that can
+    // be used to get the size of the
+    // string in pixels.
+    FontMetrics fontMetrics =
+                    g.getFontMetrics();
+    //Get a bounding rectangle for the
+    // string
+    Rectangle2D r2d =
+           fontMetrics.getStringBounds(
+               array,0,array.length,g);
+    //Get the width and the height of
+    // the bounding rectangle.  The
+    // width is the width of the label
+    // at the right end of the
+    // x-axis.  The height applies to
+    // all the labels, but is needed
+    // specifically for the label at
+    // the top end of the y-axis.
+    int labWidth =
+                 (int)(r2d.getWidth());
+    int labHeight =
+                (int)(r2d.getHeight());
+
+    //Label the positive x-axis and the
+    // positive y-axis using the width
+    // and height from above to
+    // position the labels.  These
+    // labels apply to the very ends of
+    // the axes at the edge of the
+    // plotting surface.
+    g.drawString("" + (int)xMax,
+                getTheX(xMax)-labWidth,
+                 getTheY(xTicLen/2)-2);
+    g.drawString("" + (int)yMax,
+              getTheX(yTicLen/2)+2,
+              getTheY(yMax)+labHeight);
+
+    //Draw the axes
+    g.drawLine(getTheX(xMin),
+                         getTheY(0.0),
+                         getTheX(xMax),
+                         getTheY(0.0));
+
+    g.drawLine(getTheX(0.0),
+                        getTheY(yMin),
+                        getTheX(0.0),
+                        getTheY(yMax));
+
+    //Draw the tic marks on axes
+    xTics(g);
+    yTics(g);
+  }//end drawAxes
+
+  //---------------------------------//
+
+  //Method to draw tic marks on x-axis
+  void xTics(Graphics g){
+    double xDoub = 0;
+    int x = 0;
+
+    //Get the ends of the tic marks.
+    int topEnd = getTheY(xTicLen/2);
+    int bottomEnd =
+                   getTheY(-xTicLen/2);
+
+    //If the vertical size of the
+    // plotting area is small, the
+    // calculated tic size may be too
+    // small.  In that case, set it to
+    // 10 pixels.
+    if(topEnd &lt; 5){
+      topEnd = 5;
+      bottomEnd = -5;
+    }//end if
+
+    //Loop and draw a series of short
+    // lines to serve as tic marks.
+    // Begin with the positive x-axis
+    // moving to the right from zero.
+    while(xDoub &lt; xMax){
+      x = getTheX(xDoub);
+      g.drawLine(x,topEnd,x,bottomEnd);
+      xDoub += xTicInt;
+    }//end while
+
+    //Now do the negative x-axis moving
+    // to the left from zero
+    xDoub = 0;
+    while(xDoub &gt; xMin){
+      x = getTheX(xDoub);
+      g.drawLine(x,topEnd,x,bottomEnd);
+      xDoub -= xTicInt;
+    }//end while
+
+  }//end xTics
+  //---------------------------------//
+
+  //Method to draw tic marks on y-axis
+  void yTics(Graphics g){
+    double yDoub = 0;
+    int y = 0;
+    int rightEnd = getTheX(yTicLen/2);
+    int leftEnd = getTheX(-yTicLen/2);
+
+    //Loop and draw a series of short
+    // lines to serve as tic marks.
+    // Begin with the positive y-axis
+    // moving up from zero.
+    while(yDoub &lt; yMax){
+      y = getTheY(yDoub);
+      g.drawLine(rightEnd,y,leftEnd,y);
+      yDoub += yTicInt;
+    }//end while
+
+    //Now do the negative y-axis moving
+    // down from zero.
+    yDoub = 0;
+    while(yDoub &gt; yMin){
+      y = getTheY(yDoub);
+      g.drawLine(rightEnd,y,leftEnd,y);
+      yDoub -= yTicInt;
+    }//end while
+
+  }//end yTics
+
+  //---------------------------------//
+
+  //This method translates and scales
+  // a double y value to plot properly
+  // in the integer coordinate system.
+  // In addition to scaling, it causes
+  // the positive direction of the
+  // y-axis to be from bottom to top.
+  int getTheY(double y){
+    double yDoub = (yMax+yMin)-y;
+    int yInt = (int)(yDoub*yScale);
+    return yInt;
+  }//end getTheY
+  //---------------------------------//
+
+  //This method scales a double x value
+  // to plot properly in the integer
+  // coordinate system.
+  int getTheX(double x){
+    return (int)(x*xScale);
+  }//end getTheX
+  //---------------------------------//
+
+}//end inner class MyCanvas
+//===================================//
+
+}//end class GUI
+//===================================//
+
+//Sample test class.  Required for
+// compilation and stand-alone
+// testing.
+class junk implements GraphIntfc01{
+  public int getNmbr(){
+    //Return number of functions to
+    // process.  Must not exceed 5.
+    return 4;
+  }//end getNmbr
+
+  public double f1(double x){
+    return (x*x*x)/200.0;
+  }//end f1
+
+  public double f2(double x){
+    return -(x*x*x)/200.0;
+  }//end f2
+
+  public double f3(double x){
+    return (x*x)/200.0;
+  }//end f3
+
+  public double f4(double x){
+    return 50*Math.cos(x/10.0);
+  }//end f4
+
+  public double f5(double x){
+    return 100*Math.sin(x/20.0);
+  }//end f5
+
+}//end sample class junk
+<br><br><b><font face="Courier New,Courier"><a href="#Listing_16">Listing 16</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<p> </p>
+<p><b><a name="Listing_17"><a href="#Listing_17">Listing 17</a></a></b></p>
+<table border="1" cols="1" width="482" bgcolor="#ffff00">
+  <tbody>
+    <tr>
+      <td>
+      <pre>/* File GraphIntfc01.java
+Copyright 2004, R.G.Baldwin
+Rev 5/14/04
+
+This interface must be implemented by classes
+whose objects produce data to be plotted by
+programs such as Graph03 and Graph06.
+
+Tested using SDK 1.4.2 under WinXP.
+************************************************/
+
+public interface GraphIntfc01{
+  public int getNmbr();
+  public double f1(double x);
+  public double f2(double x);
+  public double f3(double x);
+  public double f4(double x);
+  public double f5(double x);
+}//end GraphIntfc01<br><br><b><font face="Courier New,Courier"><a href="#Listing_17">Listing 17</a></font></b></pre>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<p> </p>
+<hr align="center" size="3" width="100%">
+<p>Copyright 2006, Richard G. Baldwin.&nbsp; Reproduction in whole or in part in any 
+form or medium without express written permission from Richard Baldwin is 
+prohibited. </p>
+<h4>About the author</h4>
+<b><a href="mailto:Baldwin@DickBaldwin.com">Richard Baldwin</a></b><i> is a 
+college professor (at Austin Community College in Austin, TX) and private 
+consultant whose primary focus is a combination of Java, C#, and XML. In 
+addition to the many platform and/or language independent benefits of Java and 
+C# applications, he believes that a combination of Java, C#, and XML will become 
+the primary driving force in the delivery of structured information on the Web.</i>    
+<p><i>Richard has participated in numerous consulting projects and he 
+frequently provides onsite training at the high-tech companies located in and 
+around Austin, Texas.&nbsp; He is the author of Baldwin's Programming
+<a href="http://www.dickbaldwin.com">Tutorials</a>, which have gained a 
+worldwide following among experienced and aspiring programmers. He has also 
+published articles in JavaPro magazine.</i> </p>
+<p><i>In addition to his programming expertise, Richard has many years of 
+practical experience in Digital Signal Processing (DSP).&nbsp; His first job after he 
+earned his Bachelor's degree was doing DSP in the Seismic Research Department of 
+Texas Instruments.&nbsp; (TI is still a world leader in DSP.)&nbsp; In the following 
+years, he applied his programming and DSP expertise to other interesting areas 
+including sonar and underwater acoustics.</i> </p>
+<p><i>Richard holds an MSEE degree from Southern Methodist University and has 
+many years of experience in the application of computer technology to real-world 
+problems.</i> </p>
+<p><i><a href="mailto:baldwin@dickbaldwin.com">Baldwin@DickBaldwin.com</a></i>
+</p>
+<p><b>Keywords</b><br>
+java data image compression Discrete Cosine Transform, DCT Huffman Lempel Ziv </p>
+<p>-end- </p>
+<p>&nbsp;</p>
+<p> <br>
+&nbsp; </p>
+<br>
+<br>
+<br>
+<br>
+</body>
+</html>

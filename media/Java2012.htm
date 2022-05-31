@@ -1,0 +1,1277 @@
+<!doctype html public "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+   <meta name="GENERATOR" content="Microsoft FrontPage 5.0">
+   <title>... in Java by Richard G Baldwin</title>
+</head>
+<body link="#DD0000" vlink="#0000FF" alink="#FF0000" lang="EN-US">
+<h2>
+Java Sound, Getting Started, Part 2, Capture using Specified Mixer</h2>
+<i>Baldwin shows you how to use the Java Sound API to capture audio data from a 
+microphone and how to save that data in a ByteArrayOutputStream object.&nbsp; He 
+also shows you how to identify the mixers available on your system, and how to 
+specify a particular mixer for use in the acquisition of audio data from the 
+microphone.</i><p><b>Published:</b>&nbsp; February 18, 2003<br><b>By <a href="mailto:Baldwin@DickBaldwin.com">Richard G. Baldwin</a></b>
+<p>Java Programming Notes # 2012<ul >
+<li>
+<a href="#Preface">Preface</a></li>
+<li>
+<a href="#Preview">Preview</a></li>
+
+<li>
+<a href="#Discussion and Sample Programs">Discussion and Sample Code</a></li>
+
+<li>
+<a href="#Run the program">Run the Program</a></li>
+
+<li>
+<a href="#Summary">Summary</a></li>
+
+<li>
+<a href="#Complete Program Listings">Complete Program Listing</a></li>
+</ul>
+
+<hr size=3 width="100%" align=center>
+<center>
+<h2>
+<a NAME="Preface"></a>Preface</h2></center>
+<p>
+This  series of lessons is designed to teach you how to use the 
+Java Sound API.&nbsp; The first lesson in the series was entitled 
+<a href="http://www.developer.com/java/other/article.php/1565671">Java Sound, An 
+Introduction</a>.&nbsp; The 
+previous lesson was entitled 
+<a href="http://www.developer.com/java/other/article.php/1572251">Java Sound, 
+Getting Started, Part 1, Playback</a>.&nbsp; This lesson, entitled <i>Java 
+Sound, Getting Started, Part 2, Capture using Specified Mixer,</i> is a 
+follow-on to the previous lesson. </p>
+<p><font color="#FF0000"><b>Two types of audio data</b></font></p>
+<p>
+Two  different 
+types of audio data are supported by the Java Sound API:<ul>
+  <li>Sampled audio data</li>
+  <li>Musical Instrument Digital Interface (MIDI) data</li>
+  </ul>
+  <p>The two types of audio data are very different.&nbsp;  I 
+  am concentrating on sampled audio data at this point in time.&nbsp; I will defer 
+  my discussion of 
+      MIDI    until later.<p>
+<b><font color="#FF0000">Viewing tip</font></b>
+<p>You may find it useful to open another copy of this lesson in a separate
+browser window.&nbsp; That will make it easier for you to scroll back and
+forth among the different listings and figures while you are reading about
+them.
+<p><b><font color="#FF0000">Supplementary material</font></b>
+<p>I recommend that you also study the other lessons in my extensive collection
+of online Java tutorials.&nbsp; You will find those lessons published at
+<a href="http://softwaredev.earthweb.com/java">Gamelan.com</a>.&nbsp;
+However, as of the date of this writing, Gamelan doesn't maintain a consolidated
+index of my Java tutorial lessons, and sometimes they are difficult to
+locate there.&nbsp; You will find a consolidated index at <font color="#000000">
+<a href="http://www.DickBaldwin.com">www.DickBaldwin.com</a>.</font>
+  <h2 align="center"><font color="#000000"><a name="Preview">Preview</a></font></h2>
+<p>The Java Sound API is based on the concept of <i>lines</i> and <i>mixers.&nbsp; </i>In 
+this lesson, I will 
+provide a 
+program that you can use to first capture and then to play back  sound.<p>The 
+previous lesson provided a detailed discussion of the playback section of the 
+program.&nbsp; However, that lesson didn't expose the use of a mixer.&nbsp; 
+Rather, that lesson made use of class methods of the <b>AudioSystem</b> class, 
+which abstract the use of mixers to the background.<p>In this lesson, I 
+will provide a detailed explanation of the code used to capture audio data from 
+a microphone.&nbsp; Even though it isn't necessary, this lesson will also expose 
+the specification of a particular mixer to capture the audio data.<center>
+<h2>
+<a NAME="Discussion and Sample Programs"></a><font color="#000000">Discussion
+and Sample Code</font></h2></center>
+<p><font color="#FF0000"><b>Mixers</b></font><p>Here is part of what Sun has to say 
+about a <a name="mixer">mixer</a>:<blockquote>
+  <p><i>&quot;A mixer is an audio device with one or more lines. It need not be 
+  designed for mixing audio signals. A mixer that actually mixes audio has 
+  multiple input (source) lines and at least one output (target) line. The 
+  former are often instances of classes that implement <b>SourceDataLine</b>, 
+  and the latter, <b>TargetDataLine</b>. <b>Port</b> objects, too, are either 
+  source lines or target lines. A mixer can accept prerecorded, loopable sound 
+  as input, by having some of its source lines be instances of objects that 
+  implement the <b>Clip</b> interface.&quot;</i></blockquote>
+<p><font color="#FF0000"><b>Lines</b></font><p>Sun has this to say about the <b>Line</b> interface:<blockquote>
+  <p><i>&quot;A line is an element of the digital audio &quot;pipeline,&quot; such as an audio 
+  input or output port, a mixer, or an audio data path into or out of a mixer. 
+  The audio data flowing through a line can be mono or multichannel (for 
+  example, stereo). ... A line can have <b>controls</b>, such as gain, pan, and 
+  reverb.&quot;</i></blockquote>
+<p><font color="#FF0000"><b>Some important terms</b></font><p>The above quotations from Sun mention the following terms:<ul>
+  <li>TargetDataLine</li>
+  <li>Mixer</li>
+  <li>Port</li>
+  <li>Controls</li>
+  </ul>
+<p>Figure 1 shows how  these terms can come together to form a simple 
+audio input system.<p align="center">
+  <img border="0" src="java2012a.gif" width="401" height="400"><p align="center">
+  Figure 1 An audio input system<p>
+In Figure 1, a <b>Mixer</b> object is configured with one or more ports, 
+some controls, and a <b>TargetDataLine</b> object.<p>
+<font color="#FF0000"><b>What is a TargetDataLine?</b></font><p>
+The terminology used here can be very confusing.&nbsp;
+A <b>TargetDataLine</b> object is a <i>streaming</i> mixer 
+output object.<blockquote>
+  <p>
+<i>(The object provides output from the mixer, not output from the program.&nbsp; 
+In fact, it often serves as input to the program.)</i></blockquote>
+<p>
+An object of this type delivers audio data from the mixer, serving as input to 
+other parts of the program.<p>
+<font color="#FF0000"><b>Audio data input to the program</b></font><p>
+The data provided by the <b>TargetDataLine</b> object can be pushed into some other  program construct in real time.&nbsp; 
+The 
+actual destination of the audio data can be any  of a variety of 
+destinations such as an audio file, a 
+network connection, or a buffer in memory.<blockquote>
+  <p>
+<i>(A sample program in this lesson reads audio data from a TargetDataLine 
+object and writes it into a <b>ByteArrayInputStream</b> object in memory.)</i></blockquote>
+<p>
+<font color="#FF0000"><b>Based on a program from a previous lesson</b></font><p>
+In a previous lesson, I provided and discussed a program that captures audio data from 
+a microphone port, stores that data in memory, and plays the captured data back 
+through a speaker port.&nbsp; That lesson discussed the playback portion of the 
+program in detail, but did not discuss the data-capture portion of the program.<p>
+A slightly modified version of that program will be discussed in this lesson.&nbsp; 
+A copy of the modified program is shown in Listing 12 
+near the end of this lesson.&nbsp; This lesson will discuss the data-capture 
+portion of the program in detail.<p>
+<font color="#FF0000"><b>An explicit Mixer object</b></font><p>
+The previous version of the program didn't make explicit use of a <b>Mixer</b> 
+object.&nbsp; Therefore, it wasn't possible to see how the concept of a <b>Mixer</b> 
+entered into the program.&nbsp; <i>(A Mixer was implicitly used, but was not 
+identified as such.)</i><p>
+Even though it wasn't necessary for the 
+successful operation of the program, I modified this version of the program to show the explicit 
+use of a <b>Mixer</b> object.<p>
+<font color="#FF0000"><b>The graphical user interface (GUI)</b></font><p>
+A large portion of this program is dedicated to creating a graphical user 
+interface, which is used to control the operation of the program.&nbsp; Since 
+that code is straightforward, I won't discuss 
+those parts of the program.<p>
+<font color="#FF0000"><b>The data-capture side of the program</b></font><p>
+As mentioned earlier,
+I provided a detailed discussion of the 
+playback side of the program in the previous lesson.&nbsp; I will provide a 
+detailed discussion of 
+the data-capture side of the program in this lesson.<p>
+As you will see later, the data-capture portion of the program captures audio data 
+from the microphone and stores it in a <b>ByteArrayOutputStream</b> object.&nbsp; 
+Then the playback method named <b>playAudio</b>, <i>(which was discussed in a previous 
+lesson),</i> plays back 
+the audio data that is stored in the <b>ByteArrayOutputStream</b> object.&nbsp; 
+I made very few changes to the playback side of the program.&nbsp; Therefore, 
+the discussion in the previous lesson should suffice for your understanding of 
+the playback side of the program.<p>
+<font color="#FF0000"><b>The user interface</b></font><p>
+When this program is executed, the GUI shown in Figure 2 appears on the screen.&nbsp; 
+As you can see, this GUI contains three buttons:<ul>
+  <li>Capture</li>
+  <li>Stop</li>
+  <li>Playback</li>
+  </ul>
+    <p align="center">
+      <img border="0" src="java2012b.gif" width="251" height="71"><p align="center">
+      Figure 2 Program GUI<p>
+Input data from a microphone is captured and saved in a <b>ByteArrayOutputStream</b> object when the user clicks the
+<b>Capture</b> button.<p>
+Data capture stops when the user clicks the <b>Stop</b> button.<p>
+Playback of the captured data begins when the user clicks the <b>Playback</b> button.<p>
+<font color="#FF0000"><b>Available Mixers</b></font><p>
+Not all computers provide the same set of mixers.&nbsp; This version of the program  displays a list of mixers 
+available on the machine at runtime.&nbsp; The 
+following list of mixers was produced when the program was run on my machine:<p>
+<b><font face="Courier New" size="2">Java Sound Audio Engine<br>
+Microsoft Sound Mapper<br>
+Modem #0 Line Record<br>
+ESS Maestro</font></b><p>
+Thus, my machine had the four mixers listed above available at the time the program was 
+run <i>(your computer may display a different list of mixers)</i><p>
+<font color="#FF0000"><b>Using a specific mixer</b></font><p>
+After displaying the list of available mixers, the program gets and uses one of the available mixers 
+from the list.&nbsp; This is different from the version of the program discussed 
+in a previous lesson.&nbsp; That version of the program simply asked for a 
+compatible mixer rather than identifying a specific mixer.<p>
+<font color="#FF0000"><b>Some mixers work and some don't</b></font><p>
+I determined experimentally that either of the following mixers could be 
+successfully used in this program on my machine:<p>
+<b><font face="Courier New" size="2">Microsoft Sound Mapper<br>
+ESS Maestro</font></b> <p>
+I also determined experimentally that neither of the following  mixers would work in this 
+program on my machine:<p>
+<b><font face="Courier New" size="2">Java Sound Audio Engine<br>
+Modem #0 Line Record</font></b><p>
+These two mixers fail at runtime for different reasons.<p>
+The <i>Java Sound Audio Engine</i> mixer 
+failed due to a data format compatibility problem <i>(it may have been possible 
+to correct this failure by specifying a different data format, but I didn't try).</i>&nbsp;  <p>
+The <i>Modem #0 Line Record</i> 
+mixer failed due to an <i>"Unexpected Error."</i><p>
+The program was tested using Java SDK 1.4.1_01 under Win2000.<p>
+<font color="#FF0000"><b>Will discuss in fragments</b></font><p>
+Those of you who follow my work will not be surprised to learn that I will 
+discuss this program in fragments.&nbsp; A complete listing of the program is 
+shown in Listing 12 near the end of the lesson.<p>
+<font color="#FF0000"><b>The class named AudioCapture02</b></font><p>
+The class definition for the controlling class begins in Listing 1.<br>
+&nbsp;<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>public class <b>AudioCapture02</b> extends JFrame{
+
+  boolean stopCapture = false;
+  ByteArrayOutputStream byteArrayOutputStream;
+  AudioFormat audioFormat;
+  TargetDataLine targetDataLine;
+  AudioInputStream audioInputStream;
+  SourceDataLine sourceDataLine;
+
+<b><font face="Courier New,Courier">Listing 1</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>
+<font color="#FF0000"><b>The instance variables</b></font><p>
+The 
+code in Listing 1 declares several instance variables.&nbsp; One of those 
+variables, named <b>stopCapture</b>, controls the starting and stopping of the data capture process.<p>
+The value of this variable is initialized to <b>false</b>.&nbsp; The value is later changed to <b>true</b> when the user 
+clicks the
+<b>Stop</b> button in the GUI.&nbsp; The code in the data-capture thread 
+terminates when the value of this variable changes to <b>true</b>.<p>
+The use 
+of the other instance variables declared in Listing 1 will become obvious as 
+they appear in the code.<p>
+<font color="#FF0000"><b>The method named captureAudio</b></font><p>
+Now I am going to discuss the method named <b>captureAudio</b>.&nbsp; This 
+is the method that is invoked when the user clicks the <b>Capture</b> button in 
+the GUI.&nbsp; This method captures audio input data from a microphone and saves 
+that data 
+in a <b>ByteArrayOutputStream</b> object for later playback.<p>
+The beginning of the method named <b>captureAudio</b> is shown in Listing 2.<p>
+<font color="#FF0000"><b>Display available mixers</b></font><p>
+The code fragment in Listing 2 uses the <b>getMixerInfo</b> method of the <b>
+AudioSystem</b> class to get and display a list of the available mixers in the 
+system at the time  the program is run.<br>
+&nbsp;<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>  private void <b>captureAudio</b>(){
+    try{
+      Mixer.Info[] mixerInfo = 
+                      AudioSystem.<b>getMixerInfo</b>();
+      System.out.println("Available mixers:");
+      for(int cnt = 0; cnt < mixerInfo.length;
+                                          cnt++){
+      	System.out.println(mixerInfo[cnt].
+      	                              getName());
+      }//end for loop
+
+<b><font face="Courier New,Courier">Listing 2</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>
+<font color="#FF0000"><b>An array of Mixer.Info objects</b></font><p>
+The <b>getMixerInfo</b> method populates and returns a reference to an array 
+object, which contains references to objects of type <b>Mixer.Info</b>.&nbsp; 
+Each such object contains information about one of the available mixers.&nbsp; 
+The <b>length</b> property of the array object indicates the number of available 
+mixers.&nbsp; According to Sun:<blockquote>
+
+<p>
+<i>&quot;The <b>Mixer.Info</b> class represents information about an audio mixer, 
+including the product's name, version, and vendor, along with a textual 
+description. This information may be retrieved through the <b>getMixerInfo</b> 
+method of the <b>Mixer</b> interface.&quot;</i></blockquote>
+<p>
+I told you some of what Sun has to say about the <a href="#mixer">Mixer</a> 
+interface earlier.<p>
+<font color="#FF0000"><b>Display the list of available mixers</b></font><p>
+The code in Listing 2 also iterates on the array object to display the 
+name of each mixer currently available in the system.&nbsp; As indicated 
+earlier, this code produced the following screen output when the program was run 
+on my machine, indicating that four mixers were currently available:<p>
+<b><font face="Courier New" size="2">Available mixers:<br>
+Java Sound Audio Engine<br>
+Microsoft Sound Mapper<br>
+Modem #0 Line Record<br>
+ESS Maestro</font></b><p>
+A reference to a <b>Mixer.Info</b> object describing each of these mixers is 
+contained in the array object referred to by the reference variable named <b>mixerInfo</b> in Listing 2.&nbsp; 
+I will make use of the contents of one of the array elements later to select a 
+specific mixer for use by the program.<p>
+<font color="#FF0000"><b>The audio data format</b></font><p>Quite a lot of setup 
+is required to facilitate the capture of audio data.&nbsp; Listing 3 begins the process of getting everything set up to capture audio data from the 
+microphone.</p>
+<p>One of the things that are required is a specification of the format of the 
+audio data.&nbsp; The code in Listing 3 invokes the <b>getAudioFormat</b> method 
+to get an object of type <b>AudioFormat</b> and save its reference in the 
+instance variable named <b>audioFormat</b>.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      audioFormat = getAudioFormat();
+
+<b><font face="Courier New,Courier">Listing 3</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>
+<font color="#FF0000"><b>The method named getAudioFormat</b></font><p>
+At this point, I will briefly discuss the method named <b>audioFormat</b>.&nbsp;
+<i>(This discussion will be brief because I discussed this method in a previous 
+lesson.)</i><p>
+The entire <b>getAudioFormat</b> method is shown in Listing 4.<br>
+&nbsp;<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>  private AudioFormat <b>getAudioFormat</b>(){
+    float sampleRate = 8000.0F;
+    int sampleSizeInBits = 16;
+    int channels = 1;
+    boolean signed = true;
+    boolean bigEndian = false;
+
+    return new AudioFormat(sampleRate,
+                           sampleSizeInBits,
+                           channels,
+                           signed,
+                           bigEndian);
+  }//end getAudioFormat
+
+<b><font face="Courier New,Courier">Listing 4</font></b></pre>
+</td>
+</tr>
+</table>
+
+   <p>
+Aside from some initialized variable declarations, the code in Listing 3 
+consists of a single executable statement.<p>
+<font color="#FF0000"><b>An AudioFormat object</b></font><p>
+The<b> getAudioFormat</b> method creates and returns an object of the<b> 
+AudioFormat</b> class.<blockquote>
+  <p>
+<i>(I don't believe that there is any guarantee that a 
+given set of audio format parameters will work  on all systems, since the system sound 
+card is a part of the process.&nbsp; There are many brands and types  of system sound 
+cards.&nbsp; If these format parameters don't work for you, try some of the other allowable parameter values, which are 
+presented below.)</i></blockquote>
+<p>
+<font color="#FF0000"><b>What does Sun have to say?</b></font><p>
+Here is part of what Sun has to say about the <b>AudioFormat</b> 
+class:<blockquote>
+   <p>
+<i>&quot;<b>AudioFormat</b> is the class that specifies a particular 
+arrangement of data in a sound stream. By examining the information stored in 
+the audio format, you can discover how to interpret the bits in the binary sound 
+data.&quot;</i></blockquote>
+   <p>
+<font color="#FF0000"><b>Two constructors are available</b></font><p>
+The <b>AudioFormat</b> class has two constructors.&nbsp; <i>(I elected to use the 
+simpler of the two.)</i>&nbsp; For this constructor, the required parameters are:<ul>
+      <li>Sample rate in samples per second.&nbsp; <i>(Allowable values include 
+      8000, 11025, 16000, 22050, and 44100 samples per second.)</i></li>
+      <li>Sample size in bits.&nbsp; <i>(Allowable values include 8 and 16 bits per 
+      sample.)</i></li>
+      <li>Number of channels.&nbsp; <i>(Allowable values include 1 channel for mono 
+      and 2 channels for stereo.)</i></li>
+      <li>Signed or unsigned data.&nbsp; <i>(Allowable values include true and false 
+      for signed data or unsigned data.)</i></li>
+      <li>Big-endian or little-endian order.&nbsp; <i>(This has to do with the order 
+      in which the data bytes are stored in memory.&nbsp; You can learn about 
+      this topic <a href="http://mindprod.com/jglossendian.html">here</a>.)</i></li>
+      </ul>
+   <p>
+As you can see in Listing 4, this method specifies the following parameters for 
+the new <b>AudioFormat</b> object:<ul>
+        <li>8000 samples per second</li>
+        <li>16 bits per sample</li>
+        <li>1 channel <i>(mono)</i></li>
+        <li>Signed data</li>
+        <li>Little-endian order</li>
+        </ul>
+   <p>
+<font color="#FF0000"><b>Default data encoding is linear PCM</b></font><p>
+There are several ways that binary audio data can be encoded into the available 
+bits.&nbsp; The simplest way is known as linear PCM.&nbsp;
+The constructor that I used constructs an <b>AudioFormat</b> object with a 
+linear PCM encoding and the parameters listed above <i>(I will have more to say 
+about linear PCM encoding and other encoding schemes in future lessons).</i><p>
+<font color="#FF0000"><b>Now back to the captureAudio method</b></font><p>
+Having established an audio data format, the next step is to get an object of type <b>DataLine.Info</b>, as shown in 
+Listing 5.<br>
+&nbsp;<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      DataLine.Info dataLineInfo =
+                            new DataLine.Info(
+                            TargetDataLine.class,
+                            audioFormat);
+
+<b><font face="Courier New,Courier">Listing 5</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>
+The <b>DataLine.Info</b> class extends the <b>Line.Info</b> class.&nbsp; Let's 
+begin our investigation by taking a look at some of what Sun has to say about 
+the <b>Line.Info</b> class.<blockquote>
+
+<p>
+<i>&quot;A <b>Line.Info</b> object contains information about a line. The only 
+information provided by <b>Line.Info</b> itself is the Java class of the line. A 
+subclass of <b>Line.Info</b> adds other kinds of information about the line. 
+This additional information depends on which Line subinterface is implemented by 
+the kind of line that the <b>Line.Info </b>subclass describes.&quot;</i></blockquote>
+
+<p>
+The code in Listing 5 instantiates a new object of the <b>DataLine.Info</b> 
+class, which is one of the subclasses of <b>Line.Info</b>.<p>
+<font color="#FF0000"> <b>DataLine.Info class</b></font><p>
+Here is part of what Sun has to say about the <b>DataLine.Info</b> class:<blockquote>
+
+<p>
+<i>&quot;Besides the class information inherited from its superclass, <b>
+DataLine.Info</b> provides additional information specific to data lines. This 
+information includes: </i>
+  <ul>
+    <li><i>the audio formats supported by the data line </i></li>
+    <li><i>the minimum and maximum sizes of its internal buffer </i></li>
+  </ul>
+  <p><i>Because a <b>Line.Info</b> knows the class of the line it describes, a
+  <b>DataLine.Info</b> object can describe <b>DataLine</b> subinterfaces such as <b>
+  SourceDataLine</b>, <b>TargetDataLine</b>, and <b>Clip</b>. You can query a 
+  mixer for lines of any of these types, passing an appropriate instance of <b>
+  DataLine.Info</b> as the argument to a method such as <b>
+  Mixer.getLine(Line.Info)</b>.&quot;</i></p>
+</blockquote>
+
+<p>
+<font color="#FF0000"> <b>
+DataLine.Info constructor</b></font><p>
+Three overloaded constructors are available for a <b>DataLine.Info</b> object.&nbsp; 
+Two of them allow you to specify buffer size information.&nbsp; I elected to use 
+the simplest of the three, which doesn't require the specification of buffer 
+information, but uses default buffer sizes instead.<p>
+According to Sun, the constructor that I elected to use:<blockquote>
+
+<p>
+<i>&quot;Constructs a data line's info object from the specified information, which 
+includes a single audio format.&quot;</i></blockquote>
+
+<p>
+Note the two parameters passed to the constructor for the new <b>
+DataLine.Info</b> object in Listing 5.&nbsp; As you can see, the <b>DataLine.Info</b> 
+object instantiated in Listing 5 describes a line of type <b>TargetDataLine</b>, 
+with the format that was specified earlier.<p>
+<font color="#FF0000"><b>What is a TargetDataLine?</b></font><p><b>
+TargetDataLine</b> is a sub-interface of <b>DataLine</b>, which in turn, is a 
+sub-interface of <b>Line</b>.&nbsp; Therefore, before getting into the details 
+of <b>TargetDataLine</b>, we need to take a look at the <b>DataLine</b> 
+interface.&nbsp;  </p>
+<p><font color="#FF0000"><b>The DataLine interface</b></font></p>
+<p>Here is part of what Sun has to say about the <b>DataLine</b> interface:</p>
+<blockquote>
+  <p><i>&quot;<b>DataLine</b> adds media-related functionality to its superinterface,
+  <b>Line</b>. This functionality includes transport-control methods that start, 
+  stop, drain, and flush the audio data that passes through the line.&quot;</i></p>
+</blockquote>
+<p>For example, the <b>drain</b> method is used in the playback side of this 
+program to ensure that the internal buffer of a line is empty before closing the 
+line.</p>
+<blockquote>
+  <p><i>&quot;Data lines are used for output of audio by means of the subinterfaces
+  <b>SourceDataLine</b> or <b>Clip</b>, which allow an application program to 
+  write data. Similarly, audio input is handled by the subinterface <b>
+  TargetDataLine</b>, which allows data to be read.&quot;</i></p>
+</blockquote>
+<p>This quotation from Sun is of particular interest to us because we will be 
+using <b>TargetDataLine</b> to capture audio input data from a microphone.</p>
+<p>There are several other interesting aspects of the <b>DataLine</b> interface, 
+which we will use in future lessons.&nbsp; Therefore, I won't discuss them in 
+this lesson.</p>
+<p><font color="#FF0000"><b>The TargetDataLine interface</b></font></p>
+<p>Figure 5 instantiates a <b>DataLine.Info</b> object that describes a line of 
+type <b>TargetDataLine</b>.&nbsp; Here is part of what Sun has to say about the <b>TargetDataLine</b> 
+interface:</p>
+<blockquote>
+  <p><i>&quot;A target data line is a type of <b>DataLine</b> from which audio data 
+  can be read. The most common example is a data line that gets its data from an 
+  audio capture device. (The device is implemented as a mixer that writes to the 
+  target data line.)&quot;</i></p>
+</blockquote>
+<p>We are discussing the code in this program that captures audio data from a 
+microphone.&nbsp; In concert with the above quotation, the combination of the 
+microphone and a mixer can be viewed as an <i>audio capture device, </i>which 
+captures audio data from a microphone and writes that data to a <b>TargetDataLine</b> 
+object.&nbsp; Later on, you will see code that 
+reads the audio data from the <b>TargetDataLine</b> object and transfers it to a <b>
+ByteArrayOutputStream</b> object.</p>
+<p><font color="#FF0000"><b>Confusing terminology</b></font></p>
+<p>It is very important to keep the naming convention straight, because it may 
+be just the reverse of what you would expect.&nbsp; Here is what Sun has to say 
+regarding the naming convention for the <b>TargetDataLine</b> interface:</p>
+<blockquote>
+  <p><i>&quot;Note that the naming convention for this interface reflects the 
+  relationship between the line and its mixer. From the perspective of an 
+  application, a target data line may act as a source for audio data.&quot;</i></p>
+</blockquote>
+<p>Similarly, here is what Sun has to say about the <b>SourceDataLine</b> 
+interface with respect to the naming convention:</p>
+<blockquote>
+  <p><i>&quot;From the perspective of an application, a source data line may act as a 
+  target for audio data.&quot;</i></p>
+</blockquote>
+<p>The target is a source and the source is a target.</p>
+<p><font color="#FF0000"><b>Are you confused yet?</b></font></p>
+<p>From the viewpoint of the application, <i>(as opposed to the viewpoint of the 
+mixer)</i> a <b>TargetDataLine</b> 
+is the source of audio data <i>(such as data captured from a microphone).</i></p>
+<p>From the viewpoint of the application <i>(as opposed to the viewpoint of the 
+mixer),</i> a <b>
+SourceDataLine</b> is a target for audio data <i>(such as a speaker).</i></p>
+<p><font color="#FF0000"><b>Getting a TargetDataLine object</b></font></p>
+<p>Sun goes on to tell us:</p>
+<blockquote>
+  <p><i>&quot;The target data line can be obtained from a mixer by invoking the <b>
+  getLine</b> method of <b>Mixer</b> with an appropriate <b>DataLine.Info</b> object.&quot;</i></p>
+</blockquote>
+<p>That is exactly what we are going to do later.</p>
+<p><font color="#FF0000"><b>An internal buffer ...</b></font></p>
+<p>A <b>TargetDataLine</b> object has an internal buffer that is used to 
+temporarily store the input audio data until it is read by the application.&nbsp; 
+Sun has a few cautions for us regarding the use of that buffer:</p>
+<blockquote>
+  <p><i>&quot;The TargetDataLine interface provides a method for reading the captured 
+  data from the target data line's buffer.&nbsp; Applications that record audio 
+  should read data from the target data line quickly enough to keep the buffer 
+  from overflowing, which could cause discontinuities in the captured data that 
+  are perceived as clicks. ... If the buffer does overflow, the 
+  oldest queued data is discarded and replaced by new data.&quot;</i></p>
+</blockquote>
+<p>Hopefully your computer will be fast enough to capture the input audio data 
+from the microphone without buffer overflow.&nbsp; My computer is not a 
+particularly fast one, and it seems to capture the  data at 8000 samples per 
+second with no problems.</p>
+<p><font color="#FF0000"><b>Selecting an available mixer</b></font></p>
+<p>As I promised earlier, this program is going to select one of the available 
+mixers, which was not the case in the version of the program discussed in a 
+previous lesson.&nbsp; The earlier version of the program simply requested 
+access to a compatible mixer without specifying any particular mixer.</p>
+<p>Also, as I mentioned earlier, I determined experimentally that only two of 
+the four available mixers on my machine would work in this program.</p>
+<p><font color="#FF0000"><b>An array of Mixer.Info data</b></font></p>
+<p>Earlier in the program, we created and populated an array object whose 
+elements refer to <b>Mixer.Info</b> objects that describe the four available 
+mixers on my machine <i>(your machine may contain different mixers).</i>&nbsp; The code in Listing 6 gets a reference to a <b>Mixer</b> 
+object described by the <b>Mixer.Info</b> object at index 3 of the array.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      Mixer mixer = AudioSystem.
+                          <b>getMixer</b>(mixerInfo[3]);
+
+<b><font face="Courier New,Courier">Listing 6</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>
+<font color="#FF0000"><b>A brute force experiment</b></font><p>
+By simply recompiling and running the program with different index values in 
+Listing 6, I identified the two mixers that will work on my machine as those 
+whose description was stored at index 1 and index 3 in the array.&nbsp;&nbsp; However, that may not be the case on your 
+machine.&nbsp; You may need to perform a similar experiment to identify the 
+compatible mixers.<blockquote>
+
+<p>
+<i>(There are more elegant ways to identify compatible mixers, but I decided to 
+do it by brute force now and to discuss the more elegant ways in a future 
+lesson.)</i></blockquote>
+
+<p>
+After the code in Listing 6 executes, the variable named <b>mixer</b> contains a 
+reference to an object of type <b>Mixer</b> described as <b>ESS Maestro</b> on 
+my machine.<blockquote>
+
+<p>
+<i>(For whatever its worth, the sound subsystem on my machine is described in 
+the hardware properties as ESS Maestro2E MPU-401 Compatible.)</i></blockquote>
+<p>
+<font color="#FF0000"><b>Get a TargetDataLine object</b></font><p>Now that we 
+have our mixer, the next thing 
+we need to do is to get a line.&nbsp; The code in Listing 7 invokes the <b>
+getLine</b> method on the <b>Mixer</b> object to get a <b>TargetDataLine</b> 
+object.&nbsp; </p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      targetDataLine = (TargetDataLine)
+                     mixer.<b>getLine</b>(dataLineInfo);
+
+      targetDataLine.<b>open</b>(audioFormat);
+      targetDataLine.<b>start</b>();
+
+<b><font face="Courier New,Courier">Listing 7</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>
+According to Sun, the <b>getLine</b> method of the <b>Mixer </b>interface requires an incoming parameter of 
+type <b>Line.Info.&nbsp; </b>The method:<blockquote>
+
+<p>
+<i>&quot;Obtains a line that is available for use and that matches the description in 
+the specified <b>Line.Info</b> object.&quot;</i></blockquote>
+
+<p>
+As you will recall from Listing 5, our <b>Line.Info</b> object describes a<b> 
+TargetDataLine</b>.<b>&nbsp; </b>The code 
+in Listing 7 passes the <b>Line.Info</b> object that we created earlier in 
+Listing 5 as a 
+parameter to the <b>getLine</b> method.<p>
+The <b>getLine</b> method returns a reference to an object as type <b>Line</b>.&nbsp; 
+We must downcast it to type <b>TargetDataLine</b> in order to use it.<p>
+<font color="#FF0000"><b>Prepare the line for use</b></font><p>
+Once we have the <b>TargetDataLine</b> object, there are a couple more steps 
+required to prepare it for use.&nbsp; The code in Listing 7 invokes the <b>open</b> 
+method on the line object passing our format object as a parameter.&nbsp; 
+According to Sun, this version of the <b>open</b> method<blockquote>
+
+<p>
+<i>&quot;Opens the line with the specified format, causing the line to acquire any 
+required system resources and become operational.&quot; </i>
+</blockquote>
+
+<p>
+Two overloaded versions of the <b>open</b> method are available.&nbsp; The 
+version that I elected to use chooses a buffer size automatically.&nbsp; The other version 
+requires the programmer to specify the buffer size.<p>
+<font color="#FF0000"><b>Invoke the start method</b></font><p>
+The code in Listing 7 also invokes the <b>start</b> method on the <b>
+TargetDataLine</b> object.&nbsp; According to Sun, the <b>start</b> method<blockquote>
+
+<p>
+<i>&quot;Allows a line to engage in data I/O.&quot;</i></blockquote>
+
+<p>
+At this point, the audio system begins capturing data from the microphone, 
+storing it in an internal buffer, and making it available to the program.<p>
+<font color="#FF0000"><b>Don't allow the internal buffer to overflow</b></font><p>
+The program must start reading data from that internal buffer very quickly, or 
+the internal buffer may overflow.&nbsp; As discussed earlier, the 
+program must continue to read data from the internal buffer at a sufficiently fast rate to keep the internal buffer from overflowing.<p>
+<font color="#FF0000"><b>Capture some audio data</b></font><p>At this point, we 
+have finally prepared everything necessary to make it possible to acquire audio 
+data from the microphone.&nbsp; The next step is to create a <b>Thread</b> 
+object <i>(to capture and save the data),</i> and to start the thread running.</p>
+<p>The code in Listing 8 creates an object of the <b>CaptureThread</b> class, 
+and starts it running.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      Thread captureThread = new CaptureThread();
+      captureThread.start();
+
+<b><font face="Courier New,Courier">Listing 8</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>
+<font color="#FF0000"><b>Continue running until Stop</b></font><p>
+This thread will continue running and saving audio data until the user presses the <b>Stop</b> button.<blockquote>
+
+<p>
+<i>(Note however, that the captured data is being saved in memory.&nbsp; If you 
+allow it to capture too much data, you may run out of memory.)</i></blockquote>
+
+<p>
+If you examine the code in Listing 12 near the end of the lesson, you will see 
+that except for a <b>catch</b> block, this is the end of the method named <b>
+captureAudio</b>.&nbsp; The code in the <b>catch</b> block is very simple, so I 
+won't discuss it here.<p>
+<font color="#FF0000"><b>The CaptureThread class</b></font><p>Listing 9 shows 
+the beginning of a class named <b>CaptureThread</b>.&nbsp; This class extends 
+the <b>Thread </b>class, and is used 
+to read data from the line's internal buffer.&nbsp; The audio data read from 
+that buffer is saved in an object of 
+type <b>ByteArrayOutputStream</b>.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>class <b>CaptureThread</b> extends Thread{
+  byte tempBuffer[] = new byte[10000];
+
+<b><font face="Courier New,Courier">Listing 9</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>
+The <b>CaptureThread</b> class declares one instance variable, which refers to an array object of type <b>
+byte</b>.&nbsp; This object is used as an intermediate buffer in the process of 
+moving audio data from the line's internal buffer to the <b>
+ByteArrayOutputStream</b> object.&nbsp; The size of this array was set rather 
+arbitrarily to 10,000 bytes.<p>
+<font color="#FF0000"><b>Concurrent operation</b></font><p>
+Because an object of this class is a <b>Thread</b>, it runs concurrently with 
+the other threads in the program.&nbsp; Thus, it runs concurrently with the 
+thread that handles events resulting from clicking the buttons on the GUI.<p>
+<font color="#FF0000"><b>The run method</b></font><p>
+Every <b>Thread</b> class must define a method named <b>run</b>, which 
+determines the behavior of the thread.&nbsp; The beginning of the <b>run</b> 
+method for the <b>CaptureThread</b> class is shown in Listing 10.<br>
+&nbsp;<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>  public void <b>run</b>(){
+    byteArrayOutputStream =
+                     new ByteArrayOutputStream();
+    stopCapture = false;
+
+<b><font face="Courier New,Courier">Listing 10</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>
+The code in the <b>run </b>method <i>(Listing 10)</i> begins by instantiating a new <b>
+ByteArrayOutputStream</b> object and storing that object's reference in the 
+instance variable named <b>byteArrayOutputStream</b>.<p>
+If you 
+use the GUI buttons to repeatedly cycle this program through the <b>Capture/Stop/Playback</b> cycle, a new <b>ByteArrayOutputStream</b> object will be 
+created and used each time you press the <b>Capture</b> button.<p>
+<font color="#FF0000"><b>The control variable named stopCapture</b></font><p>
+The most interesting thing in Listing 10 is the initialization of the <b>boolean</b> 
+instance variable <i>(named <b>stopCapture</b>)</i> to a value of <b>false</b>.&nbsp; 
+This variable is used to control the duration of audio data capture.&nbsp; Its 
+value is switched from<b> false </b>to <b>true </b>by the event handler when the user presses the 
+<b>Stop</b> 
+button.<p>
+As you will see shortly, when the value of <b>stopCapture</b> switches to <b>true</b>, 
+the audio 
+data capture process is terminated.<blockquote>
+  <p>
+<i>(To simplify the discussion, I am going to omit the exception handling code in 
+the <b>run</b> method.&nbsp; That code is straightforward, and you can view it 
+in Listing 12 near the end of the lesson.)</i></blockquote>
+<p><font color="#FF0000"><b>Remaining code in the run method</b></font></p>
+<p>Other than the exception handling 
+code, the remaining code in the <b>run</b> method is shown in Listing 11.</p>
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>      while(!stopCapture){
+        //Read data from the internal buffer of
+        // the data line.
+        int cnt = targetDataLine.<b>read</b>(tempBuffer,
+                              0,
+                              tempBuffer.length);
+
+        if(cnt > 0){
+          //Save data in output stream object.
+          byteArrayOutputStream.<b>write</b>(tempBuffer,
+                                      0,
+                                      cnt);
+        }//end if
+      }//end while
+      byteArrayOutputStream.close();
+
+  }//end run
+}//end inner class CaptureThread
+
+<b><font face="Courier New,Courier">Listing 11</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>
+The code in the <b>run</b> method loops and captures audio data until the event 
+handler on the <b>Stop</b> button switches the value of <b>stopCapture</b> from
+<b>false</b> to <b>true</b>.<p>
+Here is what happens during each iteration of the <b>while</b> loop.<p>
+<font color="#FF0000"><b>Get audio data from the TargetDataLine's internal 
+buffer</b></font><p>
+The <b>read</b> method is invoked on the <b>TargetDataLine</b> object in an 
+attempt to read enough bytes from that object's internal buffer to fill the 
+array object referred to by <b>tempBuffer</b>.<blockquote>
+  <p>
+<i>(It may not always be possible to read that many bytes from the line's 
+internal buffer.&nbsp; There simply may not be that many bytes of audio data 
+available in the internal buffer.)</i></blockquote>
+<p>
+The <b>read</b> method transfers the available bytes from the internal buffer into the array 
+provided as an incoming parameter.<blockquote>
+  <p>
+<i>(If the number of available bytes in the internal buffer exceeds the size of 
+the array, only the number required to fill the array are transferred.&nbsp; The 
+surplus bytes remain in the internal buffer and are available for the next <b>
+read</b> operation.)</i></blockquote>
+<p>
+Then the<b> read</b> method<b> </b>returns the number of bytes actually 
+transferred 
+as type <b>int</b>.&nbsp; That value is saved in the variable named <b>cnt.</b><p>
+<font color="#FF0000"><b>Transfer the data to the ByteArrayOutputStream object</b></font><p>
+Then the code in the <b>run</b> method in Listing 11 invokes the <b>write</b> 
+method on the <b>ByteArrayOutputStream</b> object to transfer the bytes  from the array referred to by <b>tempBuffer</b> to the stream object referred to 
+by <b>byteArrayOutputStream</b>.<p>
+<font color="#FF0000"><b>Go back to the top of the loop</b></font><p>
+Then control transfers back to the top of the <b>while</b> loop where the value 
+of <b>stopCapture</b> is tested once again.<p>
+If the value of <b>stopCapture</b> is still <b>false</b>, that indicates that 
+the <b>Stop </b>button has not been clicked by the user.&nbsp; The process is repeated 
+through another iteration.<p>
+However, if the user has clicked the <b>Stop</b> 
+button, thus causing the value of <b>stopCapture</b> to switch from <b>false</b> 
+to <b>true</b>, the 
+loop terminates.&nbsp;
+In this case, the <b>ByteArrayOutputStream</b> object is closed, and the <b>run</b> 
+method terminates.&nbsp; This causes the thread to die a natural death and 
+terminates the capture of audio data.<p>
+<font color="#FF0000"><b>A clarification</b></font><p>
+Note, however, that I didn't invoke the <b>stop</b> method on the <b>
+TargetDataLine</b> object.&nbsp; As a result, the line will continue acquiring 
+audio data and making that data available in its internal buffer until the 
+program terminates.<p>
+Since the <b>run</b> method of the thread has ceased reading bytes from the 
+line's internal buffer, the buffer will simply overflow.&nbsp; It should be 
+possible to restart the line and read audio data that was acquired during the 
+interval.&nbsp; However, this program was not designed to support that kind of 
+operation.<p>
+If you are concerned about the <b>TargetDataLine</b> continuing to consume 
+resources, you could insert the following statement in Listing 11 immediately 
+following the end of the <b>while</b> loop:<p>
+<b><font face="Courier New" size="2">targetDataLine.stop();</font></b><p>
+According to Sun, invocation of the <b>stop</b> method on a line:<blockquote>
+  <p>
+<i>&quot;Stops the line. A stopped line should cease I/O activity.&quot;</i></blockquote>
+<p>
+<font color="#FF0000"><b>What is a ByteArrayOutputStream object?</b></font><p>
+According to Sun, the <b>ByteArrayOutputStream</b> class<blockquote>
+  <p>
+<i>&quot;implements an 
+output stream in which the data is written into a byte array. The buffer 
+automatically grows as data is written to it.&quot;</i></blockquote>
+<p>
+It should be possible to run out of memory if an attempt is made to write too 
+much data into the byte array.&nbsp; However, the Sun documentation for SDK 
+1.4.1_01 doesn't tell us what happens in that event.&nbsp; Hopefully, an <b>
+OutOfMemory</b> error would be thrown, which would cause this program to 
+terminate abnormally.<p>
+<font color="#FF0000"><b>Let's recap</b></font><p>
+Let's recap the steps involved in capturing audio data from a microphone and 
+saving that data in a <b>ByteArrayOutputStream</b> object, as implemented by 
+this program.<ul>
+  <li>Identify the available mixers, and save a <b>Mixer.Info</b> object 
+  describing a compatible mixer.</li>
+  <li>Instantiate an <b>AudioFormat</b> object that specifies a particular 
+  arrangement of audio data bytes in a sound stream.&nbsp; Many options are 
+  available here.</li>
+  <li>Instantiate a <b>DataLine.Info</b> object that describes an object of type
+  <b>TargetDataLine</b> set up for the <b>AudioFormat</b> described above.</li>
+  <li>Invoke the <b>getMixer</b> method of the <b>AudioSystem</b> class to get a 
+  reference to a <b>Mixer</b> object that matches the <b>Mixer.Info</b> object 
+  saved earlier.</li>
+  <li>Invoke the <b>getLine</b> method on the <b>Mixer</b> object to get a <b>
+  TargetDataLine</b> object that matches the characteristics of the <b>
+  DataLine.Info</b> object instantiated earlier.</li>
+  <li>Invoke the <b>open</b> method on the <b>TargetDataLine</b> object, passing 
+  the <b>AudioFormat</b> object as a parameter.</li>
+  <li>Invoke the <b>start</b> method on the <b>TargetDataLine</b> object to 
+  cause the line to start acquiring data from the microphone.</li>
+  <li>Spawn and start a <b>Thread</b> object to transfer audio data in real time 
+  from the internal buffer of the <b>TargetDataLine</b> object to a <b>
+  ByteArrayOutputStream</b> object.</li>
+  <li>When an appropriate amount of audio data has been captured, cause the <b>
+  Thread</b> object to stop transferring data from the <b>TargetDataLine</b> 
+  object to the <b>ByteArrayOutputStream</b> object.</li>
+  <li>Optionally invoke the <b>stop</b> method on the <b>TargetDataLine</b> 
+  object to cause it to stop acquiring audio data from the microphone.</li>
+  </ul>
+<p>
+Note that it isn't always necessary to explicitly specify a mixer as was done in 
+this program.&nbsp; A similar program in a previous lesson simply invoked the <b>
+getLine</b> method of the <b>AudioSystem</b> class to get a <b>TargetDataLine</b> 
+object for a particular data format on a <i>compatible</i> mixer.&nbsp; I 
+elected to explicitly specify a mixer in this program for illustration purposes 
+only.<center>
+<h2>
+<a NAME="Run the program"></a>Run the Program</h2></center>
+<p>
+      At this point, you may find it useful to compile and run the program shown 
+      in Listing 12 near the end of the lesson.<p>
+      <font color="#FF0000"><b>Capture and playback audio data</b></font><p>
+      This program demonstrates the ability to capture audio data from a 
+      microphone and to play it back through the speakers on your computer.&nbsp; The usage 
+      instructions are simple:<ul>
+  <li>Start the program running.&nbsp; The simple GUI shown in Figure 2 will appear on the screen.</li>
+  <li>Click the <b>Capture</b> button and speak into the microphone.</li>
+  <li>Click the <b>Stop</b> button to terminate capturing data.</li>
+  <li>Click the <b>Playback</b> button to play your captured voice back through 
+  the system speakers.</li>
+  </ul>
+    <p>
+      If you don't hear anything during playback, you may need to increase your speaker volume.<p>
+      This program saves the data that it captures in memory, so be careful to 
+      avoid running out of memory.<h2 align="center"><a name="Summary">Summary</a></h2>
+<p>In this lesson, I showed you how to use the Java Sound API to capture audio 
+data from a microphone and how to save that data in a <b>ByteArrayOutputStream</b> 
+object.&nbsp; I also showed you how to identify the mixers available on your 
+system, and how to specify a particular mixer for use in the acquisition of 
+audio data from the microphone.<center>
+<h2>
+<a NAME="Complete Program Listings"></a>Complete Program Listing</h2></center>
+  A complete listing of the program is shown in Listing 12.<br>
+&nbsp;<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>/*File AudioCapture02.java
+This program demonstrates the capture and 
+subsequent playback of audio data.
+
+A GUI appears on the screen containing the 
+following buttons:
+Capture
+Stop
+Playback
+
+Input data from a microphone is captured and 
+saved in a ByteArrayOutputStream object when the
+user clicks the Capture button.
+
+Data capture stops when the user clicks the Stop 
+button.
+
+Playback begins when the user clicks the Playback
+button.
+
+This version of the program gets and  displays a
+list of available mixers, producing the following
+output:
+
+Available mixers:
+Java Sound Audio Engine
+Microsoft Sound Mapper
+Modem #0 Line Record
+ESS Maestro
+
+Thus, this machine had the four mixers listed 
+above available at the time the program was run.
+
+Then the program gets and uses one of the 
+available mixers instead of simply asking for a 
+compatible mixer as was the case in a previous 
+version of the program.
+
+Either of the following two mixers can be used in
+this program:
+
+Microsoft Sound Mapper
+ESS Maestro
+
+Neither of the following two mixers will work in
+this program.  The mixers fail at runtime for 
+different reasons:
+
+Java Sound Audio Engine
+Modem #0 Line Record
+
+The Java Sound Audio Engine mixer fails due to a 
+data format compatibility problem.
+
+The Modem #0 Line Record mixer fails due to an 
+"Unexpected Error"
+
+Tested using SDK 1.4.0 under Win2000
+************************************************/
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.io.*;
+import javax.sound.sampled.*;
+
+public class AudioCapture02 extends JFrame{
+
+  boolean stopCapture = false;
+  ByteArrayOutputStream byteArrayOutputStream;
+  AudioFormat audioFormat;
+  TargetDataLine targetDataLine;
+  AudioInputStream audioInputStream;
+  SourceDataLine sourceDataLine;
+
+  public static void main(String args[]){
+    new AudioCapture02();
+  }//end main
+
+  public AudioCapture02(){//constructor
+    final JButton captureBtn = 
+                          new JButton("Capture");
+    final JButton stopBtn = new JButton("Stop");
+    final JButton playBtn = 
+                         new JButton("Playback");
+
+    captureBtn.setEnabled(true);
+    stopBtn.setEnabled(false);
+    playBtn.setEnabled(false);
+
+    //Register anonymous listeners
+    captureBtn.addActionListener(
+      new ActionListener(){
+        public void actionPerformed(
+        	                 ActionEvent e){
+          captureBtn.setEnabled(false);
+          stopBtn.setEnabled(true);
+          playBtn.setEnabled(false);
+          //Capture input data from the
+          // microphone until the Stop button is
+          // clicked.
+          captureAudio();
+        }//end actionPerformed
+      }//end ActionListener
+    );//end addActionListener()
+    getContentPane().add(captureBtn);
+
+    stopBtn.addActionListener(
+      new ActionListener(){
+        public void actionPerformed(
+        	                 ActionEvent e){
+          captureBtn.setEnabled(true);
+          stopBtn.setEnabled(false);
+          playBtn.setEnabled(true);
+          //Terminate the capturing of input data
+          // from the microphone.
+          stopCapture = true;
+        }//end actionPerformed
+      }//end ActionListener
+    );//end addActionListener()
+    getContentPane().add(stopBtn);
+
+    playBtn.addActionListener(
+      new ActionListener(){
+        public void actionPerformed(
+        	                 ActionEvent e){
+          //Play back all of the data that was
+          // saved during capture.
+          playAudio();
+        }//end actionPerformed
+      }//end ActionListener
+    );//end addActionListener()
+    getContentPane().add(playBtn);
+
+    getContentPane().setLayout(new FlowLayout());
+    setTitle("Capture/Playback Demo");
+    setDefaultCloseOperation(EXIT_ON_CLOSE);
+    setSize(250,70);
+    setVisible(true);
+  }//end constructor
+
+  //This method captures audio input from a
+  // microphone and saves it in a
+  // ByteArrayOutputStream object.
+  private void captureAudio(){
+    try{
+      //Get and display a list of
+      // available mixers.
+      Mixer.Info[] mixerInfo = 
+                      AudioSystem.getMixerInfo();
+      System.out.println("Available mixers:");
+      for(int cnt = 0; cnt < mixerInfo.length;
+                                          cnt++){
+      	System.out.println(mixerInfo[cnt].
+      	                              getName());
+      }//end for loop
+
+      //Get everything set up for capture
+      audioFormat = getAudioFormat();
+
+      DataLine.Info dataLineInfo =
+                            new DataLine.Info(
+                            TargetDataLine.class,
+                            audioFormat);
+
+      //Select one of the available
+      // mixers.
+      Mixer mixer = AudioSystem.
+                          getMixer(mixerInfo[3]);
+      
+      //Get a TargetDataLine on the selected
+      // mixer.
+      targetDataLine = (TargetDataLine)
+                     mixer.getLine(dataLineInfo);
+      //Prepare the line for use.
+      targetDataLine.open(audioFormat);
+      targetDataLine.start();
+
+      //Create a thread to capture the microphone
+      // data and start it running.  It will run
+      // until the Stop button is clicked.
+      Thread captureThread = new CaptureThread();
+      captureThread.start();
+    } catch (Exception e) {
+      System.out.println(e);
+      System.exit(0);
+    }//end catch
+  }//end captureAudio method
+
+  //This method plays back the audio data that
+  // has been saved in the ByteArrayOutputStream
+  private void playAudio() {
+    try{
+      //Get everything set up for playback.
+      //Get the previously-saved data into a byte
+      // array object.
+      byte audioData[] = byteArrayOutputStream.
+                                   toByteArray();
+      //Get an input stream on the byte array
+      // containing the data
+      InputStream byteArrayInputStream =
+             new ByteArrayInputStream(audioData);
+      AudioFormat audioFormat = getAudioFormat();
+      audioInputStream = new AudioInputStream(
+                    byteArrayInputStream,
+                    audioFormat,
+                    audioData.length/audioFormat.
+                                 getFrameSize());
+      DataLine.Info dataLineInfo = 
+                            new DataLine.Info(
+                            SourceDataLine.class,
+                            audioFormat);
+      sourceDataLine = (SourceDataLine)
+               AudioSystem.getLine(dataLineInfo);
+      sourceDataLine.open(audioFormat);
+      sourceDataLine.start();
+
+      //Create a thread to play back the data and
+      // start it  running.  It will run until
+      // all the data has been played back.
+      Thread playThread = new PlayThread();
+      playThread.start();
+    } catch (Exception e) {
+      System.out.println(e);
+      System.exit(0);
+    }//end catch
+  }//end playAudio
+
+  //This method creates and returns an
+  // AudioFormat object for a given set of format
+  // parameters.  If these parameters don't work
+  // well for you, try some of the other
+  // allowable parameter values, which are shown
+  // in comments following the declartions.
+  private AudioFormat getAudioFormat(){
+    float sampleRate = 8000.0F;
+    //8000,11025,16000,22050,44100
+    int sampleSizeInBits = 16;
+    //8,16
+    int channels = 1;
+    //1,2
+    boolean signed = true;
+    //true,false
+    boolean bigEndian = false;
+    //true,false
+    return new AudioFormat(
+                      sampleRate,
+                      sampleSizeInBits,
+                      channels,
+                      signed,
+                      bigEndian);
+  }//end getAudioFormat
+//=============================================//
+
+//Inner class to capture data from microphone
+class CaptureThread extends Thread{
+  //An arbitrary-size temporary holding buffer
+  byte tempBuffer[] = new byte[10000];
+  public void run(){
+    byteArrayOutputStream =
+                     new ByteArrayOutputStream();
+    stopCapture = false;
+    try{//Loop until stopCapture is set by
+        // another thread that services the Stop
+        // button.
+      while(!stopCapture){
+        //Read data from the internal buffer of
+        // the data line.
+        int cnt = targetDataLine.read(tempBuffer,
+                              0,
+                              tempBuffer.length);
+        if(cnt > 0){
+          //Save data in output stream object.
+          byteArrayOutputStream.write(tempBuffer,
+                                      0,
+                                      cnt);
+        }//end if
+      }//end while
+      byteArrayOutputStream.close();
+    }catch (Exception e) {
+      System.out.println(e);
+      System.exit(0);
+    }//end catch
+  }//end run
+}//end inner class CaptureThread
+//===================================//
+//Inner class to play back the data
+// that was saved.
+class PlayThread extends Thread{
+  byte tempBuffer[] = new byte[10000];
+
+  public void run(){
+    try{
+      int cnt;
+      //Keep looping until the input read method
+      // returns -1 for empty stream.
+      while((cnt = audioInputStream.read(
+      	              tempBuffer, 0,
+                      tempBuffer.length)) != -1){
+        if(cnt > 0){
+          //Write data to the internal buffer of
+          // the data line where it will be
+          // delivered to the speaker.
+          sourceDataLine.write(tempBuffer,0,cnt);
+        }//end if
+      }//end while
+      //Block and wait for internal buffer of the
+      // data line to empty.
+      sourceDataLine.drain();
+      sourceDataLine.close();
+    }catch (Exception e) {
+      System.out.println(e);
+      System.exit(0);
+    }//end catch
+  }//end run
+}//end inner class PlayThread
+//=============================================//
+
+}//end outer class AudioCapture02.java
+
+<b><font face="Courier New,Courier">Listing 12</font></b></pre>
+</td>
+</tr>
+</table>
+
+   <hr size=3 width="100%" align=center>
+<p>Copyright 2003, Richard G. Baldwin.&nbsp; Reproduction in whole or in
+part in any form or medium without express written permission from Richard
+Baldwin is prohibited. <h4>
+<a NAME="About the author"></a>About the author</h4>
+<i><a href="mailto:Baldwin@DickBaldwin.com">Richard Baldwin</a> is a college professor (at Austin Community College in Austin, TX) and private consultant whose primary focus is a combination of Java, C#, and XML. In addition to the many platform and/or language independent benefits of Java and C# applications, he believes that a combination of Java, C#, and XML will become the primary driving force in the delivery of structured information on the Web.</i><br><p><i>Richard has participated in numerous consulting projects and he
+frequently provides onsite training at the high-tech companies located
+in and around Austin, Texas.&nbsp; He is the author of Baldwin's Programming <a href="http://www.DickBaldwin.com">Tutorials</a>,
+which has gained a worldwide following among experienced and aspiring programmers.
+He has also published articles in JavaPro magazine.</i> <p><i>Richard holds an MSEE degree from Southern Methodist University and
+has many years of experience in the application of computer technology
+to real-world problems.</i> <p><i><a href="mailto:Baldwin@DickBaldwin.com">Baldwin@DickBaldwin.com</a></i> <p>-end- </body></html>

@@ -1,0 +1,582 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>... in Java by Richard G Baldwin</TITLE>
+<META NAME="Template" CONTENT="C:\PROGRAM FILES\MSOFFICE\OFFICE\html.dot">
+</HEAD>
+<BODY LINK="#0000ff" VLINK="#800080" BGCOLOR="#ffffff">
+
+<P><!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN"><!--start--></P>
+<I><H3 ALIGN="CENTER">Richard G Baldwin (512) 223-4758, </I><A HREF="mailto:baldwin@austin.cc.tx.us"><I>baldwin@austin.cc.tx.us</I></A><I>, </I><A HREF="http://www2.austin.cc.tx.us/baldwin/"><I>http://www2.austin.cc.tx.us/baldwin/</I></A></H3>
+<H2 ALIGN="CENTER"><!--title-->RMI, Passing and Returning Remote and Ordinary Objects<!--endTitle--></H2>
+<P>Java Programming, Lecture Notes 603, Revised 8/22/99. </P>
+
+<UL>
+<LI><A HREF="#Preface">Preface</A> </LI>
+<LI><A HREF="#Introduction">Introduction</A> </LI>
+<LI><A HREF="#Overview">Overview</A> </LI>
+<LI><A HREF="#Sample_Program">Sample Program</A> </LI>
+<LI><A HREF="#The_Batch_file">The Batch File</A> </LI>
+<LI><A HREF="#The_Interface_File">The Interface Files</A> </LI>
+<LI><A HREF="#The_Remote_Object_File">The Remote Object Files</A> </LI>
+<LI><A HREF="#The_Server_Code_File">The Server Code File</A> </LI>
+<LI><A HREF="#The_Client_Code_File">The Client Code File</A> </LI>
+<LI><A HREF="#Program_Listing">Program Listings</A> </LI></UL>
+
+<P><HR></P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Preface"></A>Preface</H2>
+</FONT><P>Students in Prof. Baldwin's <B><U>Advanced Java Programming</B></U> classes at ACC will be responsible for knowing and understanding all of the material in this lesson beginning with the spring semester of 1999. </P>
+<P>This lesson was originally written on October 10, 1998, using the JDK 1.1.6 download package (and sometimes the MS SDK). The purpose of this lesson is to explain some of the issues involved in passing and returning objects with RMI. </P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Introduction"></A>Introduction</H2>
+</FONT><P>For purposes of the discussion in this lesson, a <I>remote</I> object is an object of a class that extends the <B>Remote</B> interface either directly or indirectly.&nbsp; An <I>ordinary</I> object is an object of a class that does not extend the <B>Remote</B> interface. </P>
+<P>Previous lessons have given you an introduction to RMI.&nbsp; I am going to assume that you have read those lessons and skip almost all of the normal introductory and overview material. </P>
+<P>The material in this lesson is somewhat more complex than material in the previous RMI lessons in this series, so I'm going to give you the bottom line at the top, and then discuss a sample program that supports the bottom line. </P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Overview"></A>Overview</H2>
+</FONT><P>When we teach courses in programming fundamentals using C++ or Pascal, we spend a lot of time introducing students to the concept of passing parameters and returning results by <I>value</I> and by <I>reference</I>.&nbsp; Passing a parameter by value means that the function or method receives a copy of the original.&nbsp; Modifying the copy has no effect on the original. </P>
+<P>Passing by reference means that the method receives a pointer, reference, or handle to the original (depending on the jargon of the particular language involved.).&nbsp; If that reference is used to make a change to the parameter, the original will be modified. </P>
+<P>This is a concept that can be quite confusing to some students, and generally in Pascal, any variable can be passed either by value or by reference.&nbsp; In C++ any variable or any object can be passed either by value or by reference. </P>
+<P>Similar considerations apply when returning results.&nbsp; In some cases, it is possible to return a result either by value or by reference. </P>
+<P>Normally, the situation is somewhat less confusing in Java.&nbsp; In Java, all primitive variables are passed by value.&nbsp; All objects are passed by reference.&nbsp; Therefore, if you modify an incoming primitive variable inside a method, that action has no effect on the original.&nbsp; On the other hand, if you use an incoming reference to modify the object that it references, that action will modify the original. </P>
+<P>However, with RMI, life is not quite so simple in Java either.&nbsp; If a method that is invoked on a remote object returns an&nbsp; ordinary object (see earlier definition of remote and ordinary objects) a copy of the object is serialized and sent to the invoking method on the client.&nbsp; In effect, the object is returned by value.&nbsp; If the method on the client modifies the object, that modification has no effect on the original object on the server. </P>
+<P>On the other hand, if a method that is invoked on a remote object returns a remote object, a serialized copy of the object is not returned.&nbsp; Rather, a stub is returned that represents the object to the client method.&nbsp; This stub is equivalent to a reference to the object.&nbsp; If the stub is used to modify the object, the original object on the server will be modified. </P>
+<P>In a more general sense, during RMI, if ordinary objects are sent in either direction, a serialized copy of the object is actually sent. </P>
+<P>If remote objects are sent in either direction, stubs representing those objects are sent in place of a serialized copy of the object, and the receiving code has access to the original object by using the stub as a reference. </P>
+<P>Therefore, you must be more careful in your thinking when invoking remote methods under RMI than might normally be the case.&nbsp; You may think that you are modifying an object when you are simply modifying a copy of the object.&nbsp; Similarly, you may think that you are modifying a copy of an object when in fact, you are modifying the original object. </P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Sample_Program"></A>Sample Program</H2>
+</FONT><P>A remote object is defined that contains two instance variables. </P>
+<P>One of the instance variables is an embedded remote object.&nbsp; It is an instance of a class that implements the <B>Remote</B> interface.&nbsp; This instance variable, being an object itself, has one instance variable of type <B>int</B> along with a pair of set and get methods which allow the value of the instance variable to be modified and retrieved. </P>
+<P>The other instance variable in the main remote object is an object of type <B>Date</B>.&nbsp; The <B>Date</B> class does not implement the <B>Remote</B> interface.&nbsp; Therefore, this is an ordinary instance variable. </P>
+<P>(Note that this sample program makes use of several deprecated methods of the <B>Date</B> class, but the class and the methods were ideal for demonstrating my points.&nbsp; Just ignore the deprecated warnings when you compile the program.) </P>
+<P>The <B>Date</B> class has a set method that makes it possible to set the number of the day of the month stored in an object of that class. This is in the same sense that the remote instance variable has a set method that makes it possible to set the <B>int</B> value stored in that object. </P>
+<P>This program has six source files as described below: </P>
+
+<UL>
+<B><LI>Rmi05RemoteIntfcA.java</B> - the Remote interface for the main remote object </LI>
+<B><LI>Rmi05RemoteIntfcB.java</B> - the Remote interface for the remote object that is an instance variable of the main remote object </LI>
+<B><LI>Rmi05RemoteObjA.java</B> - the class definition for the main remote object </LI>
+<B><LI>Rmi05RemoteObjB.java</B> - the class definition for the remote object that is an instance variable of the main remote object </LI>
+<B><LI>Rmi05Server.java</B> - the code for the server </LI>
+<B><LI>Rmi05Client.java</B> - the code for the client </LI></UL>
+
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="The_Batch_file"></A>The Batch file</H2>
+</FONT><P>The name of the batch file is <B>Rmi05.bat</B>.&nbsp; By now you should be completely familiar with how my batch files work to control the RMI process so I won't discuss them here.&nbsp; You can view a complete listing of the batch file near the end of this lesson. </P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="The_Interface_File"></A>The Interface Files</H2>
+</FONT><P>Two remote objects of different types are instantiated in this program, but only one of them is exposed to the client by way of the registry.&nbsp; I will discuss that situation in more detail later.&nbsp; Because there are two different types of remote objects, two different interface files are required. </P>
+<P>The following fragment shows the interface definition for the main remote object.&nbsp; I have snipped out the material that is not germane to this discussion. </P>
+<P>The first method declaration is for a method to get the date object that is an instance variable of the main remote object.&nbsp; This method returns an object of type <B>Date</B>.&nbsp; There are no surprises here. </P>
+<P>The next method declaration, named <B>getRemObj()</B>&nbsp; is a little more complex.&nbsp; In truth, this method returns an object of type <B>Rmi05RemoteObjB</B>.&nbsp; However, if you write it that way, your program won't run successfully.&nbsp; In order to cause everything to come together and run properly under RMI, you must declare this method as returning <B>Rmi05RemoteIntfcB</B> which is the name of the interface implemented by the class <B>Rmi05RemoteObjB</B>. </P>
+<P>While the explanation for this behavior is fairly complex, this is generally because the stub that is sent to the client to represent this object only knows about the <B>Remote</B> interface.&nbsp; It doesn't know about the true type of the object. <BR>
+&nbsp; </P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Rmi05RemoteIntfcA.java
+**********************************************************/
+//snip
+
+public interface <B>Rmi05RemoteIntfcA</B> extends <B>Remote</B>{
+&nbsp; <B>Date</B> <B>getDateObj</B>() throws RemoteException;
+
+&nbsp; <B>Rmi05RemoteIntfcB</B> <B>getRemObj</B>() throws RemoteException;
+
+}//end Rmi05RemoteIntfcA definition</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The next fragment shows the important parts of the <B>Remote</B> interface for the object that is embedded as an instance variable of the main remote object.&nbsp; This is the object that is returned by the <B>getRemObj()</B> method discussed above. </P>
+<P>There are no surprises here.&nbsp; This interface simply declares a pair of set and get methods for setting and getting the value of an instance variable of the class.&nbsp; Declaring them in the <B>Remote</B> interface exposes them and makes them available to the client if the client can get a handle on the object.&nbsp; All methods that are declared in the interface are exposed to the client, and all methods of the class that are not declared in the interface are not exposed to the client. <BR>
+&nbsp; </P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Rmi05RemoteIntfcB.java
+**********************************************************/
+//snip
+
+public interface <B>Rmi05RemoteIntfcB</B> extends Remote{
+&nbsp; void <B>setData</B>(int data) throws RemoteException;
+
+&nbsp; int <B>getData</B>() throws RemoteException;
+
+}//end Rmi05RemoteIntfcB definition</PRE></TD>
+</TR>
+</TABLE>
+
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="The_Remote_Object_File"></A>The Remote Object Files</H2>
+</FONT><P>This program uses two different types of remote objects.&nbsp; One type is the main remote object on which methods are originally invoked.&nbsp; An object of this type contains an instance variable that is also a remote object. </P>
+<P>Once the client gains access to the remote instance variable via the <I>get</I> method in the main object, the client can then invoke methods on the remote object as well, because the methods are declared in the <B>Remote</B> interface described above. </P>
+<P>The following fragment shows the important parts of the class definition for the main remote object. </P>
+<P>As mentioned earlier, an object of this class has two instance variables.&nbsp; One, a <B>Date</B> object is an ordinary object because the <B>Date</B> class does not implement the <B>Remote</B> interface.&nbsp; A get method named <B>getDateObj()</B> is associated with this instance variable.&nbsp; When this method is invoked remotely, a copy of the object will be serialized and sent to the client. </P>
+<P>The other instance variable named <B>theRemoteObj</B> is a <B>Remote</B> object because it is of a class that implements the <B>Remote</B> interface.&nbsp; It also has an associated get method named <B>getRemObj()</B>.&nbsp; When this method is invoked, a stub is sent to the client representing the actual object.&nbsp; A copy of the object is not serialized and sent to the client.&nbsp; The client then has access to the actual object via the stub as a reference. <BR>
+&nbsp; </P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Rmi05RemoteObjA.java
+**********************************************************/
+//snip
+
+public class Rmi05RemoteObjA extends UnicastRemoteObject
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; implements Rmi05RemoteIntfcA{
+
+&nbsp; private <B>Date</B> theDate = new Date();
+&nbsp; private <B>Rmi05RemoteObjB</B> theRemoteObj;
+&nbsp;&nbsp;
+&nbsp; public Rmi05RemoteObjA() throws RemoteException{
+&nbsp;&nbsp;&nbsp; theRemoteObj = new Rmi05RemoteObjB(500);
+&nbsp; }//end constructor
+
+&nbsp; public Date <B>getDateObj</B>() throws RemoteException{
+&nbsp;&nbsp;&nbsp; return theDate;
+&nbsp; }//end getDateObj()
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp; public Rmi05RemoteIntfcB <B>getRemObj</B>()&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; throws RemoteException{
+&nbsp;&nbsp;&nbsp; return theRemoteObj;
+&nbsp; }//end getRemObj()
+&nbsp;&nbsp;&nbsp;&nbsp;
+}//end class Rmi05RemoteObjA</PRE></TD>
+</TR>
+</TABLE>
+
+<P>The next fragment shows important parts of the class definition for the other remote object.&nbsp; This is the remote object that is embedded as an instance variable in the main remote object. </P>
+<P>Except for the fact that this class implements the <B>Remote</B> interface indirectly through inheritance, there is nothing remarkable about the class definition.&nbsp; It has a simple primitive instance variable of type <B>int</B>.&nbsp; It has a pair of set and get methods to set and get the value of the instance variable. </P>
+<P>The one remarkable thing is that because this class implements the <B>Remote</B> interface, the methods declared in that interface are exposed to the client.&nbsp; Once the client gains access to a stub representing an object of this class, it can invoke the methods of the class on that stub which has the effect of invoking the methods on the object remotely. <BR>
+&nbsp; </P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Rmi05RemoteObjB.java
+**********************************************************/
+//snip
+
+public class Rmi05RemoteObjB extends UnicastRemoteObject
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; implements Rmi05RemoteIntfcB{
+
+&nbsp; private int <B>data</B>;
+&nbsp;&nbsp;
+&nbsp; public Rmi05RemoteObjB(int data) throws RemoteException{
+&nbsp;&nbsp;&nbsp; this.data = data;//initialize the object
+&nbsp; }//end constructor
+
+&nbsp; public void <B>setData</B>(int data) throws RemoteException{
+&nbsp;&nbsp;&nbsp; this.data = data;
+&nbsp; }//end setData()
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp; public int <B>getData</B>() throws RemoteException{
+&nbsp;&nbsp;&nbsp; return data;
+&nbsp; }//end getData()
+&nbsp;&nbsp;&nbsp;&nbsp;
+}//end class Rmi05RemoteObjB</PRE></TD>
+</TR>
+</TABLE>
+
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="The_Server_Code_File"></A>The Server Code File</H2>
+</FONT><P>The important parts of the server code for this program are shown below.&nbsp; Perhaps the most important thing about this code is not what you see, but rather what you don't see.&nbsp; For example, you don't see two remote objects being registered for exposure to the client.&nbsp; Rather, only the main object is exposed to the client by binding it to a name in the registry. <BR>
+&nbsp; </P>
+<P ALIGN="CENTER"><CENTER><TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Rmi05Server.java
+**********************************************************/
+//snip
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Rmi05RemoteObjA <B>remoteObjA</B> = new Rmi05RemoteObjA();
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Had to register it this way to avoid Win95 error
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; LocateRegistry.createRegistry(1099);
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <B>Naming.rebind("theRemoteObjectA", remoteObjA);
+</B>//snip</PRE></TD>
+</TR>
+</TABLE>
+</CENTER></P>
+
+<P>However, the client program can invoke methods on two different remote objects.&nbsp; One of those objects is accessed by obtaining access via the registry.&nbsp; The other object is accessed by gaining access to the first object.&nbsp; </P>
+<P>The second object is an instance variable of the first, and a get method is provided to gain access to the instance variable.&nbsp; Once the client gains access to the first object, it also has access to the remote methods of the second object. </P>
+<P>When the client invokes the get method on the main object to get access to the second object, it receives a stub representing the second object and can invoke remote methods on the second object by way of the stub. </P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="The_Client_Code_File"></A>The Client Code File</H2>
+</FONT><P>The important parts of the client code are shown below.&nbsp; The output from running this program is shown following the discussion of the fragment.&nbsp; The program contains several print statements to make it possible to track what is going on when viewing the output. </P>
+<P>This code goes to the registry on the server and gets a reference to the main remote object.&nbsp; The name of the reference is&nbsp; <B>refToObjA</B>. </P>
+<P>It uses that reference to invoke the <B>getDateObj()</B> method on the remote object.&nbsp; This returns an object of type <B>Date</B>.&nbsp; This is not a remote object, so an actual copy of the date object in the remote object is received. </P>
+<P>In a nutshell, the code displays the date, modifies the date, and displays it again.&nbsp; We will see that it has changed at that point as expected.&nbsp; Then the code goes back to the remote object and gets the date object again and displays its contents.&nbsp; As expected, those contents have not been changed, because the change to the date was made to a copy of the object and not to the original object. <BR>
+&nbsp; </P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Rmi05Client.java
+**********************************************************/
+//snip
+&nbsp;
+&nbsp;&nbsp;&nbsp; String partOfUrl = "rmi://localhost/";&nbsp;
+&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Rmi05RemoteIntfcA <B>refToObjA</B> =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (Rmi05RemoteIntfcA)Naming.lookup(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; partOfUrl + "theRemoteObjectA");
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Get date obj from server");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Date theDate = refToObjA.<B>getDateObj</B>();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Date in obj is: "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + theDate.<B>getDate</B>());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Set date in obj to 15");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theDate.<B>setDate</B>(15);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Date in obj is: "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + theDate.<B>getDate</B>());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Get date obj from server");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theDate = refToObjA.<B>getDateObj</B>();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Date in obj is: "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + theDate.<B>getDate</B>());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Get remote obj from server");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Rmi05RemoteIntfcB theObj = refToObjA.<B>getRemObj</B>();&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Value in obj is: "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + theObj.<B>getData</B>());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Set value in obj to 999");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theObj.<B>setData</B>(999);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Value in obj is: "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + theObj.<B>getData</B>());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Get remote obj from server");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theObj = refToObjA.<B>getRemObj</B>();&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Value in obj is: "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + theObj.<B>getData</B>());
+//snip</PRE></TD>
+</TR>
+</TABLE>
+
+<P>Then the program goes through a similar series of steps with respect to the remote object that is an instance variable of the main remote object.&nbsp; Here, the results are different. </P>
+<P>The code gets the object and displays the data contained in that object.&nbsp; Then it changes the value of the data stored in the object and displays it again.&nbsp; As expected, the value has changed.&nbsp; Then it goes back and gets the object again, and displays the value of the data stored in that object.&nbsp; This time, unlike the <B>Date</B> object, the change was made to the instance variable contained in the main remote object (and not to a copy) so the change persists. </P>
+<P>In fact, the client program is run a second time, and the change that was made during the first running of the program persists and shows up at the beginning of the second running of the program. </P>
+<P>The first running of the client program produced the following output.&nbsp; I manually inserted a blank line between the Date results and the remote object results to make it easier to read.&nbsp; Note that the date information temporarily changes to 15 and then reverts back to 10.&nbsp; However, once the remote object data value changes to 999, it stays there. <BR>
+&nbsp; </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#00ffff">
+<P>Get date obj from server <BR>
+Date in obj is: 10 <BR>
+Set date in obj to 15 <BR>
+Date in obj is: 15 <BR>
+Get date obj from server <BR>
+Date in obj is: 10 </P>
+<P>Get remote obj from server <BR>
+Value in obj is: 500 <BR>
+Set value in obj to 999 <BR>
+Value in obj is: 999 <BR>
+Get remote obj from server <BR>
+Value in obj is: 999</TD>
+</TR>
+</TABLE>
+
+<P>The second running of the client program produced the following output.&nbsp; Because these two runs were made without shutting down the remote object in between, the data value stored in the embedded remote object started at 999, as left over from the first running, instead of starting at 500. <BR>
+&nbsp; </P>
+<TABLE BORDER CELLSPACING=1 WIDTH=480>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#00ffff">
+<P>Get date obj from server <BR>
+Date in obj is: 10 <BR>
+Set date in obj to 15 <BR>
+Date in obj is: 15 <BR>
+Get date obj from server <BR>
+Date in obj is: 10 </P>
+<P>Get remote obj from server <BR>
+Value in obj is: 999 <BR>
+Set value in obj to 999 <BR>
+Value in obj is: 999 <BR>
+Get remote obj from server <BR>
+Value in obj is: 999</TD>
+</TR>
+</TABLE>
+
+<P>Complete listings of all of the code are provided in the next section. </P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Program_Listing"></A>Program Listings</H2></FONT>
+<P ALIGN="CENTER"><CENTER><TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>rem File Rmi05.bat
+rem Rev 10/09/98
+echo off
+echo Make certain that you have a Client folder and
+echo&nbsp; a Server folder immediately below this one.
+
+echo Delete residue from previous run
+del Rmi05*.class
+del Client\*.class
+del Server\*.class
+
+echo Compile files required by Server
+jvc Rmi05Server.java
+
+echo Compile files required by Client
+jvc Rmi05Client.java
+
+echo Run rmic utility to create skeleton and stub classes
+rmic Rmi05RemoteObjA
+rmic Rmi05RemoteObjB
+
+echo Put a copy of the stub class in the Serverfolder
+copy Rmi05RemoteObjA_Stub.class Server
+copy Rmi05RemoteObjB_Stub.class Server
+
+echo Put a copy of the skeleton class in the Server folder
+copy Rmi05RemoteObjA_Skel.class Server
+copy Rmi05RemoteObjB_Skel.class Server
+
+echo Put a copy of the remote obj class file in Server
+copy Rmi05RemoteObjA.class Server
+copy Rmi05RemoteObjB.class Server
+
+echo Put a copy of the remote server class file in Server
+copy Rmi05Server.class Server
+
+echo Put copy of remote interface class file in Server
+copy Rmi05RemoteIntfcA.class Server
+copy Rmi05RemoteIntfcB.class Server
+
+echo Put copy of client class file in Client folder
+copy Rmi05Client.class Client
+
+echo Put a copy of the stub class in the Client folder
+copy Rmi05RemoteObjA_Stub.class Client
+copy Rmi05RemoteObjB_Stub.class Client
+
+echo Put copy of remote interface class file in Client
+copy Rmi05RemoteIntfcA.class Client
+copy Rmi05RemoteIntfcB.class Client
+
+echo Should be able to start rmiregistry here, but it gives
+echo&nbsp; fatal error on my Win95 with jdk1.1.6.&nbsp; Start it
+echo&nbsp; in server program instead.
+
+echo Wait for remote object to become ready.&nbsp; Then click&nbsp;
+echo&nbsp; main window to keep things moving.
+
+echo Start the server running in a different MSDOS window
+cd Server
+start java Rmi05Server
+cd ..
+
+echo Run client program twice to demo that remote object
+echo&nbsp; stays alive.
+cd Client
+java Rmi05Client
+java Rmi05Client
+cd..
+
+echo Manually terminate the remote object.</PRE></TD>
+</TR>
+</TABLE>
+</CENTER></P>
+
+<P ALIGN="CENTER">. </P>
+<P ALIGN="CENTER"><CENTER><TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Rmi05RemoteIntfcA.java
+Rev 10/10/98.
+This is an RMI interface definition designed to show the&nbsp;
+difference between passing/returning remote objects and&nbsp;
+ordinary objects which don't implement the Remote&nbsp;
+interface. This interface extends the Remote interface.
+Tested using JDK 1.1.6 under Win95.
+**********************************************************/
+
+import java.rmi.*;
+import java.util.*;
+
+public interface Rmi05RemoteIntfcA extends Remote{
+
+&nbsp; Date getDateObj() throws RemoteException;
+
+&nbsp; Rmi05RemoteIntfcB getRemObj() throws RemoteException;
+
+}//end Rmi05RemoteIntfcA definition</PRE></TD>
+</TR>
+</TABLE>
+</CENTER></P>
+
+<P ALIGN="CENTER">. </P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Rmi05RemoteIntfcB.java
+Rev 10/10/98.
+This is an RMI interface definition designed to show the&nbsp;
+difference between passing/returning remote objects and&nbsp;
+ordinary objects which don't implement the Remote&nbsp;
+interface. This interface extends the Remote interface.
+Tested using JDK 1.1.6 under Win95.
+**********************************************************/
+
+import java.rmi.*;
+
+public interface Rmi05RemoteIntfcB extends Remote{
+&nbsp; void setData(int data) throws RemoteException;
+
+&nbsp; int getData() throws RemoteException;
+
+}//end Rmi05RemoteIntfcB definition</PRE></TD>
+</TR>
+</TABLE>
+
+<P>. </P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Rmi05RemoteObjA.java
+Rev 10/10/98.
+This is an RMI Remote class designed to show the difference
+between passing/returning remote objects and ordinary
+objects, which don't implement the Remote interface. This
+class implements the Remote interface indirectly through
+inheritance.
+Tested using JDK 1.1.6 under Win95.
+**********************************************************/
+
+import java.rmi.*;
+import java.rmi.server.*;
+import java.util.*;
+
+public class Rmi05RemoteObjA extends UnicastRemoteObject
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; implements Rmi05RemoteIntfcA{
+
+&nbsp; private Date theDate = new Date();
+&nbsp; private Rmi05RemoteObjB theRemoteObj;
+&nbsp;&nbsp;
+&nbsp; public Rmi05RemoteObjA() throws RemoteException{
+&nbsp;&nbsp;&nbsp; theRemoteObj = new Rmi05RemoteObjB(500);
+&nbsp; }//end constructor
+
+&nbsp; public Date getDateObj() throws RemoteException{
+&nbsp;&nbsp;&nbsp; return theDate;
+&nbsp; }//end getDateObj()
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp; public Rmi05RemoteIntfcB getRemObj()&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; throws RemoteException{
+&nbsp;&nbsp;&nbsp; return theRemoteObj;
+&nbsp; }//end getRemObj()
+&nbsp;&nbsp;&nbsp;&nbsp;
+}//end class Rmi05RemoteObjA</PRE></TD>
+</TR>
+</TABLE>
+
+<P>. </P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Rmi05RemoteObjB.java
+Rev 10/10/98.
+This is an RMI Remote class designed to show the difference
+between passing/returning remote objects and ordinary
+objects, which don't implement the Remote interface. This
+class implements the Remote interface indirectly through
+inheritance.
+Tested using JDK 1.1.6 under Win95.
+**********************************************************/
+
+import java.rmi.*;
+import java.rmi.server.*;
+
+public class Rmi05RemoteObjB extends UnicastRemoteObject
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; implements Rmi05RemoteIntfcB{
+
+&nbsp; private int data;
+&nbsp;&nbsp;
+&nbsp; public Rmi05RemoteObjB(int data) throws RemoteException{
+&nbsp;&nbsp;&nbsp; this.data = data;//initialize the object
+&nbsp; }//end constructor
+
+&nbsp; public void setData(int data) throws RemoteException{
+&nbsp;&nbsp;&nbsp; this.data = data;
+&nbsp; }//end setData()
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp; public int getData() throws RemoteException{
+&nbsp;&nbsp;&nbsp; return data;
+&nbsp; }//end getData()
+&nbsp;&nbsp;&nbsp;&nbsp;
+}//end class Rmi05RemoteObjB</PRE></TD>
+</TR>
+</TABLE>
+
+<P>. </P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Rmi05Server.java
+Rev 10/10/98.
+This is an RMI server designed to show the difference&nbsp;
+between passing/returning remote objects and ordinary
+objects, which don't implement the Remote interface.
+Tested using JDK 1.1.6 under Win95.
+**********************************************************/
+
+import java.rmi.*;
+import java.rmi.server.*;
+import sun.applet.*;
+import java.rmi.registry.LocateRegistry;
+
+public class Rmi05Server{
+&nbsp;&nbsp;
+&nbsp; public static void main(String args[]){
+&nbsp;&nbsp;&nbsp; System.setSecurityManager(new RMISecurityManager());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Rmi05RemoteObjA remoteObjA = new Rmi05RemoteObjA();
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Had to register it this way to avoid Win95 error
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; LocateRegistry.createRegistry(1099);
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Naming.rebind("theRemoteObjectA", remoteObjA);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Remote obj ready to use");
+&nbsp;&nbsp;&nbsp; }catch(Exception e){System.out.println("Error: " + e);}
+&nbsp; }//end main
+}//end class Rmi05Server</PRE></TD>
+</TR>
+</TABLE>
+
+<P>. </P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Rmi05Client.java
+Rev 10/10/98.
+This is an RMI client designed to show the difference&nbsp;
+between passing/returning remote objects and ordinary
+objects, which don't implement the Remote interface.
+Tested using JDK 1.1.6 under Win95.
+**********************************************************/
+
+import java.rmi.*;
+import java.rmi.server.*;
+import java.util.*;
+
+public class Rmi05Client{
+&nbsp;&nbsp;
+&nbsp; public static void main(String[] args){
+&nbsp;&nbsp;&nbsp; System.setSecurityManager(new RMISecurityManager());&nbsp;
+&nbsp;&nbsp;&nbsp; String partOfUrl = "rmi://localhost/";&nbsp;
+&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Rmi05RemoteIntfcA refToObjA =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (Rmi05RemoteIntfcA)Naming.lookup(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; partOfUrl + "theRemoteObjectA");
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Get date obj from server");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Date theDate = refToObjA.getDateObj();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Date in obj is: "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + theDate.getDate());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Set date in obj to 15");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theDate.setDate(15);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Date in obj is: "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + theDate.getDate());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Get date obj from server");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theDate = refToObjA.getDateObj();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Data in obj is: "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + theDate.getDate());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Get remote obj from server");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Rmi05RemoteIntfcB theObj = refToObjA.getRemObj();&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Value in obj is: "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + theObj.getData());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Set value in obj to 999");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theObj.setData(999);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Value in obj is: "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + theObj.getData());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Get remote obj from server");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; theObj = refToObjA.getRemObj();&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Value in obj is: "&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + theObj.getData());
+
+&nbsp;&nbsp;&nbsp; }catch(Exception e){System.out.println("Error " + e);}
+&nbsp;&nbsp;&nbsp; System.exit(0);
+&nbsp; }//end main
+}//end class Rmi05Client</PRE></TD>
+</TR>
+</TABLE>
+
+<P>-end- <!--end--></P></BODY>
+</HTML>

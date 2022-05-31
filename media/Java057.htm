@@ -1,0 +1,975 @@
+<!doctype html public "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+   <meta name="GENERATOR" content="Mozilla/4.79 [en] (Windows NT 5.0; U) [Netscape]">
+   <title>... in Java by Richard G Baldwin</title>
+</head>
+<body link="#DD0000" vlink="#0000FF" alink="#FF0000" lang="EN-US">
+
+<h2>
+Chained Exceptions in Java</h2>
+<i>Baldwin teaches</i> <i>you how to use the chained exception facility
+that became available with release 1.4.</i>
+<p><b>Published:</b>&nbsp; July 15, 2002
+<br><b>By <a href="#About the author">Richard G. Baldwin</a></b>
+<p>Java Programming Notes # 57
+<ul >
+<li>
+<a href="#Preface">Preface</a></li>
+
+<li>
+<a href="#Discussion and Sample Programs">Discussion and Sample Code</a></li>
+
+<li>
+<a href="#Run the program">Run the Program</a></li>
+
+<li>
+<a href="#Complete Program Listings">Complete Program Listing</a></li>
+</ul>
+
+<hr size=3 width="100%" align=center>
+<center>
+<h2>
+<a NAME="Preface"></a>Preface</h2></center>
+The recently released Java<sup>TM</sup> 2 SDK, Standard Edition Version
+1.4.0 contains a number of new features.&nbsp; This article explains how
+to use one of those new features: the <i>cause facility</i> otherwise known
+as<i> chained exceptions</i>.
+<p>Here is how Sun describes the
+<i>cause facility</i>:
+<blockquote><i>"A throwable ... can contain a cause: another throwable
+that caused this throwable to get thrown. The cause facility is new in
+release 1.4. It is also known as the chained exception facility, as the
+cause can, itself, have a cause, and so on, leading to a "chain" of exceptions,
+each caused by another..."</i></blockquote>
+Sun goes on to say:
+<blockquote><i>"This new facility provides a common API to record the fact
+that one exception caused another, to access causative exceptions, and
+to access the entire "causal chain" as part of the standard stack backtrace,
+ensuring that preexisting programs will provide this information with no
+additional effort on the part of their authors."</i></blockquote>
+In this lesson, I well teach you how to use the <i>chained exception</i>
+facility that is now available.
+<p><b><font color="#FF0000">Viewing tip</font></b>
+<p>You may find it useful to open another copy of this lesson in a separate
+browser window.&nbsp; That will make it easier for you to scroll back and
+forth among the different listings and figures while you are reading about
+them.
+<p><b><font color="#FF0000">Supplementary material</font></b>
+<p>I recommend that you also study the other lessons in my extensive collection
+of online Java tutorials.&nbsp; You will find those lessons published at
+<a href="http://softwaredev.earthweb.com/java">Gamelan.com</a>.&nbsp;
+However, as of the date of this writing, Gamelan doesn't maintain a consolidated
+index of my Java tutorial lessons, and sometimes they are difficult to
+locate there.&nbsp; You will find a consolidated index at
+<a href="http://www.geocities.com/Athens/7077/scoop/onjava.html">Baldwin's
+Java Programming Tutorials</a><font color="#000000">.</font>
+<center>
+<h2>
+<a NAME="Discussion and Sample Programs"></a><font color="#000000">Discussion
+and Sample Code</font></h2></center>
+<b><font color="#FF0000">Introduction</font></b>
+<p>The exception-handling capability of Java makes it possible for you
+to:
+<ul>
+<li>
+Monitor for exceptional conditions within your program</li>
+
+<li>
+Transfer control to special exception-handling code, <i>(which you design),</i>
+if an exceptional condition occurs</li>
+</ul>
+<b><font color="#FF0000">The basic concept</font></b>
+<p>This is accomplished using the keywords:
+<b>try</b>, <b>catch</b>, <b>throw</b>,
+<b>throws</b>,
+and <b>finally</b>.&nbsp; The basic concept is as follows:
+<ul>
+<li>
+You <b>try</b> to execute the statements contained within a block of code.</li>
+
+<li>
+If you detect an exceptional condition within that block, you <b>throw</b>
+an exception object of a specific type.</li>
+
+<li>
+You <b>catch</b> and process the exception object using code that you have
+designed.</li>
+
+<li>
+You optionally execute a block of code, designated by <b>finally</b><i>,</i>
+which needs to be executed whether or not an exception occurs.</li>
+</ul>
+<b><font color="#FF0000">Exceptions in code written by others</font></b>
+<p>There are also situations where you don't write the code to <b>throw</b>
+the exception object.&nbsp; Rather, the code in a method that you call
+throws an exception, or you attempt to execute some code that causes the
+runtime system to throw an exception <i>(such as integer divide by zero).</i>
+<p>When an exceptional condition causes an exception to be <i>thrown</i>,
+that exception is represented by an object instantiated from the class
+named <b>Throwable</b> or one of its subclasses.
+<p><b><font color="#FF0000">Throwable constructors and methods</font></b>
+<p>All errors and exceptions are subclasses of the
+<b>Throwable</b> class.&nbsp;
+As of JDK 1.4.0, the <b>Throwable</b> class provides four constructors
+and about a dozen methods.&nbsp; The four constructors are shown in Figure
+1.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>Throwable()</pre>
+
+<pre>Throwable(String message)&nbsp;</pre>
+
+<pre><b>Throwable(String message,&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Throwable cause)&nbsp;</b></pre>
+
+<pre><b>Throwable(Throwable cause)
+
+Figure 1</b></pre>
+</td>
+</tr>
+</table>
+
+<p>The first two constructors have been in Java for a very long time.&nbsp;
+Basically, these two constructors allow you to construct an exception object
+with or without a <b>String</b> message encapsulated in the object.
+<p><b><font color="#FF0000">New to JDK 1.4</font></b>
+<p>The last two constructors <i>(highlighted in boldface)</i> are new to
+JDK 1.4.&nbsp; These two constructors are provided to support the <i>cause
+facility, </i>otherwise known as <i>chained exceptions.</i>
+<p><b><font color="#FF0000">Catch blocks can throw exceptions</font></b>
+<p>According to Sun, <i>"It is common for Java code to catch one exception
+and throw another."</i>&nbsp; Typically, this involves the use of code
+such as that shown in Figure 2.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td><tt>try{</tt>
+<br><tt>&nbsp; //...</tt>
+<br><tt>}//end try block</tt>
+<br><tt>catch(OneExceptionType e){</tt>
+<br><tt>&nbsp; <b>throw new AnotherExceptionType();</b></tt>
+<br><tt>}//end catch block</tt>
+<p><b>Figure 2</b></td>
+</tr>
+</table>
+
+<p>A problem with this has always been that information about the first
+exception has generally been lost when the second exception was thrown.&nbsp;
+This did not work well insofar as debugging is concerned.
+<p><b><font color="#FF0000">Homebrew and non-standard schemes have been
+in use</font></b>
+<p>As a result, many developers have developed homebrew schemes for implementing
+chained exceptions, wherein they wrapped information about the first exception
+inside the information encapsulated in the object thrown inside the <b>catch</b>
+block a higher level.&nbsp; This has led to non-standard approaches, some
+of which worked better than others.
+<p>Also, while referring to the standard class libraries, Sun has this
+to say:
+<blockquote><i>"Prior to release 1.4, there were many throwables that had
+their own non-standard exception chaining mechanisms ... As of release
+1.4, all of these throwables have been retrofitted to use the standard
+exception chaining mechanism, while continuing to implement their "legacy"
+chaining mechanisms for compatibility."</i></blockquote>
+<b><font color="#FF0000">Advantages of a unified system for exception chaining</font></b>
+<p>Apparently, Sun decided to unify these facilities, and they list the
+following advantages of doing so:
+<ul>
+<li>
+Anyone who wants to record the fact that one exception caused another can
+do so, regardless of what the exceptions are.</li>
+
+<li>
+Because a common API makes it easier to record the fact that one exception
+caused another, it is more likely that programmers will take the trouble
+to do so.</li>
+
+<li>
+Providing a common API for accessing causative exceptions greatly enhances
+the likelihood that this information will be made available to those who
+need it.</li>
+</ul>
+<b><font color="#FF0000">Upgraded printStackTrace method</font></b>
+<p>Sun goes on to point out that with respect to the third advantage, the
+<b>printStackTrace</b>
+method has been upgraded such that it prints the entire <i>causal chain</i>
+as part of the standard stack backtrace.&nbsp; This ensures that preexisting
+programs will provide this information with no additional effort on the
+part of their authors.&nbsp; You will see an example of this in the sample
+program later in this lesson.
+<p><b><font color="#FF0000">Two new methods support <i>cause</i> facility</font></b>
+<p>In addition to the two new constructors mentioned earlier, Sun added
+two new methods to the <b>Throwable</b> class to support the new <i>cause</i>
+facility:
+<ul>
+<li>
+getCause</li>
+
+<li>
+initCause</li>
+</ul>
+You will see examples of the use of both of these methods in the sample
+program to be discussed later.
+<p><b><font color="#FF0000">General-purpose exception classes upgraded</font></b>
+<p>In addition to the <b>Throwable</b> class, other general-purpose exception
+classes, such as <b>Exception</b>, <b>RunTimeException</b>, and <b>Error</b>,
+were upgraded to support the two new overloaded constructors.&nbsp; As
+you will see in the sample program later, even exceptions without such
+upgraded constructors <i>(such as <b>DOMException</b>, for example)</i>
+will be usable as <i>wrapped exceptions</i> via the <b>initCause</b> method.
+<p><b><font color="#FF0000">Programmatic access to the stack trace for</font></b>
+<p>In addition to upgrading the <b>printStackTrace</b> method as described
+above, a new <b>getStackTrace</b> method was added, which provides programmatic
+access to the same stack trace information that is displayed by the <b>printStackTrace</b>
+method.&nbsp; This makes it possible for you to write code that can make
+decisions on the basis of information contained in the stack trace.
+<p><b><font color="#FF0000">Now back to the Throwable class</font></b>
+<p>Whenever an error or an exception occurs, an object is thrown.&nbsp;
+That object must be instantiated from the class <b>Throwable</b>, or a
+subclass of <b>Throwable</b>.&nbsp; A <b>Throwable</b> object contains
+a snapshot of the execution stack of its thread at the time it was created.
+As mentioned above, there are a couple of methods that provide access to
+that snapshot:
+<ul>
+<li>
+printStackTrace</li>
+
+<li>
+getStackTrace</li>
+</ul>
+<b><font color="#FF0000">Also contains message and <i>cause</i></font></b>
+<p>The <b>Throwable</b> object can also contain a message string that provides
+information about the error or the exception.&nbsp; With the advent of
+version 1.4, the <b>Throwable</b> object can also contain a <i>cause.</i>
+<p><b><font color="#FF0000">What is a <i>cause?</i></font></b>
+<p>A <i>cause</i> is a reference to another <b>Throwable</b> object.&nbsp;
+The intent is that this object will be interpreted as the thing that caused
+this throwable to get thrown in the first place.
+<blockquote><i>(However, you could encapsulate any <b>Throwable</b> object
+in a new <b>Throwable </b>object, whether or not it had anything to do
+with the true cause.&nbsp; All that you are required to do is pass a <b>Throwable</b>
+object's reference to the constructor for a new <b>Throwable</b> object,
+or invoke the <b>initCause</b> method on an existing <b>Throwable</b> object,
+passing a reference to another <b>Throwable</b> object as a parameter.&nbsp;
+It then becomes a cause.)</i></blockquote>
+<b><font color="#FF0000">Two ways to encapsulate a <i>cause</i></font></b>
+<p>As suggested above, you can associate a <i>cause</i> with a <b>Throwable</b>
+in two different ways.&nbsp; One way is to invoke one of the constructors
+that accepts a <b>Throwable</b> as a parameter.&nbsp; This assumes, of
+course, that the class from which you are instantiating the new object
+has such a constructor.&nbsp; You will see an example of this in the sample
+program later in this lesson.
+<p>The other way to associate a <i>cause</i> with a <b>Throwable</b> is
+to invoke the <b>initCause</b> method on an existing <b>Throwable</b> object's
+reference, passing a reference to another <b>Throwable</b> object as a
+parameter.&nbsp; This works even when you are instantiating a new object
+from a class that doesn't have a constructor that accepts a parameter of
+type <b>Throwable</b>.
+<p><b><font color="#FF0000">Support for legacy exception classes</font></b>
+<p>According to Sun:
+<blockquote><i>"... the initCause method ... allows a cause to be associated
+with any throwable, even a "legacy throwable" whose implementation predates
+the addition of the exception chaining mechanism to Throwable."</i></blockquote>
+I will apply the <b>initCause</b> method to an <b>IndexOutOfBoundsException</b>
+object in the sample program later in this lesson.&nbsp; According to the
+first edition of <u>Java in a Nutshell</u>, by David Flanagan, this exception
+type has been part of Java for at least as far back as release 1.1.
+<p><b><font color="#FF0000">Define four constructors in new exception classes</font></b>
+<p>If you define a new <b>Throwable</b> class and wish for an object of
+that class to have a <i>cause</i> associated with it, you should define
+constructors that take a <b>Throwable</b> as a parameter and pass that
+<b>Throwable</b>
+up the inheritance hierarchy to one of the <b>Throwable</b> constructors
+that takes a <b>Throwable</b> as a parameter.&nbsp; <i>(Your new class
+should have one constructor that matches the formal argument list of each
+of the four constructors in the <b>Throwable</b> class).</i>&nbsp; You
+will see an example of this in the sample program.
+<p><b><font color="#FF0000">Sample program named Excep20</font></b>
+<p>Now it's time to take a look at some code.&nbsp; A complete listing
+of the program named <b>Excep20</b> is shown in Listing 7 near the end
+of the lesson.&nbsp; I will discuss this program in fragments.
+<p><b><font color="#FF0000">Two new exception classes</font></b>
+<p>This program defines two new classes, named <b>NewEx01</b> and <b>NewEx02</b>,
+which are used to instantiate and throw exception objects.&nbsp; The code
+in each of these classes is essentially the same, so I will show and discuss
+only one of them.&nbsp; The class named <b>NewEx01</b> is shown in Listing
+1.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>class NewEx01 extends Exception{
+&nbsp; public NewEx01() {
+&nbsp; }//end constructor
+
+&nbsp; public NewEx01(String message){
+&nbsp;&nbsp;&nbsp; <b>super(message);
+</b>&nbsp; }//end constructor
+
+&nbsp; public NewEx01(Throwable throwable){
+&nbsp;&nbsp;&nbsp; <b>super(throwable);
+</b>&nbsp; }//end constructor
+
+&nbsp; public NewEx01(String message,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Throwable throwable){
+&nbsp;&nbsp;&nbsp; <b>super(message, throwable);
+</b>&nbsp; }//end constructor
+}//end NewEx01
+
+<b><font face="Courier New,Courier">Listing 1</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">A checked exception class</font></b>
+<p>As you can see from Listing 1, the class extends <b>Exception</b>.&nbsp;
+As a result, it is a <i>checked</i> exception class.&nbsp; <i>(Of course,
+it is also a <b>Throwable</b> class, because <b>Exception</b> extends <b>Throwable</b>.).</i>
+<p><b><font color="#FF0000">Four overloaded constructors</font></b>
+<p>As suggested in an earlier paragraph, the code in the class definition
+consists of four overloaded constructors, each corresponding to one of
+the four overloaded constructors in the
+<b>Throwable</b> class.
+<p>Each constructor <i>(other than the one that takes no arguments)</i>
+uses the <b>super</b> keyword to pass the incoming parameters up to the
+constructor for the superclass.&nbsp; This makes it possible to invoke
+the methods of the <b>Throwable</b> class on an object instantiated from
+this class, and have those methods behave correctly.
+<p><b><font color="#FF0000">Summary of the program's behavior</font></b>
+<p>Basically, this program consists of the controlling named <b>Excep20</b>,
+two exception classes named <b>NewEx01</b> and <b>NewEx02</b>, and another
+class named <b>Class01</b>.
+<p>The class named <b>Class01</b> defines three methods named <b>meth01</b>,
+<b>meth02</b>,
+and <b>meth03</b>.&nbsp; The <b>main</b> method of the controlling class
+instantiates a new object of the class <b>Class01</b>, and invokes the
+method named <b>meth01</b> on that object's reference.
+<p>The method named <b>meth01</b> invokes the method named <b>meth02</b>,
+and the method named <b>meth02</b> invokes the method named <b>meth03</b>.
+<p><b><font color="#FF0000">Oops!&nbsp; meth03 throws an exception</font></b>
+<p>The code in <b>meth03</b> attempts to perform an integer divide by zero,
+causing an <b>ArithmeticException</b> to be thrown by the runtime system.&nbsp;
+This code is executed inside a <b>try</b> block.&nbsp; A <b>catch</b> block
+that follows the <b>try</b> block catches the <b>ArithmeticException</b>.
+<p><b><font color="#FF0000">Instantiate and throw a different exception
+with a <i>cause</i></font></b>
+<p>Code in the catch block instantiates a new object of type <b>IndexOutOfBoundsException</b>
+and invokes the <b>initCause</b> method on that object, causing it to encapsulate
+a reference to the <b>ArithmeticException</b> that was caught by the catch
+block.&nbsp; Then it throws the <b>IndexOutOfBoundsException</b> object,
+which is caught by the method named <b>meth02 </b><i>(the next method up
+the call stack).</i>
+<p><b><font color="#FF0000">Instantiate and throw a different exception
+with a <i>cause </i>- again</font></b>
+<p>The method named <b>meth02</b> catches that object and encapsulates
+it in an object of type <b>NewEx02</b>, which it throws.
+<p>This exception is caught by <b>meth01</b>, which performs a similar
+action, and throws an object of type <b>NewEx01</b>, which is caught by
+the <b>main</b> method.
+<p><b><font color="#FF0000">Print information at each stop along the way</font></b>
+<p>At each stop along the way, the method catching the exception object
+displays certain information about the object that it caught, including
+the message and the <i>cause</i> encapsulated in that object.
+<p><b><font color="#FF0000">Print the stack trace</font></b>
+<p>Finally, the <b>main</b> method prints a stack trace showing the complete
+history of the call stack since the <b>ArithmeticException</b> was thrown
+way down in the method named <b>meth03</b>.
+<p><b><font color="#FF0000">Code from the inside out</font></b>
+<p>I am going to discuss the code from the inside out.&nbsp; Listing 3
+shows the method named <b>meth03</b>, where the <b>ArithmeticException</b>
+gets thrown as a result of an attempt to perform an integer divide by zero.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp; void <b>meth03</b>(){
+
+&nbsp;&nbsp;&nbsp; <b>try</b>{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>int x = 3/0</b>;
+&nbsp;&nbsp;&nbsp; }//end try block
+
+&nbsp;&nbsp;&nbsp; <b>catch</b>(ArithmeticException e){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; IndexOutOfBoundsException ex =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>new IndexOutOfBoundsException</b>(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Msg from metho03");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ex.<b>initCause(e)</b>;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>throw</b> ex;
+&nbsp;&nbsp;&nbsp; }//end catch block
+
+&nbsp; }//end meth03
+
+<b><font face="Courier New,Courier">Listing 2</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">Why throw an IndexOutOfBoundsException object?</font></b>
+<p>You may be wondering why I chose to have this method throw an <b>IndexOutOfBoundsException</b>
+object, since this program has absolutely nothing to do with an index.
+<p>I wanted to demonstrate the use of the <b>initCause</b> method to encapsulate
+the reference to the <b>ArithmeticException</b> object <i>(as the cause)</i>
+in an object instantiated from a class that predates release 1.4.&nbsp;
+As near as I can tell, the <b>IndexOutOfBoundsException </b>class has been
+part of Java for as least as far back as release 1.1.
+<p><b><font color="#FF0000">The meth03 method implements try/catch exception
+handling</font></b>
+<p>As you can see in Listing 2, the code in <b>meth03</b> consists of a
+<b>try</b>
+block followed by a <b>catch</b> block.&nbsp; The code in the
+<b>try</b>
+block attempts to perform an integer divide by zero, causing an <b>ArithmeticException</b>
+to be thrown.
+<p>This exception is caught in the <b>catch</b> block, where the incoming
+reference to the <b>ArithmeticException</b> object is known locally by
+the name <b>e</b>
+<p><b><font color="#FF0000">Instantiate a new IndexOutOfBoundsException
+object</font></b>
+<p>The code in the <b>catch</b> block instantiates a new object of the
+class <b>IndexOutOfBoundsException</b>, saving the object's reference in
+the reference variable named <b>ex</b>.
+<p><b><font color="#FF0000">Encapsulate the <i>cause</i></font></b>
+<p>Then the code in the <b>catch</b> block invokes the <b>initCause</b>
+method on that reference variable, passing the <b>ArithmeticException</b>
+object's reference as a parameter.&nbsp; The <b>initCause</b> method is
+new to JDK 1.4.&nbsp; In this case, it causes the <b>ArithmeticException</b>
+object's reference to be encapsulated in the <b>IndexOutOfBoundsException</b>
+object as a
+<i>cause.</i>
+<p>As we will see shortly, the <b>getCause</b> method can later be invoked
+on the reference to that object to get access to the original <b>ArithmeticException</b>
+object.
+<p><b><font color="#FF0000">Throw the exception</font></b>
+<p>The code in <b>meth03</b> then throws the <b>IndexOutOfBoundsException</b>
+object, and that terminates the <b>catch</b> block.
+<p><b><font color="#FF0000">Find an appropriate handler</font></b>
+<p>At this point, the runtime system starts searching for a <b>catch</b>
+block capable of accepting an incoming object reference of type <b>IndexOutOfBoundsException</b>.&nbsp;
+This could be a <b>catch</b> block designed to accept a parameter of type
+<b>IndexOutOfBoundsException</b>,
+or any superclass of <b>IndexOutOfBoundsException</b>.
+<p>Such a <b>catch</b> block is found in the method named <b>meth02</b>,
+which is the method that originally called <b>meth03</b>.&nbsp; In other
+words, the method named <b>meth02</b> is the next method encountered when
+moving up through the call stack.
+<p>The code for the method named <b>meth02</b> is shown in Listing 3.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp; void <b>meth02</b>() <b>throws NewEx02</b>{
+
+&nbsp;&nbsp;&nbsp; <b>try</b>{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; meth03();
+&nbsp;&nbsp;&nbsp; }//end try
+
+&nbsp;&nbsp;&nbsp; <b>catch</b>(<b>RuntimeException</b> e){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "In meth02 catch block");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Msg is:\n" + e.<b>getMessage</b>());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Cause is:\n" + e.<b>getCause</b>());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>throw new</b> <b>NewEx02(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Msg from meth02",e</b>);
+&nbsp;&nbsp;&nbsp; }//end catch
+&nbsp; }//end meth02
+
+<b><font face="Courier New,Courier">Listing 3</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>This method also has a <b>try</b> block followed by a <b>catch</b> block.&nbsp;
+The <b>try</b> block contains a single statement, which is a call to the
+method named <b>meth03</b>.&nbsp; <i>(This is how control reached <b>meth03</b>
+in the first place.)</i>&nbsp; As we saw in Listing 2, <b>meth03</b> throws
+an <b>IndexOutOfBoundsException</b>, which is a subclass of <b>RuntimeException</b>.
+<p><b><font color="#FF0000">Not a checked exception</font></b>
+<p>Because it is a subclass of <b>RuntimeException</b>, it is not a checked
+exception.&nbsp; Therefore, it is not necessary for <b>meth03</b> to declare
+that it throws the exception.
+<p>However, even though the exception is not declared in the signature
+for <b>meth03</b>, the author of <b>meth02</b> can still elect to monitor
+for and catch the exception if it gets thrown.&nbsp; <i>(The purposeful
+handling of unchecked exceptions is optional.)</i>
+<p>As the author of <b>meth02</b>, I did elect to monitor for and handle
+all exceptions of type <b>RuntimeException</b>.&nbsp; Hence, the parameter
+type specified in the <b>catch</b> block in <b>meth02</b> is <b>RuntimeException</b>.&nbsp;
+The reference to any <b>RuntimeException</b> that may be caught is known
+locally by the name <b>e</b> within the <b>catch</b> block.
+<p><b><font color="#FF0000">Behavior of the catch block in meth02</font></b>
+<p>The code in the <b>catch</b> block in Listing 3 begins by getting and
+displaying the message and the <i>cause</i> encapsulated in the incoming
+object of type <b>RuntimeException</b>.&nbsp; The output is similar to
+that shown in Figure 3.&nbsp;&nbsp; <i>(I manually inserted some newline
+characters to force the material to fit in this narrow format.)</i>
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>In meth02 catch block
+Msg is:
+Msg from metho03
+Cause is:
+<b>java.lang.ArithmeticException:
+/ by zero
+
+Figure 3</b></pre>
+</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">The output</font></b>
+<p>The ability to get and display the message encapsulated in an incoming
+exception object has been a part of Java for a very long time.&nbsp; However,
+the ability to get and display the <i>cause,</i> by invoking the <b>getCause</b>
+method on the exception object, <i>(which is highlighted in boldface in
+Listing 3),</i> is new to JDK 1.4.&nbsp; <i>(The result of invoking the
+<b>getCause</b>
+method in Listing 3 is highlighted in boldface in the output shown in Figure
+3.)</i>
+<p><b><font color="#FF0000">Format of <i>cause</i> information</font></b>
+<p>Note that in this display format, the <i>cause</i> shows not only the
+name of the class, <i>(<b>java.lang.ArithmeticException</b>),</i> from
+which the <i>cause</i> object was instantiated, but also displays the message,
+<i>(<b>/
+by zero</b>),</i> that was encapsulated in the <i>cause</i> object when
+it was instantiated by the runtime system.
+<p><b><font color="#FF0000">Throw another exception containing a cause</font></b>
+<p>After getting and displaying the message and the <i>cause, </i>the code
+in the <b>catch</b> block in Listing 3 throws a new object of the class
+<b>NewEx02</b>,
+passing the <b>RuntimeException</b> object's reference as the <i>cause</i>
+parameter to the constructor.
+<blockquote><i>(In this case, the cause was encapsulated in the object
+when the object was instantiated rather than encapsulating it later by
+invoking the <b>initCause</b> method on a reference to the object.)</i></blockquote>
+
+<p><br><b><font color="#FF0000">This is a checked exception</font></b>
+<p>Note that because <b>NewEx02</b> extends <b>Exception</b>, making it
+a checked exception, the method named <b>meth02</b> in Listing 3 must declare
+that it <b>throws NewEx02</b>.
+<p><b><font color="#FF0000">Catch the exception</font></b>
+<p>The exception thrown by the method named <b>meth02</b> is caught by
+the method named <b>meth01</b>, which is the next method up the call stack.&nbsp;
+The method named <b>meth01</b> is shown in Listing 4.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp; void <b>meth01</b>() <b>throws NewEx01</b>{
+&nbsp;&nbsp;&nbsp; <b>try</b>{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; meth02();
+&nbsp;&nbsp;&nbsp; }//end try block
+
+&nbsp;&nbsp;&nbsp; <b>catch</b>(<b>NewEx02 e</b>){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "In meth01 catch block");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Msg is:\n" + <b>e.getMessage()</b>);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Cause is:\n" + <b>e.getCause()</b>);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println();//blank line
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>throw new NewEx01(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Msg from meth01",e)</b>;
+&nbsp;&nbsp;&nbsp; }//end catch
+&nbsp; }//end meth01
+
+<b><font face="Courier New,Courier">Listing 4</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">Catch block is very similar</font></b>
+<p>The code in the <b>catch</b> block in <b>meth01</b> is very similar
+to that shown earlier for <b>meth02</b>.&nbsp; In particular, it begins
+by getting and displaying the message and the <i>cause</i> encapsulated
+in the incoming object of type <b>NewEx02</b>, know locally by the name
+<b>e</b>.
+<p><b><font color="#FF0000">The output</font></b>
+<p>The output produced by this code is similar to that shown in Figure
+4.&nbsp; In this case, the <i>cause</i> is displayed as the combination
+of the <b>IndexOutOfBoundsException</b> object and the message object encapsulated
+in the <b>NewEx02</b> object when it was instantiated and thrown.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>In meth01 catch block
+Msg is:
+Msg from meth02
+Cause is:
+<b>java.lang.IndexOutOfBoundsException:&nbsp;
+&nbsp;Msg from metho03
+
+Figure 4</b></pre>
+</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">Throw one more exception containing a cause</font></b>
+<p>After displaying the message and the <i>cause,</i> the code in the <b>catch</b>
+block in Listing 4 instantiates and throws a new object of the class <b>NewEx01</b>.&nbsp;
+This object encapsulates a reference to the <b>NewEx02</b> object received
+as an incoming parameter to the <b>catch</b> block as the <i>cause</i>
+object.
+<p>Again, because <b>NewEx01</b> is a checked exception, the method named
+<b>meth01</b>
+must declare that it can be thrown.
+<p><b><font color="#FF0000">Catch the exception again</font></b>
+<p>This exception is caught by the next method up the call stack, which
+is the <b>main</b> method of the <b>Excep20</b> class.&nbsp; The beginning
+of the <b>main</b> method is shown in Listing 5.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp; public static void <b>main</b>(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; String[] args){
+&nbsp;&nbsp;&nbsp; <b>try</b>{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new Class01().meth01();
+&nbsp;&nbsp;&nbsp; }//end try
+
+&nbsp;&nbsp;&nbsp; <b>catch</b>(NewEx01 e){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "In main catch block");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Msg is:\n" + <b>e.getMessage()</b>);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Cause is:\n" + <b>e.getCause()</b>);
+
+<b><font face="Courier New,Courier">Listing 5</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">Get and display the message and the cause</font></b>
+<p>As before, the code in Listing 5 gets and displays the message and the
+<i>cause</i>
+encapsulated in the incoming object to the <b>catch</b> block.&nbsp; By
+now, there shouldn't be any surprises in the output produced by the code
+in Listing 5.&nbsp; The output is similar to that shown in Figure 5.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre>In main catch block
+Msg is:
+Msg from meth01
+Cause is:
+<b>NewEx02: Msg from meth02
+
+Figure 5</b></pre>
+</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">Now for something new</font></b>
+<p>Listing 6 shows the remainder of the catch block in the <b>main</b>
+method.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Print StackTrace");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>e.printStackTrace()</b>;
+&nbsp;&nbsp;&nbsp; }//end catch
+
+<b><font face="Courier New,Courier">Listing 6</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">Invoke the printStackTrace method</font></b>
+<p>The code in Listing 6 invokes the upgraded <b>printStackTrace</b> method
+on the incoming parameter received by the <b>catch</b> block.&nbsp; This
+parameter is a reference to the object of type <b>NewEx01</b>, thrown by
+the method named <b>meth01</b>.
+<p>The <b>printStackTrace</b> method has been a part of Java for many years.&nbsp;
+However, it was upgraded in JDK 1.4 to support the <i>cause</i> facility.&nbsp;
+In particular, this method now produces a complete history of the <i>chain
+of exceptions.</i>
+<p><b><font color="#FF0000">The output</font></b>
+<p>The output produced by the invocation of the <b>printStackTrace</b>
+method in Listing 6 is similar to that shown in Figure 6.&nbsp; <i>(Again,
+I had to manually insert some line breaks to cause the material to fit
+in this narrow publication format.)</i>
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#CCFFFF" >
+<tr>
+<td>
+<pre><b>NewEx01: Msg from meth01
+</b>&nbsp;at Class01.meth01(Excep20.java:124)
+&nbsp;at Excep20.main(Excep20.java:61)
+<b>Caused by: NewEx02: Msg from meth02
+</b>&nbsp;at Class01.meth02(Excep20.java:141)
+&nbsp;at Class01.meth01(Excep20.java:115)
+&nbsp;... 1 more
+<b>Caused by:&nbsp;
+&nbsp;java.lang.IndexOutOfBoundsException:&nbsp;
+&nbsp; Msg from metho03
+</b>&nbsp;at Class01.meth03(Excep20.java:151)
+&nbsp;at Class01.meth02(Excep20.java:132)
+&nbsp;... 2 more
+<b>Caused by:&nbsp;
+&nbsp;java.lang.ArithmeticException:&nbsp;
+&nbsp; / by zero
+</b>&nbsp;at Class01.meth03(Excep20.java:149)
+&nbsp;... 3 more
+
+<b>Figure 6</b></pre>
+</td>
+</tr>
+</table>
+
+<p><b><font color="#FF0000">The chain of exceptions</font></b>
+<p>Starting at the bottom of Figure 6 and reading up, you can see that
+the chain begins with the innermost exception that was thrown.&nbsp; That
+exception was an <b>ArithmeticException</b> thrown by the runtime system
+when the code in <b>meth03</b> attempted to perform an integer divide by
+zero operation on source code line number 149.
+<p>The chain ends with the exception of type
+<b>NewEx01</b>, thrown by
+the method named <b>meth01</b>, and caught by the <b>main</b> method.
+<p><b><font color="#FF0000">The initCause method</font></b>
+<p>Recall that the <b>ArithmeticException</b> was wrapped as the <i>cause</i>
+in an <b>IndexOutOfBoundsException</b> object, which is a legacy class
+that predates the release of JDK 1.4.&nbsp; The new <b>initCause</b> method
+was used to wrap the <b>ArithmeticException</b> object as the <i>cause</i>
+in the <b>IndexOutOfBoundsException</b> object.
+<p><b><font color="#FF0000">Wrapping with a constructor</font></b>
+<p>That <b>IndexOutOfBoundsException </b>object was wrapped as the <i>cause</i>
+in an exception object of type <b>NewEx02</b>.&nbsp; The <b>NewEx02</b>
+class is a new class that provides constructors matching the new constructors
+of the <b>Throwable</b> class.&nbsp; The <b>IndexOutOfBoundsException </b>object
+was wrapped in the <b>NewEx02</b> object when it was instantiated.
+<p>The <b>NewEx02</b> object was in turn wrapped as the <i>cause</i> in
+an exception object of type <b>NewEx01</b>, when that object was instantiated.&nbsp;
+The <i>cause</i> was available to the <b>catch</b> block in the <b>main</b>
+method.
+<p><b><font color="#FF0000">The complete causal history</font></b>
+<p>The complete causal history is displayed in the stack trace of Figure
+6.&nbsp; Prior to the release of JDK 1.4, there was no standard way to
+create and display a chain of exceptions as illustrated by Figure 6.
+<p><b><font color="#FF0000">Programmatic access to stack trace information</font></b>
+<p>In addition to the upgraded <b>printStackTrace</b> method illustrated
+in Figure 6, a new <b>getStackTrace</b> method was added in release 1.4,
+which provides programmatic access to the same stack trace information
+displayed by the <b>printStackTrace</b> method.&nbsp; This makes it possible
+for you to write code that can make decisions on the basis of information
+contained in the stack trace.&nbsp; I didn't demonstrate that capability
+in this lesson, but I hope to demonstrate it in a future lesson that deals
+heavily with matters involving the stack trace.
+<center>
+<h2>
+<a NAME="Run the program"></a>Run the Program</h2></center>
+If you haven't already done so, I encourage you to copy the code from Listing
+7 into your text editor, compile it, and execute it.&nbsp; Experiment with
+it, making changes, and observing the results of your changes.
+<p>Remember, however, that you must be running Java version 1.4.0 or later
+to compile and execute this program.
+<center>
+<h2>
+<a NAME="Complete Program Listings"></a>Complete Program Listing</h2></center>
+A complete listing of the program discussed in this lesson is shown in
+Listing 7.
+<br>&nbsp;
+<table BORDER COLS=1 WIDTH="400" BGCOLOR="#FFFF00" >
+<tr>
+<td>
+<pre>/*File Excep20.java&nbsp;&nbsp;
+Copyright 2002, R. G. Baldwin
+Illustrates chained exceptions as
+supported by JDK 1.4.0
+
+Tested using JDK 1.4.0 under Win2000
+
+The output produced by the program is
+similar to the following:
+
+In meth02 catch block
+Msg is:
+Msg from metho03
+Cause is:
+java.lang.ArithmeticException:&nbsp;
+&nbsp;/ by zero
+
+In meth01 catch block
+Msg is:
+Msg from meth02
+Cause is:
+java.lang.IndexOutOfBoundsException:&nbsp;
+&nbsp;Msg from metho03
+
+In main catch block
+Msg is:
+Msg from meth01
+Cause is:
+NewEx02: Msg from meth02
+
+Print StackTrace
+NewEx01: Msg from meth01
+&nbsp;at Class01.meth01(Excep20.java:124)
+&nbsp;at Excep20.main(Excep20.java:61)
+Caused by: NewEx02: Msg from meth02
+&nbsp;at Class01.meth02(Excep20.java:141)
+&nbsp;at Class01.meth01(Excep20.java:115)
+&nbsp;... 1 more
+Caused by:&nbsp;
+&nbsp;java.lang.IndexOutOfBoundsException:&nbsp;
+&nbsp; Msg from metho03
+&nbsp;at Class01.meth03(Excep20.java:151)
+&nbsp;at Class01.meth02(Excep20.java:132)
+&nbsp;... 2 more
+Caused by:&nbsp;
+&nbsp;java.lang.ArithmeticException:&nbsp;
+&nbsp; / by zero
+&nbsp;at Class01.meth03(Excep20.java:149)
+&nbsp;... 3 more
+**************************************/
+
+import java.io.*;
+
+
+class Excep20{
+&nbsp; public static void main(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; String[] args){
+&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new Class01().meth01();
+&nbsp;&nbsp;&nbsp; }catch(NewEx01 e){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "In main catch block");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Msg is:\n" + e.getMessage());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Cause is:\n" + e.getCause());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println();//blank line
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Print StackTrace");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; e.printStackTrace();
+&nbsp;&nbsp;&nbsp; }//end catch
+&nbsp; }//end main
+}//end Excep20
+//===================================//
+
+//This is a new exception class
+class NewEx01 extends Exception{
+&nbsp; public NewEx01() {
+&nbsp; }
+&nbsp; public NewEx01(String message){
+&nbsp;&nbsp;&nbsp; super(message);
+&nbsp; }
+&nbsp; public NewEx01(Throwable throwable){
+&nbsp;&nbsp;&nbsp; super(throwable);
+&nbsp; }
+&nbsp; public NewEx01(String message,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Throwable throwable){
+&nbsp;&nbsp;&nbsp; super(message, throwable);
+&nbsp; }
+}//end NewEx01
+//===================================//
+
+//This is a new exception class
+class NewEx02 extends Exception{
+&nbsp; public NewEx02() {
+&nbsp; }
+&nbsp; public NewEx02(String message){
+&nbsp;&nbsp;&nbsp; super(message);
+&nbsp; }
+&nbsp; public NewEx02(Throwable throwable){
+&nbsp;&nbsp;&nbsp; super(throwable);
+&nbsp; }
+&nbsp; public NewEx02(String message,
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Throwable throwable){
+&nbsp;&nbsp;&nbsp; super(message, throwable);
+&nbsp; }
+}//end NewEx02
+//===================================//
+
+class Class01{
+&nbsp; void meth01() throws NewEx01{
+&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; meth02();
+&nbsp;&nbsp;&nbsp; }catch(NewEx02 e){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "In meth01 catch block");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Msg is:\n" + e.getMessage());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Cause is:\n" + e.getCause());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println();//blank line
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; throw new NewEx01(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Msg from meth01",e);
+&nbsp;&nbsp;&nbsp; }//end catch
+&nbsp; }//end meth01
+&nbsp; //---------------------------------//
+&nbsp;&nbsp;
+&nbsp; void meth02() throws NewEx02{
+&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; meth03();
+&nbsp;&nbsp;&nbsp; }catch(RuntimeException e){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "In meth02 catch block");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Msg is:\n" + e.getMessage());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Cause is:\n" + e.getCause());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println();
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; throw new NewEx02(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Msg from meth02",e);
+&nbsp;&nbsp;&nbsp; }//end catch
+&nbsp; }//end meth02
+&nbsp; //---------------------------------//
+&nbsp;&nbsp;
+&nbsp; void meth03(){
+&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int x = 3/0;
+&nbsp;&nbsp;&nbsp; }catch(ArithmeticException e){
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; IndexOutOfBoundsException ex =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; new IndexOutOfBoundsException(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "Msg from metho03");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ex.initCause(e);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; throw ex;
+&nbsp;&nbsp;&nbsp; }//end catch
+&nbsp; }//end meth03
+&nbsp; //---------------------------------//
+}//end Class01
+
+<b><font face="Courier New,Courier">Listing 7</font></b></pre>
+</td>
+</tr>
+</table>
+
+<p>
+<hr size=3 width="100%" align=center>
+<p>Copyright 2002, Richard G. Baldwin.&nbsp; Reproduction in whole or in
+part in any form or medium without express written permission from Richard
+Baldwin is prohibited.
+<h4>
+<a NAME="About the author"></a>About the author</h4>
+<b><a href="mailto:baldwin.richard@iname.com">Richard Baldwin</a></b><i>
+is a college professor (at Austin Community College in Austin, TX) and
+private consultant whose primary focus is a combination of Java, C#, and
+XML. In addition to the many platform and/or language independent benefits
+of Java and C# applications, he believes that a combination of Java, C#,
+and XML will become the primary driving force in the delivery of structured
+information on the Web.</i>
+<p><i>Richard has participated in numerous consulting projects, and he
+frequently provides onsite training at the high-tech companies located
+in and around Austin, Texas.&nbsp; He is the author of Baldwin's Programming
+<a href="http://www.geocities.com/Athens/7077/scoop/onjava.html">Tutorials</a>,
+which has gained a worldwide following among experienced and aspiring programmers.
+He has also published articles in JavaPro magazine.</i>
+<p><i>Richard holds an MSEE degree from Southern Methodist University and
+has many years of experience in the application of computer technology
+to real-world problems.</i>
+<p><i><a href="mailto:baldwin.richard@iname.com">baldwin.richard@iname.com</a></i>
+<p>-end-
+<br>&nbsp;
+</body>
+</html>

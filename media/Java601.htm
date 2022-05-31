@@ -1,0 +1,409 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>... in Java by Richard G Baldwin</TITLE>
+<META NAME="Template" CONTENT="C:\PROGRAM FILES\MSOFFICE\OFFICE\html.dot">
+</HEAD>
+<BODY LINK="#0000ff" VLINK="#800080" BGCOLOR="#ffffff">
+
+<P><!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN"><!--start--></P>
+<I><H3 ALIGN="CENTER">Richard G Baldwin (512) 223-4758, </I><A HREF="mailto:baldwin@austin.cc.tx.us"><I>baldwin@austin.cc.tx.us</I></A><I>, </I><A HREF="http://www2.austin.cc.tx.us/baldwin/"><I>http://www2.austin.cc.tx.us/baldwin/</I></A></H3>
+<H2 ALIGN="CENTER"><!--title-->RMI with Multiple Objects of the Same Type Having Multiple Methods<!--endTitle--></H2>
+<P>Java Programming, Lecture Notes 601, Revised 8/22/99. </P>
+
+<UL>
+<LI><A HREF="#Preface">Preface</A> </LI>
+<LI><A HREF="#Introduction">Introduction</A> </LI>
+<LI><A HREF="#Overview">Overview</A> </LI>
+<LI><A HREF="#Sample_Program">Sample Program </A></LI>
+<LI><A HREF="#The_Batch_file">The Batch File</A> </LI>
+<LI><A HREF="#The_Interface_File">The Interface File</A> </LI>
+<LI><A HREF="#The_Remote_Object_File">The Remote Object File</A> </LI>
+<LI><A HREF="#The_Server_Code_File">The Server Code File</A> </LI>
+<LI><A HREF="#The_Client_Code_File">The Client Code File</A> </LI>
+<LI><A HREF="#Program_Listing">Program Listings</A> </LI></UL>
+
+<P><HR></P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Preface"></A>Preface</H2>
+</FONT><P>Students in Prof. Baldwin's <B><U>Advanced Java Programming</B></U> classes at ACC will be responsible for knowing and understanding all of the material in this lesson beginning with the spring semester of 1999. </P>
+<P>This lesson was originally written on October 10, 1998, using the JDK 1.1.6 download package (and sometimes the MS SDK). The purpose of this lesson is to illustrate RMI for the case of multiple remote objects of the same type each having multiple methods. <BR>
+&nbsp; <BR>
+&nbsp; </P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Introduction"></A>Introduction</H2>
+</FONT><P>A previous lesson gave you an introduction to RMI.&nbsp; Briefly, Java's Remote Method Invocation (RMI) makes it possible for code in an object running in one Java Virtual Machine (JVM) to invoke methods in an object running in another JVM.&nbsp; The two JVMs may be running as separate processes on the same computer, or may be running on different computers connected by a TCP/IP network. </P>
+<P>The machine with the object whose methods are invoked remotely is the server, and the machine invoking the methods on the remote object is the client. </P>
+<P>Once the client code has a reference to the remote objects, the invocation of methods on the remote objects is essentially no different from the invocation of methods on local objects (except for speed and some issues having to do with passing and returning objects by value or by reference).&nbsp; The latter difference having to with value or reference will be discussed in a subsequent lesson. </P>
+<P>The previous lesson illustrated RMI by exposing a single remote object, which in turn exposed a single method.&nbsp; This lesson upgrades the process by exposing two remote objects of the same type, each of which exposes two methods. <BR>
+&nbsp; </P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Overview"></A>Overview</H2>
+</FONT><P>The implementation of RMI for a minimal application requires you to write and compile four source code files and to execute two different utility programs.&nbsp; The four source files are: </P>
+
+<UL>
+<LI>An interface file that declares the signatures of the methods on the remote object that can be invoked by the client. </LI>
+<LI>A file that defines the class for the remote object on the server whose methods will be invoked by the client. </LI>
+<LI>A file that serves as the server program. </LI>
+<LI>A file that serves as the client program. </LI></UL>
+
+<P>The two utility programs are: </P>
+
+<UL>
+<B><LI>rmic.exe</B> - a program that produces stub and skeleton class files used by the client and the server. </LI>
+<B><LI>rmiregistry.exe</B> - a program that creates and maintains a registry of objects on a server whose methods can be invoked remotely by clients. </LI></UL>
+
+<P>This process produces a minimum of six class files that must be installed on the client and the server.&nbsp; Obviously, your programs could produce many more class files than this minimal number depending on the behavior of the programs. </P>
+<P>Execution of one of the utility programs on the server (<B>rmiregistry.exe</B>) creates and maintains a registry of objects on the server whose methods are exposed to clients. </P>
+<P>Execution of the other utility program (<B>rmic.exe</B>) produces two special class files known as a <I>stub</I> file and a <I>skeleton</I> file.&nbsp; These files must be installed on the client and the server machines in the manner described in the previous lesson. <BR>
+&nbsp; <BR>
+&nbsp; </P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Sample_Program"></A>Sample Program</H2>
+</FONT><P>There are a variety of ways to view the implementation of RMI, each of which leads to a different set of operational procedures.&nbsp; I am taking the viewpoint that all of the software is compiled at a central location and the appropriate compiled class files are distributed to the client and to the server. </P>
+<P>Keeping it all straight can be burdensome.&nbsp; I have made the process semi-automatic by encapsulating the overall process in an MS-DOS batch file.&nbsp; If you are not running under Windows or NT, you will need to figure out how to produce an equivalent script file for the platform that you are running on. </P>
+<P>The previous lesson explained the batch file and the sequence of events showing how you can run RMI applications on a single hardware platform by running the client in one process and the server in a different process.&nbsp; I am using that same process in this lesson. </P>
+<P>The names of the four files mentioned above are listed below. </P>
+
+<UL>
+<B><LI>Rmi03RemoteIntfc.java</B> - the interface </LI>
+<B><LI>Rmi03RemoteObj.java</B> - the object </LI>
+<B><LI>Rmi03Server.java</B> - the server </LI>
+<B><LI>Rmi03Client.java</B> - the client </LI></UL>
+
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="The_Batch_file"></A>The Batch file</H2>
+</FONT><P>The name of the batch file is <B>Rmi03.bat</B>.&nbsp; A complete listing of the file is provided near the end of this lesson.&nbsp; With one exception, its structure is the same as the batch file used in the previous lesson.&nbsp; Furthermore, the exception is of no operational significance.&nbsp; The following fragment shows the lines in the batch file that are different. </P>
+<TABLE BORDER CELLSPACING=1 CELLPADDING=9 WIDTH=480>
+<TR><TD VALIGN="TOP" BGCOLOR="#ffff00">
+<PRE><B>jvc</B> Rmi03Server.java
+<B>jvc</B> Rmi03Client.java</PRE></TD>
+</TR>
+</TABLE>
+
+<P>What you see here is the substitution of the Microsoft Java compiler named <B>jvc</B> in place of the JavaSoft compiler named <B>javac</B>.&nbsp; If you aren't running under a Microsoft operating system, or if you haven't downloaded the Java SDK from Microsoft, just change the <B>jvc</B> back to <B>javac</B>.</P>
+<P>Why did I do this?&nbsp; Does this suggest some sort of brand loyalty to Microsoft and Windows?&nbsp; Not at all.&nbsp; The reason is that the <B>jvc</B> compiler in the Microsoft SDK is about ten-thousand times faster than the <B>javac</B> compiler in JavaSoft JDK 1.1.6, and this makes a big difference when I repeatedly compile a program to test, debug, and refine it.&nbsp; Does it always work?&nbsp; No, I occasionally encounter strange compatibility problems and then I simply revert to the use of the trusty <B>javac</B>.&nbsp; However, it does work most of the time so I use it a lot. </P>
+<P>There is a corresponding JVM in the Microsoft SDK named <B>jview</B> that is a functional replacement for <B>java.exe</B> from JavaSoft.&nbsp; I haven't found <B>jview</B> to be measurably faster than <B>java</B>.&nbsp; Therefore, I usually use <B>jvc</B> to compile and <B>java</B> to execute unless I am using <I>activex</I> components, in which case I have no choice but to use <B>jview</B>. <BR>
+&nbsp; <BR>
+&nbsp; </P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="The_Interface_File"></A>The Interface File</H2>
+</FONT><P>The modified interface file is shown in the next fragment.&nbsp; For brevity, I have edited out code (//snip) that is not germane to the discussion.&nbsp; A complete listing of all the code is provided near the end of this lesson. </P>
+<P>The interface now declares two methods named <B>hello()</B> and <B>goodbye()</B> instead of just one as in the previous lesson.&nbsp; Otherwise, the interface definition hasn't changed.&nbsp; This is the pattern that you are going to see throughout this lesson.&nbsp; This expansion to multiple remote objects (of the same type) each having multiple methods doesn't cause any change in the basic structure of the software.&nbsp; It simply requires expansion of the code within that structure. </P>
+<P>If the expansion to multiple objects involved objects of different types, I would need to define a new interface for each different type of remote object.&nbsp; This would involve a minor change to the overall structure of the software and will be illustrated in a subsequent lesson. <BR>
+&nbsp; </P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Rmi03RemoteIntfc.java
+**********************************************************/
+//snip
+public interface Rmi03RemoteIntfc extends Remote{
+&nbsp; String <B>hello</B>(String client) throws RemoteException;
+
+&nbsp; String <B>goodbye</B>(String client) throws RemoteException;
+
+}//end Rmi03RemoteIntfc definition</PRE></TD>
+</TR>
+</TABLE>
+
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="The_Remote_Object_File"></A>The Remote Object File</H2>
+</FONT><P>The next source file that I will discuss is the one containing the definition of the class from which the remote objects are instantiated. </P>
+<P>This code differs from the code in the previous lesson in two respects: </P>
+
+<UL>
+<LI>The constructor for the class receives a parameter and saves it as an instance variable for later use by the methods. </LI>
+<LI>The class defines two different methods. </LI></UL>
+
+<P>The first difference really has nothing to do with the expansion to two methods.&nbsp; Rather, I did that to make it more meaningful to instantiate and expose two different objects of the same type.&nbsp; Even though they are of the same type, they are functionally different because of their different initial states. <BR>
+&nbsp; </P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Rmi03RemoteObj.java
+**********************************************************/
+//snip
+&nbsp; String <B>objID</B>;
+&nbsp;&nbsp;
+&nbsp; public Rmi03RemoteObj(String <B>objID</B>)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; throws RemoteException{
+&nbsp;&nbsp;&nbsp; this.objID = objID;//save the ID
+&nbsp; }//end constructor
+
+&nbsp; public String <B>hello</B>(String client)&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; throws RemoteException{
+&nbsp;&nbsp;&nbsp; return "Hello " + client + " from " + objID;
+&nbsp; }//end hello()
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp; public String <B>goodbye</B>(String client)&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; throws RemoteException{
+&nbsp;&nbsp;&nbsp; return "Goodbye " + client + " from " + objID;
+&nbsp; }//end goodbye()
+//snip</PRE></TD>
+</TR>
+</TABLE>
+
+<P>Other than the differences discussed above, this class definition for remote objects is essentially the same as the one in the previous lesson.&nbsp; Each of the methods receives a <B>String</B> object as a parameter, constructs and returns a <B>String</B> object.&nbsp; The <B>String</B> object that is returned includes literal string text, the incoming <B>String</B> object, and the <B>String</B> object received and saved by the constructor when the object was instantiated. <BR>
+&nbsp; <BR>
+&nbsp; </P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="The_Server_Code_File"></A>The Server Code File</H2>
+</FONT><P>The next source code file that I will&nbsp; discuss is the class defining the server software.&nbsp; This code differs from the code in the previous lesson in two respects: </P>
+
+<UL>
+<LI>It instantiates two objects of the remote object type passing a different object to the constructor in each case for initialization of the state of the object. </LI>
+<LI>It registers both of the objects to expose them to clients needing to invoke their methods. </LI></UL>
+
+<P>These differences are highlighted in boldface in the listing below. <BR>
+&nbsp; </P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Rmi03Server.java
+**********************************************************/
+//snip
+&nbsp; public static void main(String args[]){
+&nbsp;&nbsp;&nbsp; System.setSecurityManager(new RMISecurityManager());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Rmi03RemoteObj <B>remoteObjA</B>&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = new Rmi03RemoteObj("<B>objA</B>");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Rmi03RemoteObj <B>remoteObjB</B>&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = new Rmi03RemoteObj("<B>objB</B>");
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Had to register it this way to avoid Win95 error
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; LocateRegistry.createRegistry(1099);
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Naming.rebind("helloObjA", <B>remoteObjA</B>);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Naming.rebind("helloObjB", <B>remoteObjB</B>);
+//snip</PRE></TD>
+</TR>
+</TABLE>
+
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="The_Client_Code_File"></A>The Client Code File</H2>
+</FONT><P>That brings us to the final set of code that I will discuss in this lesson:&nbsp; the client code shown below.&nbsp; This code goes to the registry on the server twice and obtains references to two different remote objects: <B>refToObjA</B> and <B>refToObjB</B>. </P>
+<P>Having obtained references to each of the two objects, the code invokes two methods on each of the objects:&nbsp; <B>hello()</B> and <B>goodbye()</B>. <BR>
+&nbsp; </P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Rmi03Client.java
+**********************************************************/
+//snip&nbsp;&nbsp;
+&nbsp; public static void main(String[] args){
+&nbsp;&nbsp;&nbsp; System.setSecurityManager(new RMISecurityManager());&nbsp;
+&nbsp;&nbsp;&nbsp; String partOfUrl = "rmi://localhost/";&nbsp;
+&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Rmi03RemoteIntfc <B>refToObjA</B> =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (Rmi03RemoteIntfc)Naming.<B>lookup</B>(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; partOfUrl + "<B>helloObjA</B>");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Rmi03RemoteIntfc <B>refToObjB</B> =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (Rmi03RemoteIntfc)Naming.<B>lookup</B>(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; partOfUrl + "<B>helloObjB</B>");
+
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(<B>refToObjA.hello</B>("Dick"));
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(<B>refToObjA.goodbye</B>("Dick"));
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(<B>refToObjB.hello</B>("Dick"));
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(<B>refToObjB.goodbye</B>("Dick"));
+//snip</PRE></TD>
+</TR>
+</TABLE>
+
+<P>Because this program sets a security manager, it may not run under JDK 1.2 without taking the necessary steps to comply with the more stringent security requirements of JDK 1.2.</P>
+<P>And there you have it,&nbsp; an RMI application that supports multiple methods on multiple remote objects of the same type.&nbsp; A listing of the code is provided in the next section. <BR>
+&nbsp; </P>
+<FONT COLOR="#ff0000"><H2 ALIGN="CENTER"><A NAME="Program_Listing"></A>Program Listings</H2></FONT>
+<P ALIGN="CENTER"><CENTER><TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>rem File Rmi03.bat
+rem Rev 10/09/98
+echo off
+echo Make certain that you have a Client folder and
+echo&nbsp; a Server folder immediately below this one.
+
+echo Delete residue from previous run
+del Rmi03*.class
+del Client\*.class
+del Server\*.class
+
+echo Compile files required by Server
+jvc Rmi03Server.java
+
+echo Compile files required by Client
+jvc Rmi03Client.java
+
+echo Run rmic utility to create skeleton and stub classes
+rmic Rmi03RemoteObj
+
+echo Put a copy of the stub class in the Serverfolder
+copy Rmi03RemoteObj_Stub.class Server
+echo Put a copy of the skeleton class in the Server folder
+copy Rmi03RemoteObj_Skel.class Server
+echo Put a copy of the remote obj class file in Server
+copy Rmi03RemoteObj.class Server
+echo Put a copy of the remote server class file in Server
+copy Rmi03Server.class Server
+echo Put copy of remote interface class file in Server
+copy Rmi03RemoteIntfc.class Server
+
+echo Put copy of client class file in Client folder
+copy Rmi03Client.class Client
+echo Put a copy of the stub class in the Client folder
+copy Rmi03RemoteObj_Stub.class Client
+echo Put copy of remote interface class file in Client
+copy Rmi03RemoteIntfc.class Client
+
+echo Should be able to start rmiregistry here, but it gives
+echo&nbsp; fatal error on my Win95 with jdk1.1.6.&nbsp; Start it
+echo&nbsp; in server program instead.
+
+echo Wait for remote object to become ready.&nbsp; Then click&nbsp;
+echo&nbsp; main window to keep things moving.
+
+echo Start the server running in a different MSDOS window
+cd Server
+start java Rmi03Server
+cd ..
+
+
+
+echo Run client program twice to demo that remote object
+echo&nbsp; stays alive.
+cd Client
+java Rmi03Client
+java Rmi03Client
+cd..
+
+echo Manually terminate the remote object.</PRE></TD>
+</TR>
+</TABLE>
+</CENTER></P>
+
+<P ALIGN="CENTER"></P>
+<P ALIGN="CENTER"><CENTER><TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Rmi03RemoteIntfc.java
+Rev 10/10/98.
+This is the interface for an RMI Hello World program
+upgraded to declare two methods.
+**********************************************************/
+
+import java.rmi.*;
+
+public interface Rmi03RemoteIntfc extends Remote{
+&nbsp; String hello(String client) throws RemoteException;
+
+&nbsp; String goodbye(String client) throws RemoteException;
+
+}//end Rmi03RemoteIntfc definition</PRE></TD>
+</TR>
+</TABLE>
+</CENTER></P>
+
+<P ALIGN="CENTER">. </P>
+<P ALIGN="CENTER"><CENTER><TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Rmi03RemoteObj.java
+Rev 10/09/98.
+This is the remote object for an RMI hello world program
+upgraded to define two methods..
+**********************************************************/
+
+import java.rmi.*;
+import java.rmi.server.*;
+
+public class Rmi03RemoteObj extends UnicastRemoteObject
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; implements Rmi03RemoteIntfc{
+
+&nbsp; String objID;
+&nbsp;&nbsp;
+&nbsp; public Rmi03RemoteObj(String objID)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; throws RemoteException{
+&nbsp;&nbsp;&nbsp; this.objID = objID;//save the ID
+&nbsp; }//end constructor
+
+&nbsp; public String hello(String client)&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; throws RemoteException{
+&nbsp;&nbsp;&nbsp; return "Hello " + client + " from " + objID;
+&nbsp; }//end hello()
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp; public String goodbye(String client)&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; throws RemoteException{
+&nbsp;&nbsp;&nbsp; return "Goodbye " + client + " from " + objID;
+&nbsp; }//end goodbye()
+&nbsp;&nbsp;&nbsp;&nbsp;
+}//end class Rmi03RemoteObj</PRE></TD>
+</TR>
+</TABLE>
+</CENTER></P>
+
+<P ALIGN="CENTER">. </P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Rmi03Server.java
+Rev 10/09/98.
+This program is the remote server for an RMI version of
+hello world upgraded to support two objects.
+**********************************************************/
+
+import java.rmi.*;
+import java.rmi.server.*;
+import sun.applet.*;
+import java.rmi.registry.LocateRegistry;
+
+public class Rmi03Server{
+&nbsp;&nbsp;
+&nbsp; public static void main(String args[]){
+&nbsp;&nbsp;&nbsp; System.setSecurityManager(new RMISecurityManager());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Rmi03RemoteObj remoteObjA&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = new Rmi03RemoteObj("objA");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Rmi03RemoteObj remoteObjB&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = new Rmi03RemoteObj("objB");
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Had to register it this way to avoid Win95 error
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; LocateRegistry.createRegistry(1099);
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Naming.rebind("helloObjA", remoteObjA);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Naming.rebind("helloObjB", remoteObjB);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println("Remote obj ready to use");
+&nbsp;&nbsp;&nbsp; }catch(Exception e){System.out.println("Error: " + e);}
+&nbsp; }//end main
+}//end class Rmi03Server</PRE></TD>
+</TR>
+</TABLE>
+
+<P>. </P>
+<TABLE BORDER CELLSPACING=1>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#ffff00">
+<PRE>/*File Rmi03Client.java
+Rev 10/09/98.
+This program is the client for an RMI hello world program
+upgraded to support two remote objects, each with two
+methods.
+**********************************************************/
+
+import java.rmi.*;
+import java.rmi.server.*;
+
+public class Rmi03Client{
+&nbsp;&nbsp;
+&nbsp; public static void main(String[] args){
+&nbsp;&nbsp;&nbsp; System.setSecurityManager(new RMISecurityManager());&nbsp;
+&nbsp;&nbsp;&nbsp; String partOfUrl = "rmi://localhost/";&nbsp;
+&nbsp;&nbsp;&nbsp; try{
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Rmi03RemoteIntfc refToObjA =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (Rmi03RemoteIntfc)Naming.lookup(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; partOfUrl + "helloObjA");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Rmi03RemoteIntfc refToObjB =&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (Rmi03RemoteIntfc)Naming.lookup(
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; partOfUrl + "helloObjB");
+
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(refToObjA.hello("Dick"));
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(refToObjA.goodbye("Dick"));
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(refToObjB.hello("Dick"));
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.out.println(refToObjB.goodbye("Dick"));
+
+&nbsp;&nbsp;&nbsp; }catch(Exception e){System.out.println("Error " + e);}
+&nbsp;&nbsp;&nbsp; System.exit(0);
+&nbsp; }//end main
+}//end class Rmi03Client</PRE></TD>
+</TR>
+</TABLE>
+
+<P>-end- <!--end--></P></BODY>
+</HTML>
